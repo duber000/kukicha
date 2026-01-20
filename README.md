@@ -36,7 +36,8 @@ Kukicha (茎 = stem in Japanese) is a high-level, beginner-friendly programming 
 
 ### Prerequisites
 
-- Go 1.25+ (for Green Tea GC support)
+- Go 1.24+ (required)
+- Go 1.25+ recommended for Green Tea GC performance improvements (10-40% faster GC)
 
 ### Installation
 
@@ -45,6 +46,20 @@ git clone https://github.com/duber000/kukicha.git
 cd kukicha
 go mod tidy
 ```
+
+### Enabling Green Tea GC (Go 1.25+)
+
+For optimal performance, build and run with the Green Tea garbage collector:
+
+```bash
+# Build with Green Tea GC
+GOEXPERIMENT=greenteagc go build
+
+# Run tests with Green Tea GC
+GOEXPERIMENT=greenteagc go test ./...
+```
+
+Note: Green Tea GC will be enabled by default in Go 1.26+ (expected February 2026)
 
 ### Running Tests
 
@@ -58,9 +73,9 @@ go test ./internal/lexer/... -v
 
 ## Language Features
 
-### Core Design Decisions (v1.1.0)
+### Core Design Decisions (v1.0.0)
 
-Kukicha v1.1.0 introduces key refinements that balance simplicity, performance, and consistency:
+Kukicha v1.0.0 introduces key refinements that balance simplicity, performance, and consistency:
 
 1. **📦 Optional Leaf Declarations** - Folder-based package model with automatic Stem (package) calculation from file path. No more header/directory sync issues!
 
@@ -162,16 +177,16 @@ if user in admins
 ```
 kukicha/
 ├── cmd/
-│   └── kukicha/           # CLI entry point (coming soon)
+│   └── kukicha/           # ✅ CLI entry point
 ├── internal/
 │   ├── lexer/             # ✅ Lexer implementation
 │   │   ├── lexer.go
 │   │   ├── token.go
 │   │   └── lexer_test.go
-│   ├── parser/            # 🔄 Next: Parser
-│   ├── semantic/          # ⏳ Semantic analysis
-│   ├── codegen/           # ⏳ Code generation
-│   └── compiler/          # ⏳ Compiler orchestration
+│   ├── parser/            # ✅ Parser implementation
+│   ├── semantic/          # ✅ Semantic analysis
+│   ├── codegen/           # ✅ Code generation
+│   └── ast/               # ✅ AST definitions
 ├── docs/                  # Language documentation
 ├── examples/              # Example programs
 ├── testdata/              # Test fixtures
@@ -283,4 +298,4 @@ Kukicha is designed for programming beginners while maintaining compatibility wi
 
 **Status**: Ready for testing!
 **Version**: 1.0.0
-**Target Go Version**: 1.25+ with Green Tea GC
+**Go Compatibility**: 1.24+ (1.25+ recommended for Green Tea GC optimization)
