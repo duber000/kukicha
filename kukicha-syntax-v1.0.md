@@ -22,7 +22,7 @@ Twig (Go module)
 |---------|---------------|----------------|
 | **Twig** | Go module | Root directory with `twig.toml` |
 | **Stem** | Go package | Subdirectory (package) |
-| **Leaf** | Go file | Individual `.kukicha` file |
+| **Leaf** | Go file | Individual `.kuki` file |
 
 ### Example Directory Structure
 
@@ -30,13 +30,13 @@ Twig (Go module)
 myapp/                      # Twig (module root)
   twig.toml                # Module configuration
   database/                # Stem (package)
-    models.kukicha         # Leaf (file)
-    queries.kukicha        # Leaf (file)
+    models.kuki            # Leaf (file)
+    queries.kuki           # Leaf (file)
   api/                     # Stem (package)
-    handlers.kukicha       # Leaf (file)
-    middleware.kukicha     # Leaf (file)
+    handlers.kuki          # Leaf (file)
+    middleware.kuki        # Leaf (file)
   todo/                    # Stem (package)
-    todo.kukicha           # Leaf (file)
+    todo.kuki              # Leaf (file)
 ```
 
 ---
@@ -142,7 +142,7 @@ type User struct {
 Create new bindings with `:=`:
 
 ```kukicha
-result := expensive_operation()
+result := expensiveOperation()
 todos := empty list of Todo
 config := map of string to string
 user := empty reference User
@@ -153,10 +153,10 @@ user := empty reference User
 Update existing variables with `=`:
 
 ```kukicha
-result = new_value
-todos = append(todos, new_todo)
+result = newValue
+todos = append(todos, newTodo)
 completed = true
-user = reference to new_user
+user = reference to newUser
 ```
 
 ---
@@ -183,7 +183,7 @@ func CreateTodo(id, title, description)
 
 For explicit types, use casting:
 ```kukicha
-id := int64(raw_id)
+id := int64(rawId)
 count := int32(value)
 ```
 
@@ -422,7 +422,7 @@ func (todo Todo) Display() string
         status = "done"
     return "{status}: {todo.title}"
 
-func (todo reference Todo) MarkDone()
+func (todo *Todo) MarkDone()
     todo.completed = true
 ```
 
@@ -658,20 +658,19 @@ numbers := list of int64
 
 **Adding elements:**
 ```kukicha
-todos = append(todos, new_todo)
+todos = append(todos, newTodo)
 ```
 
 **Access by index:**
 ```kukicha
 first := items at 0
-second := items at 1
+first := items[0]
 ```
 
 **Slicing:**
 ```kukicha
-substring := items from 0 to 5
-last_three := items from end to end
-first_two := items from 0 to 2
+# Slicing uses Go syntax
+subset := items[2:7]
 ```
 
 **Length:**
@@ -723,17 +722,27 @@ result := data
 
 ### Piping Rules
 
-**The left side becomes the first argument to the right side:**
+**Basic usage — result becomes first argument:**
 
 ```kukicha
 # These are equivalent
 x |> func(y, z)
 func(x, y, z)
+```
 
-# With methods
-response := http.get(url)
-    |> .json()           # Calls response.json()
-    |> filterActive()    # Calls filterActive(parsed_json)
+**Method calls — use leading dot to call method on piped value:**
+
+```kukicha
+response |> .json()  # Same as: response.json()
+```
+
+**Chaining both styles:**
+
+```kukicha
+users := http.get(url)
+    |> .json()              # Call .json() on response
+    |> filterActive()       # Pass result to filterActive()
+    |> sortByName()
 ```
 
 ### Multiline Pipes (Recommended Style)
@@ -879,9 +888,11 @@ result := str1 + str2
 greeting := "hello " + name
 ```
 
-**Splitting:**
+**String functions:**
 ```kukicha
-parts := "hello world" split " "
+upper := string.upper("hello")
+parts := string.split("a,b,c", ",")
+joined := string.join(parts, "|")
 ```
 
 ---
@@ -940,7 +951,8 @@ Compiles to Go's automatic dereferencing: `if user.Name == "admin"`
 ### Zero Values
 
 ```kukicha
-empty                          # nil equivalent, zero value
+empty                          # Zero value, nil equivalent
+nil                            # Accepted as alias for empty
 empty reference Type           # nil pointer
 false                          # boolean zero
 0                              # numeric zero
@@ -949,6 +961,8 @@ time.now()                     # current time
 empty list of Type             # empty list
 empty map of KeyType to ValueType  # empty map
 ```
+
+**Note:** `nil` is accepted as a direct alias for `empty` for Go developers' familiarity. Both compile to the same zero value.
 
 ---
 
@@ -1011,7 +1025,8 @@ empty map of KeyType to ValueType  # empty map
 | Operator | Usage |
 |----------|-------|
 | `equals` | Equality |
-| `!=` | Inequality |
+| `not equals` | Inequality |
+| `!=` | Inequality (alternative) |
 | `>` | Greater than |
 | `<` | Less than |
 | `>=` | Greater than or equal |
@@ -1049,10 +1064,10 @@ version = "0.1.0"
 
 [build]
 experiment = "greenteagc"
-go_version = "1.25"
+goVersion = "1.25"
 
 [config]
-storage_type = "memory"
+storageType = "memory"
 debug = true
 ```
 
@@ -1060,8 +1075,8 @@ debug = true
 ```kukicha
 config settings from "config.toml"
 
-storage_type := settings.config.storage_type
-debug_mode := settings.config.debug or false
+storageType := settings.config.storageType
+debugMode := settings.config.debug or false
 ```
 
 ---
@@ -1096,20 +1111,46 @@ debug_mode := settings.config.debug or false
 
 ---
 
-## Built-in Functions
+## Builtins
+
+Kukicha provides built-in functions that are available without imports:
+
+### Core Functions
 
 ```kukicha
 print(value)                    # Print to stdout
-append(list, item)              # Add to list
-len(collection)                 # Get length
-panic(message)                  # Panic with message
-time.now()                      # Current time
+len(collection)                 # Get length of list, map, string, or channel
+append(list, item)              # Add item to list, returns new list
+```
 
-# Type casting
+### Channel Operations
+
+```kukicha
+make(channel of Type)           # Create unbuffered channel
+make(channel of Type, size)     # Create buffered channel
+close(channel)                  # Close channel
+```
+
+### Error Handling
+
+```kukicha
+panic(message)                  # Trigger panic with message
+recover()                       # Recover from panic (use in defer)
+```
+
+### Type Casting
+
+```kukicha
 int64(value)                    # Convert to int64
 int32(value)                    # Convert to int32
-string(value)                   # Convert to string
+int(value)                      # Convert to int
+uint64(value)                   # Convert to uint64
+uint32(value)                   # Convert to uint32
+uint(value)                     # Convert to uint
 float64(value)                  # Convert to float64
+float32(value)                  # Convert to float32
+string(value)                   # Convert to string
+bool(value)                     # Convert to bool
 ```
 
 ---
@@ -1406,11 +1447,16 @@ type Node
 
 #### Loop Iteration
 
-**Primary (Recommended):**
-```kukicha
-for discard, item in items
-    process(item)
+**Collection iteration:**
 
+| Kukicha | Go Syntax |
+|---------|-----------|
+| `for x in items` | `for _, x := range items` |
+| `for i, x in items` | `for i, x := range items` |
+| `for discard, x in items` | `for _, x := range items` |
+
+**Range loops:**
+```kukicha
 # Exclusive range
 for i from 0 to 10
     print i  # 0-9
@@ -1420,11 +1466,8 @@ for i from 1 through 10
     print i  # 1-10
 ```
 
-**Go Syntax (Also Works):**
+**Go-style C loops:**
 ```kukicha
-for _, item := range items
-    process(item)
-
 for i := 0; i < 10; i++
     print i
 ```
@@ -1534,8 +1577,8 @@ The distinction between `:=` (create) and `=` (update) is a core Kukicha feature
 ```kukicha
 # NOT supported
 if x == 5 { print "no" }        # No braces
-var x int = 5;                  # No semicolons  
-my_variable := 5                # No snake_case with underscores
+var x int = 5;                  # No semicolons
+myVariable := 5                 # No snake_case with underscores
 ```
 
 Use indentation, newlines, and camelCase instead.

@@ -184,15 +184,14 @@ if err != empty
 ```kukicha
 # Create
 todos := empty list of Todo
-numbers := list of int
+numbers := empty list of int
 
-# Access
+# Access by index
 first := items at 0
-second := items[1]  # Go syntax also works
+first := items[0]
 
-# Slice
-subset := items from 0 to 5
-last := items from end to end
+# Slicing uses Go syntax
+subset := items[2:7]
 
 # Append
 items = append(items, newItem)
@@ -235,8 +234,11 @@ result := data
     |> transform()
     |> process()
 
-# Left side becomes first argument
+# Basic usage — result becomes first argument
 x |> func(y, z)  # Same as: func(x, y, z)
+
+# Method calls — use leading dot
+response |> .json()  # Same as: response.json()
 ```
 
 ### Common Patterns
@@ -285,7 +287,7 @@ status := "{id}: {title} - {completed}"
 
 # String operations
 upper := string.upper("hello")
-parts := "a,b,c" split ","
+parts := string.split("a,b,c", ",")
 joined := string.join(parts, "|")
 ```
 
@@ -360,7 +362,8 @@ func safeOperation()
 # Comparison
 if x equals 5           # Equality
 if x == 5              # Go syntax
-if x != 5              # Inequality
+if x not equals 5      # Inequality
+if x != 5              # Inequality (alternative)
 if x > 5, x < 5
 if x >= 5, x <= 5
 
@@ -376,6 +379,7 @@ if ready && !paused   # Go syntax
 
 ```kukicha
 empty                        # nil/zero
+nil                          # Alias for empty
 empty reference Type         # nil pointer
 empty list of Type          # empty slice
 empty map of K to V         # empty map
@@ -468,6 +472,8 @@ Most Kukicha syntax has a Go equivalent that also works:
 | `receive ch` | `<-ch` |
 | `make channel of T` | `make(chan T)` |
 | `for x in items` | `for _, x := range items` |
+| `for i, x in items` | `for i, x := range items` |
+| `for discard, x in items` | `for _, x := range items` |
 
 **Note:** The walrus operator `:=` is always create-only in Kukicha (unlike Go's shadowing behavior).
 

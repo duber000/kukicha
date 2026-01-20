@@ -197,9 +197,9 @@ AndExpression ::= ComparisonExpression { ( "and" | "&&" ) ComparisonExpression }
 
 ComparisonExpression ::= AdditiveExpression [ ComparisonOp AdditiveExpression ]
 
-ComparisonOp ::= 
-    | "equals" | "==" 
-    | "!=" 
+ComparisonOp ::=
+    | "equals" | "=="
+    | "not" "equals" | "!="
     | ">" | "<" | ">=" | "<="
 
 AdditiveExpression ::= MultiplicativeExpression { ( "+" | "-" ) MultiplicativeExpression }
@@ -210,13 +210,13 @@ UnaryExpression ::=
     | ( "not" | "!" | "-" ) UnaryExpression
     | PostfixExpression
 
-PostfixExpression ::= 
-    PrimaryExpression { 
+PostfixExpression ::=
+    PrimaryExpression {
         | "." IDENTIFIER
         | "(" [ ExpressionList ] ")"
         | "at" Expression
         | "[" Expression "]"
-        | "from" Expression ( "to" | "through" ) Expression
+        | "[" Expression ":" Expression "]"
     }
 
 PrimaryExpression ::=
@@ -292,7 +292,9 @@ ReceiveExpression ::=
 
 RecoverExpression ::= "recover" "(" ")"
 
-TypeCast ::= TypeAnnotation "(" Expression ")"
+TypeCast ::=
+    | TypeAnnotation "(" Expression ")"
+    | Expression "as" TypeAnnotation
 ```
 
 ---
@@ -333,7 +335,7 @@ or          not         return      go          defer
 make        channel     send        receive     close
 panic       recover     error       empty       reference
 on          this        discard     true        false
-equals
+equals      as
 ```
 
 ---
