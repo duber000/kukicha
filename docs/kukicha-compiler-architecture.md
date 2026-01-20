@@ -1750,44 +1750,22 @@ func (er *ErrorReporter) Report(pos Position, message string, help string) {
 
 ---
 
-## Development Roadmap
+## Implementation Status
 
-### Week 1-2: Foundation
-- [x] Project structure
-- [ ] Basic lexer (keywords, identifiers, literals)
-- [ ] Token tests
+### Completed Features (v1.0.0)
 
-### Week 3-4: Complete Lexer
-- [ ] Indentation handling
-- [ ] String interpolation
-- [ ] All operators
-- [ ] Comprehensive tests
+- ✅ **Lexer** - Full tokenization with indentation support
+- ✅ **Parser** - Complete AST generation
+- ✅ **Semantic Analysis** - Type checking and validation
+- ✅ **Code Generation** - Idiomatic Go transpilation
+- ✅ **CLI Tool** - Build, run, and transpile commands
+- ✅ **Test Suite** - Comprehensive tests for all phases
 
-### Week 5-6: Parser Foundation
-- [ ] Expression parsing
-- [ ] Statement parsing
-- [ ] AST node definitions
+### Future Enhancements
 
-### Week 7-8: Complete Parser
-- [ ] Type declarations
-- [ ] Functions and methods
-- [ ] Control flow
-- [ ] All tests passing
+See the [Standard Library Roadmap](kukicha-stdlib-roadmap.md) for planned features and extensions.
 
-### Week 9-10: Semantic Analysis
-- [ ] Symbol table
-- [ ] Type checking
-- [ ] Name resolution
-- [ ] Error reporting
-
-### Week 11-12: Code Generation
-- [ ] Basic Go output
-- [ ] String interpolation
-- [ ] Or operator desugaring
-- [ ] Pipe operator desugaring
-
-### Week 13-14: Integration
-- [ ] CLI tool
-- [ ] Build system
-- [ ] Hello World compiles
-- [ ] Todo app compiles
+For the complete language specification, see:
+- [Language Syntax Reference](kukicha-syntax-v1.0.md)
+- [Quick Reference](kukicha-quick-reference.md)
+- [Grammar (EBNF)](kukicha-grammar.ebnf.md)
