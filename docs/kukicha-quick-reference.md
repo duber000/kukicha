@@ -2,6 +2,8 @@
 
 **Version:** 1.0.0 | **File Extension:** `.kuki` | **Target:** Go 1.25+
 
+> This is a quick reference for developers already familiar with Kukicha. For a complete guide with detailed explanations, see the [Language Syntax Reference](kukicha-syntax-v1.0.md).
+
 ---
 
 ## Basics
@@ -630,5 +632,9 @@ kukicha doc [topic]
 
 ---
 
-**Learn more:** https://kukicha.dev
-**Report issues:** https://github.com/yourusername/kukicha
+## See Also
+
+- [Language Syntax Reference](kukicha-syntax-v1.0.md) - Complete syntax guide with detailed explanations
+- [Grammar (EBNF)](kukicha-grammar.ebnf.md) - Formal grammar specification
+- [Compiler Architecture](kukicha-compiler-architecture.md) - Implementation details
+- [Standard Library Roadmap](kukicha-stdlib-roadmap.md) - Planned features

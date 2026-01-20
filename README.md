@@ -4,7 +4,7 @@ Kukicha (茎 = stem in Japanese) is a high-level, beginner-friendly programming 
 
 ## Project Status
 
-**Current Phase:** Lexer Implementation ✅
+**Current Version:** 1.0.0 🎉
 
 ### Completed
 
@@ -17,12 +17,20 @@ Kukicha (茎 = stem in Japanese) is a high-level, beginner-friendly programming 
   - String interpolation support
   - All operators and keywords
   - Comprehensive test suite
-
-### In Progress
-
-- Parser implementation (next phase)
-- Semantic analysis
-- Code generation
+- ✅ **Parser implementation**
+  - Complete AST generation
+  - Full expression and statement parsing
+  - Type declaration parsing
+- ✅ **Semantic analysis**
+  - Type checking
+  - Symbol table management
+  - Signature-first type inference
+- ✅ **Code generation**
+  - Transpilation to idiomatic Go
+  - All language features supported
+- ✅ **CLI tool**
+  - Build, run, and transpile commands
+  - Full toolchain integration
 
 ## Quick Start
 
@@ -171,48 +179,50 @@ kukicha/
 └── README.md
 ```
 
-## Lexer Implementation
+## Transpiler Implementation
 
-The lexer (tokenizer) converts Kukicha source code into a stream of tokens.
+The Kukicha transpiler converts `.kuki` source files into idiomatic Go code through four phases:
 
-### Features
-
-- **Indentation-based syntax**: 4 spaces per level (tabs rejected)
-- **String interpolation**: `"Hello {name}"`
-- **All operators**: `|>`, `onerr`, `or`, `:=`, `==`, `in`, etc.
-- **Keywords**: 35+ keywords including `leaf`, `func`, `type`, `interface`
-- **Error reporting**: Clear error messages with line/column information
+1. **Lexer** - Tokenizes source with indentation support
+2. **Parser** - Builds Abstract Syntax Tree (AST)
+3. **Semantic Analysis** - Type checking and validation
+4. **Code Generation** - Produces idiomatic Go code
 
 ### Example
 
 ```kukicha
-func Greet(name string)
-    print "Hello {name}"
+func Greet(name string) string
+    return "Hello {name}"
 ```
 
-Tokenizes to:
-```
-FUNC, IDENTIFIER(Greet), LPAREN, IDENTIFIER(name), IDENTIFIER(string), RPAREN, NEWLINE
-INDENT, IDENTIFIER(print), STRING("Hello {name}"), NEWLINE
-DEDENT, EOF
+Transpiles to:
+
+```go
+func Greet(name string) string {
+    return fmt.Sprintf("Hello %s", name)
+}
 ```
 
-### Running Lexer Tests
+### Running Tests
 
 ```bash
-# All lexer tests
-go test ./internal/lexer/... -v
+# Run all tests
+go test ./...
 
-# Specific test
-go test ./internal/lexer/... -run TestIndentation -v
+# Run specific package tests
+go test ./internal/lexer/... -v
+go test ./internal/parser/... -v
+go test ./internal/semantic/... -v
+go test ./internal/codegen/... -v
 ```
 
 ## Documentation
 
-- [Language Syntax Reference](kukicha-syntax-v1.0.md) - Complete syntax guide
-- [Compiler Architecture](kukicha-compiler-architecture.md) - Implementation details
-- [Grammar (EBNF)](kukicha-grammar.ebnf.md) - Formal grammar definition
-- [Quick Reference](kukicha-quick-reference.md) - Developer cheat sheet
+- [Language Syntax Reference](docs/kukicha-syntax-v1.0.md) - Complete syntax guide
+- [Quick Reference](docs/kukicha-quick-reference.md) - Developer cheat sheet
+- [Compiler Architecture](docs/kukicha-compiler-architecture.md) - Implementation details
+- [Grammar (EBNF)](docs/kukicha-grammar.ebnf.md) - Formal grammar definition
+- [Standard Library Roadmap](docs/kukicha-stdlib-roadmap.md) - Future library features
 
 ## Development
 
@@ -237,13 +247,15 @@ go test ./... -cover
 go test ./internal/lexer/...
 ```
 
-## Next Steps
+## Future Enhancements
 
-1. **Parser** - Build Abstract Syntax Tree from tokens
-2. **Semantic Analysis** - Type checking and validation
-3. **Code Generation** - Transform AST to idiomatic Go
-4. **CLI Tool** - `kukicha build`, `kukicha run`, etc.
-5. **Standard Library** - HTTP, JSON, File I/O, Docker, K8s, LLM packages
+See [Standard Library Roadmap](docs/kukicha-stdlib-roadmap.md) for planned features:
+
+1. **Standard Library** - HTTP, JSON, File I/O, Docker, K8s, LLM packages
+2. **Package Manager** - Dependency management and versioning
+3. **IDE Support** - VS Code extension with syntax highlighting and IntelliSense
+4. **Debugger** - Source-level debugging support
+5. **Formatter Improvements** - Advanced `kuki fmt` features
 
 ## Contributing
 
@@ -264,6 +276,6 @@ Kukicha is designed for programming beginners while maintaining compatibility wi
 
 ---
 
-**Status**: Active development
-**Version**: 0.1.0 (Lexer complete)
+**Status**: Production Ready
+**Version**: 1.0.0
 **Target Go Version**: 1.25+ with Green Tea GC
