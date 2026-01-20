@@ -337,9 +337,24 @@ type Position struct {
 
 // Program root
 type Program struct {
-    Leaf        *LeafDecl
+    Leaf        *LeafDecl      // Optional: nil if not declared
+    FilePath    string         // Required: used to calculate implicit Stem
+    TwigRoot    string         // Required: path to twig.toml directory
     Imports     []*ImportDecl
     Declarations []Declaration
+}
+
+// CalculateStem computes the package name from file path if Leaf is nil
+func (p *Program) CalculateStem() string {
+    if p.Leaf != nil {
+        return p.Leaf.Name  // Explicit declaration takes precedence
+    }
+
+    // Calculate stem from file path relative to twig.toml
+    relPath := filepath.Rel(p.TwigRoot, filepath.Dir(p.FilePath))
+    // Convert path to package name (e.g., "src/auth" -> "auth")
+    stem := filepath.Base(relPath)
+    return stem
 }
 
 // Declarations
@@ -846,20 +861,62 @@ func NewSemanticAnalyzer() *SemanticAnalyzer {
 }
 
 func (sa *SemanticAnalyzer) Analyze(program *Program) error {
-    // First pass: collect all type and function declarations
-    sa.collectDeclarations(program)
-    
-    // Second pass: check interfaces implementation
+    // First pass: collect all type declarations
+    sa.collectTypeDeclarations(program)
+
+    // Second pass: SIGNATURE-FIRST - collect all function/method signatures
+    // This maps all function inputs/outputs BEFORE analyzing bodies
+    sa.collectFunctionSignatures(program)
+
+    // Third pass: check interfaces implementation
     sa.checkInterfaces(program)
-    
-    // Third pass: type check function bodies
-    sa.checkFunctions(program)
-    
+
+    // Fourth pass: type check function bodies
+    // Local variables are inferred using := within function bodies
+    sa.checkFunctionBodies(program)
+
     if len(sa.errors) > 0 {
         return fmt.Errorf("semantic errors: %v", sa.errors)
     }
-    
+
     return nil
+}
+
+// Signature-First Type Checking Pass
+func (sa *SemanticAnalyzer) collectFunctionSignatures(program *Program) {
+    for _, decl := range program.Declarations {
+        switch d := decl.(type) {
+        case *FunctionDecl:
+            // Verify parameters have explicit types
+            for _, param := range d.Params {
+                if param.Type == nil {
+                    sa.error(param.Pos, "Function parameters must have explicit type annotations")
+                }
+            }
+
+            // Verify return type is explicit
+            if d.ReturnType == nil && sa.functionReturnsValue(d) {
+                sa.error(d.Pos, "Function return types must be explicit")
+            }
+
+            // Register function signature in symbol table
+            sa.registerFunctionSignature(d)
+
+        case *MethodDecl:
+            // Same verification for methods
+            for _, param := range d.Params {
+                if param.Type == nil {
+                    sa.error(param.Pos, "Method parameters must have explicit type annotations")
+                }
+            }
+
+            if d.ReturnType == nil && sa.methodReturnsValue(d) {
+                sa.error(d.Pos, "Method return types must be explicit")
+            }
+
+            sa.registerMethodSignature(d)
+        }
+    }
 }
 
 func (sa *SemanticAnalyzer) checkExpr(expr Expr) TypeInfo {
@@ -1076,24 +1133,44 @@ func (cg *CodeGenerator) generateBinaryExpr(expr *BinaryExpr) string {
 }
 
 func (cg *CodeGenerator) generateIndexExpr(expr *IndexExpr) string {
-    // Handle negative indexing
-    // items[-1] becomes items[len(items)-1]
+    // LITERAL NEGATIVE INDEX OPTIMIZATION
+    // Compile-time transformation for literal negative indices
+    // items[-1] becomes items[len(items)-1] with zero runtime overhead
 
     if unary, ok := expr.Index.(*UnaryExpr); ok && unary.Operator == TOKEN_MINUS {
-        // Negative index detected
-        object := cg.generateExpr(expr.Object)
-        index := cg.generateExpr(unary.Operand)
-        return fmt.Sprintf("%s[len(%s)-%s]", object, object, index)
+        // Check if the index is a LITERAL constant
+        if isLiteralExpr(unary.Operand) {
+            // LITERAL: Compile-time optimized path
+            object := cg.generateExpr(expr.Object)
+            index := cg.generateExpr(unary.Operand)
+            return fmt.Sprintf("%s[len(%s)-%s]", object, object, index)
+        } else {
+            // DYNAMIC: Variable-based negative index requires .at() method
+            // This will be caught in semantic analysis and require explicit syntax
+            cg.error(expr.Pos, "Dynamic negative indexing requires .at() method: use items.at(index)")
+            return ""
+        }
     }
 
-    // Standard positive indexing
+    // Standard positive indexing (always allowed)
     return fmt.Sprintf("%s[%s]",
         cg.generateExpr(expr.Object),
         cg.generateExpr(expr.Index))
 }
 
+// Helper: Check if expression is a literal constant
+func isLiteralExpr(expr Expr) bool {
+    switch expr.(type) {
+    case *IntegerLiteralExpr, *FloatLiteralExpr:
+        return true
+    default:
+        return false
+    }
+}
+
 func (cg *CodeGenerator) generateSliceExpr(expr *SliceExpr) string {
-    // Handle slicing with optional negative indices
+    // LITERAL NEGATIVE SLICE OPTIMIZATION
+    // Compile-time transformation for literal negative slice indices
     // items[-3:] becomes items[len(items)-3:]
     // items[:-1] becomes items[:len(items)-1]
     // items[1:-1] becomes items[1:len(items)-1]
@@ -1103,9 +1180,16 @@ func (cg *CodeGenerator) generateSliceExpr(expr *SliceExpr) string {
 
     if expr.Start != nil {
         if unary, ok := expr.Start.(*UnaryExpr); ok && unary.Operator == TOKEN_MINUS {
-            // Negative start index
-            startVal := cg.generateExpr(unary.Operand)
-            start = fmt.Sprintf("len(%s)-%s", object, startVal)
+            // Check if start is a LITERAL
+            if isLiteralExpr(unary.Operand) {
+                // LITERAL: Compile-time optimized
+                startVal := cg.generateExpr(unary.Operand)
+                start = fmt.Sprintf("len(%s)-%s", object, startVal)
+            } else {
+                // DYNAMIC: Requires .slice() method
+                cg.error(expr.Pos, "Dynamic negative slicing requires .slice() method: use items.slice(start, end)")
+                return ""
+            }
         } else {
             start = cg.generateExpr(expr.Start)
         }
@@ -1113,9 +1197,16 @@ func (cg *CodeGenerator) generateSliceExpr(expr *SliceExpr) string {
 
     if expr.End != nil {
         if unary, ok := expr.End.(*UnaryExpr); ok && unary.Operator == TOKEN_MINUS {
-            // Negative end index
-            endVal := cg.generateExpr(unary.Operand)
-            end = fmt.Sprintf("len(%s)-%s", object, endVal)
+            // Check if end is a LITERAL
+            if isLiteralExpr(unary.Operand) {
+                // LITERAL: Compile-time optimized
+                endVal := cg.generateExpr(unary.Operand)
+                end = fmt.Sprintf("len(%s)-%s", object, endVal)
+            } else {
+                // DYNAMIC: Requires .slice() method
+                cg.error(expr.Pos, "Dynamic negative slicing requires .slice() method: use items.slice(start, end)")
+                return ""
+            }
         } else {
             end = cg.generateExpr(expr.End)
         }
@@ -1169,6 +1260,187 @@ func (cg *CodeGenerator) typeToGo(typ TypeExpr) string {
     return ""
 }
 ```
+
+---
+
+## Phase 5: Code Formatting (`kuki fmt`)
+
+### Purpose
+Ensure consistent, canonical indentation-based syntax across all Kukicha code.
+
+### Design Goal
+**Indentation is the source of truth.** To prevent "Dialect Drift" between Python-style and Go-style formatting, `kuki fmt` automatically converts brace-based syntax to the standard indentation-based format.
+
+### Formatter Architecture
+
+```go
+type Formatter struct {
+    lexer       *Lexer
+    tokens      []Token
+    output      strings.Builder
+    indentLevel int
+    needsIndent bool
+}
+
+func NewFormatter() *Formatter {
+    return &Formatter{}
+}
+
+func (f *Formatter) Format(source string) (string, error) {
+    // Tokenize the source
+    f.tokens = f.lexer.ScanTokens(source)
+
+    // Rewrite tokens in canonical format
+    for i := 0; i < len(f.tokens); i++ {
+        token := f.tokens[i]
+
+        switch token.Type {
+        case TOKEN_LBRACE:
+            // Convert { to INDENT
+            f.output.WriteString("\n")
+            f.indentLevel++
+            f.needsIndent = true
+            // Skip the brace
+
+        case TOKEN_RBRACE:
+            // Convert } to DEDENT
+            f.indentLevel--
+            f.needsIndent = true
+            // Skip the brace
+
+        case TOKEN_SEMICOLON:
+            // Remove semicolons
+            f.output.WriteString("\n")
+            f.needsIndent = true
+
+        case TOKEN_DOUBLE_EQUALS:
+            // Convert == to equals
+            if f.needsIndent {
+                f.writeIndent()
+                f.needsIndent = false
+            }
+            f.output.WriteString(" equals ")
+
+        case TOKEN_AND_AND:
+            // Convert && to and
+            f.output.WriteString(" and ")
+
+        case TOKEN_OR_OR:
+            // Convert || to or
+            f.output.WriteString(" or ")
+
+        case TOKEN_BANG:
+            // Convert ! to not
+            f.output.WriteString("not ")
+
+        case TOKEN_NEWLINE:
+            f.output.WriteString("\n")
+            f.needsIndent = true
+
+        default:
+            // Write token as-is
+            if f.needsIndent && token.Type != TOKEN_NEWLINE {
+                f.writeIndent()
+                f.needsIndent = false
+            }
+            f.output.WriteString(token.Lexeme)
+        }
+    }
+
+    return f.output.String(), nil
+}
+
+func (f *Formatter) writeIndent() {
+    for i := 0; i < f.indentLevel; i++ {
+        f.output.WriteString("    ") // 4 spaces
+    }
+}
+```
+
+### Formatting Rules
+
+1. **Braces to Indentation**
+   ```go
+   // Input (Go-style)
+   if count == 5 {
+       print("five")
+   }
+
+   // Output (Kukicha canonical)
+   if count equals 5
+       print "five"
+   ```
+
+2. **Semicolons Removed**
+   ```go
+   // Input
+   x := 5;
+   y := 10;
+
+   // Output
+   x := 5
+   y := 10
+   ```
+
+3. **Operators Normalized**
+   ```go
+   // Input
+   if x == 5 && y != 10 || !z
+
+   // Output
+   if x equals 5 and y not equals 10 or not z
+   ```
+
+4. **Indentation Enforced**
+   - 4 spaces per level (strict)
+   - Tabs converted to spaces
+   - Trailing whitespace removed
+
+### CLI Usage
+
+```bash
+# Format a single file
+kuki fmt myfile.kuki
+
+# Format all files in directory recursively
+kuki fmt ./src/
+
+# Check formatting without modifying (exit 1 if not formatted)
+kuki fmt --check ./src/
+
+# Format and write back to file
+kuki fmt -w myfile.kuki
+
+# Format all .kuki files in project
+kuki fmt -w $(find . -name "*.kuki")
+```
+
+### Integration with Build Pipeline
+
+```bash
+# Pre-commit hook
+#!/bin/sh
+kuki fmt --check $(git diff --cached --name-only --diff-filter=ACM | grep '\.kuki$')
+if [ $? -ne 0 ]; then
+    echo "Error: Code not formatted. Run 'kuki fmt -w .' to fix."
+    exit 1
+fi
+
+# CI/CD pipeline
+- name: Check Kukicha Formatting
+  run: kuki fmt --check ./src/
+```
+
+### Formatting Guarantees
+
+**After running `kuki fmt`:**
+- ✅ All code uses 4-space indentation
+- ✅ No braces `{}` (converted to indentation)
+- ✅ No semicolons `;`
+- ✅ Operators use English keywords (`equals`, `and`, `or`, `not`)
+- ✅ Consistent newlines and spacing
+- ✅ Trailing whitespace removed
+- ✅ Tabs converted to spaces
 
 ---
 

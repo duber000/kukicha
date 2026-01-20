@@ -41,15 +41,41 @@ myapp/                      # Twig (module root)
 
 ---
 
-## Leaf Declaration
+## Leaf Declaration (Optional)
 
-Every Kukicha file must declare which stem (package) it belongs to:
+Leaf declarations are **optional**. If not provided, the compiler automatically calculates the Stem (package) name based on the file's path relative to `twig.toml`.
+
+### Implicit Stem Calculation
+
+Files in a directory automatically belong to the stem named after that directory:
+
+```
+myapp/                      # Twig (module root)
+  twig.toml                # Module configuration
+  src/
+    auth/
+      login.kuki           # Belongs to "auth" stem (implicit)
+      session.kuki         # Belongs to "auth" stem (implicit)
+    database/
+      models.kuki          # Belongs to "database" stem (implicit)
+```
+
+**Benefit**: Reduces boilerplate and prevents "file-move" errors where the directory and header get out of sync.
+
+### Explicit Leaf Declaration (Optional)
+
+You can still explicitly declare the stem if needed:
 
 ```kukicha
 leaf database.models
 ```
 
-All leaves in the same directory belong to the same stem.
+This is useful for:
+- Multi-level package paths (e.g., `database.models.user`)
+- Overriding the default path-based stem name
+- Self-documenting code when the file structure is complex
+
+**Rule**: If a leaf declaration is present, it takes precedence over path-based inference. If absent, the compiler uses the directory path relative to `twig.toml`.
 
 ---
 
@@ -165,8 +191,10 @@ user = reference to newUser
 
 ### Basic Function Declaration
 
+**Function parameters and return types must have explicit type annotations** to maintain Go's performance and static safety. Type inference is only used for local variables inside function bodies.
+
 ```kukicha
-func CreateTodo(id, title, description)
+func CreateTodo(id int64, title string, description string) Todo
     return Todo
         id: id
         title: title
@@ -176,21 +204,26 @@ func CreateTodo(id, title, description)
         completed_at: empty
 ```
 
-**Parameter types are inferred from context:**
-- Type context (what's expected by caller)
-- Struct field types (if matching a struct)
-- Compiler inference from usage
+**Signature-First Type Inference Rules:**
+- ✅ **Explicit**: Function parameters must declare types
+- ✅ **Explicit**: Function return types must be declared
+- ✅ **Explicit**: Struct fields must declare types
+- ✅ **Inferred**: Local variables inside function bodies use `:=` for inference
 
-For explicit types, use casting:
+**Example of local variable inference:**
 ```kukicha
-id := int64(rawId)
-count := int32(value)
+func ProcessData(input string) int
+    # Local variables are inferred
+    result := parseInput(input)        # Type inferred from parseInput's return
+    count := len(result)               # Type inferred from len() return (int)
+    doubled := count * 2               # Type inferred from arithmetic (int)
+    return doubled
 ```
 
 ### Single Return
 
 ```kukicha
-func MarkDone(todo)
+func MarkDone(todo Todo) Todo
     todo.completed = true
     todo.completed_at = time.now()
     return todo
@@ -199,14 +232,14 @@ func MarkDone(todo)
 ### Multiple Return (Tuple)
 
 ```kukicha
-func Display(todo)
+func Display(todo Todo) (int64, string, string)
     status := "pending"
     if todo.completed
         status = "done"
     return todo.id, todo.title, status
 ```
 
-Multiple returns are separated by commas and form a tuple.
+Multiple returns are separated by commas and form a tuple. Return types must be explicitly declared in the signature.
 
 ### Using Discard for Unwanted Returns
 
@@ -858,42 +891,61 @@ func LoadDatabase(config map of string to string)
 
 ## Negative Indexing & Slicing
 
-Kukicha supports Python-style negative indexing for accessing elements from the end of collections.
+Kukicha supports Python-style negative indexing with **compile-time optimization for literals** to maintain Go's performance.
 
-### Negative Indexing
+### Negative Indexing with Literal Optimization
 
-Access elements from the end using negative numbers:
+Access elements from the end using negative numbers. When the index is a **literal constant**, the compiler generates optimized code at compile-time:
 
 ```kukicha
 items := list of string{"a", "b", "c", "d", "e"}
 
-# Access from end
-last := items at -1           # "e"
-secondLast := items[-2]       # "d"
-thirdLast := items[-3]        # "c"
+# Literal negative indices (compile-time optimized)
+last := items at -1           # "e" - compiled to items[len(items)-1]
+secondLast := items[-2]       # "d" - compiled to items[len(items)-2]
+thirdLast := items[-3]        # "c" - compiled to items[len(items)-3]
 
 # Both syntaxes work
 last := items at -1
 last := items[-1]
 ```
 
-**How it compiles:**
+**Literal Optimization (No Runtime Overhead):**
 ```kukicha
-# Kukicha
+# Kukicha (literal index)
 last := items at -1
 
-# Compiles to Go
+# Compiles directly to Go (calculated at compile-time)
 last := items[len(items)-1]
 ```
 
-### Slicing with Negative Indices
+### Dynamic Negative Indexing
 
-Use negative indices in slice operations:
+For **variable-based** negative indices (dynamic at runtime), use the `at` method which includes bounds checking:
+
+```kukicha
+# Dynamic negative indexing (runtime calculation)
+index := -2
+element := items.at(index)    # Bounds-checked, handles negative indices at runtime
+
+# Or with explicit function
+element := at(items, index)   # Equivalent explicit function call
+```
+
+**Performance Trade-off:**
+- **Literal indices** (e.g., `-1`, `-2`): Zero runtime overhead, compiled to `len(items)-N`
+- **Dynamic indices** (e.g., variables): Requires `at()` method with safety checks
+
+This design preserves raw Go speed for standard loops while supporting negative indexing where needed.
+
+### Slicing with Negative Indices (Literal Optimization)
+
+Negative indices in slice operations are also compile-time optimized when using **literal constants**:
 
 ```kukicha
 items := list of int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
-# Get last N elements
+# Literal negative indices in slices (compile-time optimized)
 lastThree := items[-3:]        # [7, 8, 9]
 lastFive := items[-5:]         # [5, 6, 7, 8, 9]
 
@@ -904,21 +956,31 @@ allButLastTwo := items[:-2]    # [0, 1, 2, 3, 4, 5, 6, 7]
 # Extract middle (remove first and last)
 middle := items[1:-1]          # [1, 2, 3, 4, 5, 6, 7, 8]
 
-# Mix positive and negative
+# Mix positive and negative literals
 fromThirdToSecondLast := items[3:-2]  # [3, 4, 5, 6, 7]
 ```
 
-**Compilation examples:**
+**Literal Compilation (Zero Runtime Overhead):**
 ```kukicha
-# Kukicha
+# Kukicha (literal indices)
 lastThree := items[-3:]
 allButLast := items[:-1]
 middle := items[1:-1]
 
-# Compiles to Go
+# Compiles directly to Go (calculated at compile-time)
 lastThree := items[len(items)-3:]
 allButLast := items[:len(items)-1]
 middle := items[1:len(items)-1]
+```
+
+**Dynamic Slicing:**
+
+For variable-based slice bounds, use explicit slice methods:
+
+```kukicha
+start := -5
+end := -2
+subset := items.slice(start, end)  # Handles negative indices at runtime
 ```
 
 ### Practical Examples
@@ -1441,7 +1503,7 @@ interface Displayable
     Display() string
 
 # Constructor function
-func CreateTodo(id, title, description)
+func CreateTodo(id int64, title string, description string) Todo
     return Todo
         id: id
         title: title
@@ -1451,29 +1513,29 @@ func CreateTodo(id, title, description)
         completed_at: empty
 
 # Method with value receiver
-func Display on Todo
+func Display on Todo () string
     status := "○"
     if this.completed
         status = "✓"
     return "{status} {this.id}. {this.title}"
 
 # Method with reference receiver
-func MarkDone on reference Todo
+func MarkDone on reference Todo ()
     this.completed = true
     this.completed_at = time.now()
 
-func UpdateTitle on reference Todo, newTitle string
+func UpdateTitle on reference Todo (newTitle string)
     this.title = newTitle
 
 # Function with error handling
-func FindById(todos list of Todo, id int64)
+func FindById(todos list of Todo, id int64) (Todo, error)
     for discard, todo in todos
         if todo.id equals id
             return todo, empty  # Found, no error
     return empty, error "todo not found"
 
 # Function with or operator
-func LoadTodos(path string)
+func LoadTodos(path string) list of Todo
     content := file.read(path) or return empty list of Todo
     todos := json.parse(content) or return empty list of Todo
     return todos
@@ -1481,21 +1543,21 @@ func LoadTodos(path string)
 # Concurrent processing
 func ProcessAll(todos list of Todo)
     results := make channel of string, len(todos)
-    
+
     for discard, todo in todos
         go
             result := processTodo(todo)
             send results, result
-    
+
     for i from 0 to len(todos)
         result := receive results
         print result
 
 # Function with defer
-func SaveTodos(path string, todos list of Todo)
+func SaveTodos(path string, todos list of Todo) error
     file := file.open(path) or return error "cannot open file"
     defer file.close()
-    
+
     data := json.encode(todos)
     file.write(data)
     return empty  # No error
@@ -1505,7 +1567,7 @@ func SafeProcess(todo Todo)
     defer
         if r := recover(); r != empty
             print "Error processing todo: {r}"
-    
+
     riskyOperation(todo)
 ```
 
@@ -1528,6 +1590,12 @@ GOEXPERIMENT=greenteagc kukicha build
 ---
 
 ## Version History
+
+- **v1.1.0** — Core Design Refinements (2026)
+  - ✅ **Optional Leaf Declarations**: Folder-based package model with automatic Stem calculation from file path
+  - ✅ **Signature-First Type Inference**: Explicit types for function parameters/returns and struct fields; inference only for local variables
+  - ✅ **Literal vs Dynamic Indexing**: Compile-time optimization for literal negative indices; explicit methods for dynamic indices
+  - ✅ **Indentation as Canonical**: `kuki fmt` tool converts brace-based syntax to standard indentation format
 
 - **v1.0.0** — Complete language specification
   - ✅ Error handling with `or` operator (auto-unwraps tuples)
@@ -1580,23 +1648,57 @@ Kukicha smooths Go's rough edges while preserving its power:
 ## Notes
 
 - Kukicha compiles to Go 1.25+
-- Go-style explicit types are required on struct fields
+- **Explicit types required**: Function parameters, returns, and struct fields must have type annotations
+- **Type inference only for locals**: Local variables inside function bodies use `:=` for inference
 - No implicit type conversions (use casting)
-- Types are inferred only where context is clear
-- Indentation is significant (like Python)
+- **Indentation is canonical**: `kuki fmt` enforces 4-space indentation standard
+- **Optional leaf declarations**: Stem calculated from file path; explicit declaration optional
 - Focus on readability without sacrificing Go's performance
 
 ---
 
-## Dual Syntax Support
+## Syntax Standard: Indentation is Canonical
 
-Kukicha is designed for **programming newbies** but also accepts **native Go syntax** where it doesn't conflict. This allows:
-- Beginners to start with readable, English-like syntax
-- Natural progression to Go conventions as skills develop
-- Go developers to use familiar syntax
-- Copy-paste compatibility with Go examples
+**Kukicha uses indentation-based syntax as the canonical standard.** This prevents "Dialect Drift" between Python-style and Go-style formatting.
 
-### What Works Both Ways
+### The `kuki fmt` Tool
+
+To ensure consistency, the `kuki fmt` formatter will automatically convert brace-based syntax to the standard indentation-based format:
+
+```bash
+# Format a single file
+kuki fmt myfile.kuki
+
+# Format all files in directory
+kuki fmt ./src/
+
+# Check formatting without modifying
+kuki fmt --check ./src/
+```
+
+**Example conversion:**
+
+```kukicha
+# Before: Go-style braces (non-standard)
+if count == 5 {
+    print("five")
+}
+
+# After: Standard Kukicha (kuki fmt output)
+if count equals 5
+    print "five"
+```
+
+### Indentation Rules
+
+- **4 spaces per indentation level** (strict requirement)
+- **Tabs are rejected** with error message
+- **Newlines define statement boundaries** (no semicolons)
+- **INDENT/DEDENT tokens** generated by lexer for block structure
+
+### Alternative Syntax Support (Go Compatibility)
+
+While indentation is canonical, Kukicha accepts **some Go syntax** for compatibility. However, **`kuki fmt` will convert these to the standard form:**
 
 #### Comparisons
 
@@ -1818,33 +1920,38 @@ if err != empty
 
 ---
 
-### What CANNOT Use Go Syntax
+### Alternative Syntax Converted by `kuki fmt`
 
-#### Assignment Operators (By Design)
+#### Assignment Operators (Walrus is Core)
 
 ```kukicha
 # Kukicha only - these have distinct meanings
 count := 0      # Create new binding
 count = 5       # Update existing
-
-# Go's := for both create and shadow is NOT supported
-# This maintains the walrus operator as "the star"
 ```
 
-The distinction between `:=` (create) and `=` (update) is a core Kukicha feature.
+The distinction between `:=` (create) and `=` (update) is a core Kukicha feature that does not accept Go's shadowing semantics.
 
 ---
 
-#### Braces, Semicolons, Underscores
+#### Braces, Semicolons (Converted to Standard)
 
 ```kukicha
-# NOT supported
-if x == 5 { print "no" }        # No braces
-var x int = 5;                  # No semicolons
-myVariable := 5                 # No snake_case with underscores
+# Accepted but converted by kuki fmt
+if x == 5 { print "yes" }       # Braces converted to indentation
+var x int = 5;                  # Semicolons removed
+
+# Standard Kukicha (after kuki fmt)
+if x equals 5
+    print "yes"
+x := int(5)
 ```
 
-Use indentation, newlines, and camelCase instead.
+**Formatting Policy:**
+- **Braces `{}`**: Accepted by parser, but `kuki fmt` converts to indentation
+- **Semicolons `;`**: Removed by `kuki fmt`
+- **Indentation**: 4 spaces (canonical)
+- **Snake_case**: Discouraged (use camelCase), but not enforced by formatter
 
 ---
 

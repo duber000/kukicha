@@ -24,9 +24,10 @@ UPPER   Non-terminal
 ## Program Structure
 
 ```ebnf
-Program ::= LeafDeclaration { ImportDeclaration } { TopLevelDeclaration }
+Program ::= [ LeafDeclaration ] { ImportDeclaration } { TopLevelDeclaration }
 
 LeafDeclaration ::= "leaf" PackagePath NEWLINE
+    # Optional: if absent, package name is calculated from file path relative to twig.toml
 
 PackagePath ::= IDENTIFIER { "." IDENTIFIER }
 
@@ -66,9 +67,10 @@ MethodSignatureList ::= MethodSignature { MethodSignature }
 
 MethodSignature ::= IDENTIFIER "(" [ ParameterList ] ")" [ TypeAnnotation ] NEWLINE
 
-FunctionDeclaration ::= 
-    "func" IDENTIFIER "(" [ ParameterList ] ")" [ TypeAnnotation ] NEWLINE
+FunctionDeclaration ::=
+    "func" IDENTIFIER "(" [ ParameterList ] ")" TypeAnnotation NEWLINE
     INDENT StatementList DEDENT
+    # Return type TypeAnnotation is REQUIRED for functions that return values
 
 MethodDeclaration ::=
     | "func" IDENTIFIER "on" TypeAnnotation [ "," ParameterList ] NEWLINE INDENT StatementList DEDENT
@@ -76,7 +78,8 @@ MethodDeclaration ::=
 
 ParameterList ::= Parameter { "," Parameter }
 
-Parameter ::= IDENTIFIER [ TypeAnnotation ]
+Parameter ::= IDENTIFIER TypeAnnotation
+    # Type annotation is REQUIRED for all function/method parameters (signature-first inference)
 ```
 
 ---

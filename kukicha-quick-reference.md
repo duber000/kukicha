@@ -18,13 +18,17 @@ myapp/              # Twig (module root)
     handlers.kuki
 ```
 
-### Leaf Declaration
+### Leaf Declaration (Optional)
 
 ```kukicha
+# Optional - if absent, stem calculated from file path
 leaf models.todo
+
 import time
 import github.com/user/repo
 ```
+
+**New:** Leaf declarations are optional! Package name is automatically calculated from the directory path relative to `twig.toml`.
 
 ---
 
@@ -72,15 +76,20 @@ func validateInput()   # Private
 ### Functions
 
 ```kukicha
-func CreateTodo(id, title, description)
+# EXPLICIT types required for params and returns
+func CreateTodo(id int64, title string, description string) Todo
     return Todo
         id: id
         title: title
         completed: false
 
-func ProcessData(data list of User)
-    # Explicit types when needed
+func ProcessData(data list of User) int
+    # Local variables inferred
+    count := len(data)
+    return count
 ```
+
+**New:** Signature-first type inference - explicit types on parameters/returns, inference only for locals.
 
 ### Methods
 
@@ -190,15 +199,19 @@ numbers := empty list of int
 first := items at 0
 first := items[0]
 
-# Access by index (negative - from end)
-last := items at -1
-secondLast := items[-2]
+# LITERAL negative indices (compile-time optimized)
+last := items at -1         # Zero runtime overhead
+secondLast := items[-2]      # Compiled to len(items)-2
+
+# DYNAMIC negative indices (runtime)
+index := -2
+element := items.at(index)   # Use .at() method for variables
 
 # Slicing uses Go syntax
 subset := items[2:7]
 
-# Slicing with negative indices
-lastThree := items[-3:]
+# Slicing with LITERAL negative indices (compile-time optimized)
+lastThree := items[-3:]      # Zero overhead
 allButLast := items[:-1]
 middle := items[1:-1]
 
@@ -581,6 +594,23 @@ kukicha run main.kuki
 # Test
 kukicha test
 ```
+
+---
+
+## Code Formatting
+
+```bash
+# Format a single file
+kuki fmt myfile.kuki
+
+# Format all files in directory
+kuki fmt ./src/
+
+# Check formatting (CI/CD)
+kuki fmt --check ./src/
+```
+
+**New:** `kuki fmt` converts all code to canonical indentation-based syntax (4 spaces, no braces, no semicolons).
 
 ---
 
