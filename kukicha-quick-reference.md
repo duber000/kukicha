@@ -186,18 +186,34 @@ if err != empty
 todos := empty list of Todo
 numbers := empty list of int
 
-# Access by index
+# Access by index (positive)
 first := items at 0
 first := items[0]
 
+# Access by index (negative - from end)
+last := items at -1
+secondLast := items[-2]
+
 # Slicing uses Go syntax
 subset := items[2:7]
+
+# Slicing with negative indices
+lastThree := items[-3:]
+allButLast := items[:-1]
+middle := items[1:-1]
 
 # Append
 items = append(items, newItem)
 
 # Length
 count := len(items)
+
+# Membership test
+if item in items
+    print "found"
+
+if item not in blacklist
+    process(item)
 ```
 
 ### Maps
@@ -215,10 +231,17 @@ value := config["host"]  # Go syntax
 # Set
 config at "port" = "9000"
 
-# Check existence
+# Check existence (traditional)
 value, exists := config at "host"
 if exists
     print value
+
+# Membership test (recommended)
+if "host" in config
+    connect(config at "host")
+
+if "api_key" not in config
+    print "Warning: missing API key"
 ```
 
 ---
@@ -354,6 +377,46 @@ func safeOperation()
 
 ---
 
+## Membership Testing
+
+```kukicha
+# Check if item exists in list
+if user in admins
+    grantAccess()
+
+if item not in blacklist
+    process(item)
+
+# Check if key exists in map
+if "host" in config
+    connect(config at "host")
+
+if "DEBUG" not in environment
+    print "Production mode"
+
+# Check if substring in string
+if "error" in logMessage
+    alertOps()
+```
+
+---
+
+## Negative Indexing & Slicing
+
+```kukicha
+# Access from end
+last := items at -1
+secondLast := items[-2]
+
+# Slicing with negatives
+lastThree := items[-3:]       # Last 3 elements
+allButLast := items[:-1]      # All except last
+middle := items[1:-1]         # Remove first and last
+mixed := items[2:-3]          # Mix positive and negative
+```
+
+---
+
 ## Comparison & Logic
 
 ### Operators
@@ -366,6 +429,10 @@ if x not equals 5      # Inequality
 if x != 5              # Inequality (alternative)
 if x > 5, x < 5
 if x >= 5, x <= 5
+
+# Membership
+if item in items        # Check existence
+if key not in map       # Check absence
 
 # Boolean logic
 if completed and not expired
@@ -463,10 +530,15 @@ Most Kukicha syntax has a Go equivalent that also works:
 |---------|-----------|
 | `equals` | `==` |
 | `and`, `or`, `not` | `&&`, `||`, `!` |
+| `in` | `slices.Contains()` (lists), map idiom |
+| `not in` | Negated membership |
 | `list of Type` | `[]Type` |
 | `map of K to V` | `map[K]V` |
 | `reference Type` | `*Type` |
 | `items at 0` | `items[0]` |
+| `items at -1` | `items[len(items)-1]` |
+| `items[-3:]` | `items[len(items)-3:]` |
+| `items[:-1]` | `items[:len(items)-1]` |
 | `discard` | `_` |
 | `send ch, val` | `ch <- val` |
 | `receive ch` | `<-ch` |

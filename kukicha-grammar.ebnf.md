@@ -201,6 +201,8 @@ ComparisonOp ::=
     | "equals" | "=="
     | "not" "equals" | "!="
     | ">" | "<" | ">=" | "<="
+    | "in"
+    | "not" "in"
 
 AdditiveExpression ::= MultiplicativeExpression { ( "+" | "-" ) MultiplicativeExpression }
 
@@ -216,7 +218,7 @@ PostfixExpression ::=
         | "(" [ ExpressionList ] ")"
         | "at" Expression
         | "[" Expression "]"
-        | "[" Expression ":" Expression "]"
+        | "[" [ Expression ] ":" [ Expression ] "]"
     }
 
 PrimaryExpression ::=
@@ -343,10 +345,10 @@ equals      as
 ## Operators and Delimiters
 
 ```
-+     -     *     /     %     
-==    !=    <     <=    >     >=    equals
++     -     *     /     %
+==    !=    <     <=    >     >=    equals    in
 &&    ||    !     and   or    not
-:=    =     :     .     ,     
+:=    =     :     .     ,
 (     )     [     ]     {     }
 <-    ->    |>
 ```
@@ -431,6 +433,99 @@ if err != empty
 The `discard` keyword is syntactic sugar for Go's `_` (blank identifier):
 - Can appear in tuple unpacking
 - Cannot be referenced as a variable
+
+### Membership Operators
+
+The `in` and `not in` operators test for membership in collections.
+
+**Disambiguation:**
+- In `for` loops: `for x in items` — iteration syntax
+- In expressions: `x in items` — membership test operator
+
+**Code Generation:**
+
+For lists/slices:
+```kukicha
+# Source
+if item in items
+    print "found"
+
+# Generates Go
+import "slices"
+if slices.Contains(items, item) {
+    fmt.Println("found")
+}
+```
+
+For maps:
+```kukicha
+# Source
+if key in config
+    print "exists"
+
+# Generates Go
+if _, exists := config[key]; exists {
+    fmt.Println("exists")
+}
+```
+
+For strings:
+```kukicha
+# Source
+if "hello" in text
+    print "found"
+
+# Generates Go
+import "strings"
+if strings.Contains(text, "hello") {
+    fmt.Println("found")
+}
+```
+
+The `not in` operator negates the result:
+```kukicha
+# Source
+if item not in blacklist
+    process(item)
+
+# Generates Go
+if !slices.Contains(blacklist, item) {
+    process(item)
+}
+```
+
+### Negative Indexing
+
+Kukicha supports negative indices for accessing elements from the end of a collection.
+
+**Single element access:**
+```kukicha
+# Source
+last := items at -1
+secondLast := items[-2]
+
+# Generates Go
+last := items[len(items)-1]
+secondLast := items[len(items)-2]
+```
+
+**Slicing with negative indices:**
+```kukicha
+# Source
+lastThree := items[-3:]
+allButLast := items[:-1]
+middle := items[1:-1]
+
+# Generates Go
+lastThree := items[len(items)-3:]
+allButLast := items[:len(items)-1]
+middle := items[1:len(items)-1]
+```
+
+**How it works:**
+- The parser recognizes negative numbers as `UnaryExpression` with `-` operator
+- The code generator detects negative indices and transforms them to `len(collection) - N`
+- Both `at` keyword and bracket `[]` syntax support negative indices
 
 ### Pipe Operator
 
