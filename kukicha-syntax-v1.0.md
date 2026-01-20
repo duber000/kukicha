@@ -663,14 +663,38 @@ todos = append(todos, newTodo)
 
 **Access by index:**
 ```kukicha
+# Positive indexing
 first := items at 0
 first := items[0]
+
+# Negative indexing (from end)
+last := items at -1
+secondLast := items[-2]
 ```
 
 **Slicing:**
 ```kukicha
 # Slicing uses Go syntax
 subset := items[2:7]
+
+# Negative indices in slices
+lastThree := items[-3:]
+allButLast := items[:-1]
+middle := items[1:-1]
+
+# Empty bounds
+fromThird := items[3:]
+firstFive := items[:5]
+```
+
+**Membership testing:**
+```kukicha
+# Check if item exists in list
+if user in admins
+    grantAccess()
+
+if item not in blacklist
+    process(item)
 ```
 
 **Length:**
@@ -696,9 +720,246 @@ config at "port" = "8080"
 
 **Existence check:**
 ```kukicha
+# Traditional check
 value, exists := config at "host"
 if exists
     print "host configured"
+
+# Membership operator (recommended)
+if "host" in config
+    connect(config at "host")
+
+if "api_key" not in config
+    print "Warning: API key not configured"
+```
+
+---
+
+## Membership Testing
+
+Kukicha provides intuitive membership operators for checking if an item exists in a collection.
+
+### The `in` Operator
+
+Check if an element exists in a list, key exists in a map, or substring exists in a string:
+
+```kukicha
+# List membership
+if user in admins
+    grantAccess()
+
+if "active" in statusList
+    proceed()
+
+# Map key existence
+if "host" in config
+    connect(config at "host")
+
+if "DEBUG" in environment
+    enableDebugMode()
+
+# String containment
+if "error" in logMessage
+    alertOps()
+```
+
+### The `not in` Operator
+
+Check if an element does NOT exist:
+
+```kukicha
+# List exclusion
+if item not in blacklist
+    process(item)
+
+if user not in bannedUsers
+    allowAccess()
+
+# Map key absence
+if "api_key" not in config
+    print "Warning: API key missing"
+    return error "configuration incomplete"
+
+# String exclusion
+if "success" not in response
+    retryOperation()
+```
+
+### How It Works
+
+**For lists/slices:**
+```kukicha
+# Kukicha
+if item in items
+    print "found"
+
+# Compiles to Go (using slices package)
+import "slices"
+if slices.Contains(items, item) {
+    fmt.Println("found")
+}
+```
+
+**For maps:**
+```kukicha
+# Kukicha
+if key in config
+    print "exists"
+
+# Compiles to Go (using Go's map idiom)
+if _, exists := config[key]; exists {
+    fmt.Println("exists")
+}
+```
+
+**For strings:**
+```kukicha
+# Kukicha
+if "hello" in text
+    print "found"
+
+# Compiles to Go (using strings package)
+import "strings"
+if strings.Contains(text, "hello") {
+    fmt.Println("found")
+}
+```
+
+### Practical Examples
+
+**Validation:**
+```kukicha
+func ValidatePermissions(user User, action string)
+    allowedActions := list of string{"read", "write", "delete"}
+
+    if action not in allowedActions
+        return error "invalid action"
+
+    if user.role not in list of string{"admin", "moderator"}
+        return error "insufficient permissions"
+
+    return empty
+```
+
+**Configuration checking:**
+```kukicha
+func LoadDatabase(config map of string to string)
+    requiredKeys := list of string{"host", "port", "database", "user"}
+
+    for discard, key in requiredKeys
+        if key not in config
+            return error "missing config: {key}"
+
+    # All keys present, proceed
+    connectDatabase(config)
+```
+
+---
+
+## Negative Indexing & Slicing
+
+Kukicha supports Python-style negative indexing for accessing elements from the end of collections.
+
+### Negative Indexing
+
+Access elements from the end using negative numbers:
+
+```kukicha
+items := list of string{"a", "b", "c", "d", "e"}
+
+# Access from end
+last := items at -1           # "e"
+secondLast := items[-2]       # "d"
+thirdLast := items[-3]        # "c"
+
+# Both syntaxes work
+last := items at -1
+last := items[-1]
+```
+
+**How it compiles:**
+```kukicha
+# Kukicha
+last := items at -1
+
+# Compiles to Go
+last := items[len(items)-1]
+```
+
+### Slicing with Negative Indices
+
+Use negative indices in slice operations:
+
+```kukicha
+items := list of int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+# Get last N elements
+lastThree := items[-3:]        # [7, 8, 9]
+lastFive := items[-5:]         # [5, 6, 7, 8, 9]
+
+# Remove last N elements
+allButLast := items[:-1]       # [0, 1, 2, 3, 4, 5, 6, 7, 8]
+allButLastTwo := items[:-2]    # [0, 1, 2, 3, 4, 5, 6, 7]
+
+# Extract middle (remove first and last)
+middle := items[1:-1]          # [1, 2, 3, 4, 5, 6, 7, 8]
+
+# Mix positive and negative
+fromThirdToSecondLast := items[3:-2]  # [3, 4, 5, 6, 7]
+```
+
+**Compilation examples:**
+```kukicha
+# Kukicha
+lastThree := items[-3:]
+allButLast := items[:-1]
+middle := items[1:-1]
+
+# Compiles to Go
+lastThree := items[len(items)-3:]
+allButLast := items[:len(items)-1]
+middle := items[1:len(items)-1]
+```
+
+### Practical Examples
+
+**Processing recent logs:**
+```kukicha
+func AnalyzeRecentLogs(logs list of LogEntry)
+    # Get last 100 log entries
+    recent := logs[-100:]
+
+    for discard, entry in recent
+        if "ERROR" in entry.message
+            alertOps(entry)
+```
+
+**Removing header/footer:**
+```kukicha
+func ExtractBody(lines list of string)
+    # Remove first line (header) and last line (footer)
+    body := lines[1:-1]
+    return body
+```
+
+**Tail of data:**
+```kukicha
+func GetTail(data list of int, n int)
+    # Return last n elements safely
+    if len(data) < n
+        return data
+    return data[-n:]
+```
+
+**Trimming:**
+```kukicha
+func TrimEdges(items list of string)
+    # Remove first 2 and last 2 elements
+    if len(items) <= 4
+        return empty list of string
+
+    trimmed := items[2:-2]
+    return trimmed
 ```
 
 ---
@@ -1031,6 +1292,8 @@ empty map of KeyType to ValueType  # empty map
 | `<` | Less than |
 | `>=` | Greater than or equal |
 | `<=` | Less than or equal |
+| `in` | Membership test |
+| `not in` | Negative membership test |
 
 ### Boolean
 

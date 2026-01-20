@@ -1030,18 +1030,112 @@ func (cg *CodeGenerator) generatePipeExpr(expr *PipeExpr) string {
     return cg.generateCallExpr(call)
 }
 
+func (cg *CodeGenerator) generateBinaryExpr(expr *BinaryExpr) string {
+    // Handle special operators that need transformation
+
+    switch expr.Operator {
+    case TOKEN_IN:
+        // Membership test: item in collection
+        // For slices: slices.Contains(collection, item)
+        // For maps: _, exists := map[key]; exists
+        // For strings: strings.Contains(string, substring)
+
+        collectionType := cg.typeOf(expr.Right)
+
+        if collectionType.IsMap() {
+            // Map: generate idiom _, exists := map[key]; exists
+            return fmt.Sprintf("func() bool { _, exists := %s[%s]; return exists }()",
+                cg.generateExpr(expr.Right),
+                cg.generateExpr(expr.Left))
+        } else if collectionType.IsString() {
+            // String: strings.Contains(string, substring)
+            return fmt.Sprintf("strings.Contains(%s, %s)",
+                cg.generateExpr(expr.Right),
+                cg.generateExpr(expr.Left))
+        } else {
+            // Slice: slices.Contains(slice, item)
+            return fmt.Sprintf("slices.Contains(%s, %s)",
+                cg.generateExpr(expr.Right),
+                cg.generateExpr(expr.Left))
+        }
+
+    case TOKEN_NOT, TOKEN_BANG:
+        if expr.Right.(*BinaryExpr).Operator == TOKEN_IN {
+            // Handle "not in" as negated membership
+            innerExpr := expr.Right.(*BinaryExpr)
+            return "!" + cg.generateBinaryExpr(innerExpr)
+        }
+    }
+
+    // Standard binary operators
+    left := cg.generateExpr(expr.Left)
+    right := cg.generateExpr(expr.Right)
+    op := cg.operatorToGo(expr.Operator)
+
+    return fmt.Sprintf("%s %s %s", left, op, right)
+}
+
+func (cg *CodeGenerator) generateIndexExpr(expr *IndexExpr) string {
+    // Handle negative indexing
+    // items[-1] becomes items[len(items)-1]
+
+    if unary, ok := expr.Index.(*UnaryExpr); ok && unary.Operator == TOKEN_MINUS {
+        // Negative index detected
+        object := cg.generateExpr(expr.Object)
+        index := cg.generateExpr(unary.Operand)
+        return fmt.Sprintf("%s[len(%s)-%s]", object, object, index)
+    }
+
+    // Standard positive indexing
+    return fmt.Sprintf("%s[%s]",
+        cg.generateExpr(expr.Object),
+        cg.generateExpr(expr.Index))
+}
+
+func (cg *CodeGenerator) generateSliceExpr(expr *SliceExpr) string {
+    // Handle slicing with optional negative indices
+    // items[-3:] becomes items[len(items)-3:]
+    // items[:-1] becomes items[:len(items)-1]
+    // items[1:-1] becomes items[1:len(items)-1]
+
+    object := cg.generateExpr(expr.Object)
+    var start, end string
+
+    if expr.Start != nil {
+        if unary, ok := expr.Start.(*UnaryExpr); ok && unary.Operator == TOKEN_MINUS {
+            // Negative start index
+            startVal := cg.generateExpr(unary.Operand)
+            start = fmt.Sprintf("len(%s)-%s", object, startVal)
+        } else {
+            start = cg.generateExpr(expr.Start)
+        }
+    }
+
+    if expr.End != nil {
+        if unary, ok := expr.End.(*UnaryExpr); ok && unary.Operator == TOKEN_MINUS {
+            // Negative end index
+            endVal := cg.generateExpr(unary.Operand)
+            end = fmt.Sprintf("len(%s)-%s", object, endVal)
+        } else {
+            end = cg.generateExpr(expr.End)
+        }
+    }
+
+    return fmt.Sprintf("%s[%s:%s]", object, start, end)
+}
+
 func (cg *CodeGenerator) generateStringLiteral(expr *StringLiteralExpr) string {
     // Convert string interpolation to fmt.Sprintf
-    
+
     if len(expr.Segments) == 1 && expr.Segments[0].Type == SEGMENT_LITERAL {
         // Simple string, no interpolation
         return fmt.Sprintf("%q", expr.Segments[0].Value)
     }
-    
+
     // Build format string and args
     format := strings.Builder{}
     args := []string{}
-    
+
     for _, seg := range expr.Segments {
         if seg.Type == SEGMENT_LITERAL {
             format.WriteString(seg.Value)
@@ -1050,11 +1144,11 @@ func (cg *CodeGenerator) generateStringLiteral(expr *StringLiteralExpr) string {
             args = append(args, seg.Value) // Expression
         }
     }
-    
+
     if len(args) == 0 {
         return fmt.Sprintf("%q", format.String())
     }
-    
+
     return fmt.Sprintf("fmt.Sprintf(%q, %s)", format.String(), strings.Join(args, ", "))
 }
 
