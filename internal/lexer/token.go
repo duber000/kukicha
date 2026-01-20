@@ -31,6 +31,8 @@ const (
 	TOKEN_GO
 	TOKEN_DEFER
 	TOKEN_MAKE
+	TOKEN_LIST
+	TOKEN_MAP
 	TOKEN_CHANNEL
 	TOKEN_SEND
 	TOKEN_RECEIVE
@@ -147,6 +149,10 @@ func (t TokenType) String() string {
 		return "DEFER"
 	case TOKEN_MAKE:
 		return "MAKE"
+	case TOKEN_LIST:
+		return "LIST"
+	case TOKEN_MAP:
+		return "MAP"
 	case TOKEN_CHANNEL:
 		return "CHANNEL"
 	case TOKEN_SEND:
@@ -281,6 +287,8 @@ var keywords = map[string]TokenType{
 	"go":        TOKEN_GO,
 	"defer":     TOKEN_DEFER,
 	"make":      TOKEN_MAKE,
+	"list":      TOKEN_LIST,
+	"map":       TOKEN_MAP,
 	"channel":   TOKEN_CHANNEL,
 	"send":      TOKEN_SEND,
 	"receive":   TOKEN_RECEIVE,
