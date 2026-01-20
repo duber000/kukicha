@@ -73,8 +73,8 @@ FunctionDeclaration ::=
     # Return type TypeAnnotation is REQUIRED for functions that return values
 
 MethodDeclaration ::=
-    # Kukicha syntax - readable, uses implicit 'this' receiver
-    | "func" IDENTIFIER "on" [ "reference" ] TypeAnnotation [ "," ParameterList ] [ TypeAnnotation ] NEWLINE INDENT StatementList DEDENT
+    # Kukicha syntax - readable, uses explicit 'this' receiver
+    | "func" IDENTIFIER "on" "this" [ "reference" ] TypeAnnotation [ "," ParameterList ] [ TypeAnnotation ] NEWLINE INDENT StatementList DEDENT
     # Go-compatible syntax - for copy-paste from Go code
     | "func" "(" IDENTIFIER TypeAnnotation ")" IDENTIFIER "(" [ ParameterList ] ")" [ TypeAnnotation ] NEWLINE INDENT StatementList DEDENT
 
@@ -203,9 +203,9 @@ ExpressionStatement ::= Expression NEWLINE
 ## Expressions
 
 ```ebnf
-Expression ::= OrExpression [ OrOperator ]
+Expression ::= OrExpression [ OnErrOperator ]
 
-OrOperator ::= "or" ( Expression | NEWLINE INDENT StatementList DEDENT )
+OnErrOperator ::= "onerr" ( Expression | NEWLINE INDENT StatementList DEDENT )
 
 OrExpression ::= PipeExpression { ( "or" | "||" ) PipeExpression }
 
@@ -362,11 +362,11 @@ COMMENT ::= "#" { any character except NEWLINE } NEWLINE
 leaf        import      type        interface   func
 if          else        for         in          from
 to          through     at          of          and
-or          not         return      go          defer
-make        list        map         channel     send
-receive     close       panic       recover     error
-empty       reference   on          this        discard
-true        false       equals      as
+or          onerr       not         return      go
+defer       make        list        map         channel
+send        receive     close       panic       recover
+error       empty       reference   on          this
+discard     true        false       equals      as
 ```
 
 **Note:** The keywords `list`, `map`, and `channel` are context-sensitive and may also be used as identifiers in certain contexts.
@@ -441,18 +441,25 @@ Parsed as:
 - Expression: `count`
 - Literal: " messages"
 
-### Or Operator Auto-Unwrap
+### OnErr Operator Auto-Unwrap
 
-When the `or` operator is used with a function that returns `(T, error)`:
+The `onerr` operator provides ergonomic error handling for functions that return `(T, error)` tuples:
 1. Automatically unwrap to `T` if no error
-2. Execute the `or` clause if error is not empty
+2. Execute the `onerr` clause if error is not empty
+
+**Important:** The `onerr` operator is distinct from the boolean `or` operator. This separation makes code more readable - you can tell at a glance whether an expression handles errors or performs boolean logic.
 
 Example:
 ```kukicha
-data := file.read(path) or panic "failed"
+# Error handling with onerr
+data := file.read(path) onerr panic "failed"
+
+# Boolean logic with or
+if active or pending
+    process()
 ```
 
-Desugars to:
+The `onerr` operator desugars to:
 ```kukicha
 data, err := file.read(path)
 if err != empty
@@ -591,14 +598,14 @@ filterActive(response.json())
 
 **Precedence:**
 - Pipe has lower precedence than arithmetic/comparison operators
-- Pipe has higher precedence than `or` operator
+- Pipe has higher precedence than `onerr` operator
 
 ```kukicha
 # Example
-a + b |> double() or "default"
+a + b |> double() onerr "default"
 
 # Desugars to
-((double(a + b)) or "default")
+((double(a + b)) onerr "default")
 ```
 
 ---
@@ -631,12 +638,12 @@ FunctionDeclaration
             └─ ""
 ```
 
-### Example 2: Method with Or Operator
+### Example 2: Method with OnErr Operator
 
 ```kukicha
-func Load on Config, path string
-    content := file.read(path) or return error "cannot read"
-    this.data = json.parse(content) or return error "invalid json"
+func Load on this Config, path string
+    content := file.read(path) onerr return error "cannot read"
+    this.data = json.parse(content) onerr return error "invalid json"
     return empty
 ```
 
@@ -646,7 +653,8 @@ MethodDeclaration
 ├─ func
 ├─ Load
 ├─ on
-├─ Config       # receiver type (implicit 'this')
+├─ this         # explicit receiver name
+├─ Config       # receiver type
 ├─ ParameterList
 │  └─ Parameter
 │     ├─ path
@@ -655,16 +663,16 @@ MethodDeclaration
    ├─ VariableDeclaration
    │  ├─ content
    │  ├─ :=
-   │  └─ OrExpression
+   │  └─ OnErrExpression
    │     ├─ FunctionCall: file.read(path)
-   │     └─ or
+   │     └─ onerr
    │        └─ ReturnStatement: return error "cannot read"
    ├─ Assignment
    │  ├─ this.data
    │  ├─ =
-   │  └─ OrExpression
+   │  └─ OnErrExpression
    │     ├─ FunctionCall: json.parse(content)
-   │     └─ or
+   │     └─ onerr
    │        └─ ReturnStatement: return error "invalid json"
    └─ ReturnStatement
       └─ empty
@@ -742,20 +750,21 @@ Display(todo)
 
 **Resolution:** If expression before `()` contains `.`, it's a method call.
 
-### 2. Or Operator Precedence
+### 2. OnErr vs Or Operators
 
 ```kukicha
-# Or as error handler (higher precedence)
-result := calculate() or return error "failed"
+# OnErr for error handling
+result := calculate() onerr return error "failed"
 
-# Or as boolean operator (lower precedence)
+# Or for boolean logic
 if a or b
     print "at least one is true"
 ```
 
-**Resolution:** 
-- After `:=` or `=`, `or` is error handler (higher precedence)
-- After `if`, `for`, etc., `or` is boolean operator (lower precedence)
+**Resolution:**
+- `onerr` is used exclusively for error handling (functions returning `(T, error)`)
+- `or` is used exclusively for boolean logic
+- No ambiguity - the keywords are distinct and self-documenting
 
 ### 3. Type Annotation vs Expression
 
@@ -804,11 +813,11 @@ ptr := empty reference User
 ### 6. Method Syntax (Kukicha vs Go Style)
 
 ```kukicha
-# Kukicha style - readable, uses implicit 'this'
-func Display on Todo string
+# Kukicha style - readable, uses explicit 'this' receiver
+func Display on this Todo string
     return this.title
 
-func MarkDone on reference Todo
+func MarkDone on this reference Todo
     this.completed = true
 
 # Go style - for copy-paste from Go tutorials
@@ -820,14 +829,16 @@ func (todo *Todo) MarkDone()
 ```
 
 **Both syntaxes are fully supported.** Choose based on preference:
-- **Kukicha style**: More readable, uses `this` keyword
+- **Kukicha style**: More readable, explicit `this` receiver makes it discoverable
 - **Go style**: Copy-paste compatible with Go code
+
+**Key Difference:** In Kukicha style, the `this` keyword is explicit in the method signature (`on this Todo`), making it clear that `this` is available in the method body. This improves discoverability for beginners.
 
 **Conversion Rules:**
 | Kukicha Syntax | Go Equivalent |
 |---------------|---------------|
-| `func F on T` | `func (this T) F()` |
-| `func F on reference T` | `func (this *T) F()` |
+| `func F on this T` | `func (this T) F()` |
+| `func F on this reference T` | `func (this *T) F()` |
 
 ---
 
@@ -847,9 +858,9 @@ x := 5
 x := 10  # Error: Variable 'x' already declared. Use '=' to reassign.
 ```
 
-### Invalid Or Operator
+### Invalid OnErr Operator
 ```kukicha
-x := 5 or 10  # Error: 'or' operator requires function returning (T, error)
+x := 5 onerr 10  # Error: 'onerr' operator requires function returning (T, error)
 ```
 
 ### Missing Type Annotation
@@ -893,19 +904,21 @@ func Process(data)  # Warning: Type inference may fail. Consider explicit type.
 2. **Parser must handle:**
    - Operator precedence (use precedence climbing)
    - Type inference contexts
-   - Or operator desugaring
+   - OnErr operator desugaring
+   - Explicit `this` receiver in method declarations
    - Dual syntax (Kukicha + Go forms)
 
 3. **Semantic analyzer must:**
    - Check type compatibility
    - Resolve identifiers to declarations
    - Verify interface implementations
-   - Check that `or` operator is used correctly
+   - Check that `onerr` operator is used correctly (function returns `(T, error)`)
+   - Verify `this` is only referenced within method bodies
    - Validate method receivers
 
 4. **Code generator must:**
-   - Transform `or` operator to if/err checks
-   - Convert methods to Go receiver syntax
+   - Transform `onerr` operator to if/err checks
+   - Convert methods to Go receiver syntax (`on this T` → `(this T)`)
    - Handle string interpolation (fmt.Sprintf)
    - Generate proper Go package structure
 
@@ -921,15 +934,15 @@ leaf main
 func main()
     print "Hello, World!"
 
-# 2. Struct and Method (Kukicha style with 'this')
+# 2. Struct and Method (Kukicha style with explicit 'this')
 type User
     name string
     age int
 
-func Display on User string
+func Display on this User string
     return "{this.name}, {this.age}"
 
-func UpdateName on reference User, newName string
+func UpdateName on this reference User, newName string
     this.name = newName
 
 # 2b. Go-style syntax (also supported for copy-paste)
@@ -938,15 +951,15 @@ func (u User) DisplayGo() string
 
 # 3. Error Handling
 func LoadConfig(path string) Config
-    content := file.read(path) or return empty
-    return json.parse(content) or return empty
+    content := file.read(path) onerr return empty
+    return json.parse(content) onerr return empty
 
 # 4. Concurrency
 func Fetch(urls list of string)
     ch := make channel of string
     for discard, url in urls
         go
-            result := http.get(url) or return
+            result := http.get(url) onerr return
             send ch, result
 
     for i from 0 to len(urls)
@@ -966,7 +979,7 @@ func GetRepoStats(username string) list of Repo
         |> .json() as list of Repo
         |> filterByStars(10)
         |> sortByUpdated()
-        or empty list of Repo
+        onerr empty list of Repo
 
 # 7. Empty literal variants
 func EmptyExamples()

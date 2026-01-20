@@ -64,7 +64,7 @@ Kukicha v1.1.0 introduces key refinements that balance simplicity, performance, 
 
 5. **🔧 Context-Sensitive Type Keywords** - `list`, `map`, and `channel` are context-sensitive. In type contexts (parameters, fields), they start composite types. No lookahead needed at lexer level.
 
-6. **📝 Dual Method Syntax** - Readable Kukicha style (`func Display on Todo` with `this`) and Go-compatible style (`func (t Todo) Display()`) both supported.
+6. **📝 Dual Method Syntax** - Readable Kukicha style (`func Display on this Todo` with explicit receiver) and Go-compatible style (`func (t Todo) Display()`) both supported.
 
 7. **🔄 Empty Literal Lookahead** - `empty` uses 1-token lookahead to determine if it's standalone (`nil`) or typed (`empty list of Todo`).
 
@@ -96,8 +96,8 @@ count = 100
 func Greet(name string) string
     return "Hello {name}"
 
-# Method with implicit 'this' - readable Kukicha style
-func Display on Todo string
+# Method with explicit 'this' - readable Kukicha style
+func Display on this Todo string
     return "{this.id}: {this.title}"
 
 # Go-style also works (for copy-paste from Go tutorials)
@@ -105,14 +105,14 @@ func (t Todo) Summary() string
     return t.title
 ```
 
-#### Error Handling (Or Operator)
+#### Error Handling (OnErr Operator)
 
 ```kukicha
 # Auto-unwrap (T, error) tuples
-content := file.read("config.json") or panic "missing file"
+content := file.read("config.json") onerr panic "missing file"
 
 # Provide default value
-port := env.get("PORT") or "8080"
+port := env.get("PORT") onerr "8080"
 ```
 
 #### Pipe Operator
@@ -179,7 +179,7 @@ The lexer (tokenizer) converts Kukicha source code into a stream of tokens.
 
 - **Indentation-based syntax**: 4 spaces per level (tabs rejected)
 - **String interpolation**: `"Hello {name}"`
-- **All operators**: `|>`, `or`, `:=`, `==`, `in`, etc.
+- **All operators**: `|>`, `onerr`, `or`, `:=`, `==`, `in`, etc.
 - **Keywords**: 35+ keywords including `leaf`, `func`, `type`, `interface`
 - **Error reporting**: Clear error messages with line/column information
 
