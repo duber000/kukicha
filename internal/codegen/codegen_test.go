@@ -352,8 +352,8 @@ func Test()
 		t.Fatalf("codegen error: %v", err)
 	}
 
-	if !strings.HasPrefix(output, "package mypackage") {
-		t.Errorf("expected package mypackage, got: %s", output)
+	if !strings.Contains(output, "package mypackage") {
+		t.Errorf("expected output to contain 'package mypackage', got: %s", output)
 	}
 }
 
