@@ -249,6 +249,11 @@ go test ./internal/lexer/...
 
 ## Future Enhancements
 
+Key word changes:
+
+1. Not really happy with the this keyword
+2. onerr doesn't roll off the tongue.
+
 See [Standard Library Roadmap](docs/kukicha-stdlib-roadmap.md) for planned features:
 
 1. **Standard Library** - HTTP, JSON, File I/O, Docker, K8s, LLM packages
@@ -276,6 +281,6 @@ Kukicha is designed for programming beginners while maintaining compatibility wi
 
 ---
 
-**Status**: Production Ready
+**Status**: Ready for testing!
 **Version**: 1.0.0
 **Target Go Version**: 1.25+ with Green Tea GC
