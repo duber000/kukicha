@@ -52,7 +52,7 @@ go test ./internal/lexer/... -v
 
 ### Core Design Decisions (v1.1.0)
 
-Kukicha v1.1.0 introduces four key refinements that balance simplicity, performance, and consistency:
+Kukicha v1.1.0 introduces key refinements that balance simplicity, performance, and consistency:
 
 1. **📦 Optional Leaf Declarations** - Folder-based package model with automatic Stem (package) calculation from file path. No more header/directory sync issues!
 
@@ -61,6 +61,12 @@ Kukicha v1.1.0 introduces four key refinements that balance simplicity, performa
 3. **⚡ Literal vs Dynamic Indexing** - Negative indices with literal constants (e.g., `items[-1]`) compile to zero-overhead code. Dynamic indices require explicit `.at()` method.
 
 4. **📏 Indentation as Canonical** - The `kuki fmt` tool converts all code to standard 4-space indentation format, preventing "dialect drift" between coding styles.
+
+5. **🔧 Context-Sensitive Type Keywords** - `list`, `map`, and `channel` are context-sensitive. In type contexts (parameters, fields), they start composite types. No lookahead needed at lexer level.
+
+6. **📝 Dual Method Syntax** - Readable Kukicha style (`func Display on Todo` with `this`) and Go-compatible style (`func (t Todo) Display()`) both supported.
+
+7. **🔄 Empty Literal Lookahead** - `empty` uses 1-token lookahead to determine if it's standalone (`nil`) or typed (`empty list of Todo`).
 
 ### Philosophy
 
@@ -90,9 +96,13 @@ count = 100
 func Greet(name string) string
     return "Hello {name}"
 
-# Method with implicit receiver
-func Display on Todo () string
+# Method with implicit 'this' - readable Kukicha style
+func Display on Todo string
     return "{this.id}: {this.title}"
+
+# Go-style also works (for copy-paste from Go tutorials)
+func (t Todo) Summary() string
+    return t.title
 ```
 
 #### Error Handling (Or Operator)

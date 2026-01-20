@@ -414,14 +414,14 @@ type Todo
     title string
     completed bool
 
-# Value receiver (reads data)
-func Display on Todo
+# Value receiver - uses implicit 'this'
+func Display on Todo string
     status := "pending"
     if this.completed
         status = "done"
     return "{status}: {this.title}"
 
-# Reference receiver (modifies data)
+# Reference receiver - for mutation
 func MarkDone on reference Todo
     this.completed = true
     this.completed_at = time.now()
@@ -488,10 +488,10 @@ type Todo
     completed bool
 
 # Implementing Displayable interface
-func Display on Todo
+func Display on Todo string
     return "{this.id}. {this.title}"
 
-func GetTitle on Todo
+func GetTitle on Todo string
     return this.title
 
 # Todo now implements Displayable automatically!

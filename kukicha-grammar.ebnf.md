@@ -73,7 +73,9 @@ FunctionDeclaration ::=
     # Return type TypeAnnotation is REQUIRED for functions that return values
 
 MethodDeclaration ::=
-    | "func" IDENTIFIER "on" TypeAnnotation [ "," ParameterList ] NEWLINE INDENT StatementList DEDENT
+    # Kukicha syntax - readable, uses implicit 'this' receiver
+    | "func" IDENTIFIER "on" [ "reference" ] TypeAnnotation [ "," ParameterList ] [ TypeAnnotation ] NEWLINE INDENT StatementList DEDENT
+    # Go-compatible syntax - for copy-paste from Go code
     | "func" "(" IDENTIFIER TypeAnnotation ")" IDENTIFIER "(" [ ParameterList ] ")" [ TypeAnnotation ] NEWLINE INDENT StatementList DEDENT
 
 ParameterList ::= Parameter { "," Parameter }
@@ -86,6 +88,17 @@ Parameter ::= IDENTIFIER TypeAnnotation
 
 ## Type Annotations
 
+**Context-Sensitive Keywords**: The keywords `list`, `map`, and `channel` are context-sensitive.
+- In **type annotation context** (function parameters, struct fields, variable type hints), they begin composite types.
+- In **expression context**, they may be used as identifiers (though this is discouraged for clarity).
+
+The parser determines context based on position. Type annotations appear after:
+- Parameter names in function signatures
+- Field names in struct definitions
+- The `reference` keyword
+- The `as` keyword in type casts
+- The `:=` operator when followed by a type constructor
+
 ```ebnf
 TypeAnnotation ::=
     | PrimitiveType
@@ -96,7 +109,7 @@ TypeAnnotation ::=
     | QualifiedType
     | GoStyleType
 
-PrimitiveType ::= 
+PrimitiveType ::=
     | "int" | "int32" | "int64"
     | "uint" | "uint32" | "uint64"
     | "float32" | "float64"
@@ -118,6 +131,8 @@ GoStyleType ::=
     | "map" "[" TypeAnnotation "]" TypeAnnotation
     | "chan" TypeAnnotation
 ```
+
+**Parser Implementation Note**: When in type annotation context, if the parser sees `list`, `map`, or `channel`, it MUST be followed by `of`. This is not ambiguous because the parser knows when it expects a type.
 
 ---
 
@@ -229,14 +244,14 @@ PrimaryExpression ::=
     | Literal
     | "(" Expression ")"
     | StructLiteral
-    | ListLiteral
-    | MapLiteral
+    | EmptyLiteral       # 'empty' with optional type (uses 1-token lookahead)
+    | ListLiteral        # 'list of Type' with initial values
+    | MapLiteral         # 'map of K to V' with initial entries
     | ChannelCreation
     | ReceiveExpression
     | RecoverExpression
     | TypeCast
     | "this"
-    | "empty"
 
 ExpressionList ::= Expression { "," Expression }
 ```
@@ -274,16 +289,27 @@ FieldInitList ::= FieldInit { FieldInit }
 
 FieldInit ::= IDENTIFIER ":" Expression NEWLINE
 
+# EmptyLiteral uses 1-token lookahead after 'empty' to determine the type.
+# If 'empty' is followed by 'list', 'map', 'channel', or 'reference', parse as typed empty.
+# Otherwise, 'empty' is a standalone nil/zero-value literal.
+EmptyLiteral ::=
+    | "empty" "list" "of" TypeAnnotation          # empty list of Todo
+    | "empty" "map" "of" TypeAnnotation "to" TypeAnnotation  # empty map of string to int
+    | "empty" "channel" "of" TypeAnnotation       # empty channel of Result
+    | "empty" "reference" TypeAnnotation          # empty reference User (nil pointer)
+    | "empty"                                      # standalone nil/zero-value
+
+# Non-empty list literal (list with initial values)
 ListLiteral ::=
-    | "empty" "list" "of" TypeAnnotation
-    | "list" "of" TypeAnnotation
+    | "list" "of" TypeAnnotation NEWLINE INDENT ExpressionList DEDENT
     | "[" "]" TypeAnnotation "{" "}"
     | "[" "]" TypeAnnotation "{" ExpressionList "}"
 
+# Non-empty map literal (map with initial entries)
 MapLiteral ::=
-    | "empty" "map" "of" TypeAnnotation "to" TypeAnnotation
     | "map" "of" TypeAnnotation "to" TypeAnnotation NEWLINE INDENT MapEntryList DEDENT
     | "map" "[" TypeAnnotation "]" TypeAnnotation "{" "}"
+    | "map" "[" TypeAnnotation "]" TypeAnnotation "{" MapEntryList "}"
 
 MapEntryList ::= MapEntry { MapEntry }
 
@@ -618,7 +644,7 @@ MethodDeclaration
 ├─ func
 ├─ Load
 ├─ on
-├─ Config
+├─ Config       # receiver type (implicit 'this')
 ├─ ParameterList
 │  └─ Parameter
 │     ├─ path
@@ -757,6 +783,50 @@ user := reference to User { ... }
 - After `:` in field/parameter → Type annotation
 - After `:=` or `return` → Expression
 
+### 5. Empty Literal (Typed vs Standalone)
+
+```kukicha
+# Standalone empty (nil/zero-value)
+result := empty
+
+# Typed empty literals
+todos := empty list of Todo
+config := empty map of string to int
+ptr := empty reference User
+```
+
+**Resolution:** 1-token lookahead after `empty`:
+- If followed by `list`, `map`, `channel`, or `reference` → Typed empty literal
+- Otherwise → Standalone nil/zero-value
+
+### 6. Method Syntax (Kukicha vs Go Style)
+
+```kukicha
+# Kukicha style - readable, uses implicit 'this'
+func Display on Todo string
+    return this.title
+
+func MarkDone on reference Todo
+    this.completed = true
+
+# Go style - for copy-paste from Go tutorials
+func (todo Todo) Display() string
+    return todo.title
+
+func (todo *Todo) MarkDone()
+    todo.completed = true
+```
+
+**Both syntaxes are fully supported.** Choose based on preference:
+- **Kukicha style**: More readable, uses `this` keyword
+- **Go style**: Copy-paste compatible with Go code
+
+**Conversion Rules:**
+| Kukicha Syntax | Go Equivalent |
+|---------------|---------------|
+| `func F on T` | `func (this T) F()` |
+| `func F on reference T` | `func (this *T) F()` |
+
 ---
 
 ## Error Productions
@@ -849,16 +919,23 @@ leaf main
 func main()
     print "Hello, World!"
 
-# 2. Struct and Method
+# 2. Struct and Method (Kukicha style with 'this')
 type User
     name string
     age int
 
-func Display on User
+func Display on User string
     return "{this.name}, {this.age}"
 
+func UpdateName on reference User, newName string
+    this.name = newName
+
+# 2b. Go-style syntax (also supported for copy-paste)
+func (u User) DisplayGo() string
+    return "{u.name}, {u.age}"
+
 # 3. Error Handling
-func LoadConfig(path string)
+func LoadConfig(path string) Config
     content := file.read(path) or return empty
     return json.parse(content) or return empty
 
@@ -869,7 +946,7 @@ func Fetch(urls list of string)
         go
             result := http.get(url) or return
             send ch, result
-    
+
     for i from 0 to len(urls)
         print receive ch
 
@@ -880,14 +957,21 @@ interface Processor
 func Run(p Processor)
     print p.Process()
 
-# 6. Pipe Operator
-func GetRepoStats(username string)
+# 6. Pipe Operator with typed empty
+func GetRepoStats(username string) list of Repo
     return "https://api.github.com/users/{username}/repos"
         |> http.get()
         |> .json() as list of Repo
         |> filterByStars(10)
         |> sortByUpdated()
         or empty list of Repo
+
+# 7. Empty literal variants
+func EmptyExamples()
+    nilValue := empty                      # standalone nil
+    emptyList := empty list of Todo        # typed empty list
+    emptyMap := empty map of string to int # typed empty map
+    nilPtr := empty reference User         # nil pointer
 ```
 
 ---
@@ -903,6 +987,13 @@ With this grammar defined:
 
 ---
 
-**Grammar Version:** 1.0.0
-**Last Updated:** 2025-01-19
+**Grammar Version:** 1.1.0
+**Last Updated:** 2026-01-20
 **Status:** Complete and ready for implementation
+
+**Changelog v1.1.0:**
+- Added context-sensitive keyword documentation for `list`, `map`, `channel`
+- Restructured `EmptyLiteral` to use 1-token lookahead for typed vs standalone empty
+- Documented dual method syntax: Kukicha style (`func F on T` with `this`) and Go style (`func (t T) F()`)
+- Kukicha style listed first as primary syntax for readability
+- Documented ambiguity resolution for empty literal and method syntax
