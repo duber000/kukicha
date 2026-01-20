@@ -1,0 +1,807 @@
+package codegen
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+
+	"github.com/duber000/kukicha/internal/ast"
+)
+
+// Generator generates Go code from an AST
+type Generator struct {
+	program *ast.Program
+	output  strings.Builder
+	indent  int
+}
+
+// New creates a new code generator
+func New(program *ast.Program) *Generator {
+	return &Generator{
+		program: program,
+		indent:  0,
+	}
+}
+
+// Generate generates Go code from the AST
+func (g *Generator) Generate() (string, error) {
+	g.output.Reset()
+
+	// Generate package declaration
+	g.generatePackage()
+
+	// Generate imports (including auto-imports like fmt for string interpolation)
+	needsFmt := g.needsStringInterpolation()
+	if len(g.program.Imports) > 0 || needsFmt {
+		g.writeLine("")
+		g.generateImports()
+	}
+
+	// Generate declarations
+	for _, decl := range g.program.Declarations {
+		g.writeLine("")
+		g.generateDeclaration(decl)
+	}
+
+	return g.output.String(), nil
+}
+
+func (g *Generator) generatePackage() {
+	packageName := "main"
+	if g.program.LeafDecl != nil {
+		packageName = g.program.LeafDecl.Name.Value
+	}
+	g.writeLine(fmt.Sprintf("package %s", packageName))
+}
+
+func (g *Generator) generateImports() {
+	// Collect all imports
+	imports := make(map[string]string) // path -> alias
+
+	for _, imp := range g.program.Imports {
+		path := imp.Path.Value
+		alias := ""
+		if imp.Alias != nil {
+			alias = imp.Alias.Value
+		}
+		imports[path] = alias
+	}
+
+	// Check if we need fmt for string interpolation
+	needsFmt := g.needsStringInterpolation()
+	if needsFmt {
+		imports["fmt"] = ""
+	}
+
+	// Generate import block
+	if len(imports) == 1 {
+		for path, alias := range imports {
+			if alias != "" {
+				g.writeLine(fmt.Sprintf("import %s \"%s\"", alias, path))
+			} else {
+				g.writeLine(fmt.Sprintf("import \"%s\"", path))
+			}
+		}
+	} else {
+		g.writeLine("import (")
+		g.indent++
+		for path, alias := range imports {
+			if alias != "" {
+				g.writeLine(fmt.Sprintf("%s \"%s\"", alias, path))
+			} else {
+				g.writeLine(fmt.Sprintf("\"%s\"", path))
+			}
+		}
+		g.indent--
+		g.writeLine(")")
+	}
+}
+
+func (g *Generator) generateDeclaration(decl ast.Declaration) {
+	switch d := decl.(type) {
+	case *ast.TypeDecl:
+		g.generateTypeDecl(d)
+	case *ast.InterfaceDecl:
+		g.generateInterfaceDecl(d)
+	case *ast.FunctionDecl:
+		g.generateFunctionDecl(d)
+	}
+}
+
+func (g *Generator) generateTypeDecl(decl *ast.TypeDecl) {
+	g.write(fmt.Sprintf("type %s struct {", decl.Name.Value))
+	g.writeLine("")
+	g.indent++
+
+	for _, field := range decl.Fields {
+		fieldType := g.generateTypeAnnotation(field.Type)
+		g.writeLine(fmt.Sprintf("%s %s", field.Name.Value, fieldType))
+	}
+
+	g.indent--
+	g.writeLine("}")
+}
+
+func (g *Generator) generateInterfaceDecl(decl *ast.InterfaceDecl) {
+	g.write(fmt.Sprintf("type %s interface {", decl.Name.Value))
+	g.writeLine("")
+	g.indent++
+
+	for _, method := range decl.Methods {
+		// Generate method signature
+		params := g.generateParameters(method.Parameters)
+		returns := g.generateReturnTypes(method.Returns)
+
+		if returns != "" {
+			g.writeLine(fmt.Sprintf("%s(%s) %s", method.Name.Value, params, returns))
+		} else {
+			g.writeLine(fmt.Sprintf("%s(%s)", method.Name.Value, params))
+		}
+	}
+
+	g.indent--
+	g.writeLine("}")
+}
+
+func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
+	// Generate function signature
+	signature := "func "
+
+	// Add receiver for methods
+	if decl.Receiver != nil {
+		receiverType := g.generateTypeAnnotation(decl.Receiver.Type)
+		receiverName := decl.Receiver.Name.Value
+		signature += fmt.Sprintf("(%s %s) ", receiverName, receiverType)
+	}
+
+	// Add function name
+	signature += decl.Name.Value
+
+	// Add parameters
+	params := g.generateFunctionParameters(decl.Parameters)
+	signature += fmt.Sprintf("(%s)", params)
+
+	// Add return types
+	returns := g.generateReturnTypes(decl.Returns)
+	if returns != "" {
+		signature += " " + returns
+	}
+
+	g.write(signature + " {")
+	g.writeLine("")
+
+	// Generate body
+	if decl.Body != nil {
+		g.indent++
+		g.generateBlock(decl.Body)
+		g.indent--
+	}
+
+	g.writeLine("}")
+}
+
+func (g *Generator) generateFunctionParameters(params []*ast.Parameter) string {
+	if len(params) == 0 {
+		return ""
+	}
+
+	parts := make([]string, len(params))
+	for i, param := range params {
+		paramType := g.generateTypeAnnotation(param.Type)
+		parts[i] = fmt.Sprintf("%s %s", param.Name.Value, paramType)
+	}
+
+	return strings.Join(parts, ", ")
+}
+
+func (g *Generator) generateParameters(params []*ast.Parameter) string {
+	return g.generateFunctionParameters(params)
+}
+
+func (g *Generator) generateReturnTypes(returns []ast.TypeAnnotation) string {
+	if len(returns) == 0 {
+		return ""
+	}
+
+	if len(returns) == 1 {
+		return g.generateTypeAnnotation(returns[0])
+	}
+
+	// Multiple return types
+	parts := make([]string, len(returns))
+	for i, ret := range returns {
+		parts[i] = g.generateTypeAnnotation(ret)
+	}
+
+	return "(" + strings.Join(parts, ", ") + ")"
+}
+
+func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
+	if typeAnn == nil {
+		return ""
+	}
+
+	switch t := typeAnn.(type) {
+	case *ast.PrimitiveType:
+		return t.Name
+	case *ast.NamedType:
+		return t.Name
+	case *ast.ReferenceType:
+		return "*" + g.generateTypeAnnotation(t.ElementType)
+	case *ast.ListType:
+		return "[]" + g.generateTypeAnnotation(t.ElementType)
+	case *ast.MapType:
+		keyType := g.generateTypeAnnotation(t.KeyType)
+		valueType := g.generateTypeAnnotation(t.ValueType)
+		return fmt.Sprintf("map[%s]%s", keyType, valueType)
+	case *ast.ChannelType:
+		return "chan " + g.generateTypeAnnotation(t.ElementType)
+	default:
+		return "interface{}"
+	}
+}
+
+func (g *Generator) generateBlock(block *ast.BlockStmt) {
+	for _, stmt := range block.Statements {
+		g.generateStatement(stmt)
+	}
+}
+
+func (g *Generator) generateStatement(stmt ast.Statement) {
+	switch s := stmt.(type) {
+	case *ast.VarDeclStmt:
+		g.generateVarDeclStmt(s)
+	case *ast.AssignStmt:
+		g.generateAssignStmt(s)
+	case *ast.ReturnStmt:
+		g.generateReturnStmt(s)
+	case *ast.IfStmt:
+		g.generateIfStmt(s)
+	case *ast.ForRangeStmt:
+		g.generateForRangeStmt(s)
+	case *ast.ForNumericStmt:
+		g.generateForNumericStmt(s)
+	case *ast.ForConditionStmt:
+		g.generateForConditionStmt(s)
+	case *ast.DeferStmt:
+		g.write("defer ")
+		g.generateExpression(s.Call)
+		g.writeLine("")
+	case *ast.GoStmt:
+		g.write("go ")
+		g.generateExpression(s.Call)
+		g.writeLine("")
+	case *ast.SendStmt:
+		channel := g.exprToString(s.Channel)
+		value := g.exprToString(s.Value)
+		g.writeLine(fmt.Sprintf("%s <- %s", channel, value))
+	case *ast.ExpressionStmt:
+		g.generateExpression(s.Expression)
+		g.writeLine("")
+	}
+}
+
+func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
+	if stmt.Type != nil {
+		// Explicit type declaration
+		varType := g.generateTypeAnnotation(stmt.Type)
+		value := g.exprToString(stmt.Value)
+		g.writeLine(fmt.Sprintf("var %s %s = %s", stmt.Name.Value, varType, value))
+	} else {
+		// Type inference with :=
+		value := g.exprToString(stmt.Value)
+		g.writeLine(fmt.Sprintf("%s := %s", stmt.Name.Value, value))
+	}
+}
+
+func (g *Generator) generateAssignStmt(stmt *ast.AssignStmt) {
+	target := g.exprToString(stmt.Target)
+	value := g.exprToString(stmt.Value)
+	g.writeLine(fmt.Sprintf("%s = %s", target, value))
+}
+
+func (g *Generator) generateReturnStmt(stmt *ast.ReturnStmt) {
+	if len(stmt.Values) == 0 {
+		g.writeLine("return")
+		return
+	}
+
+	values := make([]string, len(stmt.Values))
+	for i, val := range stmt.Values {
+		values[i] = g.exprToString(val)
+	}
+
+	g.writeLine(fmt.Sprintf("return %s", strings.Join(values, ", ")))
+}
+
+func (g *Generator) generateIfStmt(stmt *ast.IfStmt) {
+	condition := g.exprToString(stmt.Condition)
+	g.write(fmt.Sprintf("if %s {", condition))
+	g.writeLine("")
+
+	g.indent++
+	g.generateBlock(stmt.Consequence)
+	g.indent--
+
+	if stmt.Alternative != nil {
+		g.write("}")
+		switch alt := stmt.Alternative.(type) {
+		case *ast.ElseStmt:
+			g.write(" else {")
+			g.writeLine("")
+			g.indent++
+			g.generateBlock(alt.Body)
+			g.indent--
+			g.writeLine("}")
+		case *ast.IfStmt:
+			g.write(" else ")
+			g.generateIfStmt(alt)
+			return // Don't write closing brace, it's handled recursively
+		}
+	} else {
+		g.writeLine("}")
+	}
+}
+
+func (g *Generator) generateForRangeStmt(stmt *ast.ForRangeStmt) {
+	collection := g.exprToString(stmt.Collection)
+
+	if stmt.Index != nil {
+		g.write(fmt.Sprintf("for %s, %s := range %s {", stmt.Index.Value, stmt.Variable.Value, collection))
+	} else {
+		g.write(fmt.Sprintf("for _, %s := range %s {", stmt.Variable.Value, collection))
+	}
+	g.writeLine("")
+
+	g.indent++
+	g.generateBlock(stmt.Body)
+	g.indent--
+
+	g.writeLine("}")
+}
+
+func (g *Generator) generateForNumericStmt(stmt *ast.ForNumericStmt) {
+	varName := stmt.Variable.Value
+	start := g.exprToString(stmt.Start)
+	end := g.exprToString(stmt.End)
+
+	var condition string
+	if stmt.Through {
+		condition = fmt.Sprintf("%s <= %s", varName, end)
+	} else {
+		condition = fmt.Sprintf("%s < %s", varName, end)
+	}
+
+	g.write(fmt.Sprintf("for %s := %s; %s; %s++ {", varName, start, condition, varName))
+	g.writeLine("")
+
+	g.indent++
+	g.generateBlock(stmt.Body)
+	g.indent--
+
+	g.writeLine("}")
+}
+
+func (g *Generator) generateForConditionStmt(stmt *ast.ForConditionStmt) {
+	condition := g.exprToString(stmt.Condition)
+	g.write(fmt.Sprintf("for %s {", condition))
+	g.writeLine("")
+
+	g.indent++
+	g.generateBlock(stmt.Body)
+	g.indent--
+
+	g.writeLine("}")
+}
+
+func (g *Generator) generateExpression(expr ast.Expression) {
+	g.write(g.exprToString(expr))
+}
+
+func (g *Generator) exprToString(expr ast.Expression) string {
+	if expr == nil {
+		return ""
+	}
+
+	switch e := expr.(type) {
+	case *ast.Identifier:
+		return e.Value
+	case *ast.IntegerLiteral:
+		return fmt.Sprintf("%d", e.Value)
+	case *ast.FloatLiteral:
+		return fmt.Sprintf("%f", e.Value)
+	case *ast.StringLiteral:
+		return g.generateStringLiteral(e)
+	case *ast.BooleanLiteral:
+		if e.Value {
+			return "true"
+		}
+		return "false"
+	case *ast.BinaryExpr:
+		return g.generateBinaryExpr(e)
+	case *ast.UnaryExpr:
+		return g.generateUnaryExpr(e)
+	case *ast.PipeExpr:
+		return g.generatePipeExpr(e)
+	case *ast.OnErrExpr:
+		return g.generateOnErrExpr(e)
+	case *ast.CallExpr:
+		return g.generateCallExpr(e)
+	case *ast.MethodCallExpr:
+		return g.generateMethodCallExpr(e)
+	case *ast.IndexExpr:
+		left := g.exprToString(e.Left)
+		index := g.exprToString(e.Index)
+		return fmt.Sprintf("%s[%s]", left, index)
+	case *ast.SliceExpr:
+		return g.generateSliceExpr(e)
+	case *ast.StructLiteralExpr:
+		return g.generateStructLiteral(e)
+	case *ast.ListLiteralExpr:
+		return g.generateListLiteral(e)
+	case *ast.MapLiteralExpr:
+		return g.generateMapLiteral(e)
+	case *ast.ReceiveExpr:
+		channel := g.exprToString(e.Channel)
+		return fmt.Sprintf("<-%s", channel)
+	case *ast.TypeCastExpr:
+		targetType := g.generateTypeAnnotation(e.TargetType)
+		expr := g.exprToString(e.Expression)
+		return fmt.Sprintf("%s(%s)", targetType, expr)
+	case *ast.ThisExpr:
+		return "this"
+	case *ast.EmptyExpr:
+		if e.Type != nil {
+			targetType := g.generateTypeAnnotation(e.Type)
+			return fmt.Sprintf("%s{}", targetType)
+		}
+		return "nil"
+	case *ast.DiscardExpr:
+		return "_"
+	case *ast.ErrorExpr:
+		message := g.exprToString(e.Message)
+		return fmt.Sprintf("errors.New(%s)", message)
+	case *ast.MakeExpr:
+		return g.generateMakeExpr(e)
+	case *ast.CloseExpr:
+		channel := g.exprToString(e.Channel)
+		return fmt.Sprintf("close(%s)", channel)
+	case *ast.PanicExpr:
+		message := g.exprToString(e.Message)
+		return fmt.Sprintf("panic(%s)", message)
+	case *ast.RecoverExpr:
+		return "recover()"
+	default:
+		return ""
+	}
+}
+
+func (g *Generator) generateStringLiteral(lit *ast.StringLiteral) string {
+	if !lit.Interpolated {
+		return fmt.Sprintf("\"%s\"", lit.Value)
+	}
+
+	// Parse string interpolation
+	return g.generateStringInterpolation(lit.Value)
+}
+
+func (g *Generator) generateStringInterpolation(str string) string {
+	// Find all {expr} patterns
+	re := regexp.MustCompile(`\{([^}]+)\}`)
+	matches := re.FindAllStringSubmatchIndex(str, -1)
+
+	if len(matches) == 0 {
+		return fmt.Sprintf("\"%s\"", str)
+	}
+
+	// Build format string and args
+	format := ""
+	args := []string{}
+	lastIndex := 0
+
+	for _, match := range matches {
+		// Add literal part before the interpolation
+		if match[0] > lastIndex {
+			format += str[lastIndex:match[0]]
+		}
+
+		// Add format specifier
+		format += "%v"
+
+		// Extract expression
+		expr := str[match[2]:match[3]]
+		args = append(args, expr)
+
+		lastIndex = match[1]
+	}
+
+	// Add remaining literal part
+	if lastIndex < len(str) {
+		format += str[lastIndex:]
+	}
+
+	// Generate fmt.Sprintf call
+	argsStr := strings.Join(args, ", ")
+	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", format, argsStr)
+}
+
+func (g *Generator) generateBinaryExpr(expr *ast.BinaryExpr) string {
+	left := g.exprToString(expr.Left)
+	right := g.exprToString(expr.Right)
+
+	// Map Kukicha operators to Go operators
+	op := expr.Operator
+	switch op {
+	case "and":
+		op = "&&"
+	case "or":
+		op = "||"
+	}
+
+	return fmt.Sprintf("(%s %s %s)", left, op, right)
+}
+
+func (g *Generator) generateUnaryExpr(expr *ast.UnaryExpr) string {
+	right := g.exprToString(expr.Right)
+
+	op := expr.Operator
+	if op == "not" {
+		op = "!"
+	}
+
+	return fmt.Sprintf("%s%s", op, right)
+}
+
+func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
+	// Transform a |> b() into b(a)
+	left := g.exprToString(expr.Left)
+
+	// Right side must be a call expression
+	if call, ok := expr.Right.(*ast.CallExpr); ok {
+		funcName := g.exprToString(call.Function)
+		args := []string{left}
+		for _, arg := range call.Arguments {
+			args = append(args, g.exprToString(arg))
+		}
+		return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
+	}
+
+	return g.exprToString(expr.Right)
+}
+
+func (g *Generator) generateOnErrExpr(expr *ast.OnErrExpr) string {
+	// For now, generate a simple error check pattern
+	// This is simplified - a full implementation would need temporary variables
+	left := g.exprToString(expr.Left)
+	handler := g.exprToString(expr.Handler)
+
+	// Generate: (left if no error, handler if error)
+	// This is a simplification - proper implementation needs context
+	return fmt.Sprintf("func() interface{} { if err := %s; err != nil { return %s }; return %s }()", left, handler, left)
+}
+
+func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
+	funcName := g.exprToString(expr.Function)
+	args := make([]string, len(expr.Arguments))
+	for i, arg := range expr.Arguments {
+		args[i] = g.exprToString(arg)
+	}
+
+	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
+}
+
+func (g *Generator) generateMethodCallExpr(expr *ast.MethodCallExpr) string {
+	object := g.exprToString(expr.Object)
+	method := expr.Method.Value
+
+	// If no arguments, this might be field access
+	if len(expr.Arguments) == 0 {
+		return fmt.Sprintf("%s.%s", object, method)
+	}
+
+	args := make([]string, len(expr.Arguments))
+	for i, arg := range expr.Arguments {
+		args[i] = g.exprToString(arg)
+	}
+
+	return fmt.Sprintf("%s.%s(%s)", object, method, strings.Join(args, ", "))
+}
+
+func (g *Generator) generateSliceExpr(expr *ast.SliceExpr) string {
+	left := g.exprToString(expr.Left)
+
+	var start, end string
+	if expr.Start != nil {
+		start = g.exprToString(expr.Start)
+	}
+	if expr.End != nil {
+		end = g.exprToString(expr.End)
+	}
+
+	return fmt.Sprintf("%s[%s:%s]", left, start, end)
+}
+
+func (g *Generator) generateStructLiteral(expr *ast.StructLiteralExpr) string {
+	typeName := g.generateTypeAnnotation(expr.Type)
+
+	if len(expr.Fields) == 0 {
+		return fmt.Sprintf("%s{}", typeName)
+	}
+
+	fields := make([]string, len(expr.Fields))
+	for i, field := range expr.Fields {
+		value := g.exprToString(field.Value)
+		fields[i] = fmt.Sprintf("%s: %s", field.Name.Value, value)
+	}
+
+	return fmt.Sprintf("%s{%s}", typeName, strings.Join(fields, ", "))
+}
+
+func (g *Generator) generateListLiteral(expr *ast.ListLiteralExpr) string {
+	if len(expr.Elements) == 0 {
+		if expr.Type != nil {
+			elemType := g.generateTypeAnnotation(expr.Type)
+			return fmt.Sprintf("[]%s{}", elemType)
+		}
+		return "[]interface{}{}"
+	}
+
+	elements := make([]string, len(expr.Elements))
+	for i, elem := range expr.Elements {
+		elements[i] = g.exprToString(elem)
+	}
+
+	typePrefix := ""
+	if expr.Type != nil {
+		elemType := g.generateTypeAnnotation(expr.Type)
+		typePrefix = fmt.Sprintf("[]%s", elemType)
+	} else {
+		typePrefix = "[]interface{}"
+	}
+
+	return fmt.Sprintf("%s{%s}", typePrefix, strings.Join(elements, ", "))
+}
+
+func (g *Generator) generateMapLiteral(expr *ast.MapLiteralExpr) string {
+	keyType := g.generateTypeAnnotation(expr.KeyType)
+	valType := g.generateTypeAnnotation(expr.ValType)
+
+	if len(expr.Pairs) == 0 {
+		return fmt.Sprintf("map[%s]%s{}", keyType, valType)
+	}
+
+	pairs := make([]string, len(expr.Pairs))
+	for i, pair := range expr.Pairs {
+		key := g.exprToString(pair.Key)
+		value := g.exprToString(pair.Value)
+		pairs[i] = fmt.Sprintf("%s: %s", key, value)
+	}
+
+	return fmt.Sprintf("map[%s]%s{%s}", keyType, valType, strings.Join(pairs, ", "))
+}
+
+func (g *Generator) generateMakeExpr(expr *ast.MakeExpr) string {
+	targetType := g.generateTypeAnnotation(expr.Type)
+
+	if len(expr.Args) == 0 {
+		return fmt.Sprintf("make(%s)", targetType)
+	}
+
+	args := make([]string, len(expr.Args))
+	for i, arg := range expr.Args {
+		args[i] = g.exprToString(arg)
+	}
+
+	return fmt.Sprintf("make(%s, %s)", targetType, strings.Join(args, ", "))
+}
+
+// Helper methods
+
+func (g *Generator) write(s string) {
+	g.output.WriteString(s)
+}
+
+func (g *Generator) writeLine(s string) {
+	if s != "" {
+		g.output.WriteString(g.indentStr() + s)
+	}
+	g.output.WriteString("\n")
+}
+
+func (g *Generator) indentStr() string {
+	return strings.Repeat("\t", g.indent)
+}
+
+func (g *Generator) needsStringInterpolation() bool {
+	// Check if any string literals have interpolation
+	return g.checkProgramForInterpolation(g.program)
+}
+
+func (g *Generator) checkProgramForInterpolation(program *ast.Program) bool {
+	for _, decl := range program.Declarations {
+		if fn, ok := decl.(*ast.FunctionDecl); ok {
+			if fn.Body != nil && g.checkBlockForInterpolation(fn.Body) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (g *Generator) checkBlockForInterpolation(block *ast.BlockStmt) bool {
+	for _, stmt := range block.Statements {
+		if g.checkStmtForInterpolation(stmt) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *Generator) checkStmtForInterpolation(stmt ast.Statement) bool {
+	switch s := stmt.(type) {
+	case *ast.VarDeclStmt:
+		return g.checkExprForInterpolation(s.Value)
+	case *ast.AssignStmt:
+		return g.checkExprForInterpolation(s.Value)
+	case *ast.ReturnStmt:
+		for _, val := range s.Values {
+			if g.checkExprForInterpolation(val) {
+				return true
+			}
+		}
+	case *ast.IfStmt:
+		if g.checkExprForInterpolation(s.Condition) {
+			return true
+		}
+		if s.Consequence != nil && g.checkBlockForInterpolation(s.Consequence) {
+			return true
+		}
+		if s.Alternative != nil {
+			return g.checkStmtForInterpolation(s.Alternative)
+		}
+	case *ast.ForRangeStmt:
+		if s.Body != nil {
+			return g.checkBlockForInterpolation(s.Body)
+		}
+	case *ast.ForNumericStmt:
+		if s.Body != nil {
+			return g.checkBlockForInterpolation(s.Body)
+		}
+	case *ast.ForConditionStmt:
+		if s.Body != nil {
+			return g.checkBlockForInterpolation(s.Body)
+		}
+	case *ast.ExpressionStmt:
+		return g.checkExprForInterpolation(s.Expression)
+	}
+	return false
+}
+
+func (g *Generator) checkExprForInterpolation(expr ast.Expression) bool {
+	if expr == nil {
+		return false
+	}
+
+	switch e := expr.(type) {
+	case *ast.StringLiteral:
+		return e.Interpolated
+	case *ast.BinaryExpr:
+		return g.checkExprForInterpolation(e.Left) || g.checkExprForInterpolation(e.Right)
+	case *ast.UnaryExpr:
+		return g.checkExprForInterpolation(e.Right)
+	case *ast.CallExpr:
+		for _, arg := range e.Arguments {
+			if g.checkExprForInterpolation(arg) {
+				return true
+			}
+		}
+	case *ast.MethodCallExpr:
+		for _, arg := range e.Arguments {
+			if g.checkExprForInterpolation(arg) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
