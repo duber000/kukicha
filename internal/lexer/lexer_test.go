@@ -415,6 +415,8 @@ func TestKeywordRecognition(t *testing.T) {
 		{"go", TOKEN_GO},
 		{"defer", TOKEN_DEFER},
 		{"make", TOKEN_MAKE},
+		{"list", TOKEN_LIST},
+		{"map", TOKEN_MAP},
 		{"channel", TOKEN_CHANNEL},
 		{"send", TOKEN_SEND},
 		{"receive", TOKEN_RECEIVE},

@@ -363,11 +363,13 @@ leaf        import      type        interface   func
 if          else        for         in          from
 to          through     at          of          and
 or          not         return      go          defer
-make        channel     send        receive     close
-panic       recover     error       empty       reference
-on          this        discard     true        false
-equals      as
+make        list        map         channel     send
+receive     close       panic       recover     error
+empty       reference   on          this        discard
+true        false       equals      as
 ```
+
+**Note:** The keywords `list`, `map`, and `channel` are context-sensitive and may also be used as identifiers in certain contexts.
 
 ---
 
