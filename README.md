@@ -50,6 +50,18 @@ go test ./internal/lexer/... -v
 
 ## Language Features
 
+### Core Design Decisions (v1.1.0)
+
+Kukicha v1.1.0 introduces four key refinements that balance simplicity, performance, and consistency:
+
+1. **📦 Optional Leaf Declarations** - Folder-based package model with automatic Stem (package) calculation from file path. No more header/directory sync issues!
+
+2. **🎯 Signature-First Type Inference** - Explicit types required for function parameters and returns; inference only for local variables. Maintains Go's performance while reducing boilerplate.
+
+3. **⚡ Literal vs Dynamic Indexing** - Negative indices with literal constants (e.g., `items[-1]`) compile to zero-overhead code. Dynamic indices require explicit `.at()` method.
+
+4. **📏 Indentation as Canonical** - The `kuki fmt` tool converts all code to standard 4-space indentation format, preventing "dialect drift" between coding styles.
+
 ### Philosophy
 
 Kukicha smooths Go's rough edges while preserving its power:
@@ -74,12 +86,12 @@ count = 100
 #### Functions & Methods
 
 ```kukicha
-# Function
-func Greet(name string)
-    print "Hello {name}"
+# Function with explicit types (required)
+func Greet(name string) string
+    return "Hello {name}"
 
 # Method with implicit receiver
-func Display on Todo
+func Display on Todo () string
     return "{this.id}: {this.title}"
 ```
 
