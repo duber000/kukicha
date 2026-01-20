@@ -472,6 +472,8 @@ Most Kukicha syntax has a Go equivalent that also works:
 | `receive ch` | `<-ch` |
 | `make channel of T` | `make(chan T)` |
 | `for x in items` | `for _, x := range items` |
+| `for i, x in items` | `for i, x := range items` |
+| `for discard, x in items` | `for _, x := range items` |
 
 **Note:** The walrus operator `:=` is always create-only in Kukicha (unlike Go's shadowing behavior).
 

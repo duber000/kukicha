@@ -1447,11 +1447,16 @@ type Node
 
 #### Loop Iteration
 
-**Primary (Recommended):**
-```kukicha
-for discard, item in items
-    process(item)
+**Collection iteration:**
 
+| Kukicha | Go Syntax |
+|---------|-----------|
+| `for x in items` | `for _, x := range items` |
+| `for i, x in items` | `for i, x := range items` |
+| `for discard, x in items` | `for _, x := range items` |
+
+**Range loops:**
+```kukicha
 # Exclusive range
 for i from 0 to 10
     print i  # 0-9
@@ -1461,11 +1466,8 @@ for i from 1 through 10
     print i  # 1-10
 ```
 
-**Go Syntax (Also Works):**
+**Go-style C loops:**
 ```kukicha
-for _, item := range items
-    process(item)
-
 for i := 0; i < 10; i++
     print i
 ```
