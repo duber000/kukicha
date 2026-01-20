@@ -68,6 +68,7 @@ const (
 	TOKEN_AND_AND       // &&
 	TOKEN_OR            // or
 	TOKEN_OR_OR         // ||
+	TOKEN_ONERR         // onerr
 	TOKEN_NOT           // not
 	TOKEN_BANG          // !
 	TOKEN_PIPE          // |>
@@ -221,6 +222,8 @@ func (t TokenType) String() string {
 		return "OR"
 	case TOKEN_OR_OR:
 		return "OR_OR"
+	case TOKEN_ONERR:
+		return "ONERR"
 	case TOKEN_NOT:
 		return "NOT"
 	case TOKEN_BANG:
@@ -310,6 +313,7 @@ var keywords = map[string]TokenType{
 	"equals":    TOKEN_EQUALS,
 	"and":       TOKEN_AND,
 	"or":        TOKEN_OR,
+	"onerr":     TOKEN_ONERR,
 	"not":       TOKEN_NOT,
 }
 

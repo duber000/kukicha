@@ -544,7 +544,7 @@ type PipeExpr struct {
     Pos   Position
 }
 
-type OrExpr struct {
+type OnErrExpr struct {
     Left    Expr
     Handler Expr // Can be panic, return, or default value
     Pos     Position
@@ -935,18 +935,18 @@ func (sa *SemanticAnalyzer) checkExpr(expr Expr) TypeInfo {
     return nil
 }
 
-func (sa *SemanticAnalyzer) checkOrExpr(expr *OrExpr) TypeInfo {
+func (sa *SemanticAnalyzer) checkOnErrExpr(expr *OnErrExpr) TypeInfo {
     leftType := sa.checkExpr(expr.Left)
-    
+
     // Check if left is a function returning (T, error)
     if funcType, ok := leftType.(*FunctionTypeInfo); ok {
         if len(funcType.Returns) == 2 {
-            // Valid or operator usage
+            // Valid onerr operator usage
             return funcType.Returns[0]
         }
     }
-    
-    sa.error(expr.Pos, "'or' operator requires function returning (T, error)")
+
+    sa.error(expr.Pos, "'onerr' operator requires function returning (T, error)")
     return nil
 }
 
@@ -1056,22 +1056,22 @@ func (cg *CodeGenerator) generateExpr(expr Expr) string {
     return ""
 }
 
-func (cg *CodeGenerator) generateOrExpr(expr *OrExpr) string {
-    // Desugar or operator
-    // result := func() or handler
+func (cg *CodeGenerator) generateOnErrExpr(expr *OnErrExpr) string {
+    // Desugar onerr operator
+    // result := func() onerr handler
     // Becomes:
     // result, err := func()
     // if err != nil { handler }
-    
+
     tmpVar := cg.generateTempVar()
-    
+
     cg.writeLine("%s, err := %s", tmpVar, cg.generateExpr(expr.Left))
     cg.writeLine("if err != nil {")
     cg.indent()
     cg.generateExpr(expr.Handler)
     cg.dedent()
     cg.writeLine("}")
-    
+
     return tmpVar
 }
 

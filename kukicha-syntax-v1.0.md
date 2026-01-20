@@ -342,24 +342,24 @@ for i, todo := range todos
 
 ## Error Handling
 
-Kukicha provides ergonomic error handling with the `or` operator while maintaining Go's explicit style.
+Kukicha provides ergonomic error handling with the `onerr` operator while maintaining Go's explicit style.
 
-### The `or` Operator
+### The `onerr` Operator
 
-The `or` operator automatically unwraps `(value, error)` tuples and handles errors inline:
+The `onerr` operator automatically unwraps `(value, error)` tuples and handles errors inline:
 
 ```kukicha
 # Panic on error
-content := file.read("config.json") or panic "missing config file"
+content := file.read("config.json") onerr panic "missing config file"
 
 # Return error up the call stack
-data := http.get(url) or return error "failed to fetch data"
+data := http.get(url) onerr return error "failed to fetch data"
 
 # Provide default value
-port := env.get("PORT") or "8080"
+port := env.get("PORT") onerr "8080"
 
 # Custom error handling
-config := file.read("config.json") or
+config := file.read("config.json") onerr
     print "Warning: config not found, using defaults"
     loadDefaults()
 ```
@@ -367,12 +367,25 @@ config := file.read("config.json") or
 **How it works:**
 ```kukicha
 # This line
-result := someFunc() or panic "failed"
+result := someFunc() onerr panic "failed"
 
 # Is equivalent to
 result, err := someFunc()
 if err != empty
     panic "failed"
+```
+
+**Design Note:** The `onerr` keyword is distinct from the `or` keyword used for boolean logic. This separation makes code more readable - you can tell at a glance whether an expression handles errors or performs boolean operations.
+
+### Boolean OR vs Error Handling
+
+```kukicha
+# Boolean OR - for logical operations
+if active or pending or draft
+    process()
+
+# Error handling - with onerr
+data := fetch() onerr return error "failed"
 ```
 
 ### Explicit Error Handling
@@ -394,17 +407,17 @@ if err != empty
 
 ```kukicha
 # Try multiple sources
-config := file.read("config.json") 
-    or file.read("config.yaml")
-    or file.read("config.toml")
-    or panic "no config file found"
+config := file.read("config.json")
+    onerr file.read("config.yaml")
+    onerr file.read("config.toml")
+    onerr panic "no config file found"
 ```
 
 ---
 
 ## Methods
 
-Methods are functions that operate on types. Use the `on` keyword with implicit `this` receiver.
+Methods are functions that operate on types. Use the `on this` syntax with an explicit `this` receiver.
 
 ### Method Declaration
 
@@ -414,22 +427,24 @@ type Todo
     title string
     completed bool
 
-# Value receiver - uses implicit 'this'
-func Display on Todo string
+# Value receiver - uses explicit 'this'
+func Display on this Todo string
     status := "pending"
     if this.completed
         status = "done"
     return "{status}: {this.title}"
 
 # Reference receiver - for mutation
-func MarkDone on reference Todo
+func MarkDone on this reference Todo
     this.completed = true
     this.completed_at = time.now()
 
 # Method with parameters
-func UpdateTitle on reference Todo, newTitle string
+func UpdateTitle on this reference Todo, newTitle string
     this.title = newTitle
 ```
+
+**Design Note:** The `this` keyword is explicit in the method signature (`on this Todo`), making it clear that `this` refers to the receiver. This improves discoverability for beginners - you can see where `this` comes from just by reading the function declaration.
 
 ### Method Usage
 
@@ -488,10 +503,10 @@ type Todo
     completed bool
 
 # Implementing Displayable interface
-func Display on Todo string
+func Display on this Todo string
     return "{this.id}. {this.title}"
 
-func GetTitle on Todo string
+func GetTitle on this Todo string
     return this.title
 
 # Todo now implements Displayable automatically!
@@ -582,7 +597,7 @@ func fetchAll(urls list of string)
     
     for discard, url in urls
         go
-            response := http.get(url) or return
+            response := http.get(url) onerr return
             send results, response.body
     
     allData := empty list of string
@@ -627,7 +642,7 @@ func processJobs(jobs list of Job, workers int)
 
 ```kukicha
 func processFile(path string)
-    file := file.open(path) or return error "cannot open"
+    file := file.open(path) onerr return error "cannot open"
     defer file.close()  # Always closes, even on error
     
     # Work with file
@@ -672,7 +687,7 @@ func robustOperation() error
         if r := recover(); r != empty
             return error "operation panicked: {r}"
     
-    result := dangerousFunc() or return error "failed"
+    result := dangerousFunc() onerr return error "failed"
     return empty  # No error
 ```
 
@@ -1075,7 +1090,7 @@ config := file.read("config.json")
     |> json.parse()
     |> validate()
     |> applyDefaults()
-    or return error "invalid config"
+    onerr return error "invalid config"
 ```
 
 ### Pipe with Standard Library
@@ -1111,8 +1126,8 @@ result := a + b |> double()
 # Same as: (a + b) |> double()
 
 # Works with or operator
-data := fetch() |> parse() or return error "failed"
-# Same as: (fetch() |> parse()) or return error "failed"
+data := fetch() |> parse() onerr return error "failed"
+# Same as: (fetch() |> parse()) onerr return error "failed"
 ```
 
 ### Single-Line Pipes
@@ -1149,7 +1164,7 @@ func GetTopRepos(username string)
         |> filterByStars(10)
         |> sortByUpdated()
         |> take(5)
-        or empty list of Repo
+        onerr empty list of Repo
 ```
 
 **Data Transformation Pipeline:**
@@ -1161,7 +1176,7 @@ func ProcessCSV(path string)
         |> filterValid()
         |> aggregateByCategory()
         |> toJSON()
-        or return error "processing failed"
+        onerr return error "processing failed"
 ```
 
 **Container Deployment Pipeline:**
@@ -1171,12 +1186,12 @@ func DeployApp(version string)
         |> docker.build()
         |> docker.test()
         |> docker.push()
-        or return error "build failed"
+        onerr return error "build failed"
     
     return image
         |> k8s.deploy("production")
         |> k8s.waitReady()
-        or return error "deployment failed"
+        onerr return error "deployment failed"
 ```
 
 ---
@@ -1513,18 +1528,18 @@ func CreateTodo(id int64, title string, description string) Todo
         completed_at: empty
 
 # Method with value receiver
-func Display on Todo () string
+func Display on this Todo string
     status := "○"
     if this.completed
         status = "✓"
     return "{status} {this.id}. {this.title}"
 
 # Method with reference receiver
-func MarkDone on reference Todo ()
+func MarkDone on this reference Todo
     this.completed = true
     this.completed_at = time.now()
 
-func UpdateTitle on reference Todo (newTitle string)
+func UpdateTitle on this reference Todo, newTitle string
     this.title = newTitle
 
 # Function with error handling
@@ -1536,8 +1551,8 @@ func FindById(todos list of Todo, id int64) (Todo, error)
 
 # Function with or operator
 func LoadTodos(path string) list of Todo
-    content := file.read(path) or return empty list of Todo
-    todos := json.parse(content) or return empty list of Todo
+    content := file.read(path) onerr return empty list of Todo
+    todos := json.parse(content) onerr return empty list of Todo
     return todos
 
 # Concurrent processing
@@ -1555,7 +1570,7 @@ func ProcessAll(todos list of Todo)
 
 # Function with defer
 func SaveTodos(path string, todos list of Todo) error
-    file := file.open(path) or return error "cannot open file"
+    file := file.open(path) onerr return error "cannot open file"
     defer file.close()
 
     data := json.encode(todos)
@@ -1845,10 +1860,10 @@ Note: With Go syntax, you must use `:=` in the for loop declaration.
 
 **Primary (Recommended):**
 ```kukicha
-func Display on Todo
+func Display on this Todo
     return "{this.title}"
 
-func MarkDone on reference Todo
+func MarkDone on this reference Todo
     this.completed = true
 ```
 
@@ -1906,9 +1921,9 @@ close(ch)
 **Primary (Recommended):**
 ```kukicha
 # Or operator (auto-unwrap)
-data := file.read(path) or panic "file not found"
-user := parseUser(data) or return error "invalid user"
-port := env.get("PORT") or "8080"
+data := file.read(path) onerr panic "file not found"
+user := parseUser(data) onerr return error "invalid user"
+port := env.get("PORT") onerr "8080"
 ```
 
 **Go Syntax (Also Works):**
@@ -1963,10 +1978,10 @@ x := int(5)
 ```kukicha
 func ProcessTodos(path string)
     todos := file.read(path) 
-        or return empty list of Todo
+        onerr return empty list of Todo
     
     parsed := json.parse(todos) as list of Todo
-        or return empty list of Todo
+        onerr return empty list of Todo
     
     results := empty list of Todo
     for discard, todo in parsed
@@ -1974,7 +1989,7 @@ func ProcessTodos(path string)
             results = append(results, todo)
     return results
 
-func Display on Todo
+func Display on this Todo
     status := "○"
     if this.completed
         status = "✓"
@@ -2019,7 +2034,7 @@ func FetchAll(urls list of string)
     
     for discard, url in urls
         go
-            response := http.get(url) or return
+            response := http.get(url) onerr return
             send results, response.body
     
     allData := empty list of string
@@ -2061,14 +2076,14 @@ interface FileProcessor
     Process(content string) string
 
 func SafeProcess(path string, processor FileProcessor)
-    file := file.open(path) or return error "cannot open file"
+    file := file.open(path) onerr return error "cannot open file"
     defer file.close()
     
     defer
         if r := recover(); r != empty
             print "Processing failed: {r}"
     
-    content := file.read() or return error "cannot read file"
+    content := file.read() onerr return error "cannot read file"
     result := processor.Process(content)
     return result, empty
 ```

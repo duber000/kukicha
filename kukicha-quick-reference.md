@@ -94,16 +94,16 @@ func ProcessData(data list of User) int
 ### Methods
 
 ```kukicha
-# Value receiver - uses implicit 'this'
-func Display on Todo string
+# Value receiver - uses explicit 'this'
+func Display on this Todo string
     return "{this.id}. {this.title}"
 
 # Reference receiver - for mutation
-func MarkDone on reference Todo
+func MarkDone on this reference Todo
     this.completed = true
 
 # With parameters
-func UpdateTitle on reference Todo, newTitle string
+func UpdateTitle on this reference Todo, newTitle string
     this.title = newTitle
 
 # Go-style also works (for copy-paste from Go)
@@ -119,7 +119,7 @@ interface Displayable
     GetTitle() string
 
 # Implicit implementation - just add methods
-func Display on Todo string
+func Display on this Todo string
     return this.title
 # Todo now implements Displayable
 ```
@@ -166,19 +166,21 @@ for discard, item in items
 
 ## Error Handling
 
-### Or Operator (Recommended)
+### OnErr Operator (Recommended)
 
 ```kukicha
 # Auto-unwrap and handle errors
-data := file.read("config.json") or panic "missing config"
-user := parseUser(data) or return error "invalid user"
-port := env.get("PORT") or "8080"
+data := file.read("config.json") onerr panic "missing config"
+user := parseUser(data) onerr return error "invalid user"
+port := env.get("PORT") onerr "8080"
 
 # Chaining
-config := file.read("config.json") 
-    or file.read("config.yaml")
-    or panic "no config found"
+config := file.read("config.json")
+    onerr file.read("config.yaml")
+    onerr panic "no config found"
 ```
+
+**Note:** The `onerr` keyword is distinct from `or` (boolean logic), making error handling visually clear.
 
 ### Explicit Handling
 
@@ -300,7 +302,7 @@ content := file.read("data.csv")
 config := file.read("config.json")
     |> json.parse()
     |> validate()
-    or return error "invalid"
+    onerr return error "invalid"
 ```
 
 ### Precedence
@@ -309,9 +311,9 @@ config := file.read("config.json")
 # Operators bind tighter than pipe
 a + b |> double()  # Same as: (a + b) |> double()
 
-# Or operator has lower precedence
-fetch() |> parse() or "default"
-# Same as: (fetch() |> parse()) or "default"
+# OnErr operator has lower precedence
+fetch() |> parse() onerr "default"
+# Same as: (fetch() |> parse()) onerr "default"
 ```
 
 ---
@@ -375,7 +377,7 @@ close ch
 
 ```kukicha
 func processFile(path)
-    file := file.open(path) or return error
+    file := file.open(path) onerr return error
     defer file.close()  # Always runs
     
     # Work with file
@@ -502,10 +504,10 @@ func CreateTodo(id, title)
 
 ```kukicha
 func process(path)
-    file := file.open(path) or return error "cannot open"
+    file := file.open(path) onerr return error "cannot open"
     defer file.close()
     
-    data := file.read() or return error "cannot read"
+    data := file.read() onerr return error "cannot read"
     return data, empty
 ```
 
