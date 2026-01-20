@@ -184,7 +184,7 @@ if err != empty
 ```kukicha
 # Create
 todos := empty list of Todo
-numbers := list of int
+numbers := empty list of int
 
 # Access
 first := items at 0

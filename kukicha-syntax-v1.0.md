@@ -422,7 +422,7 @@ func (todo Todo) Display() string
         status = "done"
     return "{status}: {todo.title}"
 
-func (todo reference Todo) MarkDone()
+func (todo *Todo) MarkDone()
     todo.completed = true
 ```
 
