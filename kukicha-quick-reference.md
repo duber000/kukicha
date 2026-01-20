@@ -186,25 +186,12 @@ if err != empty
 todos := empty list of Todo
 numbers := empty list of int
 
-# Access
+# Access by index
 first := items at 0
-second := items[1]  # Go syntax also works
+first := items[0]
 
-# Slice (exclusive end)
-first5 := items from 0 to 5         # Indices 0,1,2,3,4
-tail := items from 3 to end         # Index 3 through last
-
-# Negative indices
-last := items at -1                 # Last element only
-last3 := items from -3 to end       # Last 3 elements
-allButLast := items from 0 to -1    # Everything except last
-
-# Inclusive slicing
-oneToFive := items from 0 through 4 # Indices 0,1,2,3,4
-
-# Go syntax also works
-last3 := items[len(items)-3:]
-middle := items[2:7]
+# Slicing uses Go syntax
+subset := items[2:7]
 
 # Append
 items = append(items, newItem)

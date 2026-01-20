@@ -216,16 +216,8 @@ PostfixExpression ::=
         | "(" [ ExpressionList ] ")"
         | "at" Expression
         | "[" Expression "]"
-        | SliceExpression
+        | "[" Expression ":" Expression "]"
     }
-
-SliceExpression ::=
-    "from" SliceIndex ( "to" | "through" ) SliceIndex
-
-SliceIndex ::=
-    | Expression
-    | "-" Expression
-    | "end"
 
 PrimaryExpression ::=
     | IDENTIFIER

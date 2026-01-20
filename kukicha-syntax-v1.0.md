@@ -664,43 +664,13 @@ todos = append(todos, newTodo)
 **Access by index:**
 ```kukicha
 first := items at 0
-second := items at 1
+first := items[0]
 ```
 
 **Slicing:**
-
-Kukicha supports Python-style slicing with negative indices.
-
-**Index values:**
-- Positive indices count from start (0 = first element)
-- Negative indices count from end (-1 = last element, -2 = second-to-last)
-- `end` is equivalent to `len(collection)`
-
-**Slice syntax:**
 ```kukicha
-# Basic slicing (exclusive end)
-first5 := items from 0 to 5         # Indices 0,1,2,3,4
-middle := items from 2 to 7         # Indices 2,3,4,5,6
-
-# Using end
-tail := items from 3 to end         # Index 3 through last
-allItems := items from 0 to end     # Complete copy
-
-# Negative indices
-last := items at -1                 # Last element only
-last3 := items from -3 to end       # Last 3 elements
-allButLast := items from 0 to -1    # Everything except last
-allButFirst2 := items from 2 to end # Drop first 2
-
-# Inclusive slicing (includes end index)
-oneToFive := items from 0 through 4 # Indices 0,1,2,3,4
-lastTwo := items from -2 through -1 # Last 2 elements
-```
-
-**Go syntax also works:**
-```kukicha
-last3 := items[len(items)-3:]
-middle := items[2:7]
+# Slicing uses Go syntax
+subset := items[2:7]
 ```
 
 **Length:**
