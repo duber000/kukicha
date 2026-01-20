@@ -722,17 +722,27 @@ result := data
 
 ### Piping Rules
 
-**The left side becomes the first argument to the right side:**
+**Basic usage — result becomes first argument:**
 
 ```kukicha
 # These are equivalent
 x |> func(y, z)
 func(x, y, z)
+```
 
-# With methods
-response := http.get(url)
-    |> .json()           # Calls response.json()
-    |> filterActive()    # Calls filterActive(parsed_json)
+**Method calls — use leading dot to call method on piped value:**
+
+```kukicha
+response |> .json()  # Same as: response.json()
+```
+
+**Chaining both styles:**
+
+```kukicha
+users := http.get(url)
+    |> .json()              # Call .json() on response
+    |> filterActive()       # Pass result to filterActive()
+    |> sortByName()
 ```
 
 ### Multiline Pipes (Recommended Style)
@@ -876,6 +886,13 @@ y := a, b                # Syntax error (use tuples only in returns)
 ```kukicha
 result := str1 + str2
 greeting := "hello " + name
+```
+
+**String functions:**
+```kukicha
+upper := string.upper("hello")
+parts := string.split("a,b,c", ",")
+joined := string.join(parts, "|")
 ```
 
 ---

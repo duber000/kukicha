@@ -234,8 +234,11 @@ result := data
     |> transform()
     |> process()
 
-# Left side becomes first argument
+# Basic usage — result becomes first argument
 x |> func(y, z)  # Same as: func(x, y, z)
+
+# Method calls — use leading dot
+response |> .json()  # Same as: response.json()
 ```
 
 ### Common Patterns
@@ -284,6 +287,7 @@ status := "{id}: {title} - {completed}"
 
 # String operations
 upper := string.upper("hello")
+parts := string.split("a,b,c", ",")
 joined := string.join(parts, "|")
 ```
 
