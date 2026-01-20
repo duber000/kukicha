@@ -1,3 +1,16 @@
+# KUKICHA Standard Library Roadmap
+
+This shows the functions that need to be created and how they would be used in kukicha code.
+
+## Print - print with new line
+
+print("hello")
+
+
+
+
+## Slices 
+
 import slices
 
 firstThree := slices.first(items, 3)
