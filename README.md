@@ -277,6 +277,7 @@ Key word changes:
 
 1. Not really happy with the this keyword
 2. onerr doesn't roll off the tongue.
+3. Generics placeholder keywords are clunky
 
 See [Standard Library Roadmap](docs/kukicha-stdlib-roadmap.md) for planned features:
 
