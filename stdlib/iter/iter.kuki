@@ -1,0 +1,55 @@
+# Kukicha Standard Library - Iterator Operations
+# This file uses special transpilation: iter.Seq becomes iter.Seq[T] in Go output
+# Functions written here work on ANY type through Go's type inference
+
+leaf iter
+
+import "iter"
+
+# Filter returns an iterator that yields only items matching the predicate
+# Source: func Filter(seq iter.Seq, keep func(any) bool) iter.Seq
+# Output: func Filter[T any](seq iter.Seq[T], keep func(T) bool) iter.Seq[T]
+func Filter(seq iter.Seq, keep func(any) bool) iter.Seq
+    return func(yield func(any) bool) bool
+        for item in seq
+            if keep(item)
+                if !yield(item)
+                    return false
+        return true
+
+# Map transforms each item in the iterator
+# Source: func Map(seq iter.Seq, transform func(any) any) iter.Seq
+# Output: func Map[T any, U any](seq iter.Seq[T], transform func(T) U) iter.Seq[U]
+func Map(seq iter.Seq, transform func(any) any) iter.Seq
+    return func(yield func(any) bool) bool
+        for item in seq
+            if !yield(transform(item))
+                return false
+        return true
+
+# Take returns an iterator of the first n items
+# Source: func Take(seq iter.Seq, n int) iter.Seq
+# Output: func Take[T any](seq iter.Seq[T], n int) iter.Seq[T]
+func Take(seq iter.Seq, n int) iter.Seq
+    return func(yield func(any) bool) bool
+        count := 0
+        for item in seq
+            if count >= n
+                return true
+            if !yield(item)
+                return false
+            count = count + 1
+        return true
+
+# Skip returns an iterator that skips the first n items
+# Source: func Skip(seq iter.Seq, n int) iter.Seq
+# Output: func Skip[T any](seq iter.Seq[T], n int) iter.Seq[T]
+func Skip(seq iter.Seq, n int) iter.Seq
+    return func(yield func(any) bool) bool
+        count := 0
+        for item in seq
+            if count >= n
+                if !yield(item)
+                    return false
+            count = count + 1
+        return true
