@@ -271,20 +271,15 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 	case *ast.ForConditionStmt:
 		g.generateForConditionStmt(s)
 	case *ast.DeferStmt:
-		g.write("defer ")
-		g.generateExpression(s.Call)
-		g.writeLine("")
+		g.writeLine("defer " + g.exprToString(s.Call))
 	case *ast.GoStmt:
-		g.write("go ")
-		g.generateExpression(s.Call)
-		g.writeLine("")
+		g.writeLine("go " + g.exprToString(s.Call))
 	case *ast.SendStmt:
 		channel := g.exprToString(s.Channel)
 		value := g.exprToString(s.Value)
 		g.writeLine(fmt.Sprintf("%s <- %s", channel, value))
 	case *ast.ExpressionStmt:
-		g.generateExpression(s.Expression)
-		g.writeLine("")
+		g.writeLine(g.exprToString(s.Expression))
 	}
 }
 
@@ -323,27 +318,50 @@ func (g *Generator) generateReturnStmt(stmt *ast.ReturnStmt) {
 
 func (g *Generator) generateIfStmt(stmt *ast.IfStmt) {
 	condition := g.exprToString(stmt.Condition)
-	g.write(fmt.Sprintf("if %s {", condition))
-	g.writeLine("")
+	g.writeLine(fmt.Sprintf("if %s {", condition))
 
 	g.indent++
 	g.generateBlock(stmt.Consequence)
 	g.indent--
 
 	if stmt.Alternative != nil {
-		g.write("}")
 		switch alt := stmt.Alternative.(type) {
 		case *ast.ElseStmt:
-			g.write(" else {")
-			g.writeLine("")
+			g.writeLine("} else {")
 			g.indent++
 			g.generateBlock(alt.Body)
 			g.indent--
 			g.writeLine("}")
 		case *ast.IfStmt:
-			g.write(" else ")
-			g.generateIfStmt(alt)
+			g.write(g.indentStr() + "} else ")
+			g.generateIfStmtContinued(alt)
 			return // Don't write closing brace, it's handled recursively
+		}
+	} else {
+		g.writeLine("}")
+	}
+}
+
+func (g *Generator) generateIfStmtContinued(stmt *ast.IfStmt) {
+	condition := g.exprToString(stmt.Condition)
+	g.output.WriteString(fmt.Sprintf("if %s {\n", condition))
+
+	g.indent++
+	g.generateBlock(stmt.Consequence)
+	g.indent--
+
+	if stmt.Alternative != nil {
+		switch alt := stmt.Alternative.(type) {
+		case *ast.ElseStmt:
+			g.writeLine("} else {")
+			g.indent++
+			g.generateBlock(alt.Body)
+			g.indent--
+			g.writeLine("}")
+		case *ast.IfStmt:
+			g.write(g.indentStr() + "} else ")
+			g.generateIfStmtContinued(alt)
+			return
 		}
 	} else {
 		g.writeLine("}")
@@ -354,11 +372,10 @@ func (g *Generator) generateForRangeStmt(stmt *ast.ForRangeStmt) {
 	collection := g.exprToString(stmt.Collection)
 
 	if stmt.Index != nil {
-		g.write(fmt.Sprintf("for %s, %s := range %s {", stmt.Index.Value, stmt.Variable.Value, collection))
+		g.writeLine(fmt.Sprintf("for %s, %s := range %s {", stmt.Index.Value, stmt.Variable.Value, collection))
 	} else {
-		g.write(fmt.Sprintf("for _, %s := range %s {", stmt.Variable.Value, collection))
+		g.writeLine(fmt.Sprintf("for _, %s := range %s {", stmt.Variable.Value, collection))
 	}
-	g.writeLine("")
 
 	g.indent++
 	g.generateBlock(stmt.Body)
@@ -379,8 +396,7 @@ func (g *Generator) generateForNumericStmt(stmt *ast.ForNumericStmt) {
 		condition = fmt.Sprintf("%s < %s", varName, end)
 	}
 
-	g.write(fmt.Sprintf("for %s := %s; %s; %s++ {", varName, start, condition, varName))
-	g.writeLine("")
+	g.writeLine(fmt.Sprintf("for %s := %s; %s; %s++ {", varName, start, condition, varName))
 
 	g.indent++
 	g.generateBlock(stmt.Body)
@@ -391,18 +407,13 @@ func (g *Generator) generateForNumericStmt(stmt *ast.ForNumericStmt) {
 
 func (g *Generator) generateForConditionStmt(stmt *ast.ForConditionStmt) {
 	condition := g.exprToString(stmt.Condition)
-	g.write(fmt.Sprintf("for %s {", condition))
-	g.writeLine("")
+	g.writeLine(fmt.Sprintf("for %s {", condition))
 
 	g.indent++
 	g.generateBlock(stmt.Body)
 	g.indent--
 
 	g.writeLine("}")
-}
-
-func (g *Generator) generateExpression(expr ast.Expression) {
-	g.write(g.exprToString(expr))
 }
 
 func (g *Generator) exprToString(expr ast.Expression) string {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"go/format"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -111,9 +112,16 @@ func buildCommand(filename string) {
 		os.Exit(1)
 	}
 
+	// Format with gofmt
+	formatted, err := format.Source([]byte(goCode))
+	if err != nil {
+		// If formatting fails, use unformatted code (shouldn't happen)
+		formatted = []byte(goCode)
+	}
+
 	// Write Go file
 	outputFile := strings.TrimSuffix(filename, ".kuki") + ".go"
-	err = os.WriteFile(outputFile, []byte(goCode), 0644)
+	err = os.WriteFile(outputFile, formatted, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing output file: %v\n", err)
 		os.Exit(1)
