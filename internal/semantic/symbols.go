@@ -61,6 +61,7 @@ const (
 	TypeKindStruct
 	TypeKindInterface
 	TypeKindNamed
+	TypeKindPlaceholder // For generic type placeholders (element, item, etc.)
 )
 
 func (tk TypeKind) String() string {
@@ -91,6 +92,8 @@ func (tk TypeKind) String() string {
 		return "interface"
 	case TypeKindNamed:
 		return "named"
+	case TypeKindPlaceholder:
+		return "placeholder"
 	default:
 		return "unknown"
 	}
@@ -99,12 +102,13 @@ func (tk TypeKind) String() string {
 // TypeInfo represents type information
 type TypeInfo struct {
 	Kind        TypeKind
-	Name        string      // For named types
+	Name        string      // For named types and placeholders
 	ElementType *TypeInfo   // For lists, channels, references
 	KeyType     *TypeInfo   // For maps
 	ValueType   *TypeInfo   // For maps
 	Params      []*TypeInfo // For functions
 	Returns     []*TypeInfo // For functions
+	Constraint  string      // For placeholders: "any", "comparable", "cmp.Ordered"
 }
 
 func (ti *TypeInfo) String() string {
@@ -115,6 +119,8 @@ func (ti *TypeInfo) String() string {
 	switch ti.Kind {
 	case TypeKindNamed:
 		return ti.Name
+	case TypeKindPlaceholder:
+		return ti.Name // Return the placeholder name (element, item, etc.)
 	case TypeKindList:
 		if ti.ElementType != nil {
 			return fmt.Sprintf("list of %s", ti.ElementType)

@@ -10,22 +10,33 @@ import (
 
 // Generator generates Go code from an AST
 type Generator struct {
-	program *ast.Program
-	output  strings.Builder
-	indent  int
+	program        *ast.Program
+	output         strings.Builder
+	indent         int
+	placeholderMap map[string]string // Maps placeholder names to type param names (e.g., "element" -> "T")
+	autoImports    map[string]bool   // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
 }
 
 // New creates a new code generator
 func New(program *ast.Program) *Generator {
 	return &Generator{
-		program: program,
-		indent:  0,
+		program:     program,
+		indent:      0,
+		autoImports: make(map[string]bool),
 	}
+}
+
+// addImport adds an auto-import
+func (g *Generator) addImport(path string) {
+	g.autoImports[path] = true
 }
 
 // Generate generates Go code from the AST
 func (g *Generator) Generate() (string, error) {
 	g.output.Reset()
+
+	// Pre-scan declarations to collect auto-imports (like cmp for generic constraints)
+	g.scanForAutoImports()
 
 	// Generate comment about Green Tea GC optimization
 	// Users can enable it by setting GOEXPERIMENT=greenteagc when building
@@ -39,7 +50,7 @@ func (g *Generator) Generate() (string, error) {
 
 	// Generate imports (including auto-imports like fmt for string interpolation)
 	needsFmt := g.needsStringInterpolation()
-	if len(g.program.Imports) > 0 || needsFmt {
+	if len(g.program.Imports) > 0 || needsFmt || len(g.autoImports) > 0 {
 		g.writeLine("")
 		g.generateImports()
 	}
@@ -51,6 +62,28 @@ func (g *Generator) Generate() (string, error) {
 	}
 
 	return g.output.String(), nil
+}
+
+// scanForAutoImports pre-scans declarations to collect auto-imports
+func (g *Generator) scanForAutoImports() {
+	for _, decl := range g.program.Declarations {
+		switch d := decl.(type) {
+		case *ast.FunctionDecl:
+			// Check for cmp.Ordered constraint in type parameters
+			for _, tp := range d.TypeParameters {
+				if tp.Constraint == "cmp.Ordered" {
+					g.addImport("cmp")
+				}
+			}
+		case *ast.GenericTypeDecl:
+			// Check for cmp.Ordered constraint in generic types
+			for _, tp := range d.TypeParameters {
+				if tp.Constraint == "cmp.Ordered" {
+					g.addImport("cmp")
+				}
+			}
+		}
+	}
 }
 
 func (g *Generator) generatePackage() {
@@ -78,6 +111,13 @@ func (g *Generator) generateImports() {
 	needsFmt := g.needsStringInterpolation()
 	if needsFmt {
 		imports["fmt"] = ""
+	}
+
+	// Add auto-imports (e.g., cmp for generic constraints)
+	for path := range g.autoImports {
+		if _, exists := imports[path]; !exists {
+			imports[path] = ""
+		}
 	}
 
 	// Generate import block
@@ -108,6 +148,8 @@ func (g *Generator) generateDeclaration(decl ast.Declaration) {
 	switch d := decl.(type) {
 	case *ast.TypeDecl:
 		g.generateTypeDecl(d)
+	case *ast.GenericTypeDecl:
+		g.generateGenericTypeDecl(d)
 	case *ast.InterfaceDecl:
 		g.generateInterfaceDecl(d)
 	case *ast.FunctionDecl:
@@ -127,6 +169,31 @@ func (g *Generator) generateTypeDecl(decl *ast.TypeDecl) {
 
 	g.indent--
 	g.writeLine("}")
+}
+
+func (g *Generator) generateGenericTypeDecl(decl *ast.GenericTypeDecl) {
+	// Set up placeholder mapping for this type
+	g.placeholderMap = make(map[string]string)
+	for _, tp := range decl.TypeParameters {
+		g.placeholderMap[tp.Placeholder] = tp.Name
+	}
+
+	// Generate type with type parameters
+	typeParams := g.generateTypeParameters(decl.TypeParameters)
+	g.write(fmt.Sprintf("type %s%s struct {", decl.Name.Value, typeParams))
+	g.writeLine("")
+	g.indent++
+
+	for _, field := range decl.Fields {
+		fieldType := g.generateTypeAnnotation(field.Type)
+		g.writeLine(fmt.Sprintf("%s %s", field.Name.Value, fieldType))
+	}
+
+	g.indent--
+	g.writeLine("}")
+
+	// Clear placeholder mapping
+	g.placeholderMap = nil
 }
 
 func (g *Generator) generateInterfaceDecl(decl *ast.InterfaceDecl) {
@@ -151,6 +218,12 @@ func (g *Generator) generateInterfaceDecl(decl *ast.InterfaceDecl) {
 }
 
 func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
+	// Set up placeholder mapping for this function
+	g.placeholderMap = make(map[string]string)
+	for _, tp := range decl.TypeParameters {
+		g.placeholderMap[tp.Placeholder] = tp.Name
+	}
+
 	// Generate function signature
 	signature := "func "
 
@@ -163,6 +236,11 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 
 	// Add function name
 	signature += decl.Name.Value
+
+	// Add type parameters if present
+	if len(decl.TypeParameters) > 0 {
+		signature += g.generateTypeParameters(decl.TypeParameters)
+	}
 
 	// Add parameters
 	params := g.generateFunctionParameters(decl.Parameters)
@@ -185,6 +263,27 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	}
 
 	g.writeLine("}")
+
+	// Clear placeholder mapping
+	g.placeholderMap = nil
+}
+
+// generateTypeParameters generates Go generic type parameter list
+func (g *Generator) generateTypeParameters(typeParams []*ast.TypeParameter) string {
+	if len(typeParams) == 0 {
+		return ""
+	}
+
+	parts := make([]string, len(typeParams))
+	for i, tp := range typeParams {
+		constraint := tp.Constraint
+		if constraint == "cmp.Ordered" {
+			g.addImport("cmp")
+		}
+		parts[i] = fmt.Sprintf("%s %s", tp.Name, constraint)
+	}
+
+	return "[" + strings.Join(parts, ", ") + "]"
 }
 
 func (g *Generator) generateFunctionParameters(params []*ast.Parameter) string {
@@ -195,7 +294,12 @@ func (g *Generator) generateFunctionParameters(params []*ast.Parameter) string {
 	parts := make([]string, len(params))
 	for i, param := range params {
 		paramType := g.generateTypeAnnotation(param.Type)
-		parts[i] = fmt.Sprintf("%s %s", param.Name.Value, paramType)
+		if param.Variadic {
+			// Variadic parameter: use ...Type syntax
+			parts[i] = fmt.Sprintf("%s ...%s", param.Name.Value, paramType)
+		} else {
+			parts[i] = fmt.Sprintf("%s %s", param.Name.Value, paramType)
+		}
 	}
 
 	return strings.Join(parts, ", ")
@@ -232,6 +336,15 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 	case *ast.PrimitiveType:
 		return t.Name
 	case *ast.NamedType:
+		return t.Name
+	case *ast.PlaceholderType:
+		// Look up the mapped type parameter name
+		if g.placeholderMap != nil {
+			if name, ok := g.placeholderMap[t.Name]; ok {
+				return name
+			}
+		}
+		// Fallback: return the placeholder name as-is (for use outside function context)
 		return t.Name
 	case *ast.ReferenceType:
 		return "*" + g.generateTypeAnnotation(t.ElementType)

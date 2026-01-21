@@ -93,6 +93,18 @@ func (d *TypeDecl) TokenLiteral() string { return d.Token.Lexeme }
 func (d *TypeDecl) Pos() Position        { return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File} }
 func (d *TypeDecl) declNode()            {}
 
+// GenericTypeDecl represents a generic type declaration (e.g., type Box of element)
+type GenericTypeDecl struct {
+	Token          lexer.Token // The 'type' token
+	Name           *Identifier
+	TypeParameters []*TypeParameter // Generic type parameters
+	Fields         []*FieldDecl
+}
+
+func (d *GenericTypeDecl) TokenLiteral() string { return d.Token.Lexeme }
+func (d *GenericTypeDecl) Pos() Position        { return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File} }
+func (d *GenericTypeDecl) declNode()            {}
+
 type FieldDecl struct {
 	Name *Identifier
 	Type TypeAnnotation
@@ -115,12 +127,20 @@ type MethodSignature struct {
 }
 
 type FunctionDecl struct {
-	Token      lexer.Token // The 'func' token
-	Name       *Identifier
-	Parameters []*Parameter
-	Returns    []TypeAnnotation
-	Body       *BlockStmt
-	Receiver   *Receiver // For methods (optional)
+	Token          lexer.Token // The 'func' token
+	Name           *Identifier
+	TypeParameters []*TypeParameter // Generic type parameters (collected from placeholders)
+	Parameters     []*Parameter
+	Returns        []TypeAnnotation
+	Body           *BlockStmt
+	Receiver       *Receiver // For methods (optional)
+}
+
+// TypeParameter represents a generic type parameter (e.g., T any, U comparable)
+type TypeParameter struct {
+	Name        string // Generated name: T, U, V, etc.
+	Placeholder string // Original placeholder: "element", "number", etc.
+	Constraint  string // "any", "comparable", "cmp.Ordered"
 }
 
 func (d *FunctionDecl) TokenLiteral() string { return d.Token.Lexeme }
@@ -128,8 +148,9 @@ func (d *FunctionDecl) Pos() Position        { return Position{Line: d.Token.Lin
 func (d *FunctionDecl) declNode()            {}
 
 type Parameter struct {
-	Name *Identifier
-	Type TypeAnnotation
+	Name     *Identifier
+	Type     TypeAnnotation
+	Variadic bool // true if "many" keyword used
 }
 
 type Receiver struct {
@@ -200,6 +221,18 @@ type ChannelType struct {
 func (t *ChannelType) TokenLiteral() string { return t.Token.Lexeme }
 func (t *ChannelType) Pos() Position        { return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File} }
 func (t *ChannelType) typeNode()            {}
+
+// PlaceholderType represents a semantic type placeholder for generics
+// e.g., element, item, value, number, comparable, ordered
+type PlaceholderType struct {
+	Token      lexer.Token // The placeholder token
+	Name       string      // "element", "item", "value", "thing", "key", "result", "number", "comparable", "ordered"
+	Constraint string      // "" (unconstrained), "comparable", "numeric", "ordered"
+}
+
+func (t *PlaceholderType) TokenLiteral() string { return t.Token.Lexeme }
+func (t *PlaceholderType) Pos() Position        { return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File} }
+func (t *PlaceholderType) typeNode()            {}
 
 // ============================================================================
 // Statements
