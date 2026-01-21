@@ -109,6 +109,7 @@ type TypeInfo struct {
 	Params      []*TypeInfo // For functions
 	Returns     []*TypeInfo // For functions
 	Constraint  string      // For placeholders: "any", "comparable", "cmp.Ordered"
+	Variadic    bool        // For functions: true if last param is variadic
 }
 
 func (ti *TypeInfo) String() string {

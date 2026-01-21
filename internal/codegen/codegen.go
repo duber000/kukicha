@@ -15,6 +15,8 @@ type Generator struct {
 	indent         int
 	placeholderMap map[string]string // Maps placeholder names to type param names (e.g., "element" -> "T")
 	autoImports    map[string]bool   // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
+	isStdlibIter   bool              // True if generating stdlib/iter code (enables special transpilation)
+	sourceFile     string            // Source file path for detecting stdlib
 }
 
 // New creates a new code generator
@@ -24,6 +26,13 @@ func New(program *ast.Program) *Generator {
 		indent:      0,
 		autoImports: make(map[string]bool),
 	}
+}
+
+// SetSourceFile sets the source file path and detects if special transpilation is needed
+func (g *Generator) SetSourceFile(path string) {
+	g.sourceFile = path
+	// Enable special transpilation for stdlib/iter files
+	g.isStdlibIter = strings.Contains(path, "stdlib/iter/") || strings.Contains(path, "stdlib\\iter\\")
 }
 
 // addImport adds an auto-import
@@ -220,8 +229,20 @@ func (g *Generator) generateInterfaceDecl(decl *ast.InterfaceDecl) {
 func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	// Set up placeholder mapping for this function
 	g.placeholderMap = make(map[string]string)
-	for _, tp := range decl.TypeParameters {
-		g.placeholderMap[tp.Placeholder] = tp.Name
+
+	// Check if this is a stdlib/iter function that needs special transpilation
+	var typeParams []*ast.TypeParameter
+	if g.isStdlibIter && len(decl.TypeParameters) == 0 {
+		// Generate type parameters from function signature
+		typeParams = g.inferStdlibTypeParameters(decl)
+		for _, tp := range typeParams {
+			g.placeholderMap[tp.Placeholder] = tp.Name
+		}
+	} else {
+		typeParams = decl.TypeParameters
+		for _, tp := range typeParams {
+			g.placeholderMap[tp.Placeholder] = tp.Name
+		}
 	}
 
 	// Generate function signature
@@ -238,8 +259,8 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	signature += decl.Name.Value
 
 	// Add type parameters if present
-	if len(decl.TypeParameters) > 0 {
-		signature += g.generateTypeParameters(decl.TypeParameters)
+	if len(typeParams) > 0 {
+		signature += g.generateTypeParameters(typeParams)
 	}
 
 	// Add parameters
@@ -266,6 +287,63 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 
 	// Clear placeholder mapping
 	g.placeholderMap = nil
+}
+
+// inferStdlibTypeParameters infers type parameters for stdlib/iter functions
+// This enables special transpilation where iter.Seq → iter.Seq[T]
+func (g *Generator) inferStdlibTypeParameters(decl *ast.FunctionDecl) []*ast.TypeParameter {
+	var typeParams []*ast.TypeParameter
+	usesIterSeq := false
+	needsTwoTypes := false
+
+	// Check if function uses iter.Seq
+	for _, param := range decl.Parameters {
+		if g.isIterSeqType(param.Type) {
+			usesIterSeq = true
+			break
+		}
+	}
+
+	for _, ret := range decl.Returns {
+		if g.isIterSeqType(ret) {
+			usesIterSeq = true
+			break
+		}
+	}
+
+	// Check if function transforms types (like Map: T → U)
+	if decl.Name.Value == "Map" || decl.Name.Value == "FlatMap" {
+		needsTwoTypes = true
+	}
+
+	// Generate type parameters
+	if usesIterSeq {
+		typeParams = append(typeParams, &ast.TypeParameter{
+			Name:        "T",
+			Placeholder: "any",
+			Constraint:  "any",
+		})
+
+		if needsTwoTypes {
+			typeParams = append(typeParams, &ast.TypeParameter{
+				Name:        "U",
+				Placeholder: "any2",
+				Constraint:  "any",
+			})
+		}
+	}
+
+	return typeParams
+}
+
+// isIterSeqType checks if a type is iter.Seq (to be made generic)
+func (g *Generator) isIterSeqType(typeAnn ast.TypeAnnotation) bool {
+	if namedType, ok := typeAnn.(*ast.NamedType); ok {
+		// Check for "iter.Seq" or just "Seq" in iter context
+		return namedType.Name == "iter.Seq" ||
+		       (g.isStdlibIter && namedType.Name == "Seq")
+	}
+	return false
 }
 
 // generateTypeParameters generates Go generic type parameter list
@@ -336,6 +414,13 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 	case *ast.PrimitiveType:
 		return t.Name
 	case *ast.NamedType:
+		// Special handling for iter.Seq in stdlib mode
+		if g.isStdlibIter && g.isIterSeqType(t) && g.placeholderMap != nil {
+			// Transform iter.Seq → iter.Seq[T]
+			if _, ok := g.placeholderMap["any"]; ok {
+				return "iter.Seq[T]"
+			}
+		}
 		return t.Name
 	case *ast.PlaceholderType:
 		// Look up the mapped type parameter name
