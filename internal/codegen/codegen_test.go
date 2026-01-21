@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/duber000/kukicha/internal/parser"
-	"github.com/duber000/kukicha/internal/semantic"
 )
 
 func TestSimpleFunction(t *testing.T) {
@@ -445,110 +444,6 @@ func TestTypedVariadicCodegen(t *testing.T) {
 	}
 }
 
-func TestGenericFunctionCodegen(t *testing.T) {
-	input := `func Reverse(items list of element) list of element
-    return items
-`
-
-	p, err := parser.New(input, "test.kuki")
-	if err != nil {
-		t.Fatalf("parser error: %v", err)
-	}
-
-	program, parseErrors := p.Parse()
-	if len(parseErrors) > 0 {
-		t.Fatalf("parse errors: %v", parseErrors)
-	}
-
-	// Run semantic analysis to collect type parameters
-	analyzer := semantic.New(program)
-	_ = analyzer.Analyze()
-
-	gen := New(program)
-	output, err := gen.Generate()
-	if err != nil {
-		t.Fatalf("codegen error: %v", err)
-	}
-
-	// Should have type parameters
-	if !strings.Contains(output, "[T any]") {
-		t.Errorf("expected type parameters [T any], got: %s", output)
-	}
-
-	// Should use T for the parameter and return type
-	if !strings.Contains(output, "items []T") {
-		t.Errorf("expected 'items []T', got: %s", output)
-	}
-
-	if !strings.Contains(output, ") []T") {
-		t.Errorf("expected return type '[]T', got: %s", output)
-	}
-}
-
-func TestGenericTypeCodegen(t *testing.T) {
-	input := `type Box of element
-    value element
-`
-
-	p, err := parser.New(input, "test.kuki")
-	if err != nil {
-		t.Fatalf("parser error: %v", err)
-	}
-
-	program, parseErrors := p.Parse()
-	if len(parseErrors) > 0 {
-		t.Fatalf("parse errors: %v", parseErrors)
-	}
-
-	gen := New(program)
-	output, err := gen.Generate()
-	if err != nil {
-		t.Fatalf("codegen error: %v", err)
-	}
-
-	// Should have type parameters
-	if !strings.Contains(output, "Box[T any]") {
-		t.Errorf("expected 'Box[T any]', got: %s", output)
-	}
-
-	// Field should use T
-	if !strings.Contains(output, "value T") {
-		t.Errorf("expected 'value T', got: %s", output)
-	}
-}
-
-func TestConstrainedGenericCodegen(t *testing.T) {
-	input := `func Sum(items list of number) number
-    return items[0]
-`
-
-	p, err := parser.New(input, "test.kuki")
-	if err != nil {
-		t.Fatalf("parser error: %v", err)
-	}
-
-	program, parseErrors := p.Parse()
-	if len(parseErrors) > 0 {
-		t.Fatalf("parse errors: %v", parseErrors)
-	}
-
-	// Run semantic analysis to collect type parameters
-	analyzer := semantic.New(program)
-	_ = analyzer.Analyze()
-
-	gen := New(program)
-	output, err := gen.Generate()
-	if err != nil {
-		t.Fatalf("codegen error: %v", err)
-	}
-
-	// Should have constrained type parameters
-	if !strings.Contains(output, "[T cmp.Ordered]") {
-		t.Errorf("expected type parameters [T cmp.Ordered], got: %s", output)
-	}
-
-	// Should auto-import cmp
-	if !strings.Contains(output, "\"cmp\"") {
-		t.Errorf("expected cmp import, got: %s", output)
-	}
-}
+// REMOVED: Old generics tests - generics syntax has been removed from Kukicha
+// Generic functionality is now provided by the stdlib (written in Go) with special transpilation
+// See stdlib/iter/ for examples of special transpilation

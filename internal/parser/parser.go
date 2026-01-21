@@ -216,14 +216,6 @@ func (p *Parser) parseTypeDecl() ast.Declaration {
 	name := p.parseIdentifier()
 	p.skipNewlines()
 
-	// Check for generic type: type Box of element
-	var typeParams []*ast.TypeParameter
-	if p.check(lexer.TOKEN_OF) {
-		p.advance() // consume 'of'
-		typeParams = p.parseTypePlaceholders()
-		p.skipNewlines()
-	}
-
 	fields := []*ast.FieldDecl{}
 
 	// Expect INDENT for fields
@@ -251,76 +243,11 @@ func (p *Parser) parseTypeDecl() ast.Declaration {
 	p.consume(lexer.TOKEN_DEDENT, "expected dedent after type fields")
 	p.skipNewlines()
 
-	// Return GenericTypeDecl if type parameters were found
-	if len(typeParams) > 0 {
-		return &ast.GenericTypeDecl{
-			Token:          token,
-			Name:           name,
-			TypeParameters: typeParams,
-			Fields:         fields,
-		}
-	}
-
 	return &ast.TypeDecl{
 		Token:  token,
 		Name:   name,
 		Fields: fields,
 	}
-}
-
-// parseTypePlaceholders parses type placeholders like "element" or "element and value"
-func (p *Parser) parseTypePlaceholders() []*ast.TypeParameter {
-	params := []*ast.TypeParameter{}
-	typeParamNames := []string{"T", "U", "V", "W", "X", "Y", "Z"}
-	paramIndex := 0
-
-	for {
-		// Expect an identifier that is a placeholder name
-		tok := p.peekToken()
-		if tok.Type != lexer.TOKEN_IDENTIFIER {
-			p.error(tok, "expected type placeholder (element, item, value, thing, key, result, number, comparable, ordered)")
-			return params
-		}
-
-		var placeholder string
-		var constraint string
-
-		switch tok.Lexeme {
-		case "element", "item", "value", "thing", "key", "result":
-			p.advance()
-			placeholder = tok.Lexeme
-			constraint = "any"
-		case "number", "ordered":
-			p.advance()
-			placeholder = tok.Lexeme
-			constraint = "cmp.Ordered"
-		case "comparable":
-			p.advance()
-			placeholder = tok.Lexeme
-			constraint = "comparable"
-		default:
-			p.error(tok, "expected type placeholder (element, item, value, thing, key, result, number, comparable, ordered)")
-			return params
-		}
-
-		// Assign a type parameter name
-		name := typeParamNames[paramIndex%len(typeParamNames)]
-		paramIndex++
-
-		params = append(params, &ast.TypeParameter{
-			Name:        name,
-			Placeholder: placeholder,
-			Constraint:  constraint,
-		})
-
-		// Check for "and" to continue parsing more placeholders
-		if !p.check(lexer.TOKEN_AND) {
-			break
-		}
-		p.advance() // consume 'and'
-	}
-
-	return params
 }
 
 func (p *Parser) parseInterfaceDecl() *ast.InterfaceDecl {
@@ -555,6 +482,37 @@ func (p *Parser) parseTypeAnnotation() ast.TypeAnnotation {
 			ElementType: elementType,
 		}
 
+	case lexer.TOKEN_FUNCTION:
+		token := p.advance()
+		p.consume(lexer.TOKEN_LPAREN, "expected '(' after 'function'")
+
+		// Parse parameter types
+		var parameters []ast.TypeAnnotation
+		if p.peekToken().Type != lexer.TOKEN_RPAREN {
+			parameters = append(parameters, p.parseTypeAnnotation())
+			for p.peekToken().Type == lexer.TOKEN_COMMA {
+				p.advance() // consume comma
+				parameters = append(parameters, p.parseTypeAnnotation())
+			}
+		}
+
+		p.consume(lexer.TOKEN_RPAREN, "expected ')' after function parameters")
+
+		// Parse return types
+		var returns []ast.TypeAnnotation
+		if p.peekToken().Type != lexer.TOKEN_NEWLINE &&
+			p.peekToken().Type != lexer.TOKEN_COMMA &&
+			p.peekToken().Type != lexer.TOKEN_RPAREN &&
+			p.peekToken().Type != lexer.TOKEN_EOF {
+			returns = append(returns, p.parseTypeAnnotation())
+		}
+
+		return &ast.FunctionType{
+			Token:      token,
+			Parameters: parameters,
+			Returns:    returns,
+		}
+
 	case lexer.TOKEN_ERROR:
 		// Special case: 'error' is a keyword but also a valid type name
 		token := p.advance()
@@ -573,32 +531,6 @@ func (p *Parser) parseTypeAnnotation() ast.TypeAnnotation {
 			return &ast.PrimitiveType{
 				Token: token,
 				Name:  token.Lexeme,
-			}
-		// Check for semantic type placeholders (unconstrained)
-		case "element", "item", "value", "thing", "key", "result":
-			return &ast.PlaceholderType{
-				Token:      token,
-				Name:       token.Lexeme,
-				Constraint: "", // unconstrained
-			}
-		// Check for semantic type placeholders (with constraints)
-		case "number":
-			return &ast.PlaceholderType{
-				Token:      token,
-				Name:       token.Lexeme,
-				Constraint: "numeric",
-			}
-		case "comparable":
-			return &ast.PlaceholderType{
-				Token:      token,
-				Name:       token.Lexeme,
-				Constraint: "comparable",
-			}
-		case "ordered":
-			return &ast.PlaceholderType{
-				Token:      token,
-				Name:       token.Lexeme,
-				Constraint: "ordered",
 			}
 		default:
 			return &ast.NamedType{
