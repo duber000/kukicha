@@ -417,7 +417,7 @@ config := file.read("config.json")
 
 ## Methods
 
-Methods are functions that operate on types. Use the `on this` syntax with an explicit `this` receiver.
+Methods are functions that operate on types. The receiver is explicitly named in the method signature using the `on receiverName Type` syntax.
 
 ### Method Declaration
 
@@ -427,24 +427,24 @@ type Todo
     title string
     completed bool
 
-# Value receiver - uses explicit 'this'
-func Display on this Todo string
+# Value receiver - receiver is just a parameter
+func Display on todo Todo string
     status := "pending"
-    if this.completed
+    if todo.completed
         status = "done"
-    return "{status}: {this.title}"
+    return "{status}: {todo.title}"
 
 # Reference receiver - for mutation
-func MarkDone on this reference Todo
-    this.completed = true
-    this.completed_at = time.now()
+func MarkDone on todo reference Todo
+    todo.completed = true
+    todo.completed_at = time.now()
 
 # Method with parameters
-func UpdateTitle on this reference Todo, newTitle string
-    this.title = newTitle
+func UpdateTitle on todo reference Todo, newTitle string
+    todo.title = newTitle
 ```
 
-**Design Note:** The `this` keyword is explicit in the method signature (`on this Todo`), making it clear that `this` refers to the receiver. This improves discoverability for beginners - you can see where `this` comes from just by reading the function declaration.
+**Design Philosophy (Zen of Go):** Methods are just functions. The receiver is simply the first parameter, made explicit with the `on` keyword. There's no special `this` or `self` - the receiver name (`todo`) is declared just like any other parameter. This makes it immediately clear where the variable comes from, improving readability for beginners.
 
 ### Method Usage
 
@@ -458,20 +458,6 @@ print message
 # Modify with reference receiver
 todo.MarkDone()
 todo.UpdateTitle("Buy organic milk")
-```
-
-### Go-Style Syntax (Also Works)
-
-```kukicha
-# Explicit receiver parameter
-func (todo Todo) Display() string
-    status := "pending"
-    if todo.completed
-        status = "done"
-    return "{status}: {todo.title}"
-
-func (todo *Todo) MarkDone()
-    todo.completed = true
 ```
 
 ---
@@ -503,11 +489,11 @@ type Todo
     completed bool
 
 # Implementing Displayable interface
-func Display on this Todo string
-    return "{this.id}. {this.title}"
+func Display on todo Todo string
+    return "{todo.id}. {todo.title}"
 
-func GetTitle on this Todo string
-    return this.title
+func GetTitle on todo Todo string
+    return todo.title
 
 # Todo now implements Displayable automatically!
 ```
@@ -1325,8 +1311,7 @@ empty map of KeyType to ValueType  # empty map
 | `empty` | Zero value |
 | `reference` | Pointer type |
 | `discard` | Ignore return value |
-| `on` | Method declaration |
-| `this` | Implicit receiver in methods |
+| `on` | Method receiver declaration |
 | `go` | Spawn goroutine |
 | `channel` | Channel type |
 | `send`, `receive` | Channel operations |
@@ -1528,19 +1513,19 @@ func CreateTodo(id int64, title string, description string) Todo
         completed_at: empty
 
 # Method with value receiver
-func Display on this Todo string
+func Display on todo Todo string
     status := "○"
-    if this.completed
+    if todo.completed
         status = "✓"
-    return "{status} {this.id}. {this.title}"
+    return "{status} {todo.id}. {todo.title}"
 
 # Method with reference receiver
-func MarkDone on this reference Todo
-    this.completed = true
-    this.completed_at = time.now()
+func MarkDone on todo reference Todo
+    todo.completed = true
+    todo.completed_at = time.now()
 
-func UpdateTitle on this reference Todo, newTitle string
-    this.title = newTitle
+func UpdateTitle on todo reference Todo, newTitle string
+    todo.title = newTitle
 
 # Function with error handling
 func FindById(todos list of Todo, id int64) (Todo, error)
@@ -1614,14 +1599,13 @@ GOEXPERIMENT=greenteagc kukicha build
 
 - **v1.0.0** — Complete language specification
   - ✅ Error handling with `or` operator (auto-unwraps tuples)
-  - ✅ Methods with `on` keyword and implicit `this`
+  - ✅ Methods with `on` keyword and explicit receiver names
   - ✅ Interfaces (implicit implementation like Go)
   - ✅ Concurrency: `go` for goroutines, `send`/`receive` for channels
   - ✅ Defer and recover for cleanup and panic handling
   - ✅ Range inclusivity: `to` (exclusive), `through` (inclusive)
   - ✅ Pipe operator `|>` for data pipelines
   - ✅ Indentation: 4 spaces (tabs rejected)
-  - ✅ Dual syntax support throughout (Kukicha + Go)
   - ✅ File extension: `.kuki` (茎 = stem in Japanese)
 
 - **v0.2.0** — Cohesive syntax refinement
@@ -1858,21 +1842,11 @@ Note: With Go syntax, you must use `:=` in the for loop declaration.
 
 #### Methods
 
-**Primary (Recommended):**
 ```kukicha
-func Display on this Todo
-    return "{this.title}"
-
-func MarkDone on this reference Todo
-    this.completed = true
-```
-
-**Go Syntax (Also Works):**
-```kukicha
-func (todo Todo) Display() string
+func Display on todo Todo
     return "{todo.title}"
 
-func (todo *Todo) MarkDone()
+func MarkDone on todo reference Todo
     todo.completed = true
 ```
 
@@ -1970,58 +1944,30 @@ x := int(5)
 
 ---
 
-### Complete Examples: Side by Side
+### Complete Examples
 
 #### Example 1: Todo Processing with Error Handling
 
-**Newbie-Friendly Syntax (Recommended):**
 ```kukicha
 func ProcessTodos(path string)
-    todos := file.read(path) 
+    todos := file.read(path)
         onerr return empty list of Todo
-    
+
     parsed := json.parse(todos) as list of Todo
         onerr return empty list of Todo
-    
+
     results := empty list of Todo
     for discard, todo in parsed
         if todo.completed and not todo.deleted
             results = append(results, todo)
     return results
 
-func Display on this Todo
-    status := "○"
-    if this.completed
-        status = "✓"
-    return "{status} {this.title}"
-```
-
-**Go-Style Syntax (Also Works):**
-```kukicha
-func ProcessTodos(path string) []Todo
-    todos, err := file.read(path)
-    if err != nil
-        return []Todo{}
-    
-    var parsed []Todo
-    err = json.parse(todos, &parsed)
-    if err != nil
-        return []Todo{}
-    
-    results := []Todo{}
-    for _, todo := range parsed
-        if todo.completed && !todo.deleted
-            results = append(results, todo)
-    return results
-
-func (todo Todo) Display() string
+func Display on todo Todo
     status := "○"
     if todo.completed
         status = "✓"
-    return status + " " + todo.title
+    return "{status} {todo.title}"
 ```
-
-**Both compile to identical Go code.**
 
 ---
 

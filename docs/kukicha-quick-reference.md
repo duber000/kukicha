@@ -112,20 +112,20 @@ func ProcessData(data list of User) int
 ### Methods
 
 ```kukicha
-# Value receiver - uses explicit 'this'
-func Display on this Todo string
-    return "{this.id}. {this.title}"
+# Value receiver - explicit receiver name
+func Display on todo Todo string
+    return "{todo.id}. {todo.title}"
 
 # Reference receiver - for mutation
-func MarkDone on this reference Todo
-    this.completed = true
+func MarkDone on todo reference Todo
+    todo.completed = true
 
 # With parameters
-func UpdateTitle on this reference Todo, newTitle string
-    this.title = newTitle
+func UpdateTitle on todo reference Todo, newTitle string
+    todo.title = newTitle
 
-# Go-style also works (for copy-paste from Go)
-func (t Todo) Summary() string
+# Receiver is just a parameter - no special 'this' or 'self'
+func Summary on t Todo string
     return t.title
 ```
 
@@ -137,8 +137,8 @@ interface Displayable
     GetTitle() string
 
 # Implicit implementation - just add methods
-func Display on this Todo string
-    return this.title
+func Display on todo Todo string
+    return todo.title
 # Todo now implements Displayable
 ```
 

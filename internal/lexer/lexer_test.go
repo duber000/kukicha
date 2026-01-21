@@ -307,11 +307,11 @@ func CreateTodo(id, title)
         title: title
         completed: false
 
-func Display on Todo
+func Display on todo Todo
     status := "pending"
-    if this.completed
+    if todo.completed
         status = "done"
-    return "{status}: {this.title}"
+    return "{status}: {todo.title}"
 `
 
 	lexer := NewLexer(input, "test.kuki")
@@ -426,7 +426,6 @@ func TestKeywordRecognition(t *testing.T) {
 		{"nil", TOKEN_EMPTY}, // nil is an alias for empty
 		{"reference", TOKEN_REFERENCE},
 		{"on", TOKEN_ON},
-		{"this", TOKEN_THIS},
 		{"discard", TOKEN_DISCARD},
 		{"at", TOKEN_AT},
 		{"of", TOKEN_OF},

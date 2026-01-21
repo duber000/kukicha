@@ -124,8 +124,8 @@ func TestParseInterfaceDeclaration(t *testing.T) {
 }
 
 func TestParseMethodDeclaration(t *testing.T) {
-	input := `func Display on this Person
-    print("Name: {this.Name}")
+	input := `func Display on p Person
+    print("Name: {p.Name}")
 `
 
 	p, err := New(input, "test.kuki")
@@ -155,8 +155,8 @@ func TestParseMethodDeclaration(t *testing.T) {
 		t.Fatal("expected receiver, got nil")
 	}
 
-	if fn.Receiver.Name.Value != "this" {
-		t.Errorf("expected receiver name 'this', got '%s'", fn.Receiver.Name.Value)
+	if fn.Receiver.Name.Value != "p" {
+		t.Errorf("expected receiver name 'p', got '%s'", fn.Receiver.Name.Value)
 	}
 }
 

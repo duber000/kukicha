@@ -134,7 +134,7 @@ type Parameter struct {
 }
 
 type Receiver struct {
-	Name *Identifier // Can be 'this' or a variable name
+	Name *Identifier // The receiver variable name
 	Type TypeAnnotation
 }
 
@@ -560,14 +560,6 @@ type TypeCastExpr struct {
 func (e *TypeCastExpr) TokenLiteral() string { return e.Token.Lexeme }
 func (e *TypeCastExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
 func (e *TypeCastExpr) exprNode()            {}
-
-type ThisExpr struct {
-	Token lexer.Token // The 'this' token
-}
-
-func (e *ThisExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *ThisExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *ThisExpr) exprNode()            {}
 
 type EmptyExpr struct {
 	Token lexer.Token // The 'empty' token

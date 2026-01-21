@@ -641,9 +641,9 @@ FunctionDeclaration
 ### Example 2: Method with OnErr Operator
 
 ```kukicha
-func Load on this Config, path string
+func Load on cfg Config, path string
     content := file.read(path) onerr return error "cannot read"
-    this.data = json.parse(content) onerr return error "invalid json"
+    cfg.data = json.parse(content) onerr return error "invalid json"
     return empty
 ```
 
@@ -810,35 +810,28 @@ ptr := empty reference User
 - If followed by `list`, `map`, `channel`, or `reference` → Typed empty literal
 - Otherwise → Standalone nil/zero-value
 
-### 6. Method Syntax (Kukicha vs Go Style)
+### 6. Method Syntax
 
 ```kukicha
-# Kukicha style - readable, uses explicit 'this' receiver
-func Display on this Todo string
-    return this.title
-
-func MarkDone on this reference Todo
-    this.completed = true
-
-# Go style - for copy-paste from Go tutorials
-func (todo Todo) Display() string
+# Methods use explicit receiver names (no special 'this' or 'self')
+func Display on todo Todo string
     return todo.title
 
-func (todo *Todo) MarkDone()
+func MarkDone on todo reference Todo
     todo.completed = true
+
+# The receiver name is explicit - like any other parameter
+func Summary on t Todo string
+    return "{t.id}: {t.title}"
 ```
 
-**Both syntaxes are fully supported.** Choose based on preference:
-- **Kukicha style**: More readable, explicit `this` receiver makes it discoverable
-- **Go style**: Copy-paste compatible with Go code
+**Design Philosophy:** Following Go's "Zen", methods are just functions where the receiver is the first parameter. The `on` keyword makes this explicit and readable. There's no magic `this` or `self` - the receiver is named in the function signature just like any other parameter.
 
-**Key Difference:** In Kukicha style, the `this` keyword is explicit in the method signature (`on this Todo`), making it clear that `this` is available in the method body. This improves discoverability for beginners.
-
-**Conversion Rules:**
+**Conversion to Go:**
 | Kukicha Syntax | Go Equivalent |
 |---------------|---------------|
-| `func F on this T` | `func (this T) F()` |
-| `func F on this reference T` | `func (this *T) F()` |
+| `func F on r T` | `func (r T) F()` |
+| `func F on r reference T` | `func (r *T) F()` |
 
 ---
 
@@ -934,20 +927,16 @@ leaf main
 func main()
     print "Hello, World!"
 
-# 2. Struct and Method (Kukicha style with explicit 'this')
+# 2. Struct and Method (explicit receiver names)
 type User
     name string
     age int
 
-func Display on this User string
-    return "{this.name}, {this.age}"
+func Display on user User string
+    return "{user.name}, {user.age}"
 
-func UpdateName on this reference User, newName string
-    this.name = newName
-
-# 2b. Go-style syntax (also supported for copy-paste)
-func (u User) DisplayGo() string
-    return "{u.name}, {u.age}"
+func UpdateName on user reference User, newName string
+    user.name = newName
 
 # 3. Error Handling
 func LoadConfig(path string) Config
