@@ -2130,6 +2130,50 @@ However, **Go syntax compatibility** means:
 
 ---
 
+## For Go Developers: Quick Migration
+
+If you're coming from Go, you can paste Go-style code and use `kukicha fmt` to convert it to canonical Kukicha syntax:
+
+```bash
+kukicha fmt -w myfile.kuki
+```
+
+**What gets converted:**
+
+| Go Style | Kukicha Style |
+|----------|---------------|
+| `if x == 5 {` ... `}` | `if (x equals 5)` + indentation |
+| `&&` | `and` |
+| `||` | `or` |
+| `==` | `equals` |
+| `!=` | `not equals` |
+| `!x` | `not x` |
+| Trailing `;` | removed |
+| Braces `{}` | indentation blocks |
+
+**Example:**
+
+```go
+// Go-style input
+func greet(name string) {
+    if name != "" {
+        fmt.Println("Hello " + name);
+    }
+}
+```
+
+After `kukicha fmt -w`:
+
+```kukicha
+func greet(name string)
+    if (name not equals "")
+        fmt.Println("Hello " + name)
+```
+
+This lets you copy-paste Go snippets from tutorials and convert them to idiomatic Kukicha.
+
+---
+
 ## See Also
 
 - [Quick Reference](kukicha-quick-reference.md) - Fast lookup cheat sheet for developers

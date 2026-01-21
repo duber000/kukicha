@@ -12,6 +12,15 @@ import (
 func fmtCommand(args []string) {
 	if len(args) == 0 {
 		fmt.Println("Usage: kukicha fmt [options] <file.kuki|directory>")
+		fmt.Println()
+		fmt.Println("Fix indentation and normalize code style.")
+		fmt.Println()
+		fmt.Println("Common fixes:")
+		fmt.Println("  - Converts tabs to 4 spaces")
+		fmt.Println("  - Fixes inconsistent indentation")
+		fmt.Println("  - Removes trailing whitespace")
+		fmt.Println("  - Preserves comments")
+		fmt.Println()
 		fmt.Println("Options:")
 		fmt.Println("  -w         Write result to file instead of stdout")
 		fmt.Println("  --check    Check if files are formatted (exit 1 if not)")
