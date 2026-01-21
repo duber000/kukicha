@@ -38,6 +38,29 @@ func (a *Analyzer) Analyze() []error {
 
 // collectDeclarations collects all top-level declarations
 func (a *Analyzer) collectDeclarations() {
+	// Collect imports
+	for _, imp := range a.program.Imports {
+		var name string
+		if imp.Alias != nil {
+			name = imp.Alias.Value
+		} else {
+			// Extract package name from path
+			path := strings.Trim(imp.Path.Value, "\"")
+			parts := strings.Split(path, "/")
+			name = parts[len(parts)-1]
+		}
+
+		err := a.symbolTable.Define(&Symbol{
+			Name:    name,
+			Kind:    SymbolVariable, // Treat as variable for now
+			Type:    &TypeInfo{Kind: TypeKindUnknown},
+			Defined: imp.Pos(),
+		})
+		if err != nil {
+			a.error(imp.Pos(), err.Error())
+		}
+	}
+
 	for _, decl := range a.program.Declarations {
 		switch d := decl.(type) {
 		case *ast.TypeDecl:

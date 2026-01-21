@@ -4,33 +4,7 @@ Kukicha (茎 = stem in Japanese) is a high-level, beginner-friendly programming 
 
 ## Project Status
 
-**Current Version:** 1.0.0 🎉
-
-### Completed
-
-- ✅ Language specification (v1.0)
-- ✅ Formal grammar (EBNF)
-- ✅ Compiler architecture design
-- ✅ **Lexer implementation**
-  - Token types for all language constructs
-  - Indentation-based syntax (4 spaces, tabs rejected)
-  - String interpolation support
-  - All operators and keywords
-  - Comprehensive test suite
-- ✅ **Parser implementation**
-  - Complete AST generation
-  - Full expression and statement parsing
-  - Type declaration parsing
-- ✅ **Semantic analysis**
-  - Type checking
-  - Symbol table management
-  - Signature-first type inference
-- ✅ **Code generation**
-  - Transpilation to idiomatic Go
-  - All language features supported
-- ✅ **CLI tool**
-  - Build, run, and transpile commands
-  - Full toolchain integration
+**Current Version:** 1.0.0 🎉- Ready for Testing
 
 ## Quick Start
 
@@ -45,21 +19,49 @@ Kukicha (茎 = stem in Japanese) is a high-level, beginner-friendly programming 
 git clone https://github.com/duber000/kukicha.git
 cd kukicha
 go mod tidy
+go build -o kukicha ./cmd/kukicha
+```
+
+This builds the `kukicha` binary in your current directory. You can move it to a location in your `$PATH`:
+
+```bash
+# Optional: install to ~/go/bin (or any directory in your PATH)
+go install ./cmd/kukicha
 ```
 
 ### Enabling Green Tea GC (Go 1.25+)
 
-For optimal performance, build and run with the Green Tea garbage collector:
+For optimal performance, build with the Green Tea garbage collector:
 
 ```bash
-# Build with Green Tea GC
-GOEXPERIMENT=greenteagc go build
+GOEXPERIMENT=greenteagc go build -o kukicha ./cmd/kukicha
+```
 
-# Run tests with Green Tea GC
+Or run tests with Green Tea GC:
+
+```bash
 GOEXPERIMENT=greenteagc go test ./...
 ```
 
 Note: Green Tea GC will be enabled by default in Go 1.26+ (expected February 2026)
+
+### Usage
+
+Once built, use the `kukicha` CLI to work with `.kuki` files:
+
+```bash
+# Transpile and build a Kukicha file to a Go binary
+./kukicha build hello.kuki
+
+# Transpile and run immediately
+./kukicha run hello.kuki
+
+# Type-check without compiling
+./kukicha check hello.kuki
+
+# Show version
+./kukicha version
+```
 
 ### Running Tests
 

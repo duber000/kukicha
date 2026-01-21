@@ -8,28 +8,30 @@ import (
 
 // Lexer tokenizes Kukicha source code
 type Lexer struct {
-	source         []rune
-	start          int
-	current        int
-	line           int
-	column         int
-	file           string
-	tokens         []Token
-	indentStack    []int // Track indentation levels
-	pendingDedents int   // Dedents to emit
-	atLineStart    bool  // Whether we're at the start of a line
-	errors         []error
+	source             []rune
+	start              int
+	current            int
+	line               int
+	column             int
+	file               string
+	tokens             []Token
+	indentStack        []int // Track indentation levels
+	pendingDedents     int   // Dedents to emit
+	atLineStart        bool  // Whether we're at the start of a line
+	indentationHandled bool  // Whether indentation has been handled for the current line
+	errors             []error
 }
 
 // NewLexer creates a new lexer for the given source code
 func NewLexer(source string, filename string) *Lexer {
 	return &Lexer{
-		source:      []rune(source),
-		file:        filename,
-		line:        1,
-		column:      1,
-		indentStack: []int{0},
-		atLineStart: true,
+		source:             []rune(source),
+		file:               filename,
+		line:               1,
+		column:             1,
+		indentStack:        []int{0},
+		atLineStart:        true,
+		indentationHandled: false,
 	}
 }
 
@@ -57,14 +59,31 @@ func (l *Lexer) ScanTokens() ([]Token, error) {
 
 // scanToken scans a single token
 func (l *Lexer) scanToken() {
-	c := l.advance()
-
 	// Handle indentation at line start
-	if l.atLineStart && (c == ' ' || c == '\t') {
-		l.current-- // Put back the character
-		l.handleIndentation()
-		return
+	if l.atLineStart && !l.indentationHandled {
+		c := l.peek()
+
+		// If it's space or tab, we definitely need to handle indentation
+		if c == ' ' || c == '\t' {
+			l.indentationHandled = true
+			l.handleIndentation()
+			return
+		}
+
+		// Check for implicit dedent to 0 level (no indentation)
+		// Don't process for newlines or comments which handle their own flow
+		if c != '\n' && c != '\r' && c != '#' {
+			if len(l.indentStack) > 1 {
+				l.indentationHandled = true
+				l.handleIndentation()
+				return
+			}
+			// Mark indentation as handled even if we don't change indentation
+			l.indentationHandled = true
+		}
 	}
+
+	c := l.advance()
 
 	l.atLineStart = false
 
@@ -79,6 +98,7 @@ func (l *Lexer) scanToken() {
 		l.line++
 		l.column = 0
 		l.atLineStart = true
+		l.indentationHandled = false
 	case '\r':
 		if l.peek() == '\n' {
 			l.advance()
@@ -87,6 +107,7 @@ func (l *Lexer) scanToken() {
 		l.line++
 		l.column = 0
 		l.atLineStart = true
+		l.indentationHandled = false
 	case '#':
 		l.skipComment()
 	case '"', '\'':
