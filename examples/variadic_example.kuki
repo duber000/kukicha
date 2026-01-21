@@ -1,0 +1,35 @@
+# Example: Variadic Functions with 'many' keyword
+# This demonstrates that 'many' still works after dropping generics
+
+import "fmt"
+
+# Simple variadic function - takes many values of any type
+func Print(many values)
+    for _, v in values
+        fmt.Println(v)
+
+# Typed variadic function - takes many integers
+func Sum(many numbers int) int
+    total := 0
+    for _, n in numbers
+        total = total + n
+    return total
+
+# Mixed parameters - regular + variadic
+func PrintLabeled(label string, many items string)
+    fmt.Println(label)
+    for _, item in items
+        fmt.Print("  - ")
+        fmt.Println(item)
+
+func main()
+    # Test untyped variadic
+    Print("Hello", 42, true, 3.14)
+
+    # Test typed variadic
+    result := Sum(1, 2, 3, 4, 5)
+    fmt.Print("Sum: ")
+    fmt.Println(result)
+
+    # Test mixed parameters
+    PrintLabeled("Shopping List:", "Apples", "Bananas", "Oranges")

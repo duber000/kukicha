@@ -106,6 +106,7 @@ func buildCommand(filename string) {
 
 	// Generate Go code
 	gen := codegen.New(program)
+	gen.SetSourceFile(filename) // Enable special transpilation detection
 	goCode, err := gen.Generate()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Code generation error: %v\n", err)
@@ -182,6 +183,7 @@ func runCommand(filename string) {
 
 	// Generate Go code
 	gen := codegen.New(program)
+	gen.SetSourceFile(filename) // Enable special transpilation detection
 	goCode, err := gen.Generate()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Code generation error: %v\n", err)

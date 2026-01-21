@@ -124,8 +124,12 @@ func (a *Analyzer) collectFunctionDecl(decl *ast.FunctionDecl) {
 
 	// Build function type
 	params := make([]*TypeInfo, len(decl.Parameters))
+	hasVariadic := false
 	for i, param := range decl.Parameters {
 		params[i] = a.typeAnnotationToTypeInfo(param.Type)
+		if param.Variadic {
+			hasVariadic = true
+		}
 	}
 
 	returns := make([]*TypeInfo, len(decl.Returns))
@@ -134,9 +138,10 @@ func (a *Analyzer) collectFunctionDecl(decl *ast.FunctionDecl) {
 	}
 
 	funcType := &TypeInfo{
-		Kind:    TypeKindFunction,
-		Params:  params,
-		Returns: returns,
+		Kind:     TypeKindFunction,
+		Params:   params,
+		Returns:  returns,
+		Variadic: hasVariadic,
 	}
 
 	// Add function to symbol table
@@ -685,14 +690,32 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) *TypeInfo {
 
 	// If it's a known function, validate arguments
 	if funcType.Kind == TypeKindFunction {
-		if len(expr.Arguments) != len(funcType.Params) {
-			a.error(expr.Pos(), fmt.Sprintf("expected %d arguments, got %d", len(funcType.Params), len(expr.Arguments)))
+		// Validate argument count
+		if funcType.Variadic {
+			// Variadic: must have at least (params - 1) arguments
+			minArgs := len(funcType.Params) - 1
+			if len(expr.Arguments) < minArgs {
+				a.error(expr.Pos(), fmt.Sprintf("expected at least %d arguments, got %d", minArgs, len(expr.Arguments)))
+			}
+		} else {
+			// Non-variadic: must have exact number of arguments
+			if len(expr.Arguments) != len(funcType.Params) {
+				a.error(expr.Pos(), fmt.Sprintf("expected %d arguments, got %d", len(funcType.Params), len(expr.Arguments)))
+			}
 		}
 
+		// Validate argument types
 		for i, arg := range expr.Arguments {
 			argType := a.analyzeExpression(arg)
-			if i < len(funcType.Params) && !a.typesCompatible(funcType.Params[i], argType) {
-				a.error(expr.Pos(), fmt.Sprintf("argument %d: cannot use %s as %s", i+1, argType, funcType.Params[i]))
+
+			// For variadic, all args beyond params-1 match the last param type
+			paramIndex := i
+			if funcType.Variadic && i >= len(funcType.Params)-1 {
+				paramIndex = len(funcType.Params) - 1
+			}
+
+			if paramIndex < len(funcType.Params) && !a.typesCompatible(funcType.Params[paramIndex], argType) {
+				a.error(expr.Pos(), fmt.Sprintf("argument %d: cannot use %s as %s", i+1, argType, funcType.Params[paramIndex]))
 			}
 		}
 
@@ -811,7 +834,19 @@ func (a *Analyzer) analyzeStringInterpolation(lit *ast.StringLiteral) {
 func (a *Analyzer) validateTypeAnnotation(typeAnn ast.TypeAnnotation) {
 	switch t := typeAnn.(type) {
 	case *ast.NamedType:
-		// Check that the type exists
+		// Allow built-in Go types
+		builtInTypes := map[string]bool{
+			"interface{}": true,
+			"any":         true,
+			"error":       true,
+			"byte":        true,
+			"rune":        true,
+		}
+		if builtInTypes[t.Name] {
+			return // Built-in type is valid
+		}
+
+		// Check that the type exists in symbol table
 		symbol := a.symbolTable.Resolve(t.Name)
 		if symbol == nil || (symbol.Kind != SymbolType && symbol.Kind != SymbolInterface) {
 			a.error(t.Pos(), fmt.Sprintf("undefined type '%s'", t.Name))
@@ -885,6 +920,14 @@ func (a *Analyzer) typesCompatible(t1, t2 *TypeInfo) bool {
 
 	// Unknown types are compatible with anything
 	if t1.Kind == TypeKindUnknown || t2.Kind == TypeKindUnknown {
+		return true
+	}
+
+	// interface{} and any accept any type
+	if t1.Kind == TypeKindNamed && (t1.Name == "interface{}" || t1.Name == "any") {
+		return true
+	}
+	if t2.Kind == TypeKindNamed && (t2.Name == "interface{}" || t2.Name == "any") {
 		return true
 	}
 
