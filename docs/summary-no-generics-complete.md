@@ -1,8 +1,8 @@
 # Summary: Kukicha Without Generics - Complete Implementation
 
-**Date:** 2026-01-21
-**Status:** ✅ Complete
-**Branch:** claude/review-generics-variadic-DM8AI
+**Date:** 2026-01-21 (Updated)
+**Status:** ✅ COMPLETE
+**Branch:** claude/review-stdlib-proposals-h3DPH
 
 ---
 
@@ -10,10 +10,11 @@
 
 We successfully implemented the "no-generics" approach for Kukicha, demonstrating that:
 
-1. ✅ **Generics can be dropped** from Kukicha's user-facing syntax
+1. ✅ **Generics removed** from Kukicha's user-facing syntax (~445 lines removed)
 2. ✅ **Variadic functions work** perfectly with the `many` keyword
-3. ✅ **Stdlib can be in Go** for now (Kukicha function types to be added later)
-4. ✅ **Type-safe through Go** stdlib and type inference
+3. ✅ **Function type syntax added** using unified `func` keyword
+4. ✅ **Stdlib special transpilation** allows writing stdlib in Kukicha without generic syntax
+5. ✅ **Type-safe through Go** stdlib and type inference
 
 ---
 
@@ -76,10 +77,85 @@ func Sum(numbers ...int) int {
 - `Take[T](seq iter.Seq[T], n int) iter.Seq[T]`
 - `Skip[T](seq iter.Seq[T], n int) iter.Seq[T]`
 
-**Why Go and not Kukicha:**
-Kukicha doesn't have function type syntax yet (`func(T) bool`). Adding this syntax is a separate task. For now, writing stdlib in Go is practical and works perfectly with Kukicha user code.
+**Update:** Function type syntax has been added! See section 3 below.
 
-### 3. CLI Integration
+### 3. Function Type Syntax ✅ **NEW**
+
+**Status:** ✅ **COMPLETE**
+
+**What was added:**
+- Function type syntax using unified `func` keyword
+- `FunctionType` AST node
+- Parser support for `func(params) returns` syntax
+- Codegen to generate Go function types
+- Semantic validation for function types
+
+**Example:**
+```kukicha
+# Function types using func keyword
+func Filter(items list of int, predicate func(int) bool) list of int
+    result := list of int{}
+    for item in items
+        if predicate(item)
+            result = append(result, item)
+    return result
+
+# Multiple parameters
+func Reduce(items list of int, initial int, reducer func(int, int) int) int
+    accumulator := initial
+    for item in items
+        accumulator = reducer(accumulator, item)
+    return accumulator
+
+# No return type
+func ForEach(items list of string, action func(string))
+    for item in items
+        action(item)
+```
+
+**Transpiles to:**
+```go
+func Filter(items []int, predicate func(int) bool) []int {
+    result := []int{}
+    for item := range items {
+        if predicate(item) {
+            result = append(result, item)
+        }
+    }
+    return result
+}
+```
+
+**Why `func` instead of `function`?**
+- Simpler: One keyword instead of two
+- Consistent: Matches Go exactly (`func` for both declarations and types)
+- Less typing: `func` is shorter
+- Clearer: No mental overhead choosing between keywords
+
+### 4. Generics Code Removal ✅ **NEW**
+
+**Status:** ✅ **COMPLETE**
+
+**What was removed (~445 lines):**
+- 9 placeholder tokens: `element`, `item`, `value`, `thing`, `key`, `result`, `number`, `comparable`, `ordered`
+- AST nodes: `GenericTypeDecl`, `TypeParameter`, `PlaceholderType`
+- `TypeParameters` field from `FunctionDecl`
+- `parseTypePlaceholders()` from parser
+- `collectPlaceholders()` from semantic analyzer
+- Old generics handling from codegen
+- Obsolete generics tests
+
+**What was preserved:**
+- Stdlib special transpilation for `stdlib/iter/` files
+- Internal `codegen.TypeParameter` for stdlib use only (separate from removed `ast.TypeParameter`)
+
+**Result:**
+- Language dramatically simpler
+- ~445 lines of code removed
+- All tests passing
+- Function types working perfectly
+
+### 5. CLI Integration
 
 **Status:** ✅ **Complete**
 
@@ -90,7 +166,7 @@ Kukicha doesn't have function type syntax yet (`func(T) bool`). Adding this synt
 **Files modified:**
 - `cmd/kukicha/main.go` - Added `gen.SetSourceFile(filename)` in `buildCommand`, `runCommand`, and `checkCommand`
 
-### 4. Semantic Analysis Improvements
+### 6. Semantic Analysis Improvements
 
 **Status:** ✅ **Complete**
 
@@ -104,7 +180,7 @@ Kukicha doesn't have function type syntax yet (`func(T) bool`). Adding this synt
 - `internal/semantic/semantic.go`
 - `internal/semantic/symbols.go`
 
-### 5. Code Generation
+### 7. Code Generation
 
 **Status:** ✅ **Ready** (Special transpilation infrastructure in place)
 
