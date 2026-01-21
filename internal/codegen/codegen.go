@@ -8,6 +8,14 @@ import (
 	"github.com/duber000/kukicha/internal/ast"
 )
 
+// TypeParameter represents a type parameter for stdlib special transpilation
+// This is internal to codegen and separate from the removed ast.TypeParameter
+type TypeParameter struct {
+	Name        string // Generated name: T, U, V, etc.
+	Placeholder string // Original placeholder: "any", "any2", etc.
+	Constraint  string // "any", "comparable", "cmp.Ordered"
+}
+
 // Generator generates Go code from an AST
 type Generator struct {
 	program        *ast.Program
@@ -75,24 +83,8 @@ func (g *Generator) Generate() (string, error) {
 
 // scanForAutoImports pre-scans declarations to collect auto-imports
 func (g *Generator) scanForAutoImports() {
-	for _, decl := range g.program.Declarations {
-		switch d := decl.(type) {
-		case *ast.FunctionDecl:
-			// Check for cmp.Ordered constraint in type parameters
-			for _, tp := range d.TypeParameters {
-				if tp.Constraint == "cmp.Ordered" {
-					g.addImport("cmp")
-				}
-			}
-		case *ast.GenericTypeDecl:
-			// Check for cmp.Ordered constraint in generic types
-			for _, tp := range d.TypeParameters {
-				if tp.Constraint == "cmp.Ordered" {
-					g.addImport("cmp")
-				}
-			}
-		}
-	}
+	// No special import detection needed anymore
+	_ = g.program.Declarations
 }
 
 func (g *Generator) generatePackage() {
@@ -157,8 +149,6 @@ func (g *Generator) generateDeclaration(decl ast.Declaration) {
 	switch d := decl.(type) {
 	case *ast.TypeDecl:
 		g.generateTypeDecl(d)
-	case *ast.GenericTypeDecl:
-		g.generateGenericTypeDecl(d)
 	case *ast.InterfaceDecl:
 		g.generateInterfaceDecl(d)
 	case *ast.FunctionDecl:
@@ -178,31 +168,6 @@ func (g *Generator) generateTypeDecl(decl *ast.TypeDecl) {
 
 	g.indent--
 	g.writeLine("}")
-}
-
-func (g *Generator) generateGenericTypeDecl(decl *ast.GenericTypeDecl) {
-	// Set up placeholder mapping for this type
-	g.placeholderMap = make(map[string]string)
-	for _, tp := range decl.TypeParameters {
-		g.placeholderMap[tp.Placeholder] = tp.Name
-	}
-
-	// Generate type with type parameters
-	typeParams := g.generateTypeParameters(decl.TypeParameters)
-	g.write(fmt.Sprintf("type %s%s struct {", decl.Name.Value, typeParams))
-	g.writeLine("")
-	g.indent++
-
-	for _, field := range decl.Fields {
-		fieldType := g.generateTypeAnnotation(field.Type)
-		g.writeLine(fmt.Sprintf("%s %s", field.Name.Value, fieldType))
-	}
-
-	g.indent--
-	g.writeLine("}")
-
-	// Clear placeholder mapping
-	g.placeholderMap = nil
 }
 
 func (g *Generator) generateInterfaceDecl(decl *ast.InterfaceDecl) {
@@ -231,15 +196,10 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	g.placeholderMap = make(map[string]string)
 
 	// Check if this is a stdlib/iter function that needs special transpilation
-	var typeParams []*ast.TypeParameter
-	if g.isStdlibIter && len(decl.TypeParameters) == 0 {
+	var typeParams []*TypeParameter
+	if g.isStdlibIter {
 		// Generate type parameters from function signature
 		typeParams = g.inferStdlibTypeParameters(decl)
-		for _, tp := range typeParams {
-			g.placeholderMap[tp.Placeholder] = tp.Name
-		}
-	} else {
-		typeParams = decl.TypeParameters
 		for _, tp := range typeParams {
 			g.placeholderMap[tp.Placeholder] = tp.Name
 		}
@@ -291,8 +251,8 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 
 // inferStdlibTypeParameters infers type parameters for stdlib/iter functions
 // This enables special transpilation where iter.Seq → iter.Seq[T]
-func (g *Generator) inferStdlibTypeParameters(decl *ast.FunctionDecl) []*ast.TypeParameter {
-	var typeParams []*ast.TypeParameter
+func (g *Generator) inferStdlibTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
+	var typeParams []*TypeParameter
 	usesIterSeq := false
 	needsTwoTypes := false
 
@@ -318,14 +278,14 @@ func (g *Generator) inferStdlibTypeParameters(decl *ast.FunctionDecl) []*ast.Typ
 
 	// Generate type parameters
 	if usesIterSeq {
-		typeParams = append(typeParams, &ast.TypeParameter{
+		typeParams = append(typeParams, &TypeParameter{
 			Name:        "T",
 			Placeholder: "any",
 			Constraint:  "any",
 		})
 
 		if needsTwoTypes {
-			typeParams = append(typeParams, &ast.TypeParameter{
+			typeParams = append(typeParams, &TypeParameter{
 				Name:        "U",
 				Placeholder: "any2",
 				Constraint:  "any",
@@ -347,7 +307,7 @@ func (g *Generator) isIterSeqType(typeAnn ast.TypeAnnotation) bool {
 }
 
 // generateTypeParameters generates Go generic type parameter list
-func (g *Generator) generateTypeParameters(typeParams []*ast.TypeParameter) string {
+func (g *Generator) generateTypeParameters(typeParams []*TypeParameter) string {
 	if len(typeParams) == 0 {
 		return ""
 	}
@@ -422,15 +382,6 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 			}
 		}
 		return t.Name
-	case *ast.PlaceholderType:
-		// Look up the mapped type parameter name
-		if g.placeholderMap != nil {
-			if name, ok := g.placeholderMap[t.Name]; ok {
-				return name
-			}
-		}
-		// Fallback: return the placeholder name as-is (for use outside function context)
-		return t.Name
 	case *ast.ReferenceType:
 		return "*" + g.generateTypeAnnotation(t.ElementType)
 	case *ast.ListType:
@@ -441,6 +392,26 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 		return fmt.Sprintf("map[%s]%s", keyType, valueType)
 	case *ast.ChannelType:
 		return "chan " + g.generateTypeAnnotation(t.ElementType)
+	case *ast.FunctionType:
+		// Generate Go function type: func(params) returns
+		var paramTypes []string
+		for _, param := range t.Parameters {
+			paramTypes = append(paramTypes, g.generateTypeAnnotation(param))
+		}
+
+		result := "func(" + strings.Join(paramTypes, ", ") + ")"
+
+		if len(t.Returns) == 1 {
+			result += " " + g.generateTypeAnnotation(t.Returns[0])
+		} else if len(t.Returns) > 1 {
+			var returnTypes []string
+			for _, ret := range t.Returns {
+				returnTypes = append(returnTypes, g.generateTypeAnnotation(ret))
+			}
+			result += " (" + strings.Join(returnTypes, ", ") + ")"
+		}
+
+		return result
 	default:
 		return "interface{}"
 	}
