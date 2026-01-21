@@ -109,7 +109,9 @@ func (l *Lexer) scanToken() {
 		l.atLineStart = true
 		l.indentationHandled = false
 	case '#':
-		l.skipComment()
+		l.scanComment()
+	case ';':
+		l.addToken(TOKEN_SEMICOLON)
 	case '"', '\'':
 		l.scanString(c)
 	case '(':
@@ -336,11 +338,14 @@ func (l *Lexer) scanIdentifier() {
 	l.addToken(tokenType)
 }
 
-// skipComment skips a comment until end of line
-func (l *Lexer) skipComment() {
+// scanComment scans a comment and emits a TOKEN_COMMENT
+func (l *Lexer) scanComment() {
+	// Consume the rest of the comment line
 	for !l.isAtEnd() && l.peek() != '\n' {
 		l.advance()
 	}
+	// The lexeme includes the # and the comment text
+	l.addToken(TOKEN_COMMENT)
 }
 
 // Helper methods

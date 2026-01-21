@@ -41,6 +41,8 @@ func main() {
 			os.Exit(1)
 		}
 		checkCommand(os.Args[2])
+	case "fmt":
+		fmtCommand(os.Args[2:])
 	case "version":
 		fmt.Printf("kukicha version %s\n", version)
 	case "help", "-h", "--help":
@@ -59,6 +61,9 @@ func printUsage() {
 	fmt.Println("  kukicha build <file.kuki>   Compile Kukicha file to Go")
 	fmt.Println("  kukicha run <file.kuki>     Transpile and execute Kukicha file")
 	fmt.Println("  kukicha check <file.kuki>   Type check Kukicha file")
+	fmt.Println("  kukicha fmt [options] <files>  Format Kukicha files")
+	fmt.Println("    -w          Write result to file instead of stdout")
+	fmt.Println("    --check     Check if files are formatted (exit 1 if not)")
 	fmt.Println("  kukicha version             Show version information")
 	fmt.Println("  kukicha help                Show this help message")
 }

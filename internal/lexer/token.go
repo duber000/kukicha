@@ -90,6 +90,8 @@ const (
 	TOKEN_INDENT
 	TOKEN_DEDENT
 	TOKEN_EOF
+	TOKEN_COMMENT   // # comment (standalone on its own line)
+	TOKEN_SEMICOLON // ; (for Go-style syntax support)
 )
 
 // Token represents a single token in the source code
@@ -262,6 +264,10 @@ func (t TokenType) String() string {
 		return "DEDENT"
 	case TOKEN_EOF:
 		return "EOF"
+	case TOKEN_COMMENT:
+		return "COMMENT"
+	case TOKEN_SEMICOLON:
+		return "SEMICOLON"
 	default:
 		return "UNKNOWN"
 	}

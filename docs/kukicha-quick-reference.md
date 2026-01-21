@@ -608,17 +608,20 @@ kukicha test
 ## Code Formatting
 
 ```bash
-# Format a single file
-kuki fmt myfile.kuki
+# Format a single file (output to stdout)
+kukicha fmt myfile.kuki
+
+# Format and write back to file
+kukicha fmt -w myfile.kuki
 
 # Format all files in directory
-kuki fmt ./src/
+kukicha fmt -w ./src/
 
-# Check formatting (CI/CD)
-kuki fmt --check ./src/
+# Check formatting (CI/CD) - exit 1 if not formatted
+kukicha fmt --check ./src/
 ```
 
-**New:** `kuki fmt` converts all code to canonical indentation-based syntax (4 spaces, no braces, no semicolons).
+`kukicha fmt` converts all code to canonical indentation-based syntax (4 spaces, no braces, no semicolons) and preserves comments.
 
 ---
 

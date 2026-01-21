@@ -37,14 +37,20 @@ func (p *Parser) Parse() (*ast.Program, []error) {
 		Declarations: []ast.Declaration{},
 	}
 
+	// Skip leading newlines (may follow comments at file start)
+	p.skipNewlines()
+
 	// Parse optional leaf declaration
 	if p.peekToken().Type == lexer.TOKEN_LEAF {
 		program.LeafDecl = p.parseLeafDecl()
 	}
 
+	p.skipNewlines()
+
 	// Parse imports
 	for p.peekToken().Type == lexer.TOKEN_IMPORT {
 		program.Imports = append(program.Imports, p.parseImportDecl())
+		p.skipNewlines()
 	}
 
 	// Parse top-level declarations
@@ -70,7 +76,20 @@ func (p *Parser) isAtEnd() bool {
 	return p.pos >= len(p.tokens) || p.peekToken().Type == lexer.TOKEN_EOF
 }
 
+// skipIgnoredTokens advances past comments and semicolons
+func (p *Parser) skipIgnoredTokens() {
+	for p.pos < len(p.tokens) {
+		t := p.tokens[p.pos]
+		if t.Type == lexer.TOKEN_COMMENT || t.Type == lexer.TOKEN_SEMICOLON {
+			p.pos++
+		} else {
+			break
+		}
+	}
+}
+
 func (p *Parser) peekToken() lexer.Token {
+	p.skipIgnoredTokens()
 	if p.pos >= len(p.tokens) {
 		return lexer.Token{Type: lexer.TOKEN_EOF}
 	}

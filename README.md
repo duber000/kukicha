@@ -59,6 +59,12 @@ Once built, use the `kukicha` CLI to work with `.kuki` files:
 # Type-check without compiling
 ./kukicha check hello.kuki
 
+# Format Kukicha source files
+./kukicha fmt hello.kuki          # Output to stdout
+./kukicha fmt -w hello.kuki       # Write formatted output back to file
+./kukicha fmt --check hello.kuki  # Check if file is formatted (exit 1 if not)
+./kukicha fmt ./src/              # Format all .kuki files in directory
+
 # Show version
 ./kukicha version
 ```
@@ -188,6 +194,7 @@ kukicha/
 │   ├── parser/            # ✅ Parser implementation
 │   ├── semantic/          # ✅ Semantic analysis
 │   ├── codegen/           # ✅ Code generation
+│   ├── formatter/         # ✅ Code formatter (kukicha fmt)
 │   └── ast/               # ✅ AST definitions
 ├── docs/                  # Language documentation
 ├── examples/              # Example programs
@@ -277,7 +284,7 @@ See [Standard Library Roadmap](docs/kukicha-stdlib-roadmap.md) for planned featu
 2. **Package Manager** - Dependency management and versioning
 3. **IDE Support** - VS Code extension with syntax highlighting and IntelliSense
 4. **Debugger** - Source-level debugging support
-5. **Formatter Improvements** - Advanced `kuki fmt` features
+5. **Formatter Enhancements** - Style options (`--style=compact`, `--style=expanded`), auto-fix
 
 ## Contributing
 
