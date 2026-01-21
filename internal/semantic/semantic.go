@@ -221,6 +221,23 @@ func (a *Analyzer) analyzeFunctionDecl(decl *ast.FunctionDecl) {
 		}
 	}
 
+	// Validate variadic parameters (must be last, only one)
+	variadicCount := 0
+	for i, param := range decl.Parameters {
+		if param.Variadic {
+			variadicCount++
+			if variadicCount > 1 {
+				a.error(param.Name.Pos(), "only one variadic parameter allowed per function")
+			}
+			if i != len(decl.Parameters)-1 {
+				a.error(param.Name.Pos(), "variadic parameter must be the last parameter")
+			}
+		}
+	}
+
+	// Collect type placeholders from function signature
+	decl.TypeParameters = a.collectPlaceholders(decl)
+
 	// Add parameters to scope
 	for _, param := range decl.Parameters {
 		if !isValidIdentifier(param.Name.Value) {
@@ -251,6 +268,70 @@ func (a *Analyzer) analyzeFunctionDecl(decl *ast.FunctionDecl) {
 	}
 
 	a.currentFunc = nil
+}
+
+// collectPlaceholders scans the function signature and collects unique type placeholders
+func (a *Analyzer) collectPlaceholders(decl *ast.FunctionDecl) []*ast.TypeParameter {
+	placeholderMap := make(map[string]*ast.TypeParameter)
+	typeParamNames := []string{"T", "U", "V", "W", "X", "Y", "Z"}
+	paramIndex := 0
+
+	var collectFromType func(typeAnn ast.TypeAnnotation)
+	collectFromType = func(typeAnn ast.TypeAnnotation) {
+		if typeAnn == nil {
+			return
+		}
+		switch t := typeAnn.(type) {
+		case *ast.PlaceholderType:
+			if _, exists := placeholderMap[t.Name]; !exists {
+				constraint := "any"
+				switch t.Constraint {
+				case "comparable":
+					constraint = "comparable"
+				case "numeric", "ordered":
+					constraint = "cmp.Ordered"
+				}
+				placeholderMap[t.Name] = &ast.TypeParameter{
+					Name:        typeParamNames[paramIndex%len(typeParamNames)],
+					Placeholder: t.Name,
+					Constraint:  constraint,
+				}
+				paramIndex++
+			}
+		case *ast.ListType:
+			collectFromType(t.ElementType)
+		case *ast.MapType:
+			collectFromType(t.KeyType)
+			collectFromType(t.ValueType)
+		case *ast.ChannelType:
+			collectFromType(t.ElementType)
+		case *ast.ReferenceType:
+			collectFromType(t.ElementType)
+		}
+	}
+
+	// Collect from parameters
+	for _, param := range decl.Parameters {
+		collectFromType(param.Type)
+	}
+
+	// Collect from return types
+	for _, ret := range decl.Returns {
+		collectFromType(ret)
+	}
+
+	// Convert map to slice preserving order
+	var result []*ast.TypeParameter
+	for _, name := range typeParamNames {
+		for _, tp := range placeholderMap {
+			if tp.Name == name {
+				result = append(result, tp)
+				break
+			}
+		}
+	}
+
+	return result
 }
 
 func (a *Analyzer) analyzeBlock(block *ast.BlockStmt) {
@@ -735,6 +816,9 @@ func (a *Analyzer) validateTypeAnnotation(typeAnn ast.TypeAnnotation) {
 		if symbol == nil || (symbol.Kind != SymbolType && symbol.Kind != SymbolInterface) {
 			a.error(t.Pos(), fmt.Sprintf("undefined type '%s'", t.Name))
 		}
+	case *ast.PlaceholderType:
+		// Placeholder types are always valid (they're resolved at codegen time)
+		// No validation needed
 	case *ast.ReferenceType:
 		a.validateTypeAnnotation(t.ElementType)
 	case *ast.ListType:
@@ -758,6 +842,15 @@ func (a *Analyzer) typeAnnotationToTypeInfo(typeAnn ast.TypeAnnotation) *TypeInf
 		return primitiveTypeFromString(t.Name)
 	case *ast.NamedType:
 		return &TypeInfo{Kind: TypeKindNamed, Name: t.Name}
+	case *ast.PlaceholderType:
+		constraint := "any"
+		switch t.Constraint {
+		case "comparable":
+			constraint = "comparable"
+		case "numeric", "ordered":
+			constraint = "cmp.Ordered"
+		}
+		return &TypeInfo{Kind: TypeKindPlaceholder, Name: t.Name, Constraint: constraint}
 	case *ast.ReferenceType:
 		return &TypeInfo{
 			Kind:        TypeKindReference,

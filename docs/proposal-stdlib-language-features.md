@@ -1,6 +1,6 @@
 # Proposal: Language Features for Standard Library Implementation
 
-**Status:** Draft
+**Status:** Superseded by proposal-english-generics.md
 **Date:** 2026-01-21
 **Version:** 1.1.0
 

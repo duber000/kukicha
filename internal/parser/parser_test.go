@@ -705,3 +705,199 @@ func TestParseSliceExpression(t *testing.T) {
 		t.Error("expected end index, got nil")
 	}
 }
+
+// Tests for new generic features
+
+func TestParseVariadicParameter(t *testing.T) {
+	input := `func Print(many values)
+    return values
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	if len(fn.Parameters) != 1 {
+		t.Fatalf("expected 1 parameter, got %d", len(fn.Parameters))
+	}
+
+	param := fn.Parameters[0]
+	if param.Name.Value != "values" {
+		t.Errorf("expected parameter name 'values', got '%s'", param.Name.Value)
+	}
+
+	if !param.Variadic {
+		t.Error("expected parameter to be variadic")
+	}
+}
+
+func TestParseTypedVariadicParameter(t *testing.T) {
+	input := `func Sum(many numbers int) int
+    return 0
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	param := fn.Parameters[0]
+
+	if !param.Variadic {
+		t.Error("expected parameter to be variadic")
+	}
+
+	primType, ok := param.Type.(*ast.PrimitiveType)
+	if !ok {
+		t.Fatalf("expected PrimitiveType, got %T", param.Type)
+	}
+
+	if primType.Name != "int" {
+		t.Errorf("expected type 'int', got '%s'", primType.Name)
+	}
+}
+
+func TestParsePlaceholderType(t *testing.T) {
+	input := `func Reverse(items list of element) list of element
+    return items
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	param := fn.Parameters[0]
+
+	listType, ok := param.Type.(*ast.ListType)
+	if !ok {
+		t.Fatalf("expected ListType, got %T", param.Type)
+	}
+
+	placeholder, ok := listType.ElementType.(*ast.PlaceholderType)
+	if !ok {
+		t.Fatalf("expected PlaceholderType, got %T", listType.ElementType)
+	}
+
+	if placeholder.Name != "element" {
+		t.Errorf("expected placeholder name 'element', got '%s'", placeholder.Name)
+	}
+}
+
+func TestParseConstrainedPlaceholder(t *testing.T) {
+	input := `func Sum(items list of number) number
+    return items[0]
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	param := fn.Parameters[0]
+
+	listType := param.Type.(*ast.ListType)
+	placeholder := listType.ElementType.(*ast.PlaceholderType)
+
+	if placeholder.Name != "number" {
+		t.Errorf("expected placeholder name 'number', got '%s'", placeholder.Name)
+	}
+
+	if placeholder.Constraint != "numeric" {
+		t.Errorf("expected constraint 'numeric', got '%s'", placeholder.Constraint)
+	}
+}
+
+func TestParseGenericTypeDecl(t *testing.T) {
+	input := `type Box of element
+    value element
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	genType, ok := program.Declarations[0].(*ast.GenericTypeDecl)
+	if !ok {
+		t.Fatalf("expected GenericTypeDecl, got %T", program.Declarations[0])
+	}
+
+	if genType.Name.Value != "Box" {
+		t.Errorf("expected type name 'Box', got '%s'", genType.Name.Value)
+	}
+
+	if len(genType.TypeParameters) != 1 {
+		t.Fatalf("expected 1 type parameter, got %d", len(genType.TypeParameters))
+	}
+
+	tp := genType.TypeParameters[0]
+	if tp.Placeholder != "element" {
+		t.Errorf("expected placeholder 'element', got '%s'", tp.Placeholder)
+	}
+
+	if tp.Constraint != "any" {
+		t.Errorf("expected constraint 'any', got '%s'", tp.Constraint)
+	}
+}
+
+func TestParseMultiplePlaceholders(t *testing.T) {
+	input := `type Pair of element and value
+    first element
+    second value
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	genType := program.Declarations[0].(*ast.GenericTypeDecl)
+
+	if len(genType.TypeParameters) != 2 {
+		t.Fatalf("expected 2 type parameters, got %d", len(genType.TypeParameters))
+	}
+
+	if genType.TypeParameters[0].Placeholder != "element" {
+		t.Errorf("expected first placeholder 'element', got '%s'", genType.TypeParameters[0].Placeholder)
+	}
+
+	if genType.TypeParameters[1].Placeholder != "value" {
+		t.Errorf("expected second placeholder 'value', got '%s'", genType.TypeParameters[1].Placeholder)
+	}
+}

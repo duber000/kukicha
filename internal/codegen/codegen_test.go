@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/duber000/kukicha/internal/parser"
+	"github.com/duber000/kukicha/internal/semantic"
 )
 
 func TestSimpleFunction(t *testing.T) {
@@ -387,5 +388,167 @@ func Test()
 
 	if !strings.Contains(output, "str \"strings\"") {
 		t.Errorf("expected aliased strings import, got: %s", output)
+	}
+}
+
+// Tests for new generic features
+
+func TestVariadicCodegen(t *testing.T) {
+	input := `func Print(many values)
+    return values
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "values ...interface{}") {
+		t.Errorf("expected variadic syntax, got: %s", output)
+	}
+}
+
+func TestTypedVariadicCodegen(t *testing.T) {
+	input := `func Sum(many numbers int) int
+    return 0
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "numbers ...int") {
+		t.Errorf("expected typed variadic syntax, got: %s", output)
+	}
+}
+
+func TestGenericFunctionCodegen(t *testing.T) {
+	input := `func Reverse(items list of element) list of element
+    return items
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	// Run semantic analysis to collect type parameters
+	analyzer := semantic.New(program)
+	_ = analyzer.Analyze()
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	// Should have type parameters
+	if !strings.Contains(output, "[T any]") {
+		t.Errorf("expected type parameters [T any], got: %s", output)
+	}
+
+	// Should use T for the parameter and return type
+	if !strings.Contains(output, "items []T") {
+		t.Errorf("expected 'items []T', got: %s", output)
+	}
+
+	if !strings.Contains(output, ") []T") {
+		t.Errorf("expected return type '[]T', got: %s", output)
+	}
+}
+
+func TestGenericTypeCodegen(t *testing.T) {
+	input := `type Box of element
+    value element
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	// Should have type parameters
+	if !strings.Contains(output, "Box[T any]") {
+		t.Errorf("expected 'Box[T any]', got: %s", output)
+	}
+
+	// Field should use T
+	if !strings.Contains(output, "value T") {
+		t.Errorf("expected 'value T', got: %s", output)
+	}
+}
+
+func TestConstrainedGenericCodegen(t *testing.T) {
+	input := `func Sum(items list of number) number
+    return items[0]
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	// Run semantic analysis to collect type parameters
+	analyzer := semantic.New(program)
+	_ = analyzer.Analyze()
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	// Should have constrained type parameters
+	if !strings.Contains(output, "[T cmp.Ordered]") {
+		t.Errorf("expected type parameters [T cmp.Ordered], got: %s", output)
+	}
+
+	// Should auto-import cmp
+	if !strings.Contains(output, "\"cmp\"") {
+		t.Errorf("expected cmp import, got: %s", output)
 	}
 }

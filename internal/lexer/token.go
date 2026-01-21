@@ -49,6 +49,20 @@ const (
 	TOKEN_OF
 	TOKEN_AS
 
+	// Variadic keyword
+	TOKEN_MANY
+
+	// Semantic type placeholders (for generics)
+	TOKEN_ELEMENT
+	TOKEN_ITEM
+	TOKEN_VALUE
+	TOKEN_THING
+	TOKEN_KEY
+	TOKEN_RESULT
+	TOKEN_NUMBER
+	TOKEN_COMPARABLE
+	TOKEN_ORDERED
+
 	// Operators
 	TOKEN_WALRUS        // :=
 	TOKEN_ASSIGN        // =
@@ -187,6 +201,30 @@ func (t TokenType) String() string {
 	case TOKEN_AS:
 		return "AS"
 
+	// Variadic keyword
+	case TOKEN_MANY:
+		return "MANY"
+
+	// Semantic type placeholders
+	case TOKEN_ELEMENT:
+		return "ELEMENT"
+	case TOKEN_ITEM:
+		return "ITEM"
+	case TOKEN_VALUE:
+		return "VALUE"
+	case TOKEN_THING:
+		return "THING"
+	case TOKEN_KEY:
+		return "KEY"
+	case TOKEN_RESULT:
+		return "RESULT"
+	case TOKEN_NUMBER:
+		return "NUMBER"
+	case TOKEN_COMPARABLE:
+		return "COMPARABLE"
+	case TOKEN_ORDERED:
+		return "ORDERED"
+
 	// Operators
 	case TOKEN_WALRUS:
 		return "WALRUS"
@@ -314,6 +352,10 @@ var keywords = map[string]TokenType{
 	"at":        TOKEN_AT,
 	"of":        TOKEN_OF,
 	"as":        TOKEN_AS,
+	"many":      TOKEN_MANY,
+	// Note: Placeholder type keywords (element, item, value, etc.) are handled
+	// contextually in the parser, not as reserved keywords. This allows them
+	// to be used as variable names while still working in type annotations.
 	"true":      TOKEN_TRUE,
 	"false":     TOKEN_FALSE,
 	"equals":    TOKEN_EQUALS,
