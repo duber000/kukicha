@@ -482,9 +482,9 @@ func (p *Parser) parseTypeAnnotation() ast.TypeAnnotation {
 			ElementType: elementType,
 		}
 
-	case lexer.TOKEN_FUNCTION:
+	case lexer.TOKEN_FUNC:
 		token := p.advance()
-		p.consume(lexer.TOKEN_LPAREN, "expected '(' after 'function'")
+		p.consume(lexer.TOKEN_LPAREN, "expected '(' after 'func'")
 
 		// Parse parameter types
 		var parameters []ast.TypeAnnotation

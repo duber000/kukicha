@@ -203,9 +203,9 @@ func (t *ChannelType) Pos() Position        { return Position{Line: t.Token.Line
 func (t *ChannelType) typeNode()            {}
 
 // FunctionType represents a function type annotation
-// e.g., function(int, string) bool
+// e.g., func(int, string) bool
 type FunctionType struct {
-	Token      lexer.Token      // The 'function' token
+	Token      lexer.Token      // The 'func' token
 	Parameters []TypeAnnotation // Parameter types
 	Returns    []TypeAnnotation // Return types
 }
