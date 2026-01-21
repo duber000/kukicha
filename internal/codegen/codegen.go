@@ -635,8 +635,6 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		targetType := g.generateTypeAnnotation(e.TargetType)
 		expr := g.exprToString(e.Expression)
 		return fmt.Sprintf("%s(%s)", targetType, expr)
-	case *ast.ThisExpr:
-		return "this"
 	case *ast.EmptyExpr:
 		if e.Type != nil {
 			targetType := g.generateTypeAnnotation(e.Type)

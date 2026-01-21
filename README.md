@@ -95,7 +95,7 @@ Kukicha v1.0.0 introduces key refinements that balance simplicity, performance, 
 
 5. **🔧 Context-Sensitive Type Keywords** - `list`, `map`, and `channel` are context-sensitive. In type contexts (parameters, fields), they start composite types. No lookahead needed at lexer level.
 
-6. **📝 Dual Method Syntax** - Readable Kukicha style (`func Display on this Todo` with explicit receiver) and Go-compatible style (`func (t Todo) Display()`) both supported.
+6. **📝 Explicit Receiver Names** - Methods use `func Display on todo Todo` syntax where the receiver is explicitly named, following Go's philosophy that "methods are just functions".
 
 7. **🔄 Empty Literal Lookahead** - `empty` uses 1-token lookahead to determine if it's standalone (`nil`) or typed (`empty list of Todo`).
 
@@ -129,12 +129,12 @@ count = 100
 func Greet(name string) string
     return "Hello {name}"
 
-# Method with explicit 'this' - readable Kukicha style
-func Display on this Todo string
-    return "{this.id}: {this.title}"
+# Method with explicit receiver name
+func Display on todo Todo string
+    return "{todo.id}: {todo.title}"
 
-# Go-style also works (for copy-paste from Go tutorials)
-func (t Todo) Summary() string
+# Receiver is just a parameter - no special 'this' or 'self'
+func Summary on t Todo string
     return t.title
 ```
 
@@ -294,9 +294,8 @@ go test ./internal/lexer/...
 
 Key word changes:
 
-1. Not really happy with the this keyword
-2. onerr doesn't roll off the tongue.
-3. Generics placeholder keywords are clunky
+1. onerr doesn't roll off the tongue.
+2. Generics placeholder keywords are clunky
 
 See [Standard Library Roadmap](docs/kukicha-stdlib-roadmap.md) for planned features:
 

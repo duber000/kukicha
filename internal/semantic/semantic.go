@@ -523,12 +523,6 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 			return a.typeAnnotationToTypeInfo(e.Type)
 		}
 		return &TypeInfo{Kind: TypeKindUnknown}
-	case *ast.ThisExpr:
-		if a.currentFunc != nil && a.currentFunc.Receiver != nil {
-			return a.typeAnnotationToTypeInfo(a.currentFunc.Receiver.Type)
-		}
-		a.error(e.Pos(), "'this' used outside of method")
-		return &TypeInfo{Kind: TypeKindUnknown}
 	case *ast.MakeExpr:
 		return a.typeAnnotationToTypeInfo(e.Type)
 	case *ast.ReceiveExpr:

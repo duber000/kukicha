@@ -43,7 +43,6 @@ const (
 	TOKEN_EMPTY
 	TOKEN_REFERENCE
 	TOKEN_ON
-	TOKEN_THIS
 	TOKEN_DISCARD
 	TOKEN_AT
 	TOKEN_OF
@@ -179,8 +178,6 @@ func (t TokenType) String() string {
 		return "REFERENCE"
 	case TOKEN_ON:
 		return "ON"
-	case TOKEN_THIS:
-		return "THIS"
 	case TOKEN_DISCARD:
 		return "DISCARD"
 	case TOKEN_AT:
@@ -316,7 +313,6 @@ var keywords = map[string]TokenType{
 	"nil":       TOKEN_EMPTY, // nil is an alias for empty
 	"reference": TOKEN_REFERENCE,
 	"on":        TOKEN_ON,
-	"this":      TOKEN_THIS,
 	"discard":   TOKEN_DISCARD,
 	"at":        TOKEN_AT,
 	"of":        TOKEN_OF,

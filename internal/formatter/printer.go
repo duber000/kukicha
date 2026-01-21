@@ -407,8 +407,6 @@ func (p *Printer) exprToString(expr ast.Expression) string {
 		targetType := p.typeAnnotationToString(e.TargetType)
 		expr := p.exprToString(e.Expression)
 		return fmt.Sprintf("%s(%s)", targetType, expr)
-	case *ast.ThisExpr:
-		return "this"
 	case *ast.EmptyExpr:
 		if e.Type != nil {
 			targetType := p.typeAnnotationToString(e.Type)

@@ -311,43 +311,16 @@ func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
 		Token: token,
 	}
 
-	// Check for receiver (method declaration)
-	// Two styles: func (r Type) Name(...) or func Name on this Type
-	if p.check(lexer.TOKEN_LPAREN) {
-		// Go-style receiver: func (r Type) Name(...)
-		p.advance() // consume '('
-		receiverName := p.parseIdentifier()
-		receiverType := p.parseTypeAnnotation()
-		p.consume(lexer.TOKEN_RPAREN, "expected ')' after receiver")
-
-		decl.Receiver = &ast.Receiver{
-			Name: receiverName,
-			Type: receiverType,
-		}
-	}
-
 	// Parse function name
 	decl.Name = p.parseIdentifier()
 
-	// Check for Kukicha-style receiver: func Name on this Type
+	// Check for receiver (method declaration): func Name on receiverName Type
 	if p.match(lexer.TOKEN_ON) {
-		if p.check(lexer.TOKEN_THIS) {
-			thisToken := p.advance()
-			receiverType := p.parseTypeAnnotation()
-			decl.Receiver = &ast.Receiver{
-				Name: &ast.Identifier{
-					Token: thisToken,
-					Value: "this",
-				},
-				Type: receiverType,
-			}
-		} else {
-			receiverName := p.parseIdentifier()
-			receiverType := p.parseTypeAnnotation()
-			decl.Receiver = &ast.Receiver{
-				Name: receiverName,
-				Type: receiverType,
-			}
+		receiverName := p.parseIdentifier()
+		receiverType := p.parseTypeAnnotation()
+		decl.Receiver = &ast.Receiver{
+			Name: receiverName,
+			Type: receiverType,
 		}
 	}
 
@@ -1076,9 +1049,6 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 		return p.parseBooleanLiteral()
 	case lexer.TOKEN_IDENTIFIER:
 		return p.parseIdentifierOrStructLiteral()
-	case lexer.TOKEN_THIS:
-		token := p.advance()
-		return &ast.ThisExpr{Token: token}
 	case lexer.TOKEN_EMPTY:
 		return p.parseEmptyExpr()
 	case lexer.TOKEN_DISCARD:
