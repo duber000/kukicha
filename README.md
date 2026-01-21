@@ -99,6 +99,8 @@ Kukicha v1.0.0 introduces key refinements that balance simplicity, performance, 
 
 7. **🔄 Empty Literal Lookahead** - `empty` uses 1-token lookahead to determine if it's standalone (`nil`) or typed (`empty list of Todo`).
 
+8. **🎭 Unified `func` Syntax** - Use `func` for both declarations and types (like Go). Simple, consistent, one keyword to learn.
+
 ### Philosophy
 
 Kukicha smooths Go's rough edges while preserving its power:
@@ -134,6 +136,23 @@ func Display on this Todo string
 # Go-style also works (for copy-paste from Go tutorials)
 func (t Todo) Summary() string
     return t.title
+```
+
+#### Function Types (Callbacks)
+
+```kukicha
+# Function types use 'func' keyword (consistent with Go)
+func Filter(items list of int, predicate func(int) bool) list of int
+    result := list of int{}
+    for item in items
+        if predicate(item)
+            result = append(result, item)
+    return result
+
+# Use with lambdas
+evens := Filter(numbers, func(n int) bool
+    return n % 2 == 0
+)
 ```
 
 #### Error Handling (OnErr Operator)

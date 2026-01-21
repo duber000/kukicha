@@ -52,9 +52,6 @@ const (
 	// Variadic keyword
 	TOKEN_MANY
 
-	// Function type keyword
-	TOKEN_FUNCTION
-
 	// Operators
 	TOKEN_WALRUS        // :=
 	TOKEN_ASSIGN        // =
@@ -197,10 +194,6 @@ func (t TokenType) String() string {
 	case TOKEN_MANY:
 		return "MANY"
 
-	// Function type keyword
-	case TOKEN_FUNCTION:
-		return "FUNCTION"
-
 	// Operators
 	case TOKEN_WALRUS:
 		return "WALRUS"
@@ -329,7 +322,6 @@ var keywords = map[string]TokenType{
 	"of":        TOKEN_OF,
 	"as":        TOKEN_AS,
 	"many":      TOKEN_MANY,
-	"function":  TOKEN_FUNCTION,
 	"true":      TOKEN_TRUE,
 	"false":     TOKEN_FALSE,
 	"equals":    TOKEN_EQUALS,

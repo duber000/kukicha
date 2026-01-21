@@ -48,6 +48,22 @@ type Todo
     metadata map of string to string
 ```
 
+### Function Types
+
+```kukicha
+# Function type syntax: func(params) return_type
+func Filter(items list of int, predicate func(int) bool) list of int
+func Map(items list of int, transform func(int) int) list of int
+func ForEach(items list of string, action func(string))
+
+# Use with lambdas
+evens := Filter(numbers, func(n int) bool
+    return n % 2 == 0
+)
+```
+
+**Note:** Use `func` for both declarations and types (consistent with Go).
+
 ### Variables
 
 ```kukicha
