@@ -74,9 +74,9 @@ func AttachComments(comments []Comment, program *ast.Program) CommentMap {
 func collectNodeLines(program *ast.Program) map[int]bool {
 	lines := make(map[int]bool)
 
-	// Collect from leaf declaration
-	if program.LeafDecl != nil {
-		lines[program.LeafDecl.Pos().Line] = true
+	// Collect from petiole declaration
+	if program.PetioleDecl != nil {
+		lines[program.PetioleDecl.Pos().Line] = true
 	}
 
 	// Collect from imports
@@ -145,8 +145,8 @@ func attachCommentsToProgram(comments []Comment, program *ast.Program, cm Commen
 
 	// Helper to get next declaration line
 	getNextDeclLine := func(idx int) int {
-		if program.LeafDecl != nil && idx == -2 {
-			return program.LeafDecl.Pos().Line
+		if program.PetioleDecl != nil && idx == -2 {
+			return program.PetioleDecl.Pos().Line
 		}
 		if idx == -1 {
 			if len(program.Imports) > 0 {
@@ -163,11 +163,11 @@ func attachCommentsToProgram(comments []Comment, program *ast.Program, cm Commen
 		return -1
 	}
 
-	// Attach leading comments to leaf declaration
-	if program.LeafDecl != nil {
-		leafLine := program.LeafDecl.Pos().Line
-		commentIdx = attachLeadingComments(comments, commentIdx, leafLine, program.LeafDecl, cm)
-		commentIdx = attachTrailingComment(comments, commentIdx, leafLine, program.LeafDecl, cm)
+	// Attach leading comments to petiole declaration
+	if program.PetioleDecl != nil {
+		petioleLine := program.PetioleDecl.Pos().Line
+		commentIdx = attachLeadingComments(comments, commentIdx, petioleLine, program.PetioleDecl, cm)
+		commentIdx = attachTrailingComment(comments, commentIdx, petioleLine, program.PetioleDecl, cm)
 	}
 
 	// Attach comments to imports

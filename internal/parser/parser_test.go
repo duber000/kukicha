@@ -521,8 +521,8 @@ func Test()
 	}
 }
 
-func TestParseLeafDeclaration(t *testing.T) {
-	input := `leaf main
+func TestParsePetioleDeclaration(t *testing.T) {
+	input := `petiole main
 
 func Main()
     print("hello")
@@ -538,12 +538,12 @@ func Main()
 		t.Fatalf("parser errors: %v", errors)
 	}
 
-	if program.LeafDecl == nil {
-		t.Fatal("expected leaf declaration, got nil")
+	if program.PetioleDecl == nil {
+		t.Fatal("expected petiole declaration, got nil")
 	}
 
-	if program.LeafDecl.Name.Value != "main" {
-		t.Errorf("expected leaf name 'main', got '%s'", program.LeafDecl.Name.Value)
+	if program.PetioleDecl.Name.Value != "main" {
+		t.Errorf("expected petiole name 'main', got '%s'", program.PetioleDecl.Name.Value)
 	}
 }
 

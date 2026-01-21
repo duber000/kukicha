@@ -89,8 +89,8 @@ func (g *Generator) scanForAutoImports() {
 
 func (g *Generator) generatePackage() {
 	packageName := "main"
-	if g.program.LeafDecl != nil {
-		packageName = g.program.LeafDecl.Name.Value
+	if g.program.PetioleDecl != nil {
+		packageName = g.program.PetioleDecl.Name.Value
 	}
 	g.writeLine(fmt.Sprintf("package %s", packageName))
 }

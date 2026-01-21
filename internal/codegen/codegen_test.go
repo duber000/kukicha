@@ -330,7 +330,7 @@ func TestReferenceType(t *testing.T) {
 }
 
 func TestPackageDeclaration(t *testing.T) {
-	input := `leaf mypackage
+	input := `petiole mypackage
 
 func Test()
     x := 1

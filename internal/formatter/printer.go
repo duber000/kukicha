@@ -26,9 +26,9 @@ func (p *Printer) Print(program *ast.Program) string {
 	p.output.Reset()
 	p.indentLevel = 0
 
-	// Print leaf declaration if present
-	if program.LeafDecl != nil {
-		p.writeLine(fmt.Sprintf("leaf %s", program.LeafDecl.Name.Value))
+	// Print petiole declaration if present
+	if program.PetioleDecl != nil {
+		p.writeLine(fmt.Sprintf("petiole %s", program.PetioleDecl.Name.Value))
 		p.writeLine("")
 	}
 

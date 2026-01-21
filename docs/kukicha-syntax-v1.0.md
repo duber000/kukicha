@@ -11,71 +11,69 @@ Kukicha is a high-level language that compiles to Go 1.25+ with the Green Tea ga
 Kukicha uses a simple botanical hierarchy that maps directly to Go's structure:
 
 ```
-Twig (Go module)
-  └── Stem (Go package)
-      └── Leaf (Go file)
+Stem (Go module)
+  └── Pitole (Go package)
 ```
 
 ### Mapping to Go
 
 | Kukicha | Go Equivalent | File/Directory |
 |---------|---------------|----------------|
-| **Twig** | Go module | Root directory with `twig.toml` |
-| **Stem** | Go package | Subdirectory (package) |
-| **Leaf** | Go file | Individual `.kuki` file |
+| **Stem** | Go module | Root directory with `stem.toml` |
+| **Pitole** | Go package | Subdirectory (package) |
 
 ### Example Directory Structure
 
 ```
-myapp/                      # Twig (module root)
-  twig.toml                # Module configuration
-  database/                # Stem (package)
-    models.kuki            # Leaf (file)
-    queries.kuki           # Leaf (file)
-  api/                     # Stem (package)
-    handlers.kuki          # Leaf (file)
-    middleware.kuki        # Leaf (file)
-  todo/                    # Stem (package)
-    todo.kuki              # Leaf (file)
+myapp/                      # Stem (module root)
+  stem.toml                # Module configuration
+  database/                # Pitole (package)
+    models.kuki            # Source file
+    queries.kuki           # Source file
+  api/                     # Pitole (package)
+    handlers.kuki          # Source file
+    middleware.kuki        # Source file
+  todo/                    # Pitole (package)
+    todo.kuki              # Source file
 ```
 
 ---
 
-## Leaf Declaration (Optional)
+## Pitole Declaration (Optional)
 
-Leaf declarations are **optional**. If not provided, the compiler automatically calculates the Stem (package) name based on the file's path relative to `twig.toml`.
+Pitole declarations are **optional**. If not provided, the compiler automatically calculates the Pitole (package) name based on the file's path relative to `stem.toml`.
 
-### Implicit Stem Calculation
+### Implicit Pitole Calculation
 
-Files in a directory automatically belong to the stem named after that directory:
+Files in a directory automatically belong to the petiole named after that directory:
 
 ```
-myapp/                      # Twig (module root)
-  twig.toml                # Module configuration
+myapp/                      # Stem (module root)
+  stem.toml                # Module configuration
   src/
     auth/
-      login.kuki           # Belongs to "auth" stem (implicit)
-      session.kuki         # Belongs to "auth" stem (implicit)
+      login.kuki           # Belongs to "auth" petiole (implicit)
+      session.kuki         # Belongs to "auth" petiole (implicit)
     database/
-      models.kuki          # Belongs to "database" stem (implicit)
+      models.kuki          # Belongs to "database" petiole (implicit)
 ```
 
 **Benefit**: Reduces boilerplate and prevents "file-move" errors where the directory and header get out of sync.
 
-### Explicit Leaf Declaration (Optional)
+### Explicit Pitole Declaration (Optional)
 
-You can still explicitly declare the stem if needed:
+You can still explicitly declare the petiole if needed:
 
 ```kukicha
-leaf database.models
+petiole database.models
 ```
 
 This is useful for:
 - Multi-level package paths (e.g., `database.models.user`)
-- Overriding the default path-based stem name
+- Overriding the default path-based petiole name
 - Self-documenting code when the file structure is complex
 
-**Rule**: If a leaf declaration is present, it takes precedence over path-based inference. If absent, the compiler uses the directory path relative to `twig.toml`.
+**Rule**: If a petiole declaration is present, it takes precedence over path-based inference. If absent, the compiler uses the directory path relative to `stem.toml`.
 
 ---
 
@@ -1294,7 +1292,7 @@ empty map of KeyType to ValueType  # empty map
 
 | Keyword | Purpose |
 |---------|---------|
-| `leaf` | Module/file declaration |
+| `petiole` | Package declaration |
 | `import` | Import packages or stems |
 | `type` | Type declaration |
 | `interface` | Interface declaration |
@@ -1381,7 +1379,7 @@ empty map of KeyType to ValueType  # empty map
 
 Kukicha supports TOML-based configuration:
 
-**twig.toml:**
+**stem.toml:**
 ```toml
 [project]
 name = "my-app"
@@ -1480,10 +1478,10 @@ bool(value)                     # Convert to bool
 
 ---
 
-## Example: Complete Todo App Leaf
+## Example: Complete Todo App
 
 ```kukicha
-leaf todo
+petiole todo
 
 import time
 
@@ -1592,7 +1590,7 @@ GOEXPERIMENT=greenteagc kukicha build
 ## Version History
 
 - **v1.1.0** — Core Design Refinements (2026)
-  - ✅ **Optional Leaf Declarations**: Folder-based package model with automatic Stem calculation from file path
+  - ✅ **Optional Pitole Declarations**: Folder-based package model with automatic Pitole calculation from file path
   - ✅ **Signature-First Type Inference**: Explicit types for function parameters/returns and struct fields; inference only for local variables
   - ✅ **Literal vs Dynamic Indexing**: Compile-time optimization for literal negative indices; explicit methods for dynamic indices
   - ✅ **Indentation as Canonical**: `kuki fmt` tool converts brace-based syntax to standard indentation format
@@ -1609,7 +1607,7 @@ GOEXPERIMENT=greenteagc kukicha build
   - ✅ File extension: `.kuki` (茎 = stem in Japanese)
 
 - **v0.2.0** — Cohesive syntax refinement
-  - Simplified module structure: Twig → Stem → Leaf
+  - Simplified module structure: Stem → Pitole
   - `reference` keyword replaces `*` for pointers
   - `discard` keyword replaces `_` for ignored values
   - Clarified string interpolation rules
@@ -1622,7 +1620,7 @@ GOEXPERIMENT=greenteagc kukicha build
   - Dual syntax support: Go syntax accepted where compatible
 
 - **v0.1.0** — Initial syntax specification
-  - Module structure (Leaf/Petiole/Stem/Stalk/Twig)
+  - Module structure (Stem/Pitole)
   - English-like syntax (no `{}`, `;`)
   - Walrus operator (`:=`)
   - Type inference for function parameters
@@ -1651,7 +1649,7 @@ Kukicha smooths Go's rough edges while preserving its power:
 - **Type inference only for locals**: Local variables inside function bodies use `:=` for inference
 - No implicit type conversions (use casting)
 - **Indentation is canonical**: `kuki fmt` enforces 4-space indentation standard
-- **Optional leaf declarations**: Stem calculated from file path; explicit declaration optional
+- **Optional petiole declarations**: Pitole calculated from file path; explicit declaration optional
 - Focus on readability without sacrificing Go's performance
 
 ---

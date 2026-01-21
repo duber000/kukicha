@@ -11,26 +11,26 @@
 ### Module Structure
 
 ```
-myapp/              # Twig (module root)
-  twig.toml        # Module config
-  models/          # Stem (package)
-    user.kuki      # Leaf (file)
+myapp/              # Stem (module root)
+  stem.toml        # Module config
+  models/          # Pitole (package)
+    user.kuki      # Source file
     todo.kuki
   api/
     handlers.kuki
 ```
 
-### Leaf Declaration (Optional)
+### Pitole Declaration (Optional)
 
 ```kukicha
-# Optional - if absent, stem calculated from file path
-leaf models.todo
+# Optional - if absent, petiole calculated from file path
+petiole models.todo
 
 import time
 import github.com/user/repo
 ```
 
-**New:** Leaf declarations are optional! Package name is automatically calculated from the directory path relative to `twig.toml`.
+**New:** Pitole declarations are optional! Package name is automatically calculated from the directory path relative to `stem.toml`.
 
 ---
 

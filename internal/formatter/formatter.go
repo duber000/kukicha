@@ -101,10 +101,10 @@ func (p *PrinterWithComments) Print(program *ast.Program) string {
 	p.indentLevel = 0
 
 	// Print leading comments for the program (file-level comments)
-	if program.LeafDecl != nil {
-		p.printLeadingComments(program.LeafDecl)
-		p.writeLine(fmt.Sprintf("leaf %s", program.LeafDecl.Name.Value))
-		p.printTrailingComment(program.LeafDecl)
+	if program.PetioleDecl != nil {
+		p.printLeadingComments(program.PetioleDecl)
+		p.writeLine(fmt.Sprintf("petiole %s", program.PetioleDecl.Name.Value))
+		p.printTrailingComment(program.PetioleDecl)
 		p.writeLine("")
 	}
 

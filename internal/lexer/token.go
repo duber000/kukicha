@@ -15,7 +15,7 @@ const (
 	TOKEN_FALSE
 
 	// Keywords
-	TOKEN_LEAF
+	TOKEN_PETIOLE
 	TOKEN_IMPORT
 	TOKEN_TYPE
 	TOKEN_INTERFACE
@@ -122,8 +122,8 @@ func (t TokenType) String() string {
 		return "FALSE"
 
 	// Keywords
-	case TOKEN_LEAF:
-		return "LEAF"
+	case TOKEN_PETIOLE:
+		return "PETIOLE"
 	case TOKEN_IMPORT:
 		return "IMPORT"
 	case TOKEN_TYPE:
@@ -284,7 +284,7 @@ func (t Token) String() string {
 
 // keywords maps keyword strings to their token types
 var keywords = map[string]TokenType{
-	"leaf":      TOKEN_LEAF,
+	"petiole":    TOKEN_PETIOLE,
 	"import":    TOKEN_IMPORT,
 	"type":      TOKEN_TYPE,
 	"interface": TOKEN_INTERFACE,

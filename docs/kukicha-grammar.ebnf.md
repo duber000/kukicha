@@ -24,10 +24,10 @@ UPPER   Non-terminal
 ## Program Structure
 
 ```ebnf
-Program ::= [ LeafDeclaration ] { ImportDeclaration } { TopLevelDeclaration }
+Program ::= [ PitoleDeclaration ] { ImportDeclaration } { TopLevelDeclaration }
 
-LeafDeclaration ::= "leaf" PackagePath NEWLINE
-    # Optional: if absent, package name is calculated from file path relative to twig.toml
+PitoleDeclaration ::= "petiole" PackagePath NEWLINE
+    # Optional: if absent, package name is calculated from file path relative to stem.toml
 
 PackagePath ::= IDENTIFIER { "." IDENTIFIER }
 
@@ -359,7 +359,7 @@ COMMENT ::= "#" { any character except NEWLINE } NEWLINE
 ## Keywords (Reserved)
 
 ```
-leaf        import      type        interface   func
+petiole      import      type        interface   func
 if          else        for         in          from
 to          through     at          of          and
 or          onerr       not         return      go
@@ -865,7 +865,7 @@ func Process(data)  # Warning: Type inference may fail. Consider explicit type.
 
 ## Grammar Completeness Checklist
 
-- [x] Program structure (leaf, imports)
+- [x] Program structure (petiole, imports)
 - [x] Type declarations (structs, interfaces)
 - [x] Function declarations (functions, methods)
 - [x] Control flow (if/else, for loops)
@@ -923,7 +923,7 @@ Recommended test cases:
 
 ```kukicha
 # 1. Hello World
-leaf main
+petiole main
 func main()
     print "Hello, World!"
 

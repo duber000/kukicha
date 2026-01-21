@@ -40,9 +40,9 @@ func (p *Parser) Parse() (*ast.Program, []error) {
 	// Skip leading newlines (may follow comments at file start)
 	p.skipNewlines()
 
-	// Parse optional leaf declaration
-	if p.peekToken().Type == lexer.TOKEN_LEAF {
-		program.LeafDecl = p.parseLeafDecl()
+	// Parse optional petiole declaration
+	if p.peekToken().Type == lexer.TOKEN_PETIOLE {
+		program.PetioleDecl = p.parsePetioleDecl()
 	}
 
 	p.skipNewlines()
@@ -150,14 +150,14 @@ func (p *Parser) skipNewlines() {
 // Declaration Parsing
 // ============================================================================
 
-func (p *Parser) parseLeafDecl() *ast.LeafDecl {
-	token := p.advance() // consume 'leaf'
+func (p *Parser) parsePetioleDecl() *ast.PetioleDecl {
+	token := p.advance() // consume 'petiole'
 	p.skipNewlines()
 
 	name := p.parseIdentifier()
 	p.skipNewlines()
 
-	return &ast.LeafDecl{
+	return &ast.PetioleDecl{
 		Token: token,
 		Name:  name,
 	}

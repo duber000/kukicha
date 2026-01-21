@@ -20,14 +20,14 @@ type Position struct {
 // ============================================================================
 
 type Program struct {
-	LeafDecl     *LeafDecl      // Optional leaf declaration
+	PetioleDecl   *PetioleDecl    // Optional petiole declaration
 	Imports      []*ImportDecl  // Import declarations
 	Declarations []Declaration  // Top-level declarations (types, interfaces, functions)
 }
 
 func (p *Program) TokenLiteral() string {
-	if p.LeafDecl != nil {
-		return p.LeafDecl.TokenLiteral()
+	if p.PetioleDecl != nil {
+		return p.PetioleDecl.TokenLiteral()
 	}
 	if len(p.Imports) > 0 {
 		return p.Imports[0].TokenLiteral()
@@ -39,8 +39,8 @@ func (p *Program) TokenLiteral() string {
 }
 
 func (p *Program) Pos() Position {
-	if p.LeafDecl != nil {
-		return p.LeafDecl.Pos()
+	if p.PetioleDecl != nil {
+		return p.PetioleDecl.Pos()
 	}
 	if len(p.Imports) > 0 {
 		return p.Imports[0].Pos()
@@ -60,18 +60,18 @@ type Declaration interface {
 	declNode()
 }
 
-type LeafDecl struct {
-	Token lexer.Token // The 'leaf' token
+type PetioleDecl struct {
+	Token lexer.Token // The 'petiole' token
 	Name  *Identifier
 }
 
-func (d *LeafDecl) TokenLiteral() string {
+func (d *PetioleDecl) TokenLiteral() string {
 	return d.Token.Lexeme
 }
-func (d *LeafDecl) Pos() Position {
+func (d *PetioleDecl) Pos() Position {
 	return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File}
 }
-func (d *LeafDecl) declNode()            {}
+func (d *PetioleDecl) declNode()            {}
 
 type ImportDecl struct {
 	Token lexer.Token // The 'import' token

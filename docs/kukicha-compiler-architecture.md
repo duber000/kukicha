@@ -337,24 +337,24 @@ type Position struct {
 
 // Program root
 type Program struct {
-    Leaf        *LeafDecl      // Optional: nil if not declared
-    FilePath    string         // Required: used to calculate implicit Stem
-    TwigRoot    string         // Required: path to twig.toml directory
+    Petiole     *PetioleDecl   // Optional: nil if not declared
+    FilePath    string         // Required: used to calculate implicit Petiole
+    StemRoot    string         // Required: path to stem.toml directory
     Imports     []*ImportDecl
     Declarations []Declaration
 }
 
-// CalculateStem computes the package name from file path if Leaf is nil
-func (p *Program) CalculateStem() string {
-    if p.Leaf != nil {
-        return p.Leaf.Name  // Explicit declaration takes precedence
+// CalculatePetiole computes the package name from file path if Petiole is nil
+func (p *Program) CalculatePetiole() string {
+    if p.Petiole != nil {
+        return p.Petiole.Name  // Explicit declaration takes precedence
     }
 
-    // Calculate stem from file path relative to twig.toml
-    relPath := filepath.Rel(p.TwigRoot, filepath.Dir(p.FilePath))
+    // Calculate petiole from file path relative to stem.toml
+    relPath := filepath.Rel(p.StemRoot, filepath.Dir(p.FilePath))
     // Convert path to package name (e.g., "src/auth" -> "auth")
-    stem := filepath.Base(relPath)
-    return stem
+    petiole := filepath.Base(relPath)
+    return petiole
 }
 
 // Declarations
@@ -683,8 +683,8 @@ func NewParser(tokens []Token, filename string) *Parser {
 func (p *Parser) Parse() (*Program, error) {
     program := &Program{}
     
-    // Parse leaf declaration
-    program.Leaf = p.parseLeafDecl()
+    // Parse petiole declaration
+    program.Petiole = p.parsePetioleDecl()
     
     // Parse imports
     for p.match(TOKEN_IMPORT) {
@@ -989,7 +989,7 @@ func NewCodeGenerator() *CodeGenerator {
 
 func (cg *CodeGenerator) Generate(program *Program) (string, error) {
     // Generate package declaration
-    cg.writeLine("package %s", program.Leaf.Name)
+    cg.writeLine("package %s", program.Pitole.Name)
     cg.writeLine("")
     
     // Generate imports
@@ -1648,7 +1648,7 @@ func TestCompiler(t *testing.T) {
     }{
         {
             name: "hello world",
-            kuki: `leaf main
+            kuki: `petiole main
 func main()
     print "Hello, World!"
 `,

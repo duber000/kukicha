@@ -33,9 +33,9 @@ func TestBasicTokens(t *testing.T) {
 		},
 		{
 			name:  "keywords",
-			input: "leaf import type interface\n",
+			input: "petiole import type interface\n",
 			expected: []TokenType{
-				TOKEN_LEAF, TOKEN_IMPORT, TOKEN_TYPE, TOKEN_INTERFACE, TOKEN_NEWLINE, TOKEN_EOF,
+				TOKEN_PETIOLE, TOKEN_IMPORT, TOKEN_TYPE, TOKEN_INTERFACE, TOKEN_NEWLINE, TOKEN_EOF,
 			},
 		},
 		{
@@ -292,7 +292,7 @@ func Hello()
 }
 
 func TestRealWorldExample(t *testing.T) {
-	input := `leaf todo
+	input := `petiole todo
 
 import time
 
@@ -327,15 +327,15 @@ func Display on todo Todo
 	}
 
 	// Check that we have the main keywords
-	foundLeaf := false
+	foundPetiole := false
 	foundImport := false
 	foundType := false
 	foundFunc := false
 
 	for _, token := range tokens {
 		switch token.Type {
-		case TOKEN_LEAF:
-			foundLeaf = true
+		case TOKEN_PETIOLE:
+			foundPetiole = true
 		case TOKEN_IMPORT:
 			foundImport = true
 		case TOKEN_TYPE:
@@ -345,8 +345,8 @@ func Display on todo Todo
 		}
 	}
 
-	if !foundLeaf {
-		t.Error("Expected to find LEAF token")
+	if !foundPetiole {
+		t.Error("Expected to find PITOLE token")
 	}
 	if !foundImport {
 		t.Error("Expected to find IMPORT token")
@@ -399,7 +399,7 @@ func TestKeywordRecognition(t *testing.T) {
 		keyword string
 		token   TokenType
 	}{
-		{"leaf", TOKEN_LEAF},
+		{"petiole", TOKEN_PETIOLE},
 		{"import", TOKEN_IMPORT},
 		{"type", TOKEN_TYPE},
 		{"interface", TOKEN_INTERFACE},
