@@ -251,8 +251,3 @@ func checkCommand(filename string) {
 
 	fmt.Printf("✓ %s type checks successfully\n", filename)
 }
-
-func fmtCommand(args []string) {
-	fmt.Println("Format command not yet implemented")
-	os.Exit(1)
-}

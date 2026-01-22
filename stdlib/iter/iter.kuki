@@ -97,3 +97,40 @@ func Zip(seq1 iter.Seq, seq2 iter.Seq) iter.Seq2
             else if not yield(v1, v2)
                 return false
         return true
+
+# Reduce accumulates values from the iterator using a reducing function
+# It takes an initial accumulator value and combines it with each item
+func Reduce(seq iter.Seq, initial any2, reducer func(any2, any) any2) any2
+    acc := initial
+    for item in seq
+        acc = reducer(acc, item)
+    return acc
+
+# Collect converts an iterator to a slice by consuming all values
+func Collect(seq iter.Seq) list of any
+    result := make(list of any, 0)
+    for item in seq
+        result = append(result, item)
+    return result
+
+# Any returns true if at least one element satisfies the predicate
+func Any(seq iter.Seq, predicate func(any) bool) bool
+    for item in seq
+        if predicate(item)
+            return true
+    return false
+
+# All returns true if all elements satisfy the predicate
+func All(seq iter.Seq, predicate func(any) bool) bool
+    for item in seq
+        if !predicate(item)
+            return false
+    return true
+
+# Find returns the first element matching the predicate, or empty if none found
+# Returns (value, true) if found, (empty, false) if not found
+func Find(seq iter.Seq, predicate func(any) bool) (any, bool)
+    for item in seq
+        if predicate(item)
+            return item, true
+    return empty, false
