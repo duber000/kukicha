@@ -18,15 +18,15 @@ type TypeParameter struct {
 
 // Generator generates Go code from an AST
 type Generator struct {
-	program        *ast.Program
-	output         strings.Builder
-	indent         int
-	placeholderMap map[string]string // Maps placeholder names to type param names (e.g., "element" -> "T")
-	autoImports    map[string]bool   // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
-	isStdlibIter   bool              // True if generating stdlib/iter code (enables special transpilation)
-	sourceFile     string            // Source file path for detecting stdlib
-	currentFuncName string           // Current function being generated (for context-aware decisions)
-	processingReturnType bool        // Whether we are currently generating return types
+	program              *ast.Program
+	output               strings.Builder
+	indent               int
+	placeholderMap       map[string]string // Maps placeholder names to type param names (e.g., "element" -> "T")
+	autoImports          map[string]bool   // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
+	isStdlibIter         bool              // True if generating stdlib/iter code (enables special transpilation)
+	sourceFile           string            // Source file path for detecting stdlib
+	currentFuncName      string            // Current function being generated (for context-aware decisions)
+	processingReturnType bool              // Whether we are currently generating return types
 }
 
 // New creates a new code generator
@@ -274,7 +274,7 @@ func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
 	if g.isStdlibIter {
 		// Create a temporary function decl to reuse the inference logic
 		tempDecl := &ast.FunctionDecl{
-			Name:       &ast.Identifier{Value: ""},  // dummy name for inference
+			Name:       &ast.Identifier{Value: ""}, // dummy name for inference
 			Parameters: lit.Parameters,
 			Returns:    lit.Returns,
 		}
@@ -387,7 +387,7 @@ func (g *Generator) isIterSeqType(typeAnn ast.TypeAnnotation) bool {
 	if namedType, ok := typeAnn.(*ast.NamedType); ok {
 		// Check for "iter.Seq" or just "Seq" in iter context
 		return namedType.Name == "iter.Seq" ||
-		       (g.isStdlibIter && namedType.Name == "Seq")
+			(g.isStdlibIter && namedType.Name == "Seq")
 	}
 	return false
 }
@@ -578,22 +578,34 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 }
 
 func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
+	// Build comma-separated list of names
+	names := make([]string, len(stmt.Names))
+	for i, n := range stmt.Names {
+		names[i] = n.Value
+	}
+	namesStr := strings.Join(names, ", ")
+
 	if stmt.Type != nil {
 		// Explicit type declaration
 		varType := g.generateTypeAnnotation(stmt.Type)
 		value := g.exprToString(stmt.Value)
-		g.writeLine(fmt.Sprintf("var %s %s = %s", stmt.Name.Value, varType, value))
+		g.writeLine(fmt.Sprintf("var %s %s = %s", namesStr, varType, value))
 	} else {
 		// Type inference with :=
 		value := g.exprToString(stmt.Value)
-		g.writeLine(fmt.Sprintf("%s := %s", stmt.Name.Value, value))
+		g.writeLine(fmt.Sprintf("%s := %s", namesStr, value))
 	}
 }
 
 func (g *Generator) generateAssignStmt(stmt *ast.AssignStmt) {
-	target := g.exprToString(stmt.Target)
+	// Build comma-separated list of targets
+	targets := make([]string, len(stmt.Targets))
+	for i, t := range stmt.Targets {
+		targets[i] = g.exprToString(t)
+	}
+	targetsStr := strings.Join(targets, ", ")
 	value := g.exprToString(stmt.Value)
-	g.writeLine(fmt.Sprintf("%s = %s", target, value))
+	g.writeLine(fmt.Sprintf("%s = %s", targetsStr, value))
 }
 
 func (g *Generator) generateIncDecStmt(stmt *ast.IncDecStmt) {

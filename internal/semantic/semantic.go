@@ -10,7 +10,7 @@ import (
 
 // Analyzer performs semantic analysis on the AST
 type Analyzer struct {
-	program    *ast.Program
+	program     *ast.Program
 	symbolTable *SymbolTable
 	errors      []error
 	currentFunc *ast.FunctionDecl // Track current function for return type checking
@@ -307,10 +307,6 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 }
 
 func (a *Analyzer) analyzeVarDeclStmt(stmt *ast.VarDeclStmt) {
-	if !isValidIdentifier(stmt.Name.Value) {
-		a.error(stmt.Name.Pos(), fmt.Sprintf("invalid variable name '%s'", stmt.Name.Value))
-	}
-
 	// Analyze value expression
 	valueType := a.analyzeExpression(stmt.Value)
 
@@ -328,25 +324,36 @@ func (a *Analyzer) analyzeVarDeclStmt(stmt *ast.VarDeclStmt) {
 		varType = valueType
 	}
 
-	// Add variable to symbol table
-	symbol := &Symbol{
-		Name:    stmt.Name.Value,
-		Kind:    SymbolVariable,
-		Type:    varType,
-		Defined: stmt.Name.Pos(),
-		Mutable: true,
-	}
-	if err := a.symbolTable.Define(symbol); err != nil {
-		a.error(stmt.Name.Pos(), err.Error())
+	// Add each variable to symbol table
+	for _, name := range stmt.Names {
+		if !isValidIdentifier(name.Value) {
+			a.error(name.Pos(), fmt.Sprintf("invalid variable name '%s'", name.Value))
+			continue
+		}
+
+		symbol := &Symbol{
+			Name:    name.Value,
+			Kind:    SymbolVariable,
+			Type:    varType,
+			Defined: name.Pos(),
+			Mutable: true,
+		}
+		if err := a.symbolTable.Define(symbol); err != nil {
+			a.error(name.Pos(), err.Error())
+		}
 	}
 }
 
 func (a *Analyzer) analyzeAssignStmt(stmt *ast.AssignStmt) {
-	targetType := a.analyzeExpression(stmt.Target)
-	valueType := a.analyzeExpression(stmt.Value)
+	// For multi-target assignment, we check each target against the corresponding value
+	// For now, just analyze the first target against the value (simplified)
+	if len(stmt.Targets) > 0 {
+		targetType := a.analyzeExpression(stmt.Targets[0])
+		valueType := a.analyzeExpression(stmt.Value)
 
-	if !a.typesCompatible(targetType, valueType) {
-		a.error(stmt.Pos(), fmt.Sprintf("cannot assign %s to %s", valueType, targetType))
+		if !a.typesCompatible(targetType, valueType) {
+			a.error(stmt.Pos(), fmt.Sprintf("cannot assign %s to %s", valueType, targetType))
+		}
 	}
 }
 

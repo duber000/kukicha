@@ -769,9 +769,9 @@ func (p *Parser) parseExpressionOrAssignmentStmt() ast.Statement {
 		value := p.parseExpression()
 		p.skipNewlines()
 		return &ast.AssignStmt{
-			Target: expr,
-			Value:  value,
-			Token:  p.previousToken(),
+			Targets: []ast.Expression{expr},
+			Value:   value,
+			Token:   p.previousToken(),
 		}
 	} else if p.match(lexer.TOKEN_WALRUS) {
 		// Variable declaration with inference: x := value
@@ -783,7 +783,7 @@ func (p *Parser) parseExpressionOrAssignmentStmt() ast.Statement {
 		value := p.parseExpression()
 		p.skipNewlines()
 		return &ast.VarDeclStmt{
-			Name:  ident,
+			Names: []*ast.Identifier{ident},
 			Value: value,
 			Token: p.previousToken(),
 		}

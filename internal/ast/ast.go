@@ -20,9 +20,9 @@ type Position struct {
 // ============================================================================
 
 type Program struct {
-	PetioleDecl   *PetioleDecl    // Optional petiole declaration
-	Imports      []*ImportDecl  // Import declarations
-	Declarations []Declaration  // Top-level declarations (types, interfaces, functions)
+	PetioleDecl  *PetioleDecl  // Optional petiole declaration
+	Imports      []*ImportDecl // Import declarations
+	Declarations []Declaration // Top-level declarations (types, interfaces, functions)
 }
 
 func (p *Program) TokenLiteral() string {
@@ -71,7 +71,7 @@ func (d *PetioleDecl) TokenLiteral() string {
 func (d *PetioleDecl) Pos() Position {
 	return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File}
 }
-func (d *PetioleDecl) declNode()            {}
+func (d *PetioleDecl) declNode() {}
 
 type ImportDecl struct {
 	Token lexer.Token // The 'import' token
@@ -80,8 +80,10 @@ type ImportDecl struct {
 }
 
 func (d *ImportDecl) TokenLiteral() string { return d.Token.Lexeme }
-func (d *ImportDecl) Pos() Position        { return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File} }
-func (d *ImportDecl) declNode()            {}
+func (d *ImportDecl) Pos() Position {
+	return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File}
+}
+func (d *ImportDecl) declNode() {}
 
 type TypeDecl struct {
 	Token  lexer.Token // The 'type' token
@@ -90,8 +92,10 @@ type TypeDecl struct {
 }
 
 func (d *TypeDecl) TokenLiteral() string { return d.Token.Lexeme }
-func (d *TypeDecl) Pos() Position        { return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File} }
-func (d *TypeDecl) declNode()            {}
+func (d *TypeDecl) Pos() Position {
+	return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File}
+}
+func (d *TypeDecl) declNode() {}
 
 type FieldDecl struct {
 	Name *Identifier
@@ -105,8 +109,10 @@ type InterfaceDecl struct {
 }
 
 func (d *InterfaceDecl) TokenLiteral() string { return d.Token.Lexeme }
-func (d *InterfaceDecl) Pos() Position        { return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File} }
-func (d *InterfaceDecl) declNode()            {}
+func (d *InterfaceDecl) Pos() Position {
+	return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File}
+}
+func (d *InterfaceDecl) declNode() {}
 
 type MethodSignature struct {
 	Name       *Identifier
@@ -115,7 +121,7 @@ type MethodSignature struct {
 }
 
 type FunctionDecl struct {
-	Token          lexer.Token // The 'func' token
+	Token      lexer.Token // The 'func' token
 	Name       *Identifier
 	Parameters []*Parameter
 	Returns    []TypeAnnotation
@@ -124,8 +130,10 @@ type FunctionDecl struct {
 }
 
 func (d *FunctionDecl) TokenLiteral() string { return d.Token.Lexeme }
-func (d *FunctionDecl) Pos() Position        { return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File} }
-func (d *FunctionDecl) declNode()            {}
+func (d *FunctionDecl) Pos() Position {
+	return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File}
+}
+func (d *FunctionDecl) declNode() {}
 
 type Parameter struct {
 	Name     *Identifier
@@ -153,8 +161,10 @@ type PrimitiveType struct {
 }
 
 func (t *PrimitiveType) TokenLiteral() string { return t.Token.Lexeme }
-func (t *PrimitiveType) Pos() Position        { return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File} }
-func (t *PrimitiveType) typeNode()            {}
+func (t *PrimitiveType) Pos() Position {
+	return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File}
+}
+func (t *PrimitiveType) typeNode() {}
 
 type NamedType struct {
 	Token lexer.Token // The identifier token
@@ -162,8 +172,10 @@ type NamedType struct {
 }
 
 func (t *NamedType) TokenLiteral() string { return t.Token.Lexeme }
-func (t *NamedType) Pos() Position        { return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File} }
-func (t *NamedType) typeNode()            {}
+func (t *NamedType) Pos() Position {
+	return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File}
+}
+func (t *NamedType) typeNode() {}
 
 type ReferenceType struct {
 	Token       lexer.Token // The 'reference' token
@@ -171,8 +183,10 @@ type ReferenceType struct {
 }
 
 func (t *ReferenceType) TokenLiteral() string { return t.Token.Lexeme }
-func (t *ReferenceType) Pos() Position        { return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File} }
-func (t *ReferenceType) typeNode()            {}
+func (t *ReferenceType) Pos() Position {
+	return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File}
+}
+func (t *ReferenceType) typeNode() {}
 
 type ListType struct {
 	Token       lexer.Token // The 'list' token
@@ -180,8 +194,10 @@ type ListType struct {
 }
 
 func (t *ListType) TokenLiteral() string { return t.Token.Lexeme }
-func (t *ListType) Pos() Position        { return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File} }
-func (t *ListType) typeNode()            {}
+func (t *ListType) Pos() Position {
+	return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File}
+}
+func (t *ListType) typeNode() {}
 
 type MapType struct {
 	Token     lexer.Token // The 'map' token
@@ -190,8 +206,10 @@ type MapType struct {
 }
 
 func (t *MapType) TokenLiteral() string { return t.Token.Lexeme }
-func (t *MapType) Pos() Position        { return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File} }
-func (t *MapType) typeNode()            {}
+func (t *MapType) Pos() Position {
+	return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File}
+}
+func (t *MapType) typeNode() {}
 
 type ChannelType struct {
 	Token       lexer.Token // The 'channel' token
@@ -199,8 +217,10 @@ type ChannelType struct {
 }
 
 func (t *ChannelType) TokenLiteral() string { return t.Token.Lexeme }
-func (t *ChannelType) Pos() Position        { return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File} }
-func (t *ChannelType) typeNode()            {}
+func (t *ChannelType) Pos() Position {
+	return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File}
+}
+func (t *ChannelType) typeNode() {}
 
 // FunctionType represents a function type annotation
 // e.g., func(int, string) bool
@@ -211,8 +231,10 @@ type FunctionType struct {
 }
 
 func (t *FunctionType) TokenLiteral() string { return t.Token.Lexeme }
-func (t *FunctionType) Pos() Position        { return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File} }
-func (t *FunctionType) typeNode()            {}
+func (t *FunctionType) Pos() Position {
+	return Position{Line: t.Token.Line, Column: t.Token.Column, File: t.Token.File}
+}
+func (t *FunctionType) typeNode() {}
 
 // ============================================================================
 // Statements
@@ -229,29 +251,35 @@ type BlockStmt struct {
 }
 
 func (s *BlockStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *BlockStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *BlockStmt) stmtNode()            {}
+func (s *BlockStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *BlockStmt) stmtNode() {}
 
 type VarDeclStmt struct {
-	Name  *Identifier
+	Names []*Identifier
 	Type  TypeAnnotation // Optional (can be nil for inference)
 	Value Expression
 	Token lexer.Token // The identifier token or walrus token
 }
 
 func (s *VarDeclStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *VarDeclStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *VarDeclStmt) stmtNode()            {}
+func (s *VarDeclStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *VarDeclStmt) stmtNode() {}
 
 type AssignStmt struct {
-	Target Expression  // Can be identifier, index expr, etc.
-	Value  Expression
-	Token  lexer.Token // The '=' token
+	Targets []Expression // Can be single or multiple targets
+	Value   Expression
+	Token   lexer.Token // The '=' token
 }
 
 func (s *AssignStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *AssignStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *AssignStmt) stmtNode()            {}
+func (s *AssignStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *AssignStmt) stmtNode() {}
 
 type IncDecStmt struct {
 	Token    lexer.Token // The '++' or '--' token
@@ -260,8 +288,10 @@ type IncDecStmt struct {
 }
 
 func (s *IncDecStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *IncDecStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *IncDecStmt) stmtNode()            {}
+func (s *IncDecStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *IncDecStmt) stmtNode() {}
 
 type ReturnStmt struct {
 	Token  lexer.Token // The 'return' token
@@ -269,8 +299,10 @@ type ReturnStmt struct {
 }
 
 func (s *ReturnStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *ReturnStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *ReturnStmt) stmtNode()            {}
+func (s *ReturnStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *ReturnStmt) stmtNode() {}
 
 type IfStmt struct {
 	Token       lexer.Token // The 'if' token
@@ -280,8 +312,10 @@ type IfStmt struct {
 }
 
 func (s *IfStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *IfStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *IfStmt) stmtNode()            {}
+func (s *IfStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *IfStmt) stmtNode() {}
 
 type ElseStmt struct {
 	Token lexer.Token // The 'else' token
@@ -289,8 +323,10 @@ type ElseStmt struct {
 }
 
 func (s *ElseStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *ElseStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *ElseStmt) stmtNode()            {}
+func (s *ElseStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *ElseStmt) stmtNode() {}
 
 // ForRangeStmt: for item in collection
 type ForRangeStmt struct {
@@ -302,8 +338,10 @@ type ForRangeStmt struct {
 }
 
 func (s *ForRangeStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *ForRangeStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *ForRangeStmt) stmtNode()            {}
+func (s *ForRangeStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *ForRangeStmt) stmtNode() {}
 
 // ForNumericStmt: for i from start to end / for i from start through end
 type ForNumericStmt struct {
@@ -316,8 +354,10 @@ type ForNumericStmt struct {
 }
 
 func (s *ForNumericStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *ForNumericStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *ForNumericStmt) stmtNode()            {}
+func (s *ForNumericStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *ForNumericStmt) stmtNode() {}
 
 // ForConditionStmt: for condition
 type ForConditionStmt struct {
@@ -327,8 +367,10 @@ type ForConditionStmt struct {
 }
 
 func (s *ForConditionStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *ForConditionStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *ForConditionStmt) stmtNode()            {}
+func (s *ForConditionStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *ForConditionStmt) stmtNode() {}
 
 type DeferStmt struct {
 	Token lexer.Token // The 'defer' token
@@ -336,8 +378,10 @@ type DeferStmt struct {
 }
 
 func (s *DeferStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *DeferStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *DeferStmt) stmtNode()            {}
+func (s *DeferStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *DeferStmt) stmtNode() {}
 
 type GoStmt struct {
 	Token lexer.Token // The 'go' token
@@ -345,8 +389,10 @@ type GoStmt struct {
 }
 
 func (s *GoStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *GoStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *GoStmt) stmtNode()            {}
+func (s *GoStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *GoStmt) stmtNode() {}
 
 type SendStmt struct {
 	Token   lexer.Token // The 'send' token
@@ -355,8 +401,10 @@ type SendStmt struct {
 }
 
 func (s *SendStmt) TokenLiteral() string { return s.Token.Lexeme }
-func (s *SendStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
-func (s *SendStmt) stmtNode()            {}
+func (s *SendStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *SendStmt) stmtNode() {}
 
 type ExpressionStmt struct {
 	Expression Expression
@@ -381,8 +429,10 @@ type Identifier struct {
 }
 
 func (e *Identifier) TokenLiteral() string { return e.Token.Lexeme }
-func (e *Identifier) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *Identifier) exprNode()            {}
+func (e *Identifier) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *Identifier) exprNode() {}
 
 type IntegerLiteral struct {
 	Token lexer.Token
@@ -390,8 +440,10 @@ type IntegerLiteral struct {
 }
 
 func (e *IntegerLiteral) TokenLiteral() string { return e.Token.Lexeme }
-func (e *IntegerLiteral) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *IntegerLiteral) exprNode()            {}
+func (e *IntegerLiteral) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *IntegerLiteral) exprNode() {}
 
 type FloatLiteral struct {
 	Token lexer.Token
@@ -399,8 +451,10 @@ type FloatLiteral struct {
 }
 
 func (e *FloatLiteral) TokenLiteral() string { return e.Token.Lexeme }
-func (e *FloatLiteral) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *FloatLiteral) exprNode()            {}
+func (e *FloatLiteral) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *FloatLiteral) exprNode() {}
 
 type StringLiteral struct {
 	Token        lexer.Token
@@ -410,8 +464,10 @@ type StringLiteral struct {
 }
 
 func (e *StringLiteral) TokenLiteral() string { return e.Token.Lexeme }
-func (e *StringLiteral) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *StringLiteral) exprNode()            {}
+func (e *StringLiteral) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *StringLiteral) exprNode() {}
 
 type StringInterpolation struct {
 	IsLiteral bool       // True for literal parts, false for expressions
@@ -425,8 +481,10 @@ type BooleanLiteral struct {
 }
 
 func (e *BooleanLiteral) TokenLiteral() string { return e.Token.Lexeme }
-func (e *BooleanLiteral) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *BooleanLiteral) exprNode()            {}
+func (e *BooleanLiteral) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *BooleanLiteral) exprNode() {}
 
 type BinaryExpr struct {
 	Token    lexer.Token // The operator token
@@ -436,8 +494,10 @@ type BinaryExpr struct {
 }
 
 func (e *BinaryExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *BinaryExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *BinaryExpr) exprNode()            {}
+func (e *BinaryExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *BinaryExpr) exprNode() {}
 
 type UnaryExpr struct {
 	Token    lexer.Token // The operator token
@@ -446,8 +506,10 @@ type UnaryExpr struct {
 }
 
 func (e *UnaryExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *UnaryExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *UnaryExpr) exprNode()            {}
+func (e *UnaryExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *UnaryExpr) exprNode() {}
 
 type PipeExpr struct {
 	Token lexer.Token // The '|>' token
@@ -456,8 +518,10 @@ type PipeExpr struct {
 }
 
 func (e *PipeExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *PipeExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *PipeExpr) exprNode()            {}
+func (e *PipeExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *PipeExpr) exprNode() {}
 
 type OnErrExpr struct {
 	Token   lexer.Token // The 'onerr' token
@@ -466,8 +530,10 @@ type OnErrExpr struct {
 }
 
 func (e *OnErrExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *OnErrExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *OnErrExpr) exprNode()            {}
+func (e *OnErrExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *OnErrExpr) exprNode() {}
 
 type CallExpr struct {
 	Token     lexer.Token // The '(' token or identifier
@@ -476,8 +542,10 @@ type CallExpr struct {
 }
 
 func (e *CallExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *CallExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *CallExpr) exprNode()            {}
+func (e *CallExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *CallExpr) exprNode() {}
 
 type MethodCallExpr struct {
 	Token     lexer.Token // The '.' token
@@ -487,8 +555,10 @@ type MethodCallExpr struct {
 }
 
 func (e *MethodCallExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *MethodCallExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *MethodCallExpr) exprNode()            {}
+func (e *MethodCallExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *MethodCallExpr) exprNode() {}
 
 type IndexExpr struct {
 	Token lexer.Token // The '[' token
@@ -497,8 +567,10 @@ type IndexExpr struct {
 }
 
 func (e *IndexExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *IndexExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *IndexExpr) exprNode()            {}
+func (e *IndexExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *IndexExpr) exprNode() {}
 
 type SliceExpr struct {
 	Token lexer.Token // The '[' token
@@ -508,8 +580,10 @@ type SliceExpr struct {
 }
 
 func (e *SliceExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *SliceExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *SliceExpr) exprNode()            {}
+func (e *SliceExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *SliceExpr) exprNode() {}
 
 type StructLiteralExpr struct {
 	Token  lexer.Token // The type identifier
@@ -518,8 +592,10 @@ type StructLiteralExpr struct {
 }
 
 func (e *StructLiteralExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *StructLiteralExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *StructLiteralExpr) exprNode()            {}
+func (e *StructLiteralExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *StructLiteralExpr) exprNode() {}
 
 type FieldValue struct {
 	Name  *Identifier
@@ -533,8 +609,10 @@ type ListLiteralExpr struct {
 }
 
 func (e *ListLiteralExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *ListLiteralExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *ListLiteralExpr) exprNode()            {}
+func (e *ListLiteralExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *ListLiteralExpr) exprNode() {}
 
 type MapLiteralExpr struct {
 	Token   lexer.Token // The '{' token or 'map' keyword
@@ -544,8 +622,10 @@ type MapLiteralExpr struct {
 }
 
 func (e *MapLiteralExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *MapLiteralExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *MapLiteralExpr) exprNode()            {}
+func (e *MapLiteralExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *MapLiteralExpr) exprNode() {}
 
 type KeyValuePair struct {
 	Key   Expression
@@ -558,8 +638,10 @@ type ReceiveExpr struct {
 }
 
 func (e *ReceiveExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *ReceiveExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *ReceiveExpr) exprNode()            {}
+func (e *ReceiveExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *ReceiveExpr) exprNode() {}
 
 type TypeCastExpr struct {
 	Token      lexer.Token // The 'as' token
@@ -568,8 +650,10 @@ type TypeCastExpr struct {
 }
 
 func (e *TypeCastExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *TypeCastExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *TypeCastExpr) exprNode()            {}
+func (e *TypeCastExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *TypeCastExpr) exprNode() {}
 
 type EmptyExpr struct {
 	Token lexer.Token // The 'empty' token
@@ -577,16 +661,20 @@ type EmptyExpr struct {
 }
 
 func (e *EmptyExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *EmptyExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *EmptyExpr) exprNode()            {}
+func (e *EmptyExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *EmptyExpr) exprNode() {}
 
 type DiscardExpr struct {
 	Token lexer.Token // The 'discard' token
 }
 
 func (e *DiscardExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *DiscardExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *DiscardExpr) exprNode()            {}
+func (e *DiscardExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *DiscardExpr) exprNode() {}
 
 type ErrorExpr struct {
 	Token   lexer.Token // The 'error' token
@@ -594,8 +682,10 @@ type ErrorExpr struct {
 }
 
 func (e *ErrorExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *ErrorExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *ErrorExpr) exprNode()            {}
+func (e *ErrorExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *ErrorExpr) exprNode() {}
 
 type MakeExpr struct {
 	Token lexer.Token // The 'make' token
@@ -604,8 +694,10 @@ type MakeExpr struct {
 }
 
 func (e *MakeExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *MakeExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *MakeExpr) exprNode()            {}
+func (e *MakeExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *MakeExpr) exprNode() {}
 
 type CloseExpr struct {
 	Token   lexer.Token // The 'close' token
@@ -613,8 +705,10 @@ type CloseExpr struct {
 }
 
 func (e *CloseExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *CloseExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *CloseExpr) exprNode()            {}
+func (e *CloseExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *CloseExpr) exprNode() {}
 
 type PanicExpr struct {
 	Token   lexer.Token // The 'panic' token
@@ -622,24 +716,30 @@ type PanicExpr struct {
 }
 
 func (e *PanicExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *PanicExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *PanicExpr) exprNode()            {}
+func (e *PanicExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *PanicExpr) exprNode() {}
 
 type RecoverExpr struct {
 	Token lexer.Token // The 'recover' token
 }
 
 func (e *RecoverExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *RecoverExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *RecoverExpr) exprNode()            {}
+func (e *RecoverExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *RecoverExpr) exprNode() {}
 
 type FunctionLiteral struct {
-	Token      lexer.Token      // The 'func' token
+	Token      lexer.Token // The 'func' token
 	Parameters []*Parameter
 	Returns    []TypeAnnotation
 	Body       *BlockStmt
 }
 
 func (e *FunctionLiteral) TokenLiteral() string { return e.Token.Lexeme }
-func (e *FunctionLiteral) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
-func (e *FunctionLiteral) exprNode()            {}
+func (e *FunctionLiteral) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *FunctionLiteral) exprNode() {}

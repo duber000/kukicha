@@ -77,3 +77,23 @@ func Chunk(seq iter.Seq, n int) iter.SeqSlice
         if len(chunk) > 0
             return yield(chunk)
         return true
+
+# Zip combines two iterators into pairs
+# It yields tuples of (value1, value2) until either iterator is exhausted
+func Zip(seq1 iter.Seq, seq2 iter.Seq) iter.Seq2
+    return func(yield func(any, any) bool) bool
+        done := false
+        for v1 in seq1
+            if done
+                return true
+            v2Exists := false
+            v2 := empty
+            for v2Candidate in seq2
+                v2 = v2Candidate
+                v2Exists = true
+                break
+            if not v2Exists
+                done = true
+            else if not yield(v1, v2)
+                return false
+        return true

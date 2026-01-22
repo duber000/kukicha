@@ -599,8 +599,8 @@ func TestParseWalrusOperator(t *testing.T) {
 		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
 	}
 
-	if varDecl.Name.Value != "x" {
-		t.Errorf("expected variable name 'x', got '%s'", varDecl.Name.Value)
+	if len(varDecl.Names) != 1 || varDecl.Names[0].Value != "x" {
+		t.Errorf("expected variable name 'x', got '%v'", varDecl.Names)
 	}
 
 	intLit, ok := varDecl.Value.(*ast.IntegerLiteral)
