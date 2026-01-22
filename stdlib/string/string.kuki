@@ -1,0 +1,159 @@
+# Kukicha Standard Library - String Operations
+
+petiole string
+
+import "strings"
+
+# Case Conversion Functions
+
+# ToUpper converts all characters in the string to uppercase
+func ToUpper(s string) string
+    return strings.ToUpper(s)
+
+# ToLower converts all characters in the string to lowercase
+func ToLower(s string) string
+    return strings.ToLower(s)
+
+# Title converts the string to title case (first letter of each word capitalized)
+func Title(s string) string
+    return strings.Title(s)
+
+# Trimming Functions
+
+# Trim removes leading and trailing characters from the string
+# The cutset parameter specifies which characters to remove
+func Trim(s string, cutset string) string
+    return strings.Trim(s, cutset)
+
+# TrimSpace removes leading and trailing whitespace from the string
+func TrimSpace(s string) string
+    return strings.TrimSpace(s)
+
+# TrimPrefix removes the prefix from the string if present
+# Returns the original string if prefix is not found
+func TrimPrefix(s string, prefix string) string
+    return strings.TrimPrefix(s, prefix)
+
+# TrimSuffix removes the suffix from the string if present
+# Returns the original string if suffix is not found
+func TrimSuffix(s string, suffix string) string
+    return strings.TrimSuffix(s, suffix)
+
+# TrimLeft removes leading characters from the string
+func TrimLeft(s string, cutset string) string
+    return strings.TrimLeft(s, cutset)
+
+# TrimRight removes trailing characters from the string
+func TrimRight(s string, cutset string) string
+    return strings.TrimRight(s, cutset)
+
+# Splitting and Joining Functions
+
+# Split splits the string by the separator into a slice of strings
+func Split(s string, sep string) list of string
+    return strings.Split(s, sep)
+
+# SplitN splits the string by the separator with a limit on the number of splits
+# If n > 0, splits into at most n substrings (last substring is unsplit remainder)
+# If n == 0, returns nil (no substrings)
+# If n < 0, returns all substrings
+func SplitN(s string, sep string, n int) list of string
+    return strings.SplitN(s, sep, n)
+
+# Join concatenates the elements of a slice with the separator between them
+func Join(parts list of string, sep string) string
+    return strings.Join(parts, sep)
+
+# Fields splits the string on whitespace, removing empty strings
+func Fields(s string) list of string
+    return strings.Fields(s)
+
+# Search and Check Functions
+
+# Contains checks if the substring is present in the string
+func Contains(s string, substr string) bool
+    return strings.Contains(s, substr)
+
+# HasPrefix checks if the string starts with the prefix
+func HasPrefix(s string, prefix string) bool
+    return strings.HasPrefix(s, prefix)
+
+# HasSuffix checks if the string ends with the suffix
+func HasSuffix(s string, suffix string) bool
+    return strings.HasSuffix(s, suffix)
+
+# Index returns the index of the first occurrence of substr in s
+# Returns -1 if substr is not present
+func Index(s string, substr string) int
+    return strings.Index(s, substr)
+
+# LastIndex returns the index of the last occurrence of substr in s
+# Returns -1 if substr is not present
+func LastIndex(s string, substr string) int
+    return strings.LastIndex(s, substr)
+
+# Count counts the number of non-overlapping instances of substr in s
+func Count(s string, substr string) int
+    return strings.Count(s, substr)
+
+# Replacement Functions
+
+# Replace replaces the first n occurrences of old with new in the string
+# If n < 0, replaces all occurrences
+func Replace(s string, old string, new string, n int) string
+    return strings.Replace(s, old, new, n)
+
+# ReplaceAll replaces all occurrences of old with new in the string
+func ReplaceAll(s string, old string, new string) string
+    return strings.ReplaceAll(s, old, new)
+
+# Repeat and Building Functions
+
+# Repeat returns a new string consisting of count copies of the string
+func Repeat(s string, count int) string
+    return strings.Repeat(s, count)
+
+# Builder Functions (for efficient string construction)
+
+# Builder provides an efficient way to build strings incrementally
+# Note: This wraps strings.Builder which should be used directly in Kukicha
+# Example usage:
+#   import "strings"
+#   builder := strings.Builder{}
+#   builder.WriteString("Hello")
+#   builder.WriteString(" World")
+#   result := builder.String()
+
+# Comparison Functions
+
+# EqualFold compares two strings case-insensitively
+# Useful for HTTP header comparison
+func EqualFold(s string, t string) bool
+    return strings.EqualFold(s, t)
+
+# Utility Functions
+
+# Len returns the length of the string in bytes
+func Len(s string) int
+    return len(s)
+
+# IsEmpty checks if the string is empty
+func IsEmpty(s string) bool
+    return len(s) == 0
+
+# IsBlank checks if the string is empty or contains only whitespace
+func IsBlank(s string) bool
+    return len(strings.TrimSpace(s)) == 0
+
+# Lines splits a string into lines (by newline characters)
+func Lines(s string) list of string
+    lines := strings.Split(s, "\n")
+    result := make(list of string, 0)
+    for line in lines
+        result = append(result, line)
+    return result
+
+# Concat concatenates multiple strings efficiently
+# Uses Join with empty separator for efficiency
+func Concat(parts list of string) string
+    return strings.Join(parts, "")
