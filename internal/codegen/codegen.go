@@ -585,15 +585,20 @@ func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
 	}
 	namesStr := strings.Join(names, ", ")
 
+	// Build comma-separated list of values
+	values := make([]string, len(stmt.Values))
+	for i, v := range stmt.Values {
+		values[i] = g.exprToString(v)
+	}
+	valuesStr := strings.Join(values, ", ")
+
 	if stmt.Type != nil {
 		// Explicit type declaration
 		varType := g.generateTypeAnnotation(stmt.Type)
-		value := g.exprToString(stmt.Value)
-		g.writeLine(fmt.Sprintf("var %s %s = %s", namesStr, varType, value))
+		g.writeLine(fmt.Sprintf("var %s %s = %s", namesStr, varType, valuesStr))
 	} else {
 		// Type inference with :=
-		value := g.exprToString(stmt.Value)
-		g.writeLine(fmt.Sprintf("%s := %s", namesStr, value))
+		g.writeLine(fmt.Sprintf("%s := %s", namesStr, valuesStr))
 	}
 }
 
@@ -604,8 +609,15 @@ func (g *Generator) generateAssignStmt(stmt *ast.AssignStmt) {
 		targets[i] = g.exprToString(t)
 	}
 	targetsStr := strings.Join(targets, ", ")
-	value := g.exprToString(stmt.Value)
-	g.writeLine(fmt.Sprintf("%s = %s", targetsStr, value))
+
+	// Build comma-separated list of values
+	values := make([]string, len(stmt.Values))
+	for i, v := range stmt.Values {
+		values[i] = g.exprToString(v)
+	}
+	valuesStr := strings.Join(values, ", ")
+
+	g.writeLine(fmt.Sprintf("%s = %s", targetsStr, valuesStr))
 }
 
 func (g *Generator) generateIncDecStmt(stmt *ast.IncDecStmt) {
@@ -1069,9 +1081,19 @@ func (g *Generator) checkBlockForInterpolation(block *ast.BlockStmt) bool {
 func (g *Generator) checkStmtForInterpolation(stmt ast.Statement) bool {
 	switch s := stmt.(type) {
 	case *ast.VarDeclStmt:
-		return g.checkExprForInterpolation(s.Value)
+		for _, val := range s.Values {
+			if g.checkExprForInterpolation(val) {
+				return true
+			}
+		}
+		return false
 	case *ast.AssignStmt:
-		return g.checkExprForInterpolation(s.Value)
+		for _, val := range s.Values {
+			if g.checkExprForInterpolation(val) {
+				return true
+			}
+		}
+		return false
 	case *ast.ReturnStmt:
 		for _, val := range s.Values {
 			if g.checkExprForInterpolation(val) {

@@ -307,30 +307,50 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 }
 
 func (a *Analyzer) analyzeVarDeclStmt(stmt *ast.VarDeclStmt) {
-	// Analyze value expression
-	valueType := a.analyzeExpression(stmt.Value)
-
-	// Type inference: use value type if no explicit type
-	var varType *TypeInfo
-	if stmt.Type != nil {
-		a.validateTypeAnnotation(stmt.Type)
-		varType = a.typeAnnotationToTypeInfo(stmt.Type)
-
-		// Check type compatibility
-		if !a.typesCompatible(varType, valueType) {
-			a.error(stmt.Pos(), fmt.Sprintf("cannot assign %s to %s", valueType, varType))
-		}
-	} else {
-		varType = valueType
+	// Analyze all value expressions
+	valueTypes := make([]*TypeInfo, len(stmt.Values))
+	for i, val := range stmt.Values {
+		valueTypes[i] = a.analyzeExpression(val)
 	}
 
-	// Add each variable to symbol table
-	for _, name := range stmt.Names {
+	// Check that number of values matches number of names
+	// For single function call that returns multiple values, we allow len(stmt.Values) == 1
+	if len(stmt.Values) != len(stmt.Names) && len(stmt.Values) != 1 {
+		a.error(stmt.Pos(), fmt.Sprintf("assignment mismatch: %d variables but %d values", len(stmt.Names), len(stmt.Values)))
+	}
+
+	// Type inference and validation
+	for i, name := range stmt.Names {
 		if !isValidIdentifier(name.Value) {
 			a.error(name.Pos(), fmt.Sprintf("invalid variable name '%s'", name.Value))
 			continue
 		}
 
+		// Determine the type for this variable
+		var varType *TypeInfo
+		if stmt.Type != nil {
+			// Explicit type annotation applies to all variables
+			a.validateTypeAnnotation(stmt.Type)
+			varType = a.typeAnnotationToTypeInfo(stmt.Type)
+		} else if len(stmt.Values) == len(stmt.Names) {
+			// One value per variable: use corresponding value type
+			varType = valueTypes[i]
+		} else if len(stmt.Values) == 1 {
+			// Single expression (likely multi-value function call)
+			// For now, we use the first value type as a fallback
+			varType = valueTypes[0]
+		} else {
+			varType = &TypeInfo{Kind: TypeKindUnknown}
+		}
+
+		// Check type compatibility if explicit type is specified
+		if stmt.Type != nil && len(stmt.Values) == len(stmt.Names) {
+			if !a.typesCompatible(varType, valueTypes[i]) {
+				a.error(stmt.Pos(), fmt.Sprintf("cannot assign %s to %s", valueTypes[i], varType))
+			}
+		}
+
+		// Add variable to symbol table
 		symbol := &Symbol{
 			Name:    name.Value,
 			Kind:    SymbolVariable,
@@ -345,16 +365,35 @@ func (a *Analyzer) analyzeVarDeclStmt(stmt *ast.VarDeclStmt) {
 }
 
 func (a *Analyzer) analyzeAssignStmt(stmt *ast.AssignStmt) {
-	// For multi-target assignment, we check each target against the corresponding value
-	// For now, just analyze the first target against the value (simplified)
-	if len(stmt.Targets) > 0 {
-		targetType := a.analyzeExpression(stmt.Targets[0])
-		valueType := a.analyzeExpression(stmt.Value)
+	// Analyze all target and value expressions
+	targetTypes := make([]*TypeInfo, len(stmt.Targets))
+	for i, target := range stmt.Targets {
+		targetTypes[i] = a.analyzeExpression(target)
+	}
 
-		if !a.typesCompatible(targetType, valueType) {
-			a.error(stmt.Pos(), fmt.Sprintf("cannot assign %s to %s", valueType, targetType))
+	valueTypes := make([]*TypeInfo, len(stmt.Values))
+	for i, val := range stmt.Values {
+		valueTypes[i] = a.analyzeExpression(val)
+	}
+
+	// Check that number of values matches number of targets
+	// For single function call that returns multiple values, we allow len(stmt.Values) == 1
+	if len(stmt.Values) != len(stmt.Targets) && len(stmt.Values) != 1 {
+		a.error(stmt.Pos(), fmt.Sprintf("assignment mismatch: %d variables but %d values", len(stmt.Targets), len(stmt.Values)))
+		return
+	}
+
+	// Type compatibility checking
+	if len(stmt.Values) == len(stmt.Targets) {
+		// One value per target: check each pair
+		for i := range stmt.Targets {
+			if !a.typesCompatible(targetTypes[i], valueTypes[i]) {
+				a.error(stmt.Pos(), fmt.Sprintf("cannot assign %s to %s", valueTypes[i], targetTypes[i]))
+			}
 		}
 	}
+	// If len(stmt.Values) == 1, it's likely a multi-value function call
+	// We skip detailed checking for now as it requires tracking function return types
 }
 
 func (a *Analyzer) analyzeReturnStmt(stmt *ast.ReturnStmt) {
