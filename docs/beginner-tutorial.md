@@ -47,7 +47,7 @@ Kukicha compiles to Go (another programming language), which means your Kukicha 
 **The Botanical Metaphor:**
 Kukicha uses plant terms to organize code:
 - **Stem** = Your whole project (like a "module")
-- **Petiole/Pitole** = A package (a collection of related code)
+- **Petiole** = A package (a collection of related code)
 
 Don't worry if this seems confusing now - it'll make sense as we go!
 
