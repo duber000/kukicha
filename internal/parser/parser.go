@@ -506,9 +506,16 @@ func (p *Parser) parseTypeAnnotation() ast.TypeAnnotation {
 				Name:  token.Lexeme,
 			}
 		default:
+			// Check for qualified type (package.Type)
+			name := token.Lexeme
+			if p.peekToken().Type == lexer.TOKEN_DOT {
+				p.advance() // consume DOT
+				typeIdent, _ := p.consume(lexer.TOKEN_IDENTIFIER, "expected type name after '.'")
+				name = name + "." + typeIdent.Lexeme
+			}
 			return &ast.NamedType{
 				Token: token,
-				Name:  token.Lexeme,
+				Name:  name,
 			}
 		}
 
@@ -745,6 +752,17 @@ func (p *Parser) parseSendStmt() *ast.SendStmt {
 func (p *Parser) parseExpressionOrAssignmentStmt() ast.Statement {
 	expr := p.parseExpression()
 
+	// Check for increment/decrement operators
+	if p.match(lexer.TOKEN_PLUS_PLUS, lexer.TOKEN_MINUS_MINUS) {
+		operator := p.previousToken()
+		p.skipNewlines()
+		return &ast.IncDecStmt{
+			Token:    operator,
+			Variable: expr,
+			Operator: operator.Lexeme,
+		}
+	}
+
 	// Check for assignment or walrus operator
 	if p.match(lexer.TOKEN_ASSIGN) {
 		// Regular assignment: x = value
@@ -912,7 +930,7 @@ func (p *Parser) parseMultiplicativeExpr() ast.Expression {
 }
 
 func (p *Parser) parseUnaryExpr() ast.Expression {
-	if p.match(lexer.TOKEN_NOT, lexer.TOKEN_MINUS) {
+	if p.match(lexer.TOKEN_NOT, lexer.TOKEN_BANG, lexer.TOKEN_MINUS) {
 		operator := p.previousToken()
 		right := p.parseUnaryExpr()
 		return &ast.UnaryExpr{
@@ -1071,6 +1089,8 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 		return p.parseListLiteral()
 	case lexer.TOKEN_LPAREN:
 		return p.parseGroupedExpression()
+	case lexer.TOKEN_FUNC:
+		return p.parseFunctionLiteral()
 	default:
 		p.error(p.peekToken(), fmt.Sprintf("unexpected token in expression: %s", p.peekToken().Type))
 		p.advance()
@@ -1305,4 +1325,30 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	expr := p.parseExpression()
 	p.consume(lexer.TOKEN_RPAREN, "expected ')' after expression")
 	return expr
+}
+
+func (p *Parser) parseFunctionLiteral() *ast.FunctionLiteral {
+	token := p.advance() // consume 'func'
+	p.consume(lexer.TOKEN_LPAREN, "expected '(' after 'func'")
+
+	// Parse parameters (same as function declaration)
+	params := p.parseParameters()
+	p.consume(lexer.TOKEN_RPAREN, "expected ')' after parameters")
+
+	// Parse return types (optional)
+	returns := []ast.TypeAnnotation{}
+	if !p.check(lexer.TOKEN_NEWLINE) && !p.check(lexer.TOKEN_INDENT) {
+		returns = p.parseReturnTypes()
+	}
+
+	// Parse body
+	p.skipNewlines()
+	body := p.parseBlock()
+
+	return &ast.FunctionLiteral{
+		Token:      token,
+		Parameters: params,
+		Returns:    returns,
+		Body:       body,
+	}
 }

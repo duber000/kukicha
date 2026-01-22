@@ -62,7 +62,9 @@ const (
 	TOKEN_LTE           // <=
 	TOKEN_GTE           // >=
 	TOKEN_PLUS          // +
+	TOKEN_PLUS_PLUS     // ++
 	TOKEN_MINUS         // -
+	TOKEN_MINUS_MINUS   // --
 	TOKEN_STAR          // *
 	TOKEN_SLASH         // /
 	TOKEN_PERCENT       // %
@@ -212,8 +214,12 @@ func (t TokenType) String() string {
 		return "GTE"
 	case TOKEN_PLUS:
 		return "PLUS"
+	case TOKEN_PLUS_PLUS:
+		return "PLUS_PLUS"
 	case TOKEN_MINUS:
 		return "MINUS"
+	case TOKEN_MINUS_MINUS:
+		return "MINUS_MINUS"
 	case TOKEN_STAR:
 		return "STAR"
 	case TOKEN_SLASH:

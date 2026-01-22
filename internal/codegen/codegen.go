@@ -25,6 +25,8 @@ type Generator struct {
 	autoImports    map[string]bool   // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
 	isStdlibIter   bool              // True if generating stdlib/iter code (enables special transpilation)
 	sourceFile     string            // Source file path for detecting stdlib
+	currentFuncName string           // Current function being generated (for context-aware decisions)
+	processingReturnType bool        // Whether we are currently generating return types
 }
 
 // New creates a new code generator
@@ -195,6 +197,8 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	// Set up placeholder mapping for this function
 	g.placeholderMap = make(map[string]string)
 
+	g.currentFuncName = decl.Name.Value
+
 	// Check if this is a stdlib/iter function that needs special transpilation
 	var typeParams []*TypeParameter
 	if g.isStdlibIter {
@@ -228,7 +232,10 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	signature += fmt.Sprintf("(%s)", params)
 
 	// Add return types
+	g.processingReturnType = true
 	returns := g.generateReturnTypes(decl.Returns)
+	g.processingReturnType = false
+
 	if returns != "" {
 		signature += " " + returns
 	}
@@ -247,6 +254,85 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 
 	// Clear placeholder mapping
 	g.placeholderMap = nil
+	g.currentFuncName = ""
+}
+
+func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
+	// Save current placeholder map and create new one for this literal
+	oldPlaceholderMap := g.placeholderMap
+	g.placeholderMap = make(map[string]string)
+
+	// Inherit placeholders from parent scope
+	if oldPlaceholderMap != nil {
+		for k, v := range oldPlaceholderMap {
+			g.placeholderMap[k] = v
+		}
+	}
+
+	// Check if this is a stdlib/iter function literal that needs special transpilation
+	var typeParams []*TypeParameter
+	if g.isStdlibIter {
+		// Create a temporary function decl to reuse the inference logic
+		tempDecl := &ast.FunctionDecl{
+			Name:       &ast.Identifier{Value: ""},  // dummy name for inference
+			Parameters: lit.Parameters,
+			Returns:    lit.Returns,
+		}
+		typeParams = g.inferStdlibTypeParameters(tempDecl)
+		for _, tp := range typeParams {
+			g.placeholderMap[tp.Placeholder] = tp.Name
+		}
+	}
+
+	// Generate function signature
+	signature := "func"
+
+	// Add type parameters if present
+	if len(typeParams) > 0 {
+		signature += g.generateTypeParameters(typeParams)
+	}
+
+	// Add parameters
+	params := g.generateFunctionParameters(lit.Parameters)
+	signature += fmt.Sprintf("(%s)", params)
+
+	// Add return types
+	returns := g.generateReturnTypes(lit.Returns)
+	if returns != "" {
+		signature += " " + returns
+	}
+
+	// Generate body inline - create temporary generator to capture output
+	tempGen := &Generator{
+		program:        g.program,
+		output:         strings.Builder{},
+		indent:         g.indent + 1,
+		placeholderMap: g.placeholderMap,
+		autoImports:    g.autoImports,
+		isStdlibIter:   g.isStdlibIter,
+		sourceFile:     g.sourceFile,
+	}
+
+	result := signature + " {\n"
+
+	if lit.Body != nil {
+		// Generate body statements using temporary generator
+		for _, stmt := range lit.Body.Statements {
+			tempGen.generateStatement(stmt)
+		}
+		result += tempGen.output.String()
+	}
+
+	// Add proper indentation for closing brace
+	for i := 0; i < g.indent; i++ {
+		result += "\t"
+	}
+	result += "}"
+
+	// Restore placeholder mapping
+	g.placeholderMap = oldPlaceholderMap
+
+	return result
 }
 
 // inferStdlibTypeParameters infers type parameters for stdlib/iter functions
@@ -372,13 +458,50 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 
 	switch t := typeAnn.(type) {
 	case *ast.PrimitiveType:
+		if g.placeholderMap != nil {
+			if typeParam, ok := g.placeholderMap[t.Name]; ok {
+				return typeParam
+			}
+		}
 		return t.Name
 	case *ast.NamedType:
+		if g.placeholderMap != nil {
+			if typeParam, ok := g.placeholderMap[t.Name]; ok {
+				return typeParam
+			}
+		}
 		// Special handling for iter.Seq in stdlib mode
-		if g.isStdlibIter && g.isIterSeqType(t) && g.placeholderMap != nil {
-			// Transform iter.Seq → iter.Seq[T]
-			if _, ok := g.placeholderMap["any"]; ok {
-				return "iter.Seq[T]"
+		if g.isStdlibIter && g.placeholderMap != nil {
+			if g.isIterSeqType(t) {
+				// Transform iter.Seq → iter.Seq[T]
+				if _, ok := g.placeholderMap["any"]; ok {
+					typeParam := "T"
+					// If this is a return type for a transforming function, use U
+					if g.processingReturnType && (g.currentFuncName == "Map" || g.currentFuncName == "FlatMap") {
+						if _, hasU := g.placeholderMap["any2"]; hasU {
+							typeParam = "U"
+						}
+					}
+					return "iter.Seq[" + typeParam + "]"
+				}
+			}
+
+			// iter.SeqU → iter.Seq[U]
+			if t.Name == "iter.SeqU" {
+				return "iter.Seq[U]"
+			}
+
+			// iter.Seq2 → iter.Seq2[T, U] or iter.Seq2[int, T] (for Enumerate)
+			if t.Name == "iter.Seq2" {
+				if g.currentFuncName == "Enumerate" {
+					return "iter.Seq2[int, T]"
+				}
+				return "iter.Seq2[T, U]"
+			}
+
+			// iter.SeqSlice → iter.Seq[[]T] (for Chunk)
+			if t.Name == "iter.SeqSlice" {
+				return "iter.Seq[[]T]"
 			}
 		}
 		return t.Name
@@ -429,6 +552,8 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 		g.generateVarDeclStmt(s)
 	case *ast.AssignStmt:
 		g.generateAssignStmt(s)
+	case *ast.IncDecStmt:
+		g.generateIncDecStmt(s)
 	case *ast.ReturnStmt:
 		g.generateReturnStmt(s)
 	case *ast.IfStmt:
@@ -469,6 +594,11 @@ func (g *Generator) generateAssignStmt(stmt *ast.AssignStmt) {
 	target := g.exprToString(stmt.Target)
 	value := g.exprToString(stmt.Value)
 	g.writeLine(fmt.Sprintf("%s = %s", target, value))
+}
+
+func (g *Generator) generateIncDecStmt(stmt *ast.IncDecStmt) {
+	variable := g.exprToString(stmt.Variable)
+	g.writeLine(fmt.Sprintf("%s%s", variable, stmt.Operator))
 }
 
 func (g *Generator) generateReturnStmt(stmt *ast.ReturnStmt) {
@@ -656,6 +786,8 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		return fmt.Sprintf("panic(%s)", message)
 	case *ast.RecoverExpr:
 		return "recover()"
+	case *ast.FunctionLiteral:
+		return g.generateFunctionLiteral(e)
 	default:
 		return ""
 	}

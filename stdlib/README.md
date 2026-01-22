@@ -119,11 +119,3 @@ import "myproject/helpers"
 
 result := helpers.CustomGeneric(myData)
 ```
-
-## Learn More
-
-See the proposals in `/docs` for detailed design rationale:
-- `proposal-no-generics-approach.md` - Why drop generics
-- `proposal-kukicha-stdlib-without-generics.md` - How stdlib works
-- `review-go-language-features-impact.md` - Go 1.23+ features
-

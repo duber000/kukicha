@@ -131,9 +131,17 @@ func (l *Lexer) scanToken() {
 	case '.':
 		l.addToken(TOKEN_DOT)
 	case '+':
-		l.addToken(TOKEN_PLUS)
+		if l.match('+') {
+			l.addToken(TOKEN_PLUS_PLUS)
+		} else {
+			l.addToken(TOKEN_PLUS)
+		}
 	case '-':
-		l.addToken(TOKEN_MINUS)
+		if l.match('-') {
+			l.addToken(TOKEN_MINUS_MINUS)
+		} else {
+			l.addToken(TOKEN_MINUS)
+		}
 	case '*':
 		l.addToken(TOKEN_STAR)
 	case '/':

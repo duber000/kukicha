@@ -1,0 +1,79 @@
+# Kukicha Standard Library - Iterator Operations
+
+petiole iter
+
+import "iter"
+
+# Filter returns an iterator that yields only items matching the predicate
+func Filter(seq iter.Seq, keep func(any) bool) iter.Seq
+    return func(yield func(any) bool) bool
+        for item in seq
+            if keep(item)
+                if !yield(item)
+                    return false
+        return true
+
+# Map transforms each item in the iterator
+func Map(seq iter.Seq, transform func(any) any2) iter.Seq
+    return func(yield func(any2) bool) bool
+        for item in seq
+            if !yield(transform(item))
+                return false
+        return true
+
+# FlatMap maps each element to an iterator and flattens the result
+func FlatMap(seq iter.Seq, transform func(any) iter.SeqU) iter.Seq
+    return func(yield func(any2) bool) bool
+        for item in seq
+            for subItem in transform(item)
+                if !yield(subItem)
+                    return false
+        return true
+
+# Take returns an iterator of the first n items
+func Take(seq iter.Seq, n int) iter.Seq
+    return func(yield func(any) bool) bool
+        count := 0
+        for item in seq
+            if count >= n
+                return true
+            if !yield(item)
+                return false
+            count++
+        return true
+
+# Skip returns an iterator that skips the first n items
+func Skip(seq iter.Seq, n int) iter.Seq
+    return func(yield func(any) bool) bool
+        count := 0
+        for item in seq
+            if count >= n
+                if !yield(item)
+                    return false
+            count++
+        return true
+
+# Enumerate yields pairs of (index, value) for the iterator
+func Enumerate(seq iter.Seq) iter.Seq2
+    return func(yield func(int, any) bool) bool
+        i := 0
+        for item in seq
+            if !yield(i, item)
+                return false
+            i++
+        return true
+
+# Chunk yields slices of n items from the iterator
+func Chunk(seq iter.Seq, n int) iter.SeqSlice
+    return func(yield func(list of any) bool) bool
+        chunk := make(list of any, 0)
+        for item in seq
+            chunk = append(chunk, item)
+            if len(chunk) == n
+                if !yield(chunk)
+                    return false
+                chunk = make(list of any, 0)
+
+        if len(chunk) > 0
+            return yield(chunk)
+        return true

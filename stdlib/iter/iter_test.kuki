@@ -1,0 +1,25 @@
+# Kukicha Standard Library - Iterator Operations (Test version without ! and ++)
+
+petiole iter
+
+import "iter"
+
+# Filter returns an iterator that yields only items matching the predicate
+func Filter(seq iter.Seq, keep func(any) bool) iter.Seq
+    return func(yield func(any) bool) bool
+        for item in seq
+            if keep(item)
+                shouldContinue := yield(item)
+                if shouldContinue == false
+                    return false
+        return true
+
+# Map transforms each item in the iterator
+func Map(seq iter.Seq, transform func(any) any) iter.Seq
+    return func(yield func(any) bool) bool
+        for item in seq
+            transformed := transform(item)
+            shouldContinue := yield(transformed)
+            if shouldContinue == false
+                return false
+        return true

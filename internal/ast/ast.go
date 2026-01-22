@@ -253,6 +253,16 @@ func (s *AssignStmt) TokenLiteral() string { return s.Token.Lexeme }
 func (s *AssignStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
 func (s *AssignStmt) stmtNode()            {}
 
+type IncDecStmt struct {
+	Token    lexer.Token // The '++' or '--' token
+	Variable Expression
+	Operator string // "++" or "--"
+}
+
+func (s *IncDecStmt) TokenLiteral() string { return s.Token.Lexeme }
+func (s *IncDecStmt) Pos() Position        { return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File} }
+func (s *IncDecStmt) stmtNode()            {}
+
 type ReturnStmt struct {
 	Token  lexer.Token // The 'return' token
 	Values []Expression
@@ -622,3 +632,14 @@ type RecoverExpr struct {
 func (e *RecoverExpr) TokenLiteral() string { return e.Token.Lexeme }
 func (e *RecoverExpr) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
 func (e *RecoverExpr) exprNode()            {}
+
+type FunctionLiteral struct {
+	Token      lexer.Token      // The 'func' token
+	Parameters []*Parameter
+	Returns    []TypeAnnotation
+	Body       *BlockStmt
+}
+
+func (e *FunctionLiteral) TokenLiteral() string { return e.Token.Lexeme }
+func (e *FunctionLiteral) Pos() Position        { return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File} }
+func (e *FunctionLiteral) exprNode()            {}
