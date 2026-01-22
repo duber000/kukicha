@@ -1,40 +1,119 @@
 # Kukicha Standard Library Roadmap
 
 **Version:** 1.0.0
-**Status:** Planning Phase
+**Status:** In Progress
 
 This document outlines planned standard library packages and features for future Kukicha releases.
 
 ---
 
+## Implementation Status
+
+### ✅ Completed Packages
+
+- **iter** (stdlib/iter/) - 13 iterator functions including Filter, Map, Reduce, Collect, Any, All, Find
+- **slice** (stdlib/slice/) - 12 slice operations including First, Last, Drop, Reverse, Unique, Chunk, Filter, Map
+- **string** (stdlib/string/) - 28 string manipulation functions for case conversion, trimming, splitting, searching, and replacement
+
+### 🚧 In Progress
+
+- HTTP package preparation (foundation complete)
+
+### 📋 Planned
+
+- JSON package - Encoding/decoding
+- File package - File I/O operations
+- HTTP package - Client and server
+
+---
+
 ## Core Libraries (Priority 1)
 
-### Slices Package
+### Iter Package ✅ COMPLETED
+
+Iterator operations using Go 1.23+ `iter.Seq`:
+
+```kukicha
+import "stdlib/iter"
+import "slices"
+
+# Lazy filtering and transformation
+result := slices.Values(numbers)
+    |> iter.Filter(func(n int) bool { return n > 0 })
+    |> iter.Map(func(n int) int { return n * 2 })
+    |> iter.Collect()
+
+# Available functions:
+# - Filter, Map, FlatMap
+# - Take, Skip
+# - Enumerate, Zip
+# - Chunk
+# - Reduce, Collect
+# - Any, All, Find
+```
+
+### Slices Package ✅ COMPLETED
 
 Extended slice operations for common patterns:
 
 ```kukicha
-import slices
+import "stdlib/slice"
 
 # Take/drop operations
-firstThree := slices.first(items, 3)
-lastTwo := slices.last(items, 2)
-tail := slices.drop(items, 3)
-head := slices.dropLast(items, 1)
+firstThree := slice.First(items, 3)
+lastTwo := slice.Last(items, 2)
+tail := slice.Drop(items, 3)
+head := slice.DropLast(items, 1)
 
 # Pipeline-friendly
 result := items
-    |> slices.drop(2)
-    |> slices.first(10)
+    |> slice.Drop(2)
+    |> slice.First(10)
     |> process()
 
 # Additional operations
-reversed := slices.reverse(items)
-unique := slices.unique(items)
-chunked := slices.chunk(items, 5)
+reversed := slice.Reverse(items)
+unique := slice.Unique(items)
+chunked := slice.Chunk(items, 5)
+filtered := slice.Filter(items, predicate)
+mapped := slice.Map(items, transform)
 ```
 
-### HTTP Package
+### String Package ✅ COMPLETED
+
+String manipulation utilities for HTTP and text processing:
+
+```kukicha
+import "stdlib/string"
+
+# Case conversion (HTTP headers)
+upper := string.ToUpper("hello")
+lower := string.ToLower("WORLD")
+if string.EqualFold(header, "content-type")
+    processContentType()
+
+# Trimming (parsing)
+trimmed := string.TrimSpace("  hello  ")
+withoutPrefix := string.TrimPrefix(url, "https://")
+withoutSuffix := string.TrimSuffix(filename, ".txt")
+
+# Splitting and joining (headers, URLs)
+parts := string.Split("a,b,c", ",")
+joined := string.Join(parts, "|")
+fields := string.Fields("hello  world  foo")
+lines := string.Lines(multilineText)
+
+# Searching (Content-Type, URLs)
+if string.Contains(text, "error")
+    handleError()
+startsWith := string.HasPrefix(text, "http://")
+endsWith := string.HasSuffix(filename, ".kuki")
+
+# Replacement (URL encoding, sanitization)
+replaced := string.ReplaceAll(text, "old", "new")
+```
+
+### HTTP Package 📋 PLANNED
 
 Simple HTTP client and server:
 
@@ -59,7 +138,7 @@ http.handle("/users", func(req http.Request) http.Response
 http.listen(":8080")
 ```
 
-### JSON Package
+### JSON Package 📋 PLANNED
 
 JSON encoding and decoding:
 
@@ -77,7 +156,7 @@ jsonString := json.encode(config)
 prettyJson := json.pretty(config)
 ```
 
-### File Package
+### File Package 📋 PLANNED
 
 File I/O operations:
 
@@ -105,34 +184,6 @@ file.mkdir("./output/")
 file.remove("temp.txt")
 ```
 
-### String Package
-
-String manipulation utilities:
-
-```kukicha
-import string
-
-# Case conversion
-upper := string.upper("hello")
-lower := string.lower("WORLD")
-title := string.title("hello world")
-
-# Splitting and joining
-parts := string.split("a,b,c", ",")
-joined := string.join(parts, "|")
-
-# Trimming
-trimmed := string.trim("  hello  ")
-trimmedLeft := string.trimLeft("  hello")
-trimmedRight := string.trimRight("hello  ")
-
-# Searching
-if string.contains(text, "error")
-    handleError()
-
-startsWith := string.hasPrefix(text, "http://")
-endsWith := string.hasSuffix(filename, ".kuki")
-```
 
 ---
 
@@ -356,11 +407,12 @@ kuki fmt --fix main.kuki
 Want to help build the Kukicha standard library? See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
 
 **Priority areas:**
-1. Core libraries (slices, http, json, file, string)
-2. Cloud infrastructure (docker, k8s)
-3. AI/LLM integration (claude, openai)
+1. ✅ Core iterator/slice/string libraries (COMPLETED)
+2. 📋 HTTP, JSON, and File packages (NEXT)
+3. 📋 Cloud infrastructure (docker, k8s)
+4. 📋 AI/LLM integration (claude, openai)
 
 ---
 
-**Last Updated:** 2026-01-20
+**Last Updated:** 2026-01-22
 **For Questions:** Open an issue on GitHub

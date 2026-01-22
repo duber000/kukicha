@@ -298,7 +298,7 @@ Key word changes:
 
 See [Standard Library Roadmap](docs/kukicha-stdlib-roadmap.md) for planned features:
 
-1. **Standard Library** - HTTP, JSON, File I/O, Docker, K8s, LLM packages
+1. **Standard Library** - ✅ Iter/Slice/String complete, 📋 HTTP, JSON, File I/O, Docker, K8s, LLM packages planned
 2. **Package Manager** - Dependency management and versioning
 3. **IDE Support** - VS Code extension with syntax highlighting and IntelliSense
 4. **Debugger** - Source-level debugging support
