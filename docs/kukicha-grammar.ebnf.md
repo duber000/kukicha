@@ -24,9 +24,9 @@ UPPER   Non-terminal
 ## Program Structure
 
 ```ebnf
-Program ::= [ PitoleDeclaration ] { ImportDeclaration } { TopLevelDeclaration }
+Program ::= [ PetioleDeclaration ] { ImportDeclaration } { TopLevelDeclaration }
 
-PitoleDeclaration ::= "petiole" PackagePath NEWLINE
+PetioleDeclaration ::= "petiole" PackagePath NEWLINE
     # Optional: if absent, package name is calculated from file path relative to stem.toml
 
 PackagePath ::= IDENTIFIER { "." IDENTIFIER }

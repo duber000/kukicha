@@ -85,7 +85,7 @@ go test ./internal/lexer/... -v
 
 Kukicha v1.0.0 introduces key refinements that balance simplicity, performance, and consistency:
 
-1. **📦 Optional Pitole Declarations** - Folder-based package model with automatic Pitole (package) calculation from file path. No more header/directory sync issues!
+1. **📦 Optional Petiole Declarations** - Folder-based package model with automatic Petiole (package) calculation from file path. No more header/directory sync issues!
 
 2. **🎯 Signature-First Type Inference** - Explicit types required for function parameters and returns; inference only for local variables. Maintains Go's performance while reducing boilerplate.
 
@@ -108,7 +108,7 @@ Kukicha smooths Go's rough edges while preserving its power:
 - ✅ **Keep**: Explicit types, static typing, performance, Go's stdlib
 - ✅ **Smooth**: Symbols minimized, English-like keywords, consistent syntax
 - ✅ **Star**: The walrus operator `:=` for clean variable binding
-- ✅ **Simple**: Two-level module hierarchy (Stem → Pitole)
+- ✅ **Simple**: Two-level module hierarchy (Stem → Petiole)
 
 ### Key Syntax Highlights
 

@@ -989,7 +989,7 @@ func NewCodeGenerator() *CodeGenerator {
 
 func (cg *CodeGenerator) Generate(program *Program) (string, error) {
     // Generate package declaration
-    cg.writeLine("package %s", program.Pitole.Name)
+    cg.writeLine("package %s", program.PetioleDecl.Name)
     cg.writeLine("")
     
     // Generate imports

@@ -13,14 +13,14 @@
 ```
 myapp/              # Stem (module root)
   stem.toml        # Module config
-  models/          # Pitole (package)
+  models/          # Petiole (package)
     user.kuki      # Source file
     todo.kuki
   api/
     handlers.kuki
 ```
 
-### Pitole Declaration (Optional)
+### Petiole Declaration (Optional)
 
 ```kukicha
 # Optional - if absent, petiole calculated from file path
@@ -30,7 +30,7 @@ import time
 import github.com/user/repo
 ```
 
-**New:** Pitole declarations are optional! Package name is automatically calculated from the directory path relative to `stem.toml`.
+**New:** Petiole declarations are optional! Package name is automatically calculated from the directory path relative to `stem.toml`.
 
 ---
 

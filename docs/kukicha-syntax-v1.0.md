@@ -12,7 +12,7 @@ Kukicha uses a simple botanical hierarchy that maps directly to Go's structure:
 
 ```
 Stem (Go module)
-  └── Pitole (Go package)
+  └── Petiole (Go package)
 ```
 
 ### Mapping to Go
@@ -20,30 +20,30 @@ Stem (Go module)
 | Kukicha | Go Equivalent | File/Directory |
 |---------|---------------|----------------|
 | **Stem** | Go module | Root directory with `stem.toml` |
-| **Pitole** | Go package | Subdirectory (package) |
+| **Petiole** | Go package | Subdirectory (package) |
 
 ### Example Directory Structure
 
 ```
 myapp/                      # Stem (module root)
   stem.toml                # Module configuration
-  database/                # Pitole (package)
+  database/                # Petiole (package)
     models.kuki            # Source file
     queries.kuki           # Source file
-  api/                     # Pitole (package)
+  api/                     # Petiole (package)
     handlers.kuki          # Source file
     middleware.kuki        # Source file
-  todo/                    # Pitole (package)
+  todo/                    # Petiole (package)
     todo.kuki              # Source file
 ```
 
 ---
 
-## Pitole Declaration (Optional)
+## Petiole Declaration (Optional)
 
-Pitole declarations are **optional**. If not provided, the compiler automatically calculates the Pitole (package) name based on the file's path relative to `stem.toml`.
+Petiole declarations are **optional**. If not provided, the compiler automatically calculates the Petiole (package) name based on the file's path relative to `stem.toml`.
 
-### Implicit Pitole Calculation
+### Implicit Petiole Calculation
 
 Files in a directory automatically belong to the petiole named after that directory:
 
@@ -60,7 +60,7 @@ myapp/                      # Stem (module root)
 
 **Benefit**: Reduces boilerplate and prevents "file-move" errors where the directory and header get out of sync.
 
-### Explicit Pitole Declaration (Optional)
+### Explicit Petiole Declaration (Optional)
 
 You can still explicitly declare the petiole if needed:
 
@@ -1590,7 +1590,7 @@ GOEXPERIMENT=greenteagc kukicha build
 ## Version History
 
 - **v1.1.0** — Core Design Refinements (2026)
-  - ✅ **Optional Pitole Declarations**: Folder-based package model with automatic Pitole calculation from file path
+  - ✅ **Optional Petiole Declarations**: Folder-based package model with automatic Petiole calculation from file path
   - ✅ **Signature-First Type Inference**: Explicit types for function parameters/returns and struct fields; inference only for local variables
   - ✅ **Literal vs Dynamic Indexing**: Compile-time optimization for literal negative indices; explicit methods for dynamic indices
   - ✅ **Indentation as Canonical**: `kuki fmt` tool converts brace-based syntax to standard indentation format
@@ -1607,7 +1607,7 @@ GOEXPERIMENT=greenteagc kukicha build
   - ✅ File extension: `.kuki` (茎 = stem in Japanese)
 
 - **v0.2.0** — Cohesive syntax refinement
-  - Simplified module structure: Stem → Pitole
+  - Simplified module structure: Stem → Petiole
   - `reference` keyword replaces `*` for pointers
   - `discard` keyword replaces `_` for ignored values
   - Clarified string interpolation rules
@@ -1620,7 +1620,7 @@ GOEXPERIMENT=greenteagc kukicha build
   - Dual syntax support: Go syntax accepted where compatible
 
 - **v0.1.0** — Initial syntax specification
-  - Module structure (Stem/Pitole)
+  - Module structure (Stem/Petiole)
   - English-like syntax (no `{}`, `;`)
   - Walrus operator (`:=`)
   - Type inference for function parameters
@@ -1649,7 +1649,7 @@ Kukicha smooths Go's rough edges while preserving its power:
 - **Type inference only for locals**: Local variables inside function bodies use `:=` for inference
 - No implicit type conversions (use casting)
 - **Indentation is canonical**: `kuki fmt` enforces 4-space indentation standard
-- **Optional petiole declarations**: Pitole calculated from file path; explicit declaration optional
+- **Optional petiole declarations**: Petiole calculated from file path; explicit declaration optional
 - Focus on readability without sacrificing Go's performance
 
 ---
