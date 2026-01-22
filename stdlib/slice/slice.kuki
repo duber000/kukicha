@@ -1,0 +1,129 @@
+# Kukicha Standard Library - Slice Operations
+
+petiole slice
+
+import "slices"
+
+# First returns a slice of the first n elements
+# Returns the whole slice if n is greater than length
+func First(items list of any, n int) list of any
+    if n <= 0
+        return make(list of any, 0)
+    if n >= len(items)
+        return items
+    return items[:n]
+
+# Last returns a slice of the last n elements
+# Returns the whole slice if n is greater than length
+func Last(items list of any, n int) list of any
+    length := len(items)
+    if n <= 0
+        return make(list of any, 0)
+    if n >= length
+        return items
+    return items[length - n:]
+
+# Drop returns a slice with the first n elements removed
+# Returns empty slice if n is greater than or equal to length
+func Drop(items list of any, n int) list of any
+    if n <= 0
+        return items
+    if n >= len(items)
+        return make(list of any, 0)
+    return items[n:]
+
+# DropLast returns a slice with the last n elements removed
+# Returns empty slice if n is greater than or equal to length
+func DropLast(items list of any, n int) list of any
+    length := len(items)
+    if n <= 0
+        return items
+    if n >= length
+        return make(list of any, 0)
+    return items[:length - n]
+
+# Reverse returns a reversed copy of the slice
+# The original slice is not modified
+func Reverse(items list of any) list of any
+    result := slices.Clone(items)
+    slices.Reverse(result)
+    return result
+
+# Unique returns a new slice with duplicate elements removed
+# Preserves the order of first occurrence
+# Note: Elements must be comparable
+func Unique(items list of any) list of any
+    if len(items) == 0
+        return items
+
+    seen := make(map of any to bool)
+    result := make(list of any, 0)
+
+    for item in items
+        if not seen[item]
+            seen[item] = true
+            result = append(result, item)
+
+    return result
+
+# Chunk splits a slice into chunks of the specified size
+# The last chunk may be smaller if the slice length is not evenly divisible
+func Chunk(items list of any, size int) list of list of any
+    if size <= 0
+        return make(list of list of any, 0)
+
+    result := make(list of list of any, 0)
+    length := len(items)
+    i := 0
+
+    for i < length
+        end := i + size
+        if end > length
+            end = length
+        chunk := items[i:end]
+        result = append(result, chunk)
+        i = i + size
+
+    return result
+
+# Contains checks if a slice contains the specified value
+# Wraps Go's slices.Contains for convenience
+func Contains(items list of any, value any) bool
+    return slices.Contains(items, value)
+
+# IndexOf returns the index of the first occurrence of value in the slice
+# Returns -1 if the value is not found
+# Wraps Go's slices.Index for convenience
+func IndexOf(items list of any, value any) int
+    return slices.Index(items, value)
+
+# Concat concatenates multiple slices into a single slice
+# Returns a new slice containing all elements
+func Concat(slices list of list of any) list of any
+    totalLength := 0
+    for slice in slices
+        totalLength = totalLength + len(slice)
+
+    result := make(list of any, 0, totalLength)
+    for slice in slices
+        for item in slice
+            result = append(result, item)
+
+    return result
+
+# Filter returns a new slice containing only elements that satisfy the predicate
+# This is a slice-based version complementing iter.Filter
+func Filter(items list of any, predicate func(any) bool) list of any
+    result := make(list of any, 0)
+    for item in items
+        if predicate(item)
+            result = append(result, item)
+    return result
+
+# Map transforms each element in the slice using the transform function
+# Returns a new slice with transformed values
+func Map(items list of any, transform func(any) any) list of any
+    result := make(list of any, len(items))
+    for i, item in items
+        result[i] = transform(item)
+    return result
