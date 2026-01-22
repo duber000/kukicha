@@ -575,7 +575,6 @@ func (p *Parser) parseBlock() *ast.BlockStmt {
 func (p *Parser) parseStatement() ast.Statement {
 	p.skipNewlines()
 
-	fmt.Printf("DEBUG: parseStatement at pos %d, token: %s (%s)\n", p.current, p.peekToken().Lexeme, p.peekToken().Type)
 	switch p.peekToken().Type {
 	case lexer.TOKEN_RETURN:
 		return p.parseReturnStmt()
@@ -590,7 +589,6 @@ func (p *Parser) parseStatement() ast.Statement {
 	case lexer.TOKEN_SEND:
 		return p.parseSendStmt()
 	default:
-		fmt.Printf("DEBUG: calling parseExpressionOrAssignmentStmt\n")
 		return p.parseExpressionOrAssignmentStmt()
 	}
 }
@@ -770,7 +768,6 @@ func (p *Parser) parseSendStmt() *ast.SendStmt {
 func (p *Parser) parseExpressionOrAssignmentStmt() ast.Statement {
 	// Check if we have a multi-value assignment pattern
 	if p.checkMultiValueAssignment() {
-		fmt.Printf("DEBUG: Detected multi-value assignment at position %d\n", p.pos)
 		return p.parseMultiValueAssignmentStmt()
 	}
 
@@ -790,11 +787,11 @@ func (p *Parser) parseExpressionOrAssignmentStmt() ast.Statement {
 	// Check for assignment or walrus operator
 	if p.match(lexer.TOKEN_ASSIGN) {
 		// Regular assignment: x = value
-		value := p.parseExpression()
+		values := p.parseExpressionList()
 		p.skipNewlines()
 		return &ast.AssignStmt{
 			Targets: []ast.Expression{expr},
-			Value:   value,
+			Values:  values,
 			Token:   p.previousToken(),
 		}
 	} else if p.match(lexer.TOKEN_WALRUS) {
@@ -804,12 +801,12 @@ func (p *Parser) parseExpressionOrAssignmentStmt() ast.Statement {
 			p.error(p.previousToken(), "walrus operator can only be used with identifiers")
 			return nil
 		}
-		value := p.parseExpression()
+		values := p.parseExpressionList()
 		p.skipNewlines()
 		return &ast.VarDeclStmt{
-			Names: []*ast.Identifier{ident},
-			Value: value,
-			Token: p.previousToken(),
+			Names:  []*ast.Identifier{ident},
+			Values: values,
+			Token:  p.previousToken(),
 		}
 	}
 
@@ -820,66 +817,45 @@ func (p *Parser) parseExpressionOrAssignmentStmt() ast.Statement {
 func (p *Parser) checkMultiValueAssignment() bool {
 	// Look ahead to see if we have a pattern like: ident, ident := expr, expr
 	// or: ident, ident = expr, expr
-	
-	// Save current position
-	currentPos := p.pos
-	
-	// Check if we have an identifier
+
+	// Check if we have an identifier at current position
 	currentToken := p.peekToken()
-	fmt.Printf("DEBUG: checkMultiValueAssignment at pos %d, token: %s (%s)\n", p.pos, currentToken.Lexeme, currentToken.Type)
 	if currentToken.Type != lexer.TOKEN_IDENTIFIER {
 		return false
 	}
-	
-	// Look ahead to see if next token is comma (skip ignored tokens)
-	numTokensSkipped := 0
-	nextToken := p.peekToken()
-	for nextToken.Type == lexer.TOKEN_NEWLINE || nextToken.Type == lexer.TOKEN_COMMENT {
-		numTokensSkipped++
-		if p.pos + numTokensSkipped + 1 >= len(p.tokens) {
-			return false
+
+	// Helper function to skip ignored tokens and get next significant token
+	skipIgnored := func(startIdx int) (int, lexer.Token) {
+		idx := startIdx
+		for idx < len(p.tokens) {
+			tok := p.tokens[idx]
+			if tok.Type != lexer.TOKEN_NEWLINE && tok.Type != lexer.TOKEN_COMMENT {
+				return idx, tok
+			}
+			idx++
 		}
-		nextToken = p.tokens[p.pos + numTokensSkipped + 1]
+		return idx, lexer.Token{Type: lexer.TOKEN_EOF}
 	}
-	
+
+	// Look for pattern: identifier, identifier := or =
+	// Start from pos + 1 (next token after current identifier)
+	nextIdx, nextToken := skipIgnored(p.pos + 1)
 	if nextToken.Type != lexer.TOKEN_COMMA {
 		return false
 	}
-	
-	// Look ahead to see if token after comma is identifier
-	if p.pos + numTokensSkipped + 2 >= len(p.tokens) {
+
+	// After comma, should be another identifier
+	afterCommaIdx, afterCommaToken := skipIgnored(nextIdx + 1)
+	if afterCommaToken.Type != lexer.TOKEN_IDENTIFIER {
 		return false
 	}
-	tokenAfterComma := p.tokens[p.pos + numTokensSkipped + 2]
-	for tokenAfterComma.Type == lexer.TOKEN_NEWLINE || tokenAfterComma.Type == lexer.TOKEN_COMMENT {
-		numTokensSkipped++
-		if p.pos + numTokensSkipped + 2 >= len(p.tokens) {
-			return false
-		}
-		tokenAfterComma = p.tokens[p.pos + numTokensSkipped + 2]
-	}
-	
-	if tokenAfterComma.Type != lexer.TOKEN_IDENTIFIER {
-		return false
-	}
-	
-	// Look ahead to see if token after second identifier is assignment operator
-	if p.pos + numTokensSkipped + 3 >= len(p.tokens) {
-		return false
-	}
-	assignmentToken := p.tokens[p.pos + numTokensSkipped + 3]
-	for assignmentToken.Type == lexer.TOKEN_NEWLINE || assignmentToken.Type == lexer.TOKEN_COMMENT {
-		numTokensSkipped++
-		if p.pos + numTokensSkipped + 3 >= len(p.tokens) {
-			return false
-		}
-		assignmentToken = p.tokens[p.pos + numTokensSkipped + 3]
-	}
-	
+
+	// After second identifier, should be assignment operator
+	_, assignmentToken := skipIgnored(afterCommaIdx + 1)
 	if assignmentToken.Type != lexer.TOKEN_ASSIGN && assignmentToken.Type != lexer.TOKEN_WALRUS {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -919,20 +895,20 @@ func (p *Parser) parseMultiValueAssignmentStmt() ast.Statement {
 	// Check for assignment operator
 	if p.match(lexer.TOKEN_WALRUS) {
 		// Multi-value declaration: x, y := expr, expr
-		value := p.parseExpression()
+		values := p.parseExpressionList()
 		p.skipNewlines()
 		return &ast.VarDeclStmt{
-			Names: names,
-			Value: value,
-			Token: p.previousToken(),
+			Names:  names,
+			Values: values,
+			Token:  p.previousToken(),
 		}
 	} else if p.match(lexer.TOKEN_ASSIGN) {
 		// Multi-value assignment: x, y = expr, expr
-		value := p.parseExpression()
+		values := p.parseExpressionList()
 		p.skipNewlines()
 		return &ast.AssignStmt{
 			Targets: targets,
-			Value:   value,
+			Values:  values,
 			Token:   p.previousToken(),
 		}
 	} else {
@@ -942,7 +918,24 @@ func (p *Parser) parseMultiValueAssignmentStmt() ast.Statement {
 }
 
 func (p *Parser) restorePosition(pos int) {
-	p.current = pos
+	p.pos = pos
+}
+
+// parseExpressionList parses a comma-separated list of expressions
+// This is used for multi-value assignments like: x, y := 1, 2
+// or function calls that return multiple values: x, y := iter.Pull(seq)
+func (p *Parser) parseExpressionList() []ast.Expression {
+	var expressions []ast.Expression
+
+	// Parse first expression
+	expressions = append(expressions, p.parseExpression())
+
+	// Parse additional expressions separated by commas
+	for p.match(lexer.TOKEN_COMMA) {
+		expressions = append(expressions, p.parseExpression())
+	}
+
+	return expressions
 }
 
 // ============================================================================

@@ -257,10 +257,10 @@ func (s *BlockStmt) Pos() Position {
 func (s *BlockStmt) stmtNode() {}
 
 type VarDeclStmt struct {
-	Names []*Identifier
-	Type  TypeAnnotation // Optional (can be nil for inference)
-	Value Expression
-	Token lexer.Token // The identifier token or walrus token
+	Names  []*Identifier
+	Type   TypeAnnotation // Optional (can be nil for inference)
+	Values []Expression   // Right-hand side values (can be single or multiple)
+	Token  lexer.Token    // The identifier token or walrus token
 }
 
 func (s *VarDeclStmt) TokenLiteral() string { return s.Token.Lexeme }
@@ -271,8 +271,8 @@ func (s *VarDeclStmt) stmtNode() {}
 
 type AssignStmt struct {
 	Targets []Expression // Can be single or multiple targets
-	Value   Expression
-	Token   lexer.Token // The '=' token
+	Values  []Expression // Right-hand side values (can be single or multiple)
+	Token   lexer.Token  // The '=' token
 }
 
 func (s *AssignStmt) TokenLiteral() string { return s.Token.Lexeme }

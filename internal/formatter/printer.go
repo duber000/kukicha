@@ -236,12 +236,15 @@ func (p *Printer) printStatement(stmt ast.Statement) {
 }
 
 func (p *Printer) printVarDeclStmt(stmt *ast.VarDeclStmt) {
-	value := p.exprToString(stmt.Value)
 	names := make([]string, len(stmt.Names))
 	for i, n := range stmt.Names {
 		names[i] = n.Value
 	}
-	p.writeLine(fmt.Sprintf("%s := %s", strings.Join(names, ", "), value))
+	values := make([]string, len(stmt.Values))
+	for i, v := range stmt.Values {
+		values[i] = p.exprToString(v)
+	}
+	p.writeLine(fmt.Sprintf("%s := %s", strings.Join(names, ", "), strings.Join(values, ", ")))
 }
 
 func (p *Printer) printAssignStmt(stmt *ast.AssignStmt) {
@@ -249,8 +252,11 @@ func (p *Printer) printAssignStmt(stmt *ast.AssignStmt) {
 	for i, t := range stmt.Targets {
 		targets[i] = p.exprToString(t)
 	}
-	value := p.exprToString(stmt.Value)
-	p.writeLine(fmt.Sprintf("%s = %s", strings.Join(targets, ", "), value))
+	values := make([]string, len(stmt.Values))
+	for i, v := range stmt.Values {
+		values[i] = p.exprToString(v)
+	}
+	p.writeLine(fmt.Sprintf("%s = %s", strings.Join(targets, ", "), strings.Join(values, ", ")))
 }
 
 func (p *Printer) printReturnStmt(stmt *ast.ReturnStmt) {
