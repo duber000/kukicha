@@ -71,6 +71,61 @@ parts := string.Split("a,b,c", ",")
 
 **Functions:** ToUpper, ToLower, TrimSpace, TrimPrefix, TrimSuffix, Split, Join, Fields, Lines, Contains, HasPrefix, HasSuffix, ReplaceAll, EqualFold
 
+### fetch - HTTP Client for Pipes
+
+HTTP client designed for pipeline-based data fetching:
+
+```kukicha
+import "stdlib/fetch"
+
+# Simple GET and JSON parsing
+users := fetch.Get("https://api.example.com/users")
+    |> fetch.CheckStatus()
+    |> fetch.Json() as list of User
+    onerr empty list of User
+
+# POST with JSON body
+response := userData
+    |> fetch.Post("https://api.example.com/users")
+    |> fetch.Text()
+    onerr "request failed"
+
+# Advanced request builder
+data := fetch.New("https://api.example.com/data")
+    |> fetch.Header("Authorization", "Bearer {token}")
+    |> fetch.Timeout(30 * time.Second)
+    |> fetch.Do()
+    |> fetch.Json() as Response
+```
+
+**Functions:** Get, Post, Json, Text, CheckStatus, Status, New, Header, Timeout, Body, Do, PostRequest, PutRequest, DeleteRequest
+
+### files - File Operations for Pipes
+
+File operations optimized for pipeline workflows:
+
+```kukicha
+import "stdlib/files"
+
+# Read and process file
+content := "input.txt"
+    |> files.Read()
+    |> string.Split("\n")
+    |> slice.Filter(line -> not string.IsEmpty(line))
+    |> string.Join("\n")
+    onerr panic "read failed"
+
+# Write data to file (auto-serializes to JSON)
+repos |> files.Write("repos.json") onerr panic "write failed"
+
+# List and filter files
+logs := files.List("/var/log")
+    |> slice.Filter(f -> string.HasSuffix(f.Name, ".log"))
+    |> slice.Map(f -> f.Path)
+```
+
+**Functions:** Read, ReadBytes, Write, WriteString, Append, Exists, IsDir, IsFile, List, ListRecursive, Delete, DeleteAll, Copy, Move, MkDir, MkDirAll, TempFile, TempDir, Size, ModTime, Basename, Dirname, Extension, Join, Abs
+
 ## Special Transpilation (iter package only)
 
 The `iter` package uses special transpilation to generate generic Go code without requiring generic syntax in Kukicha:
@@ -123,6 +178,12 @@ See [kukicha-design-philosophy.md](../docs/kukicha-design-philosophy.md) for rat
 
 ```
 stdlib/
+├── fetch/         # HTTP client for pipes
+│   ├── fetch.kuki
+│   └── fetch_test.kuki
+├── files/         # File operations for pipes
+│   ├── files.kuki
+│   └── files_test.kuki
 ├── iter/          # Iterator operations (special transpilation)
 │   ├── iter.kuki
 │   └── iter_test.kuki

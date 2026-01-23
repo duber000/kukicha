@@ -1,0 +1,277 @@
+# Kukicha Standard Library - File Operations
+
+petiole files
+
+import "os"
+import "io"
+import "path/filepath"
+import "encoding/json"
+import "time"
+
+# Read reads the entire contents of a file as a string
+# Returns the file contents and any error that occurred
+# Example: "config.json" |> files.Read() |> parse.Json()
+func Read(path string) (string, error)
+    data, err := os.ReadFile(path)
+    if err != empty
+        return "", err
+    return string(data), empty
+
+# ReadBytes reads the entire contents of a file as a byte slice
+# Returns the file contents and any error that occurred
+# Example: "image.png" |> files.ReadBytes()
+func ReadBytes(path string) (list of byte, error)
+    return os.ReadFile(path)
+
+# Write writes data to a file, creating it if it doesn't exist
+# If data is a string or []byte, writes it directly
+# Otherwise, marshals to JSON with indentation
+# Returns any error that occurred
+# Example: data |> files.Write("output.json")
+func Write(data any, path string) error
+    bytes := list of byte
+
+    # Handle different data types
+    switch v := data.(type)
+    case string:
+        bytes = list of byte(v)
+    case list of byte:
+        bytes = v
+    default:
+        # Marshal to JSON with indentation for readability
+        jsonData, err := json.MarshalIndent(data, "", "  ")
+        if err != empty
+            return err
+        bytes = jsonData
+
+    return os.WriteFile(path, bytes, 0644)
+
+# WriteString writes a string to a file
+# Returns any error that occurred
+# Example: "Hello, World!" |> files.WriteString("output.txt")
+func WriteString(data string, path string) error
+    return os.WriteFile(path, list of byte(data), 0644)
+
+# Append appends data to a file, creating it if it doesn't exist
+# If data is a string, writes it directly; otherwise marshals to JSON
+# Returns any error that occurred
+# Example: "new line\n" |> files.Append("log.txt")
+func Append(data any, path string) error
+    file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+    if err != empty
+        return err
+    defer file.Close()
+
+    bytes := list of byte
+    switch v := data.(type)
+    case string:
+        bytes = list of byte(v)
+    case list of byte:
+        bytes = v
+    default:
+        jsonData, err := json.MarshalIndent(data, "", "  ")
+        if err != empty
+            return err
+        bytes = jsonData
+
+    _, err = file.Write(bytes)
+    return err
+
+# Exists checks if a file or directory exists
+# Returns true if the path exists, false otherwise
+# Example: if files.Exists("config.yaml") ...
+func Exists(path string) bool
+    _, err := os.Stat(path)
+    return err == empty
+
+# IsDir checks if a path is a directory
+# Returns true if the path is a directory, false otherwise
+# Example: if files.IsDir("src") ...
+func IsDir(path string) bool
+    info, err := os.Stat(path)
+    if err != empty
+        return false
+    return info.IsDir()
+
+# IsFile checks if a path is a regular file
+# Returns true if the path is a file, false otherwise
+# Example: if files.IsFile("main.go") ...
+func IsFile(path string) bool
+    info, err := os.Stat(path)
+    if err != empty
+        return false
+    return not info.IsDir()
+
+# FileInfo represents information about a file
+type FileInfo struct
+    Name string
+    Path string
+    Size int64
+    IsDir bool
+    ModTime time.Time
+
+# List returns a list of files in the specified directory
+# Does not recurse into subdirectories
+# Returns a list of FileInfo and any error that occurred
+# Example: files.List("/var/log") |> slice.Filter(f -> f.Name ends with ".log")
+func List(path string) (list of FileInfo, error)
+    entries, err := os.ReadDir(path)
+    if err != empty
+        return empty, err
+
+    result := make(list of FileInfo, 0, len(entries))
+    for entry in entries
+        info, err := entry.Info()
+        if err != empty
+            continue
+
+        fileInfo := FileInfo{
+            Name: entry.Name(),
+            Path: filepath.Join(path, entry.Name()),
+            Size: info.Size(),
+            IsDir: entry.IsDir(),
+            ModTime: info.ModTime(),
+        }
+        result = append(result, fileInfo)
+
+    return result, empty
+
+# ListRecursive returns a list of all files in the directory tree
+# Recursively walks through all subdirectories
+# Returns a list of FileInfo and any error that occurred
+# Example: files.ListRecursive("src") |> slice.Filter(f -> f.Name ends with ".go")
+func ListRecursive(path string) (list of FileInfo, error)
+    result := make(list of FileInfo, 0)
+
+    err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+        if err != empty
+            return err
+
+        fileInfo := FileInfo{
+            Name: info.Name(),
+            Path: filePath,
+            Size: info.Size(),
+            IsDir: info.IsDir(),
+            ModTime: info.ModTime(),
+        }
+        result = append(result, fileInfo)
+        return empty
+    })
+
+    if err != empty
+        return empty, err
+
+    return result, empty
+
+# Delete removes a file or empty directory
+# Returns any error that occurred
+# Example: "temp.txt" |> files.Delete()
+func Delete(path string) error
+    return os.Remove(path)
+
+# DeleteAll removes a file or directory tree
+# Recursively removes all subdirectories and files
+# Returns any error that occurred
+# Example: "temp_dir" |> files.DeleteAll()
+func DeleteAll(path string) error
+    return os.RemoveAll(path)
+
+# Copy copies a file from src to dst
+# Creates the destination file if it doesn't exist
+# Returns any error that occurred
+# Example: files.Copy("source.txt", "destination.txt")
+func Copy(src string, dst string) error
+    sourceFile, err := os.Open(src)
+    if err != empty
+        return err
+    defer sourceFile.Close()
+
+    destFile, err := os.Create(dst)
+    if err != empty
+        return err
+    defer destFile.Close()
+
+    _, err = io.Copy(destFile, sourceFile)
+    return err
+
+# Move moves/renames a file or directory
+# Returns any error that occurred
+# Example: files.Move("old.txt", "new.txt")
+func Move(src string, dst string) error
+    return os.Rename(src, dst)
+
+# MkDir creates a directory with the specified path
+# Returns any error if the directory cannot be created
+# Example: "/tmp/mydir" |> files.MkDir()
+func MkDir(path string) error
+    return os.Mkdir(path, 0755)
+
+# MkDirAll creates a directory and all necessary parent directories
+# Returns any error that occurred
+# Example: "/tmp/a/b/c" |> files.MkDirAll()
+func MkDirAll(path string) error
+    return os.MkdirAll(path, 0755)
+
+# TempFile creates a temporary file and returns its path
+# The file will have the specified prefix in its name
+# Returns the file path and any error that occurred
+# Example: files.TempFile("upload-") |> useWith(path -> processFile(path))
+func TempFile(prefix string) (string, error)
+    file, err := os.CreateTemp("", prefix)
+    if err != empty
+        return "", err
+
+    path := file.Name()
+    file.Close()
+    return path, empty
+
+# TempDir creates a temporary directory and returns its path
+# The directory will have the specified prefix in its name
+# Returns the directory path and any error that occurred
+# Example: files.TempDir("build-") |> useWith(dir -> runBuild(dir))
+func TempDir(prefix string) (string, error)
+    return os.MkdirTemp("", prefix)
+
+# Size returns the size of a file in bytes
+# Returns the size and any error that occurred
+# Example: "large-file.dat" |> files.Size()
+func Size(path string) (int64, error)
+    info, err := os.Stat(path)
+    if err != empty
+        return 0, err
+    return info.Size(), empty
+
+# ModTime returns the last modification time of a file
+# Returns the modification time and any error that occurred
+# Example: "document.txt" |> files.ModTime()
+func ModTime(path string) (time.Time, error)
+    info, err := os.Stat(path)
+    if err != empty
+        return time.Time{}, err
+    return info.ModTime(), empty
+
+# Basename returns the last element of the path
+# Example: "/path/to/file.txt" |> files.Basename() # Returns "file.txt"
+func Basename(path string) string
+    return filepath.Base(path)
+
+# Dirname returns the directory portion of the path
+# Example: "/path/to/file.txt" |> files.Dirname() # Returns "/path/to"
+func Dirname(path string) string
+    return filepath.Dir(path)
+
+# Extension returns the file extension including the dot
+# Example: "file.txt" |> files.Extension() # Returns ".txt"
+func Extension(path string) string
+    return filepath.Ext(path)
+
+# Join joins path elements into a single path
+# Example: files.Join("/home", "user", "file.txt") # Returns "/home/user/file.txt"
+func Join(parts list of string) string
+    return filepath.Join(parts...)
+
+# Abs returns the absolute path of the file
+# Returns the absolute path and any error that occurred
+# Example: "relative/path.txt" |> files.Abs()
+func Abs(path string) (string, error)
+    return filepath.Abs(path)

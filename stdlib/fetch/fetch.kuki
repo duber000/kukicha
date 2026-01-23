@@ -1,0 +1,171 @@
+# Kukicha Standard Library - Fetch (HTTP Client)
+
+petiole fetch
+
+import "net/http"
+import "io"
+import "encoding/json"
+import "bytes"
+import "time"
+
+# Get performs an HTTP GET request to the specified URL
+# Returns the HTTP response and any error that occurred
+# Example: fetch.Get("https://api.example.com/data") |> fetch.Json()
+func Get(url string) (reference http.Response, error)
+    resp, err := http.Get(url)
+    return resp, err
+
+# Post performs an HTTP POST request with a JSON body
+# The body parameter will be automatically marshaled to JSON
+# Returns the HTTP response and any error that occurred
+# Example: user |> fetch.Post("https://api.example.com/users")
+func Post(body any, url string) (reference http.Response, error)
+    jsonData, err := json.Marshal(body)
+    if err != empty
+        return empty, err
+
+    resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+    return resp, err
+
+# Json parses the HTTP response body as JSON
+# The response body is read and closed automatically
+# Use type assertion: fetch.Json() as MyType
+# Returns the parsed JSON data and any error that occurred
+# Example: response |> fetch.Json() as list of User
+func Json(resp reference http.Response) (any, error)
+    if resp == empty
+        return empty, error "response is nil"
+
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != empty
+        return empty, err
+
+    result := any
+    err = json.Unmarshal(body, reference result)
+    if err != empty
+        return empty, err
+
+    return result, empty
+
+# Text reads the HTTP response body as a plain text string
+# The response body is read and closed automatically
+# Returns the response body as a string and any error that occurred
+# Example: response |> fetch.Text()
+func Text(resp reference http.Response) (string, error)
+    if resp == empty
+        return "", error "response is nil"
+
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != empty
+        return "", err
+
+    return string(body), empty
+
+# Request represents an HTTP request builder for advanced use cases
+# Allows setting headers, timeouts, and other request options
+type Request struct
+    url string
+    method string
+    headers map of string to string
+    timeout time.Duration
+    body list of byte
+
+# New creates a new Request builder with the specified URL
+# Returns a Request that can be configured with additional options
+# Example: fetch.New("https://api.example.com") |> fetch.Header("Auth", token)
+func New(url string) Request
+    return Request{
+        url: url,
+        method: "GET",
+        headers: make(map of string to string),
+        timeout: 30 * time.Second,
+        body: empty,
+    }
+
+# Header adds an HTTP header to the request
+# Returns the modified Request for chaining
+# Example: request |> fetch.Header("Authorization", "Bearer token")
+func Header(req Request, key string, value string) Request
+    req.headers[key] = value
+    return req
+
+# Timeout sets the request timeout duration
+# Returns the modified Request for chaining
+# Example: request |> fetch.Timeout(60 * time.Second)
+func Timeout(req Request, duration time.Duration) Request
+    req.timeout = duration
+    return req
+
+# Body sets the request body as JSON
+# The data parameter will be automatically marshaled to JSON
+# Returns the modified Request for chaining
+# Example: request |> fetch.Body(userData)
+func Body(req Request, data any) (Request, error)
+    jsonData, err := json.Marshal(data)
+    if err != empty
+        return req, err
+    req.body = jsonData
+    return req, empty
+
+# Do executes the configured HTTP request
+# Returns the HTTP response and any error that occurred
+# Example: request |> fetch.Do()
+func Do(req Request) (reference http.Response, error)
+    client := reference http.Client{Timeout: req.timeout}
+
+    bodyReader := reference bytes.Reader
+    if req.body != empty
+        bodyReader = bytes.NewReader(req.body)
+
+    httpReq, err := http.NewRequest(req.method, req.url, bodyReader)
+    if err != empty
+        return empty, err
+
+    for key, value in req.headers
+        httpReq.Header.Set(key, value)
+
+    return client.Do(httpReq)
+
+# PostRequest sets the request method to POST
+# Returns the modified Request for chaining
+# Example: request |> fetch.Body(data) |> fetch.PostRequest()
+func PostRequest(req Request) Request
+    req.method = "POST"
+    return req
+
+# PutRequest sets the request method to PUT
+# Returns the modified Request for chaining
+# Example: request |> fetch.Body(data) |> fetch.PutRequest()
+func PutRequest(req Request) Request
+    req.method = "PUT"
+    return req
+
+# DeleteRequest sets the request method to DELETE
+# Returns the modified Request for chaining
+# Example: request |> fetch.DeleteRequest()
+func DeleteRequest(req Request) Request
+    req.method = "DELETE"
+    return req
+
+# Status returns the HTTP status code from the response
+# Example: response |> fetch.Status()
+func Status(resp reference http.Response) int
+    if resp == empty
+        return 0
+    return resp.StatusCode
+
+# CheckStatus verifies the response has a successful status code (200-299)
+# Returns the response unchanged if successful, or an error otherwise
+# Example: response |> fetch.CheckStatus() |> fetch.Json()
+func CheckStatus(resp reference http.Response) (reference http.Response, error)
+    if resp == empty
+        return empty, error "response is nil"
+
+    if resp.StatusCode >= 200 and resp.StatusCode < 300
+        return resp, empty
+
+    return empty, error "HTTP {resp.StatusCode}: {resp.Status}"

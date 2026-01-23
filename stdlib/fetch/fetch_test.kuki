@@ -1,0 +1,171 @@
+# Tests for Kukicha Standard Library - Fetch Package
+
+petiole fetch_test
+
+import "testing"
+import "stdlib/fetch"
+import "net/http"
+import "net/http/httptest"
+import "encoding/json"
+
+# TestGet verifies that fetch.Get can make a basic HTTP GET request
+func TestGet(t reference testing.T)
+    # Create a test server
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request) {
+        w.WriteHeader(http.StatusOK)
+        w.Write(list of byte("Hello, World!"))
+    }))
+    defer server.Close()
+
+    # Test fetch.Get
+    resp, err := fetch.Get(server.URL)
+    if err != empty
+        t.Fatalf("fetch.Get failed: {err}")
+
+    if resp.StatusCode != http.StatusOK
+        t.Errorf("Expected status 200, got {resp.StatusCode}")
+
+    resp.Body.Close()
+
+# TestJson verifies that fetch.Json can parse JSON responses
+func TestJson(t reference testing.T)
+    # Test data
+    type TestData struct
+        Message string `json:"message"`
+        Count int `json:"count"`
+
+    testData := TestData{Message: "test", Count: 42}
+    jsonBytes, _ := json.Marshal(testData)
+
+    # Create a test server
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request) {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+        w.Write(jsonBytes)
+    }))
+    defer server.Close()
+
+    # Test fetch.Get |> fetch.Json pipeline
+    resp, err := fetch.Get(server.URL)
+    if err != empty
+        t.Fatalf("fetch.Get failed: {err}")
+
+    data, err := fetch.Json(resp)
+    if err != empty
+        t.Fatalf("fetch.Json failed: {err}")
+
+    # Verify the parsed data (would need type assertion in real implementation)
+    if data == empty
+        t.Error("Expected non-nil data")
+
+# TestText verifies that fetch.Text can read response body as string
+func TestText(t reference testing.T)
+    expectedText := "Hello, Kukicha!"
+
+    # Create a test server
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request) {
+        w.WriteHeader(http.StatusOK)
+        w.Write(list of byte(expectedText))
+    }))
+    defer server.Close()
+
+    # Test fetch.Get |> fetch.Text pipeline
+    resp, err := fetch.Get(server.URL)
+    if err != empty
+        t.Fatalf("fetch.Get failed: {err}")
+
+    text, err := fetch.Text(resp)
+    if err != empty
+        t.Fatalf("fetch.Text failed: {err}")
+
+    if text != expectedText
+        t.Errorf("Expected text '{expectedText}', got '{text}'")
+
+# TestPost verifies that fetch.Post can send JSON data
+func TestPost(t reference testing.T)
+    type PostData struct
+        Name string `json:"name"`
+        Value int `json:"value"`
+
+    # Create a test server that echoes the received data
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request) {
+        if r.Method != "POST"
+            t.Errorf("Expected POST request, got {r.Method}")
+
+        w.WriteHeader(http.StatusCreated)
+        w.Write(list of byte("created"))
+    }))
+    defer server.Close()
+
+    # Test fetch.Post
+    postData := PostData{Name: "test", Value: 123}
+    resp, err := fetch.Post(postData, server.URL)
+    if err != empty
+        t.Fatalf("fetch.Post failed: {err}")
+
+    if resp.StatusCode != http.StatusCreated
+        t.Errorf("Expected status 201, got {resp.StatusCode}")
+
+    resp.Body.Close()
+
+# TestCheckStatus verifies status code checking
+func TestCheckStatus(t reference testing.T)
+    # Test success case (200)
+    server200 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request) {
+        w.WriteHeader(http.StatusOK)
+        w.Write(list of byte("success"))
+    }))
+    defer server200.Close()
+
+    resp, err := fetch.Get(server200.URL)
+    if err != empty
+        t.Fatalf("fetch.Get failed: {err}")
+
+    checkedResp, err := fetch.CheckStatus(resp)
+    if err != empty
+        t.Errorf("CheckStatus failed for 200: {err}")
+    if checkedResp == empty
+        t.Error("Expected non-nil response")
+    checkedResp.Body.Close()
+
+    # Test failure case (404)
+    server404 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request) {
+        w.WriteHeader(http.StatusNotFound)
+        w.Write(list of byte("not found"))
+    }))
+    defer server404.Close()
+
+    resp, err = fetch.Get(server404.URL)
+    if err != empty
+        t.Fatalf("fetch.Get failed: {err}")
+
+    _, err = fetch.CheckStatus(resp)
+    if err == empty
+        t.Error("Expected error for 404 status")
+
+# TestRequestBuilder verifies the request builder pattern
+func TestRequestBuilder(t reference testing.T)
+    # Create a test server
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request) {
+        # Check custom header
+        auth := r.Header.Get("Authorization")
+        if auth != "Bearer test-token"
+            t.Errorf("Expected Authorization header, got '{auth}'")
+
+        w.WriteHeader(http.StatusOK)
+        w.Write(list of byte("authorized"))
+    }))
+    defer server.Close()
+
+    # Test request builder
+    req := fetch.New(server.URL)
+        |> fetch.Header("Authorization", "Bearer test-token")
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        t.Fatalf("fetch.Do failed: {err}")
+
+    if resp.StatusCode != http.StatusOK
+        t.Errorf("Expected status 200, got {resp.StatusCode}")
+
+    resp.Body.Close()
