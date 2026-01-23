@@ -105,6 +105,20 @@ Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks 
 {"id": 1, "title": "Buy groceries", "completed": false}
 ```
 
+> **📚 Note: When to use `parse` vs `encoding/json`**
+>
+> Kukicha's stdlib has a `parse` package for parsing JSON from strings (like when reading files or API responses):
+> ```kukicha
+> config := files.Read("config.json") |> parse.Json() as Config
+> ```
+>
+> But in web servers, we work with **streams** (http.ResponseWriter, http.Request.Body), so we use `encoding/json` directly for better performance:
+> ```kukicha
+> response |> json.NewEncoder() |> .Encode(data)  # Streaming
+> ```
+>
+> **Rule of thumb:** Use `parse.Json()` for strings, use `encoding/json` for streams.
+
 Kukicha makes sending JSON easy:
 
 ```kukicha
