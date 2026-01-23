@@ -275,17 +275,17 @@ config := loadConfig() onerr panic "Missing config file!"
 
 Let's add the ability to save our todos to a file and load them back!
 
-We'll use `os` for file operations and a simple text format.
+We'll use the `files` package from Kukicha's stdlib for easy file operations.
 
 ```kukicha
-import "os"
+import "stdlib/files"
 import "stdlib/string"
 import "strconv"
 
 # Save writes all todos to a file
 func Save on list TodoList, filename string error
     lines := empty list of string
-    
+
     for todo in list.items
         # Format: id|title|completed
         completed := "false"
@@ -293,15 +293,13 @@ func Save on list TodoList, filename string error
             completed = "true"
         line := "{todo.id}|{todo.title}|{completed}"
         lines = append(lines, line)
-    
-    # Join all lines with newlines and convert to bytes
-    content := lines 
+
+    # Join all lines and write to file using pipe operator
+    content := lines
         |> string.Join("\n")
-        |> []byte()
-    
-    # Write to file
-    os.WriteFile(filename, content, 0644) onerr return error
-    
+        |> files.WriteString(filename)
+        onerr return error
+
     fmt.Println("Saved {len(list.items)} todos to {filename}")
     return empty
 
@@ -310,12 +308,11 @@ func Load(filename string) (TodoList, error)
     list := TodoList
         items: empty list of Todo
         nextId: 1
-    
+
     # Read the file and split into lines in one pipeline
-    lines := filename 
-        |> os.ReadFile() 
+    lines := filename
+        |> files.Read()
         onerr return list, error
-        |> string()
         |> string.Split("\n")
     
     # Skip if file is empty
@@ -366,6 +363,7 @@ Create a file called `main.kuki`:
 import "fmt"
 import "os"
 import "bufio"
+import "stdlib/files"
 import "stdlib/string"
 import "strconv"
 
@@ -419,18 +417,18 @@ func Complete on list reference TodoList, id int
 
 func Save on list TodoList, filename string
     lines := empty list of string
-    
+
     for todo in list.items
         completed := "false"
         if todo.completed
             completed = "true"
         lines = append(lines, "{todo.id}|{todo.title}|{completed}")
-    
-    content := lines |> string.Join("\n") |> []byte()
-    os.WriteFile(filename, content, 0644) onerr
+
+    content := lines |> string.Join("\n")
+    content |> files.WriteString(filename) onerr
         fmt.Println("Error saving: could not write file")
         return
-    
+
     fmt.Println("Saved {len(list.items)} todos to {filename}")
 
 # --- Helper Functions ---
@@ -439,11 +437,10 @@ func LoadTodos(filename string) TodoList
     list := TodoList
         items: empty list of Todo
         nextId: 1
-    
-    lines := filename 
-        |> os.ReadFile() 
+
+    lines := filename
+        |> files.Read()
         onerr return list
-        |> string()
         |> string.Split("\n")
     
     maxId := 0
