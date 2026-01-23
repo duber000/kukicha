@@ -1,37 +1,60 @@
 # Kukicha Standard Library Roadmap
 
-**Version:** 1.0.0
-**Status:** In Progress
+**Version:** 2.0.0
+**Status:** Stable (Philosophy Shift)
+**Updated:** 2026-01-22
 
-This document outlines planned standard library packages and features for future Kukicha releases.
+---
+
+## Design Philosophy: "It's Just Go"
+
+Following CoffeeScript's successful approach with JavaScript, Kukicha adopts the principle: **"It's just Go."**
+
+Kukicha provides syntactic sugar for Go, not a parallel standard library. You can use any Go package directly, and `onerr` handles error tuples at the call site.
+
+**Key Principles:**
+- Go stdlib is first-class in Kukicha
+- Use `onerr` for error handling, not wrapper functions
+- Kukicha stdlib only for genuinely new capabilities Go lacks
+- No maintenance burden from tracking Go stdlib evolution
+
+See [kukicha-design-philosophy.md](kukicha-design-philosophy.md) for full rationale.
 
 ---
 
 ## Implementation Status
 
-### ✅ Completed Packages
+### ✅ Completed Packages (Value-Add)
 
-- **iter** (stdlib/iter/) - 13 iterator functions including Filter, Map, Reduce, Collect, Any, All, Find
-- **slice** (stdlib/slice/) - 12 slice operations including First, Last, Drop, Reverse, Unique, Chunk, Filter, Map
-- **string** (stdlib/string/) - 28 string manipulation functions for case conversion, trimming, splitting, searching, and replacement
+These packages provide functionality Go lacks or make awkward:
 
-### 🚧 In Progress
+| Package | Functions | Purpose |
+|---------|-----------|---------|
+| **iter** | 13 | Functional iteration (Filter, Map, Reduce) |
+| **slice** | 12 | Slice operations (First, Last, Drop, Unique) |
+| **string** | 28 | String utilities (thin wrappers, low maintenance) |
 
-- HTTP package preparation (foundation complete)
+### ❌ Deprecated Plans
 
-### 📋 Planned
+The following were previously planned but are **no longer needed** under the CoffeeScript model:
 
-- JSON package - Encoding/decoding
-- File package - File I/O operations
-- HTTP package - Client and server
+| Package | Reason | Use Instead |
+|---------|--------|-------------|
+| bytes | Go stdlib works directly | `import "bytes"` + `onerr` |
+| io | Go stdlib works directly | `import "io"` + `onerr` |
+| time | Go stdlib works directly | `import "time"` + `onerr` |
+| context | Go stdlib works directly | `import "context"` |
+| url | Go stdlib works directly | `import "net/url"` + `onerr` |
+| json | Go stdlib works directly | `import "encoding/json"` + `onerr` |
+| http | Go stdlib works directly | `import "net/http"` + `onerr` |
 
 ---
 
-## Core Libraries (Priority 1)
+## Core Libraries
 
 ### Iter Package ✅ COMPLETED
 
-Iterator operations using Go 1.23+ `iter.Seq`:
+Functional iteration operations using Go 1.23+ `iter.Seq`. Go's iterator protocol is low-level; we provide higher-level operations.
 
 ```kukicha
 import "stdlib/iter"
@@ -52,9 +75,9 @@ result := slices.Values(numbers)
 # - Any, All, Find
 ```
 
-### Slices Package ✅ COMPLETED
+### Slice Package ✅ COMPLETED
 
-Extended slice operations for common patterns:
+Extended slice operations Go lacks:
 
 ```kukicha
 import "stdlib/slice"
@@ -75,344 +98,229 @@ result := items
 reversed := slice.Reverse(items)
 unique := slice.Unique(items)
 chunked := slice.Chunk(items, 5)
-filtered := slice.Filter(items, predicate)
-mapped := slice.Map(items, transform)
 ```
 
 ### String Package ✅ COMPLETED
 
-String manipulation utilities for HTTP and text processing:
+String utilities (thin wrappers with minimal maintenance burden):
 
 ```kukicha
 import "stdlib/string"
 
-# Case conversion (HTTP headers)
+# Case conversion
 upper := string.ToUpper("hello")
 lower := string.ToLower("WORLD")
-if string.EqualFold(header, "content-type")
-    processContentType()
 
-# Trimming (parsing)
+# Trimming
 trimmed := string.TrimSpace("  hello  ")
 withoutPrefix := string.TrimPrefix(url, "https://")
-withoutSuffix := string.TrimSuffix(filename, ".txt")
 
-# Splitting and joining (headers, URLs)
+# Splitting and joining
 parts := string.Split("a,b,c", ",")
 joined := string.Join(parts, "|")
-fields := string.Fields("hello  world  foo")
-lines := string.Lines(multilineText)
 
-# Searching (Content-Type, URLs)
+# Searching
 if string.Contains(text, "error")
     handleError()
-startsWith := string.HasPrefix(text, "http://")
-endsWith := string.HasSuffix(filename, ".kuki")
-
-# Replacement (URL encoding, sanitization)
-replaced := string.ReplaceAll(text, "old", "new")
 ```
 
-### HTTP Package 📋 PLANNED
+---
 
-Simple HTTP client and server:
+## Using Go Standard Library Directly
+
+Use Go packages directly with pure Kukicha syntax:
+
+### JSON
 
 ```kukicha
-import http
+import "encoding/json"
 
-# Client
-response := http.get("https://api.example.com/users")
-    |> .json() as list of User
-    onerr return error "fetch failed"
+type User struct
+    Name  string
+    Email string
 
-# POST with JSON
-user := User{name: "Alice", age: 30}
-response := http.post("https://api.example.com/users", user)
+# Marshal with error handling
+func SaveUser(user User) error
+    data := json.Marshal(user) onerr return error
+    return os.WriteFile("user.json", data, 0644)
 
-# Server
-http.handle("/users", func(req http.Request) http.Response
-    users := getUsers()
-    return http.json(users)
-)
+# Unmarshal - using 'reference of' for address-of
+func LoadUser(path string) (User, error)
+    data := os.ReadFile(path) onerr return User{}, error
+    user := User{}
+    json.Unmarshal(data, reference of user) onerr return User{}, error
+    return user, empty
 
-http.listen(":8080")
+# Convenience pattern - panic for scripts
+func MustLoadUser(path string) User
+    data := os.ReadFile(path) onerr panic "cannot read file"
+    user := User{}
+    json.Unmarshal(data, reference of user) onerr panic "invalid json"
+    return user
 ```
 
-### JSON Package 📋 PLANNED
-
-JSON encoding and decoding:
+### HTTP
 
 ```kukicha
-import json
+import "net/http"
+import "encoding/json"
+import "io"
 
-# Parse JSON string
-config := json.parse(jsonString) as Config
-    onerr return error "invalid JSON"
+# Simple GET
+func FetchData(url string) (list of byte, error)
+    resp := http.Get(url) onerr return empty, error
+    defer resp.Body.Close()
+    return io.ReadAll(resp.Body)
 
-# Encode to JSON
-jsonString := json.encode(config)
+# GET with JSON decoding
+func FetchUsers(url string) (list of User, error)
+    resp := http.Get(url) onerr return empty, error
+    defer resp.Body.Close()
 
-# Pretty print
-prettyJson := json.pretty(config)
+    users := list of User{}
+    decoder := json.NewDecoder(resp.Body)
+    decoder.Decode(reference of users) onerr return empty, error
+    return users, empty
+
+# POST with JSON body
+func CreateUser(url string, user User) error
+    data := json.Marshal(user) onerr return error
+    resp := http.Post(url, "application/json", bytes.NewReader(data)) onerr return error
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        return fmt.Errorf("request failed: {resp.Status}")
+    return empty
 ```
 
-### File Package 📋 PLANNED
-
-File I/O operations:
+### HTTP Server
 
 ```kukicha
-import file
+import "net/http"
+import "encoding/json"
+
+func main()
+    http.HandleFunc("/users", handleUsers)
+    http.HandleFunc("/users/", handleUser)  # Go 1.22+ path patterns
+
+    print "Server starting on :8080"
+    http.ListenAndServe(":8080", empty) onerr panic "server failed"
+
+func handleUsers(w http.ResponseWriter, r reference http.Request)
+    if r.Method equals "GET"
+        users := getAllUsers()
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(users)
+    else if r.Method equals "POST"
+        user := User{}
+        json.NewDecoder(r.Body).Decode(reference of user) onerr
+            http.Error(w, "Invalid JSON", 400)
+            return
+        saveUser(user)
+        w.WriteHeader(201)
+```
+
+### File I/O
+
+```kukicha
+import "os"
+import "bufio"
 
 # Read entire file
-content := file.read("config.json")
-    onerr return error "cannot read file"
+func ReadConfig(path string) (list of byte, error)
+    return os.ReadFile(path)
 
 # Write file
-file.write("output.txt", content)
-    onerr return error "cannot write file"
+func WriteOutput(path string, data list of byte) error
+    return os.WriteFile(path, data, 0644)
 
-# Append to file
-file.append("log.txt", logEntry)
+# Read lines
+func ReadLines(path string) (list of string, error)
+    file := os.Open(path) onerr return empty, error
+    defer file.Close()
 
-# File existence
-if file.exists("config.json")
-    loadConfig()
-
-# Directory operations
-files := file.list("./data/")
-file.mkdir("./output/")
-file.remove("temp.txt")
+    lines := list of string{}
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan()
+        lines = append(lines, scanner.Text())
+    return lines, scanner.Err()
 ```
 
-
----
-
-## Cloud & Infrastructure (Priority 2)
-
-### Docker Package
-
-Docker container management:
+### Time and Context
 
 ```kukicha
-import docker
+import "time"
+import "context"
 
-# Build image
-image := docker.build("my-app:latest", "./Dockerfile")
-    onerr return error "build failed"
+# Timeouts
+func FetchWithTimeout(url string) (list of byte, error)
+    ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
+    defer cancel()
 
-# Run container
-container := docker.run(image,
-    ports: map of string to string{"8080": "8080"}
-    env: map of string to string{"ENV": "production"}
-)
+    req := http.NewRequestWithContext(ctx, "GET", url, empty) onerr return empty, error
+    resp := http.DefaultClient.Do(req) onerr return empty, error
+    defer resp.Body.Close()
+    return io.ReadAll(resp.Body)
 
-# Container operations
-docker.stop(container)
-docker.logs(container)
-docker.remove(container)
+# Periodic tasks
+func StartWorker(interval time.Duration)
+    ticker := time.NewTicker(interval)
+    defer ticker.Stop()
 
-# List containers
-containers := docker.list()
-for discard, c in containers
-    print "{c.name}: {c.status}"
-```
-
-### Kubernetes Package
-
-Kubernetes cluster management:
-
-```kukicha
-import k8s
-
-# Deploy application
-deployment := k8s.deploy("my-app",
-    image: "my-app:v1.0.0"
-    replicas: 3
-    namespace: "production"
-)
-
-# Wait for rollout
-k8s.waitReady(deployment)
-    onerr return error "deployment failed"
-
-# Get pods
-pods := k8s.getPods("production", "app=my-app")
-for discard, pod in pods
-    print "{pod.name}: {pod.status}"
-
-# Scale deployment
-k8s.scale(deployment, 5)
-
-# Get logs
-logs := k8s.logs("my-app-pod-123")
+    for t in ticker.C
+        print "Tick at {t}"
+        doWork()
 ```
 
 ---
 
-## AI & LLM Integration (Priority 2)
+## Future Directions
 
-### Claude Package
+### Potential Value-Add Packages
 
-Integration with Anthropic's Claude API:
+If compelling use cases emerge, we may add:
 
-```kukicha
-import claude
+| Package | Potential Purpose |
+|---------|------------------|
+| **maps** | Map operations Go lacks (Filter, Keys, Values, Merge) |
+| **result** | Optional Result type for explicit error handling |
 
-# Simple completion
-response := claude.complete("Explain Kukicha in one sentence")
-    onerr return error "API call failed"
+### Not Planned
 
-# Structured conversation
-conversation := claude.newConversation()
-conversation.addMessage("user", "What is Go?")
-response := conversation.send()
+These remain accessible via direct Go imports:
 
-# Analysis with context
-analysis := file.read("logs.txt")
-    |> extractErrors()
-    |> claude.complete("Analyze these errors and suggest fixes")
-    |> formatReport()
-```
-
-### OpenAI Package
-
-Integration with OpenAI API:
-
-```kukicha
-import openai
-
-# GPT completion
-response := openai.complete("gpt-4", "Translate to Spanish: Hello")
-
-# Image generation
-image := openai.generateImage("A sunset over mountains")
-file.write("sunset.png", image)
-```
+- Cloud SDKs (use AWS, GCP, Azure Go SDKs directly)
+- Database drivers (use standard Go drivers)
+- Testing (use Go's `testing` package)
+- AI/LLM clients (use official Go SDKs)
 
 ---
 
-## Database (Priority 3)
+## Rationale: Why Not Wrappers?
 
-### SQL Package
+The previous roadmap planned ~187 wrapper functions. This was abandoned because:
 
-Database operations:
+1. **Maintenance burden**: Go stdlib evolves; wrappers become stale
+2. **Incomplete coverage**: Always missing some function
+3. **Documentation overhead**: Two sets of docs to maintain
+4. **Blocking issues**: Tuple returns required compiler changes
+5. **No real benefit**: `onerr` handles errors elegantly already
 
-```kukicha
-import sql
-
-# Connect to database
-db := sql.connect("postgres://localhost/mydb")
-    onerr return error "connection failed"
-
-defer db.close()
-
-# Query
-users := db.query("SELECT * FROM users WHERE active = true") as list of User
-    onerr return error "query failed"
-
-# Execute
-db.exec("UPDATE users SET last_login = NOW() WHERE id = $1", userId)
-
-# Transactions
-db.transaction(func(tx sql.Transaction)
-    tx.exec("INSERT INTO orders (user_id, total) VALUES ($1, $2)", userId, total)
-    tx.exec("UPDATE inventory SET stock = stock - $1 WHERE id = $2", quantity, itemId)
-)
-```
-
----
-
-## Testing (Priority 3)
-
-### Test Package
-
-Unit testing framework:
-
-```kukicha
-import test
-
-func TestCalculator(t test.T)
-    result := add(2, 3)
-    test.assertEqual(t, result, 5, "2 + 3 should equal 5")
-
-    result = divide(10, 2)
-    test.assertEqual(t, result, 5, "10 / 2 should equal 5")
-
-func TestErrorHandling(t test.T)
-    discard, err := divide(10, 0)
-    test.assertError(t, err, "divide by zero should return error")
-```
-
----
-
-## Tooling Enhancements
-
-### Package Manager
-
-```bash
-# Install dependencies
-kuki get github.com/user/package@v1.0.0
-
-# Update dependencies
-kuki update
-
-# Vendor dependencies
-kuki vendor
-```
-
-### IDE Support
-
-- **VS Code Extension**
-  - Syntax highlighting
-  - IntelliSense/autocomplete
-  - Go-to-definition
-  - Error highlighting
-  - Code formatting on save
-
-- **LSP Server**
-  - Language Server Protocol implementation
-  - Works with any LSP-compatible editor
-
-### Debugger
-
-```bash
-# Debug a program
-kuki debug main.kuki
-
-# Set breakpoints
-(kuki-db) break main.kuki:15
-(kuki-db) run
-(kuki-db) print count
-(kuki-db) step
-(kuki-db) continue
-```
-
-### Formatter Enhancements
-
-```bash
-# Format with style options
-kuki fmt --style=compact main.kuki
-kuki fmt --style=expanded main.kuki
-
-# Auto-fix common issues
-kuki fmt --fix main.kuki
-
-# Format on save (IDE integration)
-```
+CoffeeScript thrived by being "just JavaScript" - no parallel ecosystem. Kukicha follows the same path.
 
 ---
 
 ## Contributing
 
-Want to help build the Kukicha standard library? See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
+The stdlib is largely complete. Future contributions should focus on:
 
-**Priority areas:**
-1. ✅ Core iterator/slice/string libraries (COMPLETED)
-2. 📋 HTTP, JSON, and File packages (NEXT)
-3. 📋 Cloud infrastructure (docker, k8s)
-4. 📋 AI/LLM integration (claude, openai)
+1. **Improving existing packages** (iter, slice, string)
+2. **Documentation and examples** for using Go stdlib in Kukicha
+3. **Compiler improvements** (onerr patterns, syntax sugar)
+
+For significant new stdlib packages, open an issue first to discuss whether it provides genuine value Go lacks.
 
 ---
 
 **Last Updated:** 2026-01-22
-**For Questions:** Open an issue on GitHub
+**Philosophy Document:** [kukicha-design-philosophy.md](kukicha-design-philosophy.md)

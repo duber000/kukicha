@@ -203,5 +203,4 @@ Kukicha's syntax matches Go exactly, making it familiar and easy to learn.
 ## See Also
 
 - [Kukicha Syntax Reference](kukicha-syntax-v1.0.md)
-- [Stdlib Special Transpilation](implementation-stdlib-special-transpilation.md)
-- [No-Generics Approach](proposal-no-generics-approach.md)
+- [Stdlib Special Transpilation](stdlib-special-transpilation.md)
