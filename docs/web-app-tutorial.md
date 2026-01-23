@@ -53,6 +53,7 @@ petiole main
 import "net/http"
 import "encoding/json"
 import "sync"
+import "fmt"
 
 type Todo
     id int64
@@ -86,7 +87,7 @@ func main()
             server.DeleteTodo(w, r)
     )
     
-    print "Server starting on :8080"
+    fmt.Println("Server starting on :8080")
     http.ListenAndServe(":8080", empty) onerr panic "server error"
 
 func (s reference Server) GetTodos(w http.ResponseWriter, r reference http.Request)
@@ -174,9 +175,10 @@ func (s reference Server) DeleteTodo(w http.ResponseWriter, r reference http.Req
 func atoi(s string) (int, error)
     n := 0
     for c in s
-        if c < "0" or c > "9"
+        if (c < "0") or (c > "9")
             return 0, error("invalid number")
-        n = n * 10 + int(c - "0")
+        diff := int(c) - int("0")
+        n = n * 10 + diff
     return n, empty
 ```
 
@@ -337,9 +339,11 @@ func NewDB() reference sql.DB
 ### 3. Middleware
 
 ```kukicha
+import "fmt"
+
 func LoggingMiddleware(next http.Handler) http.Handler
     return http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        print "{r.Method} {r.URL.Path}"
+        fmt.Println("{r.Method} {r.URL.Path}")
         next.ServeHTTP(w, r)
     )
 ```
