@@ -1,415 +1,506 @@
-# Building a Todo Web App with Kukicha
+# Building a Web Todo App with Kukicha
 
 **Level:** Intermediate  
 **Time:** 30 minutes  
-**Goal:** Build a simple REST API for managing todos using Go's standard library, written entirely in Kukicha
+**Prerequisite:** [Console Todo Tutorial](console-todo-tutorial.md)
 
-In this tutorial, you'll learn how to:
-- Use Go's `net/http` package from Kukicha
-- Handle JSON encoding/decoding with `reference of`
-- Build HTTP handlers and routes
-- Run a web server
-- Use error handling with `onerr`
+Welcome! You've built a console app that saves to files. Now let's build something even cooler: a **web application** that you can access from a browser!
+
+## What You'll Learn
+
+In this tutorial, you'll discover how to:
+- Create a **web server** that responds to requests
+- Send and receive **JSON data** (the language of web APIs)
+- Build **endpoints** for creating, reading, updating, and deleting todos
+- Handle **different request types** (GET, POST, PUT, DELETE)
+
+By the end, you'll have a todo API that any web or mobile app could connect to!
 
 ---
 
 ## What We're Building
 
-A simple REST API with these endpoints:
+Our web app will be a **REST API** - a way for other programs (like websites or phone apps) to talk to our todo list.
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| `GET` | `/todos` | List all todos |
-| `POST` | `/todos` | Create a new todo |
-| `GET` | `/todos/{id}` | Get a specific todo |
-| `PUT` | `/todos/{id}` | Update a todo |
-| `DELETE` | `/todos/{id}` | Delete a todo |
+| Action | Request | URL | Description |
+|--------|---------|-----|-------------|
+| List all todos | `GET` | `/todos` | Get all your todos |
+| Create a todo | `POST` | `/todos` | Add a new todo |
+| Get one todo | `GET` | `/todos/1` | Get todo with id 1 |
+| Update a todo | `PUT` | `/todos/1` | Update todo with id 1 |
+| Delete a todo | `DELETE` | `/todos/1` | Delete todo with id 1 |
+
+Don't worry if this looks complicated - we'll build it step by step!
 
 ---
 
-## Step 1: Project Setup
+## Step 1: Your First Web Server
 
-Create a new Kukicha project:
-
-```bash
-mkdir todo-app
-cd todo-app
-go mod init github.com/username/todo-app
-```
-
-Create `stem.toml`:
-
-```toml
-[stem]
-name = "todo-app"
-version = "0.1.0"
-```
-
-Create `main/main.kuki`:
+Let's start with the simplest possible web server:
 
 ```kukicha
-petiole main
-
-import "net/http"
-import "encoding/json"
-import "sync"
 import "fmt"
+import "net/http"
+
+func main()
+    # When someone visits the homepage, say hello
+    http.HandleFunc("/", sayHello)
+    
+    fmt.Println("Server starting on http://localhost:8080")
+    http.ListenAndServe(":8080", empty) onerr panic "server failed to start"
+
+# This function handles requests to "/"
+func sayHello(response http.ResponseWriter, request reference http.Request)
+    fmt.Fprintln(response, "Hello from Kukicha!")
+```
+
+**What's happening here?**
+
+1. `http.HandleFunc("/", sayHello)` - When someone visits `/`, run the `sayHello` function
+2. `http.ListenAndServe(":8080", empty)` - Start listening on port 8080
+3. `sayHello` receives two things:
+   - `response` - Where we write our reply
+   - `request` - Information about what the user asked for
+
+**Try it!**
+
+Run the server:
+```bash
+kukicha run main.kuki
+```
+
+Then open your browser to `http://localhost:8080` - you should see "Hello from Kukicha!"
+
+---
+
+## Step 2: Understanding Handlers
+
+A **handler** is a function that responds to web requests. Every handler receives:
+
+```kukicha
+func myHandler(response http.ResponseWriter, request reference http.Request)
+    # response - write your reply here
+    # request - contains info about the incoming request
+```
+
+We can check what **method** (GET, POST, etc.) the user is using:
+
+```kukicha
+func myHandler(response http.ResponseWriter, request reference http.Request)
+    if request.Method equals "GET"
+        fmt.Fprintln(response, "You used GET!")
+    else if request.Method equals "POST"
+        fmt.Fprintln(response, "You used POST!")
+    else
+        fmt.Fprintln(response, "You used something else!")
+```
+
+---
+
+## Step 3: Sending JSON Responses
+
+Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks like this:
+
+```json
+{"id": 1, "title": "Buy groceries", "completed": false}
+```
+
+Kukicha makes sending JSON easy:
+
+```kukicha
+import "encoding/json"
 
 type Todo
-    id int64
+    id int
     title string
     completed bool
 
-type Server
-    todos list of Todo
-    nextId int64
-    mu reference sync.RWMutex
-
-func main()
-    server := Server
-        todos: empty list of Todo
-        nextId: 1
-        mu: reference to sync.RWMutex{}
+func sendTodo(response http.ResponseWriter, request reference http.Request)
+    # Create a todo
+    todo := Todo
+        id: 1
+        title: "Learn Kukicha"
+        completed: false
     
-    http.HandleFunc("/todos", func(w http.ResponseWriter, r reference http.Request)
-        if r.Method equals "GET"
-            server.GetTodos(w, r)
-        else if r.Method equals "POST"
-            server.CreateTodo(w, r)
-    )
+    # Tell the browser we're sending JSON
+    response.Header().Set("Content-Type", "application/json")
     
-    http.HandleFunc("/todos/", func(w http.ResponseWriter, r reference http.Request)
-        if r.Method equals "GET"
-            server.GetTodo(w, r)
-        else if r.Method equals "PUT"
-            server.UpdateTodo(w, r)
-        else if r.Method equals "DELETE"
-            server.DeleteTodo(w, r)
-    )
-    
-    fmt.Println("Server starting on :8080")
-    http.ListenAndServe(":8080", empty) onerr panic "server error"
-
-func (s reference Server) GetTodos(w http.ResponseWriter, r reference http.Request)
-    dereference s.mu .RLock()
-    defer dereference s.mu .RUnlock()
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(dereference s .todos) onerr return
-
-func (s reference Server) CreateTodo(w http.ResponseWriter, r reference http.Request)
-    todo := Todo{}
-    json.NewDecoder(r.Body).Decode(reference of todo) onerr
-        w.WriteHeader(400)
-        return
-    
-    todo.id = dereference s .nextId
-    dereference s .nextId = dereference s .nextId + 1
-    
-    dereference s .mu .Lock()
-    dereference s .todos = append(dereference s .todos, todo)
-    dereference s .mu .Unlock()
-    
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(201)
-    json.NewEncoder(w).Encode(todo) onerr return
-
-func (s reference Server) GetTodo(w http.ResponseWriter, r reference http.Request)
-    idStr := r.URL.Path[len("/todos/"):]
-    id := atoi(idStr) onerr
-        w.WriteHeader(404)
-        return
-    
-    dereference s.mu .RLock()
-    defer dereference s.mu .RUnlock()
-    
-    for todo in dereference s .todos
-        if todo.id equals int64(id)
-            w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(todo) onerr return
-            return
-    
-    w.WriteHeader(404)
-
-func (s reference Server) UpdateTodo(w http.ResponseWriter, r reference http.Request)
-    idStr := r.URL.Path[len("/todos/"):]
-    id := atoi(idStr) onerr
-        w.WriteHeader(404)
-        return
-    
-    updated := Todo{}
-    json.NewDecoder(r.Body).Decode(reference of updated) onerr
-        w.WriteHeader(400)
-        return
-    
-    dereference s.mu .Lock()
-    defer dereference s.mu .Unlock()
-    
-    for i, todo in dereference s .todos
-        if todo.id equals int64(id)
-            updated.id = todo.id
-            dereference s .todos[i] = updated
-            w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(updated) onerr return
-            return
-    
-    w.WriteHeader(404)
-
-func (s reference Server) DeleteTodo(w http.ResponseWriter, r reference http.Request)
-    idStr := r.URL.Path[len("/todos/"):]
-    id := atoi(idStr) onerr
-        w.WriteHeader(404)
-        return
-    
-    dereference s.mu .Lock()
-    defer dereference s.mu .Unlock()
-    
-    for i, todo in dereference s .todos
-        if todo.id equals int64(id)
-            dereference s .todos = append(dereference s .todos[0:i], dereference s .todos[i+1:]...)
-            w.WriteHeader(204)
-            return
-    
-    w.WriteHeader(404)
-
-func atoi(s string) (int, error)
-    n := 0
-    for c in s
-        if (c < "0") or (c > "9")
-            return 0, error("invalid number")
-        diff := int(c) - int("0")
-        n = n * 10 + diff
-    return n, empty
+    # Convert the todo to JSON and send it using pipe
+    response |> json.NewEncoder() |> .Encode(todo) onerr return
 ```
 
----
-
-## Step 2: Build and Run
-
-Build the application:
-
-```bash
-kukicha build main/main.kuki
-```
-
-Run the server:
-
-```bash
-./main
-```
-
-You should see:
-```
-Server starting on :8080
-```
-
----
-
-## Step 3: Test the API
-
-### Create a Todo
-
-```bash
-curl -X POST http://localhost:8080/todos \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Learn Kukicha","completed":false}'
-```
-
-Response:
+When someone visits this endpoint, they'll receive:
 ```json
 {"id":1,"title":"Learn Kukicha","completed":false}
 ```
 
-### Get All Todos
+---
 
-```bash
-curl http://localhost:8080/todos
+## Step 4: Receiving JSON Data
+
+When creating a new todo, the user sends JSON data to us. We need to read and parse it:
+
+```kukicha
+func createTodo(response http.ResponseWriter, request reference http.Request)
+    # Create an empty todo to fill with the incoming data
+    todo := Todo{}
+    
+    # Parse the JSON from the request body using pipe
+    # "reference of" gets a pointer so the decoder can fill in our todo
+    request.Body |> json.NewDecoder() |> .Decode(reference of todo) onerr
+        response.WriteHeader(400)  # 400 = Bad Request
+        fmt.Fprintln(response, "Invalid JSON")
+        return
+    
+    # Now 'todo' contains the data the user sent!
+    fmt.Println("Received todo: {todo.title}")
+    
+    # Send back a success response
+    response.Header().Set("Content-Type", "application/json")
+    response.WriteHeader(201)  # 201 = Created
+    json.NewEncoder(response).Encode(todo) onerr return
 ```
 
-Response:
-```json
-[{"id":1,"title":"Learn Kukicha","completed":false}]
-```
+**What's `reference of`?**
 
-### Update a Todo
+When we write `reference of todo`, we're giving the JSON decoder a way to **fill in** our todo variable. Without it, the decoder would only have a copy and couldn't modify our actual todo.
 
-```bash
-curl -X PUT http://localhost:8080/todos/1 \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Learn Kukicha","completed":true}'
-```
+---
 
-### Delete a Todo
+## Step 5: Building the Todo Storage
 
-```bash
-curl -X DELETE http://localhost:8080/todos/1
+Let's create a simple way to store our todos. We'll use a **global variable** for now (we'll learn a better way in the next tutorial):
+
+```kukicha
+# Our todo storage - a list of todos and the next available ID
+var todos list of Todo
+var nextId int = 1
+
+# Helper to find a todo by ID
+func findTodoById(id int) (Todo, int, bool)
+    for index, todo in todos
+        if todo.id equals id
+            return todo, index, true
+    return Todo{}, -1, false
 ```
 
 ---
 
-## Key Concepts Demonstrated
+## Step 6: The Complete Todo API
 
-### 1. Using Go Stdlib Directly
-
-```kukicha
-import "net/http"
-import "encoding/json"
-import "sync"
-
-# Use Go packages directly - no wrappers needed
-http.HandleFunc("/todos", handler)
-json.NewEncoder(w).Encode(data)
-sync.RWMutex{}
-```
-
-### 2. Reference-of for Stdlib Functions
-
-```kukicha
-# json.Unmarshal needs a pointer to the destination
-json.NewDecoder(r.Body).Decode(reference of todo)
-
-# Lock operations on pointer fields
-dereference s.mu .Lock()
-```
-
-### 3. Pointers for Mutable State
-
-```kukicha
-# Method receiver is a pointer to modify server state
-func (s reference Server) CreateTodo(w http.ResponseWriter, r reference http.Request)
-    # Modify todos list through pointer
-    dereference s .todos = append(dereference s .todos, todo)
-```
-
-### 4. Error Handling with onerr
-
-```kukicha
-# Handle errors from stdlib functions
-json.NewDecoder(r.Body).Decode(reference of todo) onerr
-    w.WriteHeader(400)
-    return
-
-# Parse with error handling
-id := atoi(idStr) onerr
-    w.WriteHeader(404)
-    return
-```
-
-### 5. Defer for Cleanup
-
-```kukicha
-# Locks are released even if function panics
-dereference s.mu .RLock()
-defer dereference s.mu .RUnlock()
-```
-
----
-
-## Real-World Enhancements
-
-Once you understand the basics, you can add:
-
-### 1. Persistent Storage (JSON file)
-
-```kukicha
-import "os"
-
-func LoadTodos() list of Todo
-    data := os.ReadFile("todos.json") onerr return empty list of Todo
-    todos := empty list of Todo
-    json.Unmarshal(data, reference of todos) onerr return empty list of Todo
-    return todos
-
-func SaveTodos(todos list of Todo)
-    data := json.Marshal(todos) onerr return
-    os.WriteFile("todos.json", data, 0644) onerr return
-```
-
-### 2. Database (Using `database/sql`)
-
-```kukicha
-import "database/sql"
-import _ "github.com/mattn/go-sqlite3"
-
-func NewDB() reference sql.DB
-    db := sql.Open("sqlite3", "todos.db") onerr return empty
-    return reference of db
-```
-
-### 3. Middleware
+Now let's put it all together! Create `main.kuki`:
 
 ```kukicha
 import "fmt"
+import "net/http"
+import "encoding/json"
+import "strconv"
+import "slices"
+import "stdlib/string"
+import "stdlib/iter"
 
-func LoggingMiddleware(next http.Handler) http.Handler
-    return http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        fmt.Println("{r.Method} {r.URL.Path}")
-        next.ServeHTTP(w, r)
-    )
-```
+# --- Data Types ---
 
-### 4. Input Validation
+type Todo
+    id int
+    title string
+    completed bool
 
-```kukicha
-func (todo reference Todo) Validate() (bool, string)
+# --- Storage ---
+# (In the Production tutorial, we'll use a database instead)
+
+var todos list of Todo
+var nextId int = 1
+
+# --- Helper Functions ---
+
+func findTodoIndex(id int) int
+    # Use standard slices.IndexFunc to find the item
+    return todos |> slices.IndexFunc(func(t Todo) bool: return t.id equals id)
+
+func getIdFromPath(path string, prefix string) (int, bool)
+    # Extract "1" from "/todos/1"
+    idStr := string.TrimPrefix(path, prefix)
+    if idStr equals "" or idStr equals path
+        return 0, false
+    
+    id := idStr |> strconv.Atoi() onerr return 0, false
+    return id, true
+
+    response.Header().Set("Content-Type", "application/json")
+    response |> json.NewEncoder() |> .Encode(data) onerr return
+
+func sendError(response http.ResponseWriter, status int, message string)
+    response.Header().Set("Content-Type", "application/json")
+    response.WriteHeader(status)
+    
+    errorResponse := map of string to string
+        error: message
+    response |> json.NewEncoder() |> .Encode(errorResponse) onerr return
+
+# --- API Handlers ---
+
+# GET /todos - List all todos (with optional search)
+func handleListTodos(response http.ResponseWriter, request reference http.Request)
+    search := request.URL.Query().Get("search")
+    if search equals ""
+        sendJSON(response, todos)
+        return
+    
+    # Supercharge the data flow with iterators!
+    filtered := todos
+        |> slices.Values()
+        |> iter.Filter(func(t Todo) bool
+            return string.Contains(string.ToLower(t.title), string.ToLower(search))
+        )
+        |> iter.Collect()
+    
+    sendJSON(response, filtered)
+
+# POST /todos - Create a new todo
+func handleCreateTodo(response http.ResponseWriter, request reference http.Request)
+    # Parse the incoming JSON using pipe
+    todo := Todo{}
+    request.Body |> json.NewDecoder() |> .Decode(reference of todo) onerr
+        sendError(response, 400, "Invalid JSON")
+        return
+    
+    # Validate
     if todo.title equals ""
-        return false, "title is required"
-    if len(todo.title) > 255
-        return false, "title too long"
-    return true, ""
+        sendError(response, 400, "Title is required")
+        return
+    
+    # Assign an ID and add to the list
+    todo.id = nextId
+    nextId = nextId + 1
+    todos = append(todos, todo)
+    
+    # Send back the created todo
+    response.WriteHeader(201)
+    sendJSON(response, todo)
+
+# GET /todos/{id} - Get a specific todo
+func handleGetTodo(response http.ResponseWriter, request reference http.Request)
+    # Get the ID from the URL
+    id, ok := getIdFromPath(request.URL.Path, "/todos/")
+    if not ok
+        sendError(response, 400, "Invalid todo ID")
+        return
+    
+    # Find the todo
+    index := findTodoIndex(id)
+    if index equals -1
+        sendError(response, 404, "Todo not found")
+        return
+    
+    sendJSON(response, todos[index])
+
+# PUT /todos/{id} - Update a todo
+func handleUpdateTodo(response http.ResponseWriter, request reference http.Request)
+    # Get the ID from the URL
+    id, ok := getIdFromPath(request.URL.Path, "/todos/")
+    if not ok
+        sendError(response, 400, "Invalid todo ID")
+        return
+    
+    # Find the todo
+    index := findTodoIndex(id)
+    if index equals -1
+        sendError(response, 404, "Todo not found")
+        return
+    
+    # Parse the update using pipe
+    updated := Todo{}
+    request.Body |> json.NewDecoder() |> .Decode(reference of updated) onerr
+        sendError(response, 400, "Invalid JSON")
+        return
+    
+    # Keep the original ID, update other fields
+    updated.id = id
+    todos[index] = updated
+    
+    sendJSON(response, updated)
+
+# DELETE /todos/{id} - Delete a todo
+func handleDeleteTodo(response http.ResponseWriter, request reference http.Request)
+    # Get the ID from the URL
+    id, ok := getIdFromPath(request.URL.Path, "/todos/")
+    if not ok
+        sendError(response, 400, "Invalid todo ID")
+        return
+    
+    # Find the todo
+    index := findTodoIndex(id)
+    if index equals -1
+        sendError(response, 404, "Todo not found")
+        return
+    
+    # Remove by creating a new list without this item
+    todos = append(todos[:index], todos[index+1:]...)
+    
+    response.WriteHeader(204)  # 204 = No Content (success, nothing to return)
+
+# --- Route Handler ---
+
+func handleTodos(response http.ResponseWriter, request reference http.Request)
+    # Route to the right handler based on the path and method
+    
+    if request.URL.Path equals "/todos"
+        # Collection routes: /todos
+        if request.Method equals "GET"
+            handleListTodos(response, request)
+        else if request.Method equals "POST"
+            handleCreateTodo(response, request)
+        else
+            sendError(response, 405, "Method not allowed")
+    else
+        # Item routes: /todos/{id}
+        if request.Method equals "GET"
+            handleGetTodo(response, request)
+        else if request.Method equals "PUT"
+            handleUpdateTodo(response, request)
+        else if request.Method equals "DELETE"
+            handleDeleteTodo(response, request)
+        else
+            sendError(response, 405, "Method not allowed")
+
+# --- Main Entry Point ---
+
+func main()
+    # Set up routes
+    http.HandleFunc("/todos", handleTodos)
+    http.HandleFunc("/todos/", handleTodos)
+    
+    fmt.Println("=== Kukicha Todo API ===")
+    fmt.Println("Server running on http://localhost:8080")
+    fmt.Println("")
+    fmt.Println("Try these commands in another terminal:")
+    fmt.Println("  curl http://localhost:8080/todos")
+    fmt.Println("  curl -X POST -d '{\"title\":\"Learn Kukicha\"}' http://localhost:8080/todos")
+    fmt.Println("")
+    
+    http.ListenAndServe(":8080", empty) onerr panic "server failed to start"
 ```
 
 ---
 
-## Important Notes
+## Step 7: Testing Your API
 
-### Memory Management
+Run your server:
+```bash
+kukicha run main.kuki
+```
 
-This example uses in-memory storage, so todos are lost when the server stops. For production:
-- Use a database (SQLite, PostgreSQL)
-- Use file persistence
-- Add proper transaction handling
+Now test it with `curl` (open another terminal):
 
-### Concurrency
+### Create todos:
+```bash
+curl -X POST -d '{"title":"Buy groceries"}' http://localhost:8080/todos
+# Response: {"id":1,"title":"Buy groceries","completed":false}
 
-The example uses `sync.RWMutex` for thread-safe access. For higher performance:
-- Consider using channels
-- Use worker pools
-- Implement proper request queuing
+curl -X POST -d '{"title":"Learn Kukicha"}' http://localhost:8080/todos
+# Response: {"id":2,"title":"Learn Kukicha","completed":false}
+```
 
-### Error Handling
+### List all todos:
+```bash
+curl http://localhost:8080/todos
+# Response: [{"id":1,"title":"Buy groceries","completed":false},{"id":2,"title":"Learn Kukicha","completed":false}]
+```
 
-This example is simplified. Production code should:
-- Log errors properly
-- Return meaningful error messages
-- Handle partial failures gracefully
-- Implement request validation
+### Search for todos:
+```bash
+curl "http://localhost:8080/todos?search=Kukicha"
+# Response: [{"id":2,"title":"Learn Kukicha","completed":false}]
+```
+
+### Get a specific todo:
+```bash
+curl http://localhost:8080/todos/1
+# Response: {"id":1,"title":"Buy groceries","completed":false}
+```
+
+### Update a todo:
+```bash
+curl -X PUT -d '{"title":"Buy groceries","completed":true}' http://localhost:8080/todos/1
+# Response: {"id":1,"title":"Buy groceries","completed":true}
+```
+
+### Delete a todo:
+```bash
+curl -X DELETE http://localhost:8080/todos/2
+# Response: (empty - 204 No Content)
+```
+
+🎉 **Congratulations!** You've built a working REST API!
 
 ---
 
-## Summary
+## Understanding HTTP Status Codes
 
-You've learned how to:
+You may have noticed we use numbers like `200`, `201`, `404`. These are **status codes** that tell the client what happened:
 
-✅ Import and use Go stdlib packages directly  
-✅ Use `reference of` and `dereference` for pointer operations  
-✅ Build HTTP handlers and routes  
-✅ Handle JSON encoding/decoding  
-✅ Manage concurrent access with mutexes  
-✅ Use `onerr` for error handling  
-✅ Write production-like Kukicha code  
-
-This demonstrates Kukicha's core philosophy: **"It's just Go"** - you have direct access to the entire Go ecosystem without wrappers or special syntax.
+| Code | Name | Meaning |
+|------|------|---------|
+| `200` | OK | Success! |
+| `201` | Created | Successfully created something new |
+| `204` | No Content | Success, but nothing to return |
+| `400` | Bad Request | The client sent invalid data |
+| `404` | Not Found | The requested item doesn't exist |
+| `405` | Method Not Allowed | Wrong HTTP method for this endpoint |
+| `500` | Internal Server Error | Something went wrong on the server |
 
 ---
 
-## Next Steps
+## What You've Learned
 
-- Deploy to a cloud platform (Heroku, AWS, Google Cloud)
-- Add authentication (JWT tokens)
-- Connect to a real database
-- Build a frontend (HTML/CSS/JavaScript)
-- Add unit tests
-- Deploy with Docker
+Congratulations! You've built a real web API. Let's review:
 
-Happy coding! 🌱
+| Concept | What It Does |
+|---------|--------------|
+| **HTTP Server** | `http.ListenAndServe()` starts a web server |
+| **Pipe Operator** | Cleanly chain functions (like JSON encoders) with `|>` |
+| **Handlers** | Functions that respond to web requests |
+| **Request Methods** | GET (read), POST (create), PUT (update), DELETE (remove) |
+| **JSON** | Data format for web APIs (`encoding/json` package) |
+| **Status Codes** | Numbers that indicate success or failure |
+| **URL Paths** | Routes like `/todos` and `/todos/1` |
+
+---
+
+## Current Limitations
+
+Our todo API works, but it has some limitations:
+
+1. **Data disappears when you restart** - We're storing in memory, not a database
+2. **Not safe for multiple users** - If two people use it at once, data could get corrupted
+3. **No authentication** - Anyone can access it
+
+We'll fix all of these in the next tutorial!
+
+---
+
+## Practice Exercises
+
+Before moving on, try these enhancements:
+
+1. **Add a `priority` field** - Make todos have high/medium/low priority
+2. **Add a search endpoint** - `GET /todos?search=groceries` 
+3. **Count endpoint** - `GET /todos/count` returns the number of todos
+4. **Filter by completed** - `GET /todos?completed=true`
+
+---
+
+## What's Next?
+
+You now have a working web API! But it's not production-ready yet. In the next tutorial, you'll learn:
+
+- **[Production Patterns Tutorial](production-patterns-tutorial.md)** (Advanced)
+  - Store data in a **database** (SQLite)
+  - Handle **multiple users safely** with locking
+  - Learn **Go conventions** for larger applications
+  - Add proper **logging** and **configuration**
+
+---
+
+**You've built a web API! 🚀**

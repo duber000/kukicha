@@ -429,6 +429,23 @@ func main()
 
 **Real-world use case:** Converting user input to a consistent format before comparing it.
 
+### The Pipe Operator (`|>`) - Cleaning Up Data
+
+Sometimes you want to perform multiple operations on the same piece of text. Kukicha has a special tool called the **pipe operator** (`|>`) that lets you pass the result of one function directly into the next.
+
+Instead of this:
+```kukicha
+cleaned := string.TrimSpace(text)
+upper := string.ToUpper(cleaned)
+```
+
+You can do this:
+```kukicha
+upper := text |> string.TrimSpace() |> string.ToUpper()
+```
+
+It's called a "pipe" because it acts like a pipe at a construction site - data goes in one end and comes out the other end, transformed!
+
 ### Trimming Whitespace
 
 Remove extra spaces from the beginning and end of strings:
@@ -617,15 +634,12 @@ Let's combine everything we've learned to build a practical program: a **name fo
 import "fmt"
 import "stdlib/string"
 
-# Clean and format a person's name
+# Clean and format a person's name using pipes
 func FormatName(rawName string) string
-    # Remove extra whitespace
-    cleaned := string.TrimSpace(rawName)
-
-    # Convert to title case (First Letter Caps)
-    formatted := string.Title(cleaned)
-
-    return formatted
+    # We take the rawName, trim the space, then convert to Title Case
+    return rawName 
+        |> string.TrimSpace() 
+        |> string.Title()
 
 # Create a greeting message
 func CreateGreeting(name string, age int) string
@@ -698,22 +712,24 @@ Congratulations! You now know:
 - ✅ How to create functions to organize code
 - ✅ How to work with strings (text)
 - ✅ How to use string interpolation
+- ✅ How to use the Pipe Operator (`|>`) to chain functions
 - ✅ How to use the string petiole for advanced text operations
 
 ### Continue Your Journey
 
-Here's what to explore next:
+Ready for the next step? Follow this learning path:
 
-1. **Control Flow** - Learn `if`, `else`, and loops (`for`)
-2. **Collections** - Work with lists and maps (arrays and dictionaries)
-3. **Error Handling** - Use the `onerr` operator to handle errors gracefully
-4. **Other Petioles** - Explore `iter` (iterators), `slice` (list operations), and more
-5. **Build Projects** - Make a todo app, a simple calculator, or a text-based game
+| # | Tutorial | What You'll Learn |
+|---|----------|-------------------|
+| 1 | ✅ *You are here* | Variables, functions, strings, pipes |
+| 2 | **[Console Todo](console-todo-tutorial.md)** ← Next! | Types, methods, lists, file I/O, more pipes |
+| 3 | **[Web Todo](web-app-tutorial.md)** | HTTP servers, JSON, REST APIs, expert piping |
+| 4 | **[Production Patterns](production-patterns-tutorial.md)** | Databases, Go conventions |
 
 ### Additional Resources
 
-- **kukicha-syntax-v1.0.md** - Complete language reference
-- **kukicha-quick-reference.md** - Cheat sheet for quick lookups
+- **[Kukicha Syntax Reference](kukicha-syntax-v1.0.md)** - Complete language reference
+- **[Quick Reference](kukicha-quick-reference.md)** - Cheat sheet for quick lookups
 - **examples/** directory - More example programs
 
 ### Practice Exercises

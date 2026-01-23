@@ -520,7 +520,7 @@ func CreateTodo(id, title)
         id: id
         title: title
         completed: false
-        created_at: time.now()
+        priority: 0
 ```
 
 ### Error with Cleanup

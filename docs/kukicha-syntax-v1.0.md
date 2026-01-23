@@ -124,8 +124,8 @@ type Todo
     title string
     description string
     completed bool
-    created_at time.Time
-    completed_at time.Time
+    priority int
+    tags list of string
 ```
 
 No `struct` keyword needed — the type definition is implicit.
@@ -135,7 +135,7 @@ No `struct` keyword needed — the type definition is implicit.
 - **Primitives**: `int64`, `int32`, `int`, `string`, `bool`, `float64`, `float32`
 - **References (Pointers)**: `reference Type`
 - **Collections**: `list of Type`, `map of KeyType to ValueType`
-- **Other packages**: `time.Time`, `sync.RWMutex`
+- **Imported types**: Any type from an imported package (e.g., `import "time"` → `time.Duration`)
 
 ### Types with References
 
@@ -144,7 +144,7 @@ type User
     id int64
     name string
     settings reference Settings
-    cache reference sync.RWMutex
+    profile reference Profile
 ```
 
 Compiles to Go as:
@@ -153,7 +153,7 @@ type User struct {
     ID int64
     Name string
     Settings *Settings
-    Cache *sync.RWMutex
+    Profile *Profile
 }
 ```
 
@@ -198,8 +198,6 @@ func CreateTodo(id int64, title string, description string) Todo
         title: title
         description: description
         completed: false
-        created_at: time.now()
-        completed_at: empty
 ```
 
 **Signature-First Type Inference Rules:**
@@ -223,7 +221,6 @@ func ProcessData(input string) int
 ```kukicha
 func MarkDone(todo Todo) Todo
     todo.completed = true
-    todo.completed_at = time.now()
     return todo
 ```
 
@@ -264,8 +261,6 @@ return Todo
     title: "buy milk"
     description: "at store"
     completed: false
-    created_at: time.now()
-    completed_at: empty
 ```
 
 ---
@@ -435,7 +430,6 @@ func Display on todo Todo string
 # Reference receiver - for mutation
 func MarkDone on todo reference Todo
     todo.completed = true
-    todo.completed_at = time.now()
 
 # Method with parameters
 func UpdateTitle on todo reference Todo, newTitle string
@@ -1292,11 +1286,20 @@ Compiles to Go's automatic dereferencing: `if userPtr.Name == "admin"`
 - `string`
 - `bool`
 
-### Package Types
+### Imported Types
 
-- `time.Time`
-- `sync.RWMutex`
-- Any imported type
+Any type from an imported package can be used:
+
+```kukicha
+import "time"
+import "net/http"
+
+type Server
+    startTime time.Duration    # From time package
+    client http.Client         # From net/http package
+```
+
+See [Design Philosophy](kukicha-design-philosophy.md) for why Kukicha uses Go packages directly.
 
 ### Zero Values
 
@@ -1307,7 +1310,6 @@ empty reference Type           # nil pointer
 false                          # boolean zero
 0                              # numeric zero
 ""                             # empty string
-time.now()                     # current time
 empty list of Type             # empty list
 empty map of KeyType to ValueType  # empty map
 ```
