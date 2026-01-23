@@ -1,0 +1,275 @@
+# Tests for Kukicha Standard Library - Files Package
+
+petiole files_test
+
+import "testing"
+import "stdlib/files"
+import "os"
+import "path/filepath"
+
+# TestReadWrite verifies basic file read and write operations
+func TestReadWrite(t reference testing.T)
+    # Create temp directory for test
+    tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+    if err != empty
+        t.Fatalf("Failed to create temp dir: {err}")
+    defer os.RemoveAll(tmpDir)
+
+    testFile := filepath.Join(tmpDir, "test.txt")
+    testContent := "Hello, Kukicha!"
+
+    # Test Write
+    err = files.WriteString(testContent, testFile)
+    if err != empty
+        t.Fatalf("files.WriteString failed: {err}")
+
+    # Test Read
+    content, err := files.Read(testFile)
+    if err != empty
+        t.Fatalf("files.Read failed: {err}")
+
+    if content != testContent
+        t.Errorf("Expected content '{testContent}', got '{content}'")
+
+# TestWriteJSON verifies JSON serialization in Write
+func TestWriteJSON(t reference testing.T)
+    # Create temp directory for test
+    tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+    if err != empty
+        t.Fatalf("Failed to create temp dir: {err}")
+    defer os.RemoveAll(tmpDir)
+
+    testFile := filepath.Join(tmpDir, "data.json")
+
+    # Test data structure
+    type TestData struct
+        Name string
+        Value int
+
+    testData := TestData{Name: "test", Value: 42}
+
+    # Test Write with struct (should marshal to JSON)
+    err = files.Write(testData, testFile)
+    if err != empty
+        t.Fatalf("files.Write failed: {err}")
+
+    # Verify file was created
+    if not files.Exists(testFile)
+        t.Error("Expected file to exist after Write")
+
+    # Read and verify content
+    content, err := files.Read(testFile)
+    if err != empty
+        t.Fatalf("files.Read failed: {err}")
+
+    # Content should be JSON
+    if len(content) == 0
+        t.Error("Expected non-empty JSON content")
+
+# TestExists verifies file existence checking
+func TestExists(t reference testing.T)
+    # Create temp directory for test
+    tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+    if err != empty
+        t.Fatalf("Failed to create temp dir: {err}")
+    defer os.RemoveAll(tmpDir)
+
+    existingFile := filepath.Join(tmpDir, "exists.txt")
+    nonExistentFile := filepath.Join(tmpDir, "does-not-exist.txt")
+
+    # Create a file
+    err = files.WriteString("test", existingFile)
+    if err != empty
+        t.Fatalf("Failed to create test file: {err}")
+
+    # Test Exists for existing file
+    if not files.Exists(existingFile)
+        t.Error("Expected Exists to return true for existing file")
+
+    # Test Exists for non-existent file
+    if files.Exists(nonExistentFile)
+        t.Error("Expected Exists to return false for non-existent file")
+
+# TestIsDir verifies directory checking
+func TestIsDir(t reference testing.T)
+    # Create temp directory for test
+    tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+    if err != empty
+        t.Fatalf("Failed to create temp dir: {err}")
+    defer os.RemoveAll(tmpDir)
+
+    testFile := filepath.Join(tmpDir, "file.txt")
+    testDir := filepath.Join(tmpDir, "subdir")
+
+    # Create a file and directory
+    err = files.WriteString("test", testFile)
+    if err != empty
+        t.Fatalf("Failed to create test file: {err}")
+
+    err = os.Mkdir(testDir, 0755)
+    if err != empty
+        t.Fatalf("Failed to create test dir: {err}")
+
+    # Test IsDir for directory
+    if not files.IsDir(testDir)
+        t.Error("Expected IsDir to return true for directory")
+
+    # Test IsDir for file
+    if files.IsDir(testFile)
+        t.Error("Expected IsDir to return false for file")
+
+# TestList verifies directory listing
+func TestList(t reference testing.T)
+    # Create temp directory for test
+    tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+    if err != empty
+        t.Fatalf("Failed to create temp dir: {err}")
+    defer os.RemoveAll(tmpDir)
+
+    # Create some test files
+    files.WriteString("test1", filepath.Join(tmpDir, "file1.txt"))
+    files.WriteString("test2", filepath.Join(tmpDir, "file2.txt"))
+    os.Mkdir(filepath.Join(tmpDir, "subdir"), 0755)
+
+    # Test List
+    entries, err := files.List(tmpDir)
+    if err != empty
+        t.Fatalf("files.List failed: {err}")
+
+    # Should have 3 entries (2 files + 1 directory)
+    if len(entries) != 3
+        t.Errorf("Expected 3 entries, got {len(entries)}")
+
+    # Verify entries have correct fields
+    for entry in entries
+        if entry.Name == ""
+            t.Error("Expected non-empty Name field")
+        if entry.Path == ""
+            t.Error("Expected non-empty Path field")
+
+# TestAppend verifies file append operation
+func TestAppend(t reference testing.T)
+    # Create temp directory for test
+    tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+    if err != empty
+        t.Fatalf("Failed to create temp dir: {err}")
+    defer os.RemoveAll(tmpDir)
+
+    testFile := filepath.Join(tmpDir, "append.txt")
+
+    # Write initial content
+    err = files.WriteString("Line 1\n", testFile)
+    if err != empty
+        t.Fatalf("files.WriteString failed: {err}")
+
+    # Append more content
+    err = files.Append("Line 2\n", testFile)
+    if err != empty
+        t.Fatalf("files.Append failed: {err}")
+
+    # Read and verify
+    content, err := files.Read(testFile)
+    if err != empty
+        t.Fatalf("files.Read failed: {err}")
+
+    expected := "Line 1\nLine 2\n"
+    if content != expected
+        t.Errorf("Expected content '{expected}', got '{content}'")
+
+# TestCopy verifies file copying
+func TestCopy(t reference testing.T)
+    # Create temp directory for test
+    tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+    if err != empty
+        t.Fatalf("Failed to create temp dir: {err}")
+    defer os.RemoveAll(tmpDir)
+
+    srcFile := filepath.Join(tmpDir, "source.txt")
+    dstFile := filepath.Join(tmpDir, "destination.txt")
+    testContent := "Copy me!"
+
+    # Create source file
+    err = files.WriteString(testContent, srcFile)
+    if err != empty
+        t.Fatalf("Failed to create source file: {err}")
+
+    # Test Copy
+    err = files.Copy(srcFile, dstFile)
+    if err != empty
+        t.Fatalf("files.Copy failed: {err}")
+
+    # Verify destination exists
+    if not files.Exists(dstFile)
+        t.Error("Expected destination file to exist")
+
+    # Verify content matches
+    content, err := files.Read(dstFile)
+    if err != empty
+        t.Fatalf("files.Read failed: {err}")
+
+    if content != testContent
+        t.Errorf("Expected content '{testContent}', got '{content}'")
+
+# TestDelete verifies file deletion
+func TestDelete(t reference testing.T)
+    # Create temp directory for test
+    tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+    if err != empty
+        t.Fatalf("Failed to create temp dir: {err}")
+    defer os.RemoveAll(tmpDir)
+
+    testFile := filepath.Join(tmpDir, "delete-me.txt")
+
+    # Create file
+    err = files.WriteString("test", testFile)
+    if err != empty
+        t.Fatalf("Failed to create test file: {err}")
+
+    # Verify it exists
+    if not files.Exists(testFile)
+        t.Error("Expected file to exist before deletion")
+
+    # Delete file
+    err = files.Delete(testFile)
+    if err != empty
+        t.Fatalf("files.Delete failed: {err}")
+
+    # Verify it's gone
+    if files.Exists(testFile)
+        t.Error("Expected file to not exist after deletion")
+
+# TestTempFile verifies temporary file creation
+func TestTempFile(t reference testing.T)
+    # Create temp file
+    path, err := files.TempFile("kukicha-test-")
+    if err != empty
+        t.Fatalf("files.TempFile failed: {err}")
+    defer os.Remove(path)
+
+    # Verify it exists
+    if not files.Exists(path)
+        t.Error("Expected temp file to exist")
+
+    # Verify we can write to it
+    err = files.WriteString("temp data", path)
+    if err != empty
+        t.Errorf("Failed to write to temp file: {err}")
+
+# TestPathFunctions verifies path manipulation functions
+func TestPathFunctions(t reference testing.T)
+    testPath := "/home/user/document.txt"
+
+    # Test Basename
+    basename := files.Basename(testPath)
+    if basename != "document.txt"
+        t.Errorf("Expected basename 'document.txt', got '{basename}'")
+
+    # Test Dirname
+    dirname := files.Dirname(testPath)
+    if dirname != "/home/user"
+        t.Errorf("Expected dirname '/home/user', got '{dirname}'")
+
+    # Test Extension
+    ext := files.Extension(testPath)
+    if ext != ".txt"
+        t.Errorf("Expected extension '.txt', got '{ext}'")
