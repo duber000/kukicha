@@ -38,6 +38,9 @@ Kukicha combines two powerful ideas:
 | **iter** | Functional iteration (Filter, Map, Reduce) | Lazy evaluation with pipes |
 | **slice** | Slice operations (First, Last, Drop, Unique) | Pipeline-friendly helpers |
 | **string** | String utilities | Thin wrappers for Go's strings package |
+| **fetch** | HTTP client optimized for pipes | Request builder with JSON parsing |
+| **files** | File operations with pipes | Read/write with path utilities |
+| **parse** | JSON/YAML/CSV parsing | Format-specific parsing functions |
 
 ### 🚧 Planned Scripting Packages (Priority Order)
 
@@ -45,10 +48,7 @@ These packages make Kukicha perfect for scripts and automation:
 
 | Package | Purpose | Status |
 |---------|---------|--------|
-| **fetch** | HTTP client optimized for pipes | Planned |
-| **parse** | JSON/YAML/CSV/TOML/XML parsing | Planned |
 | **cli** | CLI argument parsing made easy | Planned |
-| **files** | File operations with pipes | Planned |
 | **shell** | Safe command execution | Planned |
 | **template** | Text templating | Planned |
 | **retry** | Retry logic with backoff | Planned |
@@ -150,7 +150,7 @@ cleanUrl := url
 
 These packages showcase the pipe operator and make scripting delightful:
 
-### Fetch Package (Planned)
+### Fetch Package ✅
 
 HTTP client designed for data pipelines:
 
@@ -185,7 +185,7 @@ results := urls
     |> waitAll()
 ```
 
-### Parse Package (Planned)
+### Parse Package ✅
 
 Universal parsing with pipes:
 
@@ -263,7 +263,7 @@ func fetchCommand(args cli.Args)
         print data
 ```
 
-### Files Package (Planned)
+### Files Package ✅
 
 File operations optimized for pipes:
 
@@ -655,10 +655,10 @@ We provide high-level helpers for common patterns, but:
 
 To make Kukicha the best scripting language for beginners and automation:
 
-### Phase 1: Essential Scripting (Next)
-1. **fetch** - HTTP client (most requested, enables tons of examples)
-2. **parse** - JSON/YAML/CSV parsing (pairs with fetch)
-3. **files** - File operations (basic scripting need)
+### Phase 1: Essential Scripting ✅ Completed!
+1. ✅ **fetch** - HTTP client (most requested, enables tons of examples)
+2. ✅ **parse** - JSON/YAML/CSV parsing (pairs with fetch)
+3. ✅ **files** - File operations (basic scripting need)
 
 ### Phase 2: Tools & CLI (After Phase 1)
 4. **cli** - Argument parsing (build actual tools)

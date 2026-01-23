@@ -1,0 +1,61 @@
+import "fmt"
+import "files"
+import "parse"
+
+type Config struct
+    Name string `json:"name"`
+    Version string `json:"version"`
+    Debug bool `json:"debug"`
+
+type Person struct
+    Name string
+    Age int
+    City string
+
+func main()
+    # Test JSON parsing
+    jsonStr := `{"name": "myapp", "version": "1.0.0", "debug": true}`
+    config := jsonStr
+        |> parse.Json() as Config
+        onerr panic "failed to parse JSON"
+
+    fmt.Printf("Config: %+v\n", config)
+
+    # Test CSV parsing
+    csvData := `name,age,city
+John Doe,30,New York
+Jane Smith,25,San Francisco
+Bob Wilson,35,Chicago`
+
+    records := csvData
+        |> parse.Csv()
+        onerr panic "failed to parse CSV"
+
+    fmt.Printf("CSV Records: %d rows\n", len(records))
+
+    # Test CSV with headers
+    people := csvData
+        |> parse.CsvWithHeader()
+        onerr panic "failed to parse CSV with headers"
+
+    for person in people
+        fmt.Printf("Person: %v\n", person)
+
+    # Test YAML parsing
+    yamlStr := `name: myapp
+version: 2.0.0
+debug: false`
+
+    yamlConfig := yamlStr
+        |> parse.Yaml() as Config
+        onerr panic "failed to parse YAML"
+
+    fmt.Printf("YAML Config: %+v\n", yamlConfig)
+
+    # Real-world example: config file pipeline
+    config2 := "config.json"
+        |> files.Read()
+        |> parse.Json() as Config
+        onerr Config{Name: "default", Version: "0.0.1", Debug: false}
+
+    fmt.Printf("File Config: %+v\n", config2)

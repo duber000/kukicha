@@ -126,6 +126,48 @@ logs := files.List("/var/log")
 
 **Functions:** Read, ReadBytes, Write, WriteString, Append, Exists, IsDir, IsFile, List, ListRecursive, Delete, DeleteAll, Copy, Move, MkDir, MkDirAll, TempFile, TempDir, Size, ModTime, Basename, Dirname, Extension, Join, Abs
 
+### parse - Data Format Parsing
+
+Parse common data formats (JSON, CSV, YAML) into Kukicha types:
+
+```kukicha
+import "stdlib/parse"
+import "stdlib/files"
+
+# Parse JSON from string or file
+config := "config.json"
+    |> files.Read()
+    |> parse.Json() as Config
+    onerr defaultConfig()
+
+# Parse CSV data
+records := csvData
+    |> parse.Csv()
+    onerr empty list of list of string
+
+# Parse CSV with headers (returns maps)
+users := csvData
+    |> parse.CsvWithHeader()
+    |> slice.Map(row -> User{
+        Name: row["name"],
+        Age: parseInt(row["age"]),
+    })
+
+# Parse YAML configuration
+settings := yamlStr
+    |> parse.Yaml() as Settings
+    onerr defaultSettings()
+
+# Real-world pipeline: fetch and parse
+repos := fetch.Get("https://api.github.com/users/golang/repos")
+    |> fetch.CheckStatus()
+    |> fetch.Text()
+    |> parse.Json() as list of Repo
+    |> slice.Filter(r -> r.Stars > 100)
+```
+
+**Functions:** Json, Csv, CsvWithHeader, Yaml
+
 ## Special Transpilation (iter package only)
 
 The `iter` package uses special transpilation to generate generic Go code without requiring generic syntax in Kukicha:
@@ -187,6 +229,8 @@ stdlib/
 ├── iter/          # Iterator operations (special transpilation)
 │   ├── iter.kuki
 │   └── iter_test.kuki
+├── parse/         # Data format parsing
+│   └── parse.kuki
 ├── slice/         # Slice operations
 │   └── slice.kuki
 ├── string/        # String utilities

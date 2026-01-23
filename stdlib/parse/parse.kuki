@@ -1,0 +1,69 @@
+# Kukicha Standard Library - Parse (Data Format Parsing)
+
+petiole parse
+
+import "encoding/json"
+import "encoding/csv"
+import "strings"
+import "gopkg.in/yaml.v3"
+
+# Json parses a JSON string into a value
+# Use type assertion to specify the expected type
+# Returns the parsed value and any error that occurred
+# Example: jsonStr |> parse.Json() as Config
+func Json(data string) (any, error)
+    result := any
+    err := json.Unmarshal(list of byte(data), reference result)
+    if err != empty
+        return empty, err
+    return result, empty
+
+# Csv parses a CSV string into a list of records
+# Each record is a list of strings representing the columns
+# Returns the parsed records and any error that occurred
+# Example: csvStr |> parse.Csv()
+func Csv(data string) (list of list of string, error)
+    reader := csv.NewReader(strings.NewReader(data))
+    records, err := reader.ReadAll()
+    if err != empty
+        return empty, err
+    return records, empty
+
+# CsvWithHeader parses a CSV string with headers
+# Returns a list of maps where keys are column headers
+# The first row is treated as the header row
+# Returns the parsed records and any error that occurred
+# Example: csvStr |> parse.CsvWithHeader()
+func CsvWithHeader(data string) (list of map of string to string, error)
+    reader := csv.NewReader(strings.NewReader(data))
+    records, err := reader.ReadAll()
+    if err != empty
+        return empty, err
+
+    if len(records) == 0
+        return empty, error "no data in CSV"
+
+    headers := records[0]
+    result := make(list of map of string to string, 0, len(records)-1)
+
+    for i := 1; i < len(records); i++
+        row := records[i]
+        rowMap := make(map of string to string)
+
+        for j := 0; j < len(headers) and j < len(row); j++
+            rowMap[headers[j]] = row[j]
+
+        result = append(result, rowMap)
+
+    return result, empty
+
+# Yaml parses a YAML string into a value
+# Use type assertion to specify the expected type
+# Returns the parsed value and any error that occurred
+# Example: yamlStr |> parse.Yaml() as Config
+func Yaml(data string) (any, error)
+    result := any
+    err := yaml.Unmarshal(list of byte(data), reference result)
+    if err != empty
+        return empty, err
+    return result, empty
