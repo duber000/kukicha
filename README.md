@@ -275,8 +275,16 @@ go test ./internal/codegen/... -v
 
 ## Documentation
 
+### Tutorials
+- [Beginner Tutorial](docs/beginner-tutorial.md) - Learn Kukicha from scratch (strings & functions)
+- [Web App Tutorial](docs/web-app-tutorial.md) - Build a REST API with Go stdlib packages
+
+### References
 - [Language Syntax Reference](docs/kukicha-syntax-v1.0.md) - Complete syntax guide
 - [Quick Reference](docs/kukicha-quick-reference.md) - Developer cheat sheet
+- [Design Philosophy](docs/kukicha-design-philosophy.md) - Core principles and approach
+
+### Technical
 - [Compiler Architecture](docs/kukicha-compiler-architecture.md) - Implementation details
 - [Grammar (EBNF)](docs/kukicha-grammar.ebnf.md) - Formal grammar definition
 - [Standard Library Roadmap](docs/kukicha-stdlib-roadmap.md) - Future library features
