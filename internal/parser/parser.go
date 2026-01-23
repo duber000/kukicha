@@ -1085,6 +1085,30 @@ func (p *Parser) parseUnaryExpr() ast.Expression {
 		}
 	}
 
+	// Handle "reference of expr" for address-of
+	if p.match(lexer.TOKEN_REFERENCE) {
+		refToken := p.previousToken()
+		if p.match(lexer.TOKEN_OF) {
+			operand := p.parseUnaryExpr()
+			return &ast.AddressOfExpr{
+				Token:   refToken,
+				Operand: operand,
+			}
+		}
+		// If not followed by 'of', we have an error - revert
+		p.pos-- // Back up to before 'reference'
+	}
+
+	// Handle "dereference expr"
+	if p.match(lexer.TOKEN_DEREFERENCE) {
+		derefToken := p.previousToken()
+		operand := p.parseUnaryExpr()
+		return &ast.DerefExpr{
+			Token:   derefToken,
+			Operand: operand,
+		}
+	}
+
 	return p.parsePostfixExpr()
 }
 

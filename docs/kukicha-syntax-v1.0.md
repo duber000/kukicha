@@ -1242,16 +1242,44 @@ settings := reference to Settings
     font_size: 14
 ```
 
-### Dereferencing
+### Address-of: Taking References
+
+To get the address of an existing variable, use `reference of`:
+
+```kukicha
+user := User{id: 1, name: "Alice"}
+userPtr := reference of user       # Get pointer to user
+
+# Useful for stdlib functions that expect pointers
+json.Unmarshal(data, reference of user) onerr panic "invalid json"
+```
+
+Compiles to Go's `&` operator: `&user`
+
+### Dereference: Accessing Pointer Values
+
+To get the value from a pointer, use `dereference`:
+
+```kukicha
+userPtr := reference of user
+val := dereference userPtr         # Get the actual value
+
+# Can also assign through pointers
+dereference userPtr = User{...}
+```
+
+Compiles to Go's `*` operator: `*userPtr`
+
+### Auto-Dereferencing Field Access
 
 References are automatically dereferenced when accessing fields:
 
 ```kukicha
-if user.name equals "admin"
+if userPtr.name equals "admin"    # Auto-dereferences
     print "welcome admin"
 ```
 
-Compiles to Go's automatic dereferencing: `if user.Name == "admin"`
+Compiles to Go's automatic dereferencing: `if userPtr.Name == "admin"`
 
 ---
 

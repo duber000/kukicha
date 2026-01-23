@@ -444,6 +444,112 @@ func TestTypedVariadicCodegen(t *testing.T) {
 	}
 }
 
+func TestAddressOfExpr(t *testing.T) {
+	input := `func GetUserPtr(user User) reference User
+    return reference of user
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "return &user") {
+		t.Errorf("expected '&user', got: %s", output)
+	}
+}
+
+func TestDerefExpr(t *testing.T) {
+	input := `func GetUserValue(userPtr reference User) User
+    return dereference userPtr
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "return *userPtr") {
+		t.Errorf("expected '*userPtr', got: %s", output)
+	}
+}
+
+func TestDerefAssignment(t *testing.T) {
+	input := `func SwapValues(a reference int, b reference int)
+    temp := dereference a
+    dereference a = dereference b
+    dereference b = temp
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "*a = *b") {
+		t.Errorf("expected '*a = *b', got: %s", output)
+	}
+}
+
+func TestAddressOfWithFieldAccess(t *testing.T) {
+	input := `func ScanField(row Row, field reference string)
+    row.Scan(reference of field)
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "&field") {
+		t.Errorf("expected '&field', got: %s", output)
+	}
+}
+
 // REMOVED: Old generics tests - generics syntax has been removed from Kukicha
 // Generic functionality is now provided by the stdlib (written in Go) with special transpilation
 // See stdlib/iter/ for examples of special transpilation

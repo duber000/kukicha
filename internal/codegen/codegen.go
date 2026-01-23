@@ -812,6 +812,10 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		return "recover()"
 	case *ast.FunctionLiteral:
 		return g.generateFunctionLiteral(e)
+	case *ast.AddressOfExpr:
+		return g.generateAddressOfExpr(e)
+	case *ast.DerefExpr:
+		return g.generateDerefExpr(e)
 	default:
 		return ""
 	}
@@ -891,6 +895,16 @@ func (g *Generator) generateUnaryExpr(expr *ast.UnaryExpr) string {
 	}
 
 	return fmt.Sprintf("%s%s", op, right)
+}
+
+func (g *Generator) generateAddressOfExpr(expr *ast.AddressOfExpr) string {
+	operand := g.exprToString(expr.Operand)
+	return fmt.Sprintf("&%s", operand)
+}
+
+func (g *Generator) generateDerefExpr(expr *ast.DerefExpr) string {
+	operand := g.exprToString(expr.Operand)
+	return fmt.Sprintf("*%s", operand)
 }
 
 func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {

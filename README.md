@@ -187,6 +187,20 @@ send ch, "message"
 msg := receive ch
 ```
 
+#### Pointers & References
+
+```kukicha
+# Taking address of variable
+user := User{}
+userPtr := reference of user
+
+# Getting value from pointer
+val := dereference userPtr
+
+# Useful for stdlib functions that need pointers
+json.Unmarshal(data, reference of user) onerr panic "parse failed"
+```
+
 #### Collections with Membership Testing
 
 ```kukicha

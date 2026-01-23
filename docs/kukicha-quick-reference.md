@@ -75,6 +75,11 @@ user := empty reference User
 # Update
 result = newValue
 user = reference to newUser
+
+# Address-of and Dereference
+userPtr := reference of user       # Get pointer to variable
+val := dereference userPtr         # Get value from pointer
+dereference userPtr = newValue     # Assign through pointer
 ```
 
 ### Exports

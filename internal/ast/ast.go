@@ -743,3 +743,25 @@ func (e *FunctionLiteral) Pos() Position {
 	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
 }
 func (e *FunctionLiteral) exprNode() {}
+
+type AddressOfExpr struct {
+	Token   lexer.Token // The 'reference' token
+	Operand Expression   // The expression to take address of
+}
+
+func (e *AddressOfExpr) TokenLiteral() string { return e.Token.Lexeme }
+func (e *AddressOfExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *AddressOfExpr) exprNode() {}
+
+type DerefExpr struct {
+	Token   lexer.Token // The 'dereference' token
+	Operand Expression   // The expression to dereference
+}
+
+func (e *DerefExpr) TokenLiteral() string { return e.Token.Lexeme }
+func (e *DerefExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *DerefExpr) exprNode() {}
