@@ -307,6 +307,7 @@ func (s *ReturnStmt) stmtNode() {}
 
 type IfStmt struct {
 	Token       lexer.Token // The 'if' token
+	Init        Statement   // Optional initialization statement (can be nil)
 	Condition   Expression
 	Consequence *BlockStmt
 	Alternative Statement // Can be ElseStmt or another IfStmt (else if)
@@ -457,6 +458,17 @@ func (e *FloatLiteral) Pos() Position {
 }
 func (e *FloatLiteral) exprNode() {}
 
+type RuneLiteral struct {
+	Token lexer.Token
+	Value rune
+}
+
+func (e *RuneLiteral) TokenLiteral() string { return e.Token.Lexeme }
+func (e *RuneLiteral) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *RuneLiteral) exprNode() {}
+
 type StringLiteral struct {
 	Token        lexer.Token
 	Value        string
@@ -540,6 +552,7 @@ type CallExpr struct {
 	Token     lexer.Token // The '(' token or identifier
 	Function  Expression
 	Arguments []Expression
+	Variadic  bool // true if 'many' used: f(many args)
 }
 
 func (e *CallExpr) TokenLiteral() string { return e.Token.Lexeme }
@@ -553,6 +566,8 @@ type MethodCallExpr struct {
 	Object    Expression
 	Method    *Identifier
 	Arguments []Expression
+	Variadic  bool // true if 'many' used: obj.f(many args)
+	IsCall    bool // true if explicit parentheses were used: obj.method() vs obj.field
 }
 
 func (e *MethodCallExpr) TokenLiteral() string { return e.Token.Lexeme }
@@ -655,6 +670,18 @@ func (e *TypeCastExpr) Pos() Position {
 	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
 }
 func (e *TypeCastExpr) exprNode() {}
+
+type TypeAssertionExpr struct {
+	Token      lexer.Token // The '.' token
+	Expression Expression
+	TargetType TypeAnnotation
+}
+
+func (e *TypeAssertionExpr) TokenLiteral() string { return e.Token.Lexeme }
+func (e *TypeAssertionExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *TypeAssertionExpr) exprNode() {}
 
 type EmptyExpr struct {
 	Token lexer.Token // The 'empty' token

@@ -112,8 +112,10 @@ func (l *Lexer) scanToken() {
 		l.scanComment()
 	case ';':
 		l.addToken(TOKEN_SEMICOLON)
-	case '"', '\'':
-		l.scanString(c)
+	case '"':
+		l.scanString()
+	case '\'':
+		l.scanRune()
 	case '(':
 		l.addToken(TOKEN_LPAREN)
 	case ')':
@@ -192,7 +194,7 @@ func (l *Lexer) scanToken() {
 		if l.match('&') {
 			l.addToken(TOKEN_AND_AND)
 		} else {
-			l.addToken(TOKEN_BIT_AND)
+			l.error("Unexpected '&'. Use 'and' for logical AND, or '&&' for Go-style AND. Bitwise AND is not supported.")
 		}
 	default:
 		if isDigit(c) {
@@ -261,11 +263,11 @@ func (l *Lexer) handleIndentation() {
 	}
 }
 
-// scanString scans a string literal with optional interpolation
-func (l *Lexer) scanString(quote rune) {
+// scanString scans a double-quoted string literal with optional interpolation
+func (l *Lexer) scanString() {
 	value := strings.Builder{}
 
-	for !l.isAtEnd() && l.peek() != quote {
+	for !l.isAtEnd() && l.peek() != '"' {
 		if l.peek() == '\n' {
 			l.error("Unterminated string")
 			return
@@ -293,8 +295,8 @@ func (l *Lexer) scanString(quote rune) {
 					value.WriteRune(escaped)
 				}
 			}
-		} else if l.peek() == '{' && quote == '"' {
-			// String interpolation (only in double-quoted strings)
+		} else if l.peek() == '{' {
+			// String interpolation
 			value.WriteRune(l.advance())
 		} else {
 			value.WriteRune(l.advance())
@@ -311,6 +313,58 @@ func (l *Lexer) scanString(quote rune) {
 	// For now, store the entire string including interpolation markers
 	// The parser will handle breaking it down into segments
 	l.addTokenWithLexeme(TOKEN_STRING, value.String())
+}
+
+// scanRune scans a single-quoted character/rune literal
+func (l *Lexer) scanRune() {
+	if l.isAtEnd() {
+		l.error("Unterminated character literal")
+		return
+	}
+
+	var char rune
+	if l.peek() == '\\' {
+		// Handle escape sequences
+		l.advance() // consume \
+		if l.isAtEnd() {
+			l.error("Unterminated escape sequence in character literal")
+			return
+		}
+		escaped := l.advance()
+		switch escaped {
+		case 'n':
+			char = '\n'
+		case 't':
+			char = '\t'
+		case 'r':
+			char = '\r'
+		case '\\':
+			char = '\\'
+		case '\'':
+			char = '\''
+		case '"':
+			char = '"'
+		case '0':
+			char = '\x00'
+		default:
+			char = escaped
+		}
+	} else if l.peek() == '\'' {
+		l.error("Empty character literal")
+		return
+	} else {
+		char = l.advance()
+	}
+
+	if l.isAtEnd() || l.peek() != '\'' {
+		l.error("Unterminated character literal (use double quotes for strings)")
+		return
+	}
+
+	l.advance() // consume closing quote
+
+	// Store the rune as a string (the value will be the character)
+	l.addTokenWithLexeme(TOKEN_RUNE, string(char))
 }
 
 // scanNumber scans a number (integer or float)

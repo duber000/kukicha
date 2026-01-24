@@ -5,6 +5,7 @@ petiole cli
 import "os"
 import "fmt"
 import "strings"
+import "strconv"
 
 # Simple CLI argument parser
 # This is a simplified version that works with Kukicha's current syntax
@@ -54,16 +55,8 @@ func String(flags map of string to string, positional list of string, name strin
     # Check positional arguments by index
     # Try to parse as positional argument index
     # Simple parsing - in real implementation, use strconv.Atoi
-    index := 0
-    nameLen := len(name)
-    if nameLen > 0
-        for i from 0 to nameLen
-            ch := name[i]
-            if ch >= 48 and ch <= 57
-                index = index * 10 + (ch - 48)
-            else
-                return ""
-
+    index, err := strconv.Atoi(name)
+    if err == empty
         if index >= 0 and index < len(positional)
             return positional[index]
 
@@ -91,17 +84,8 @@ func IntFlag(flags map of string to string, name string) (int, error)
     if strVal == ""
         return 0, error "flag {name} not found"
     
-    # Simple parsing - in real implementation, use strconv.Atoi
-    num := 0
-    strLen := len(strVal)
-    if strLen > 0
-        for i from 0 to strLen
-            ch := strVal[i]
-            if ch >= 48 and ch <= 57
-                num = num * 10 + (ch - 48)
-            else
-                return 0, error "invalid integer: {strVal}"
-    return num, empty
+    val, err := strconv.Atoi(strVal)
+    return val, err
 
 # PrintUsage prints basic usage information
 func PrintUsage(appName string, commands list of string)

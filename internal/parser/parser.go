@@ -249,10 +249,10 @@ func (p *Parser) parseTypeDecl() ast.Declaration {
 
 		fieldName := p.parseIdentifier()
 		fieldType := p.parseTypeAnnotation()
-		
+
 		// Parse optional struct tag (e.g., json:"name")
 		tag := p.parseStructTag()
-		
+
 		fields = append(fields, &ast.FieldDecl{
 			Name: fieldName,
 			Type: fieldType,
@@ -623,9 +623,71 @@ func (p *Parser) parseReturnStmt() *ast.ReturnStmt {
 func (p *Parser) parseIfStmt() *ast.IfStmt {
 	token := p.advance() // consume 'if'
 
+	// Look ahead for if-init: if x := 1; x > 0
+	var init ast.Statement
+	var condition ast.Expression
+
+	// We try to parse an expression or assignment.
+	// If it's followed by a semicolon, it's an init statement.
+	savePos := p.pos
+
+	// Support both declarations (x := 1) and assignments (x = 1)
+	// parseExpressionOrAssignmentStmt is appropriate but it usually consumes the newline.
+	// Let's peek ahead for semicolon manually.
+
+	expr := p.parseExpression()
+
+	if p.match(lexer.TOKEN_SEMICOLON) {
+		// It's an init statement. Convert expr to a statement.
+		// If it's a binary expression with '=', it's an assignment.
+		// If it's a walrus, it's a declaration.
+		// But parseExpression already handled those?
+		// Actually assignment is a statement in Kukicha, not an expression.
+		// So parseExpression would have failed if it was an assignment.
+
+		// Let's try again with a more direct approach.
+		p.pos = savePos
+
+		// We peek ahead for the semicolon to decide if we parse a statement first.
+		hasSemicolon := false
+		depth := 0
+		for i := p.pos; i < len(p.tokens); i++ {
+			t := p.tokens[i].Type
+			if t == lexer.TOKEN_NEWLINE || t == lexer.TOKEN_EOF || t == lexer.TOKEN_INDENT || t == lexer.TOKEN_DEDENT {
+				break
+			}
+			if t == lexer.TOKEN_LPAREN {
+				depth++
+			} else if t == lexer.TOKEN_RPAREN {
+				depth--
+			} else if t == lexer.TOKEN_SEMICOLON && depth == 0 {
+				hasSemicolon = true
+				break
+			}
+		}
+
+		if hasSemicolon {
+			// Parse it as a statement, but WITHOUT consuming the newline/dedent
+			// We need a version of parseStatement that doesn't expect a newline if followed by ;
+			// For now, let's just parse the expressionOrAssignment and then the semicolon.
+			init = p.parseExpressionOrAssignmentStmt()
+			// parseExpressionOrAssignmentStmt doesn't consume the semicolon if it was treated as stmt separator
+			// But here it's an init separator.
+			if p.previousToken().Type != lexer.TOKEN_SEMICOLON {
+				p.match(lexer.TOKEN_SEMICOLON)
+			}
+			condition = p.parseExpression()
+		} else {
+			condition = expr
+		}
+	} else {
+		condition = expr
+	}
+
 	stmt := &ast.IfStmt{
 		Token:     token,
-		Condition: p.parseExpression(),
+		Init:      init,
+		Condition: condition,
 	}
 
 	p.skipNewlines()
@@ -896,7 +958,7 @@ func (p *Parser) parseMultiValueAssignmentStmt() ast.Statement {
 	// Parse left-hand side (comma-separated identifiers)
 	var names []*ast.Identifier
 	var targets []ast.Expression
-	
+
 	// Parse first identifier
 	if !p.match(lexer.TOKEN_IDENTIFIER) {
 		p.error(p.peekToken(), "expected identifier in multi-value assignment")
@@ -909,7 +971,7 @@ func (p *Parser) parseMultiValueAssignmentStmt() ast.Statement {
 	}
 	names = append(names, firstName)
 	targets = append(targets, firstName)
-	
+
 	// Parse additional identifiers separated by commas
 	for p.match(lexer.TOKEN_COMMA) {
 		if !p.match(lexer.TOKEN_IDENTIFIER) {
@@ -924,7 +986,7 @@ func (p *Parser) parseMultiValueAssignmentStmt() ast.Statement {
 		names = append(names, name)
 		targets = append(targets, name)
 	}
-	
+
 	// Check for assignment operator
 	if p.match(lexer.TOKEN_WALRUS) {
 		// Multi-value declaration: x, y := expr, expr
@@ -1057,26 +1119,9 @@ func (p *Parser) parseAndExpr() ast.Expression {
 }
 
 func (p *Parser) parseBitwiseOrExpr() ast.Expression {
-	left := p.parseBitwiseAndExpr()
-
-	for p.match(lexer.TOKEN_BIT_OR) {
-		operator := p.previousToken()
-		right := p.parseBitwiseAndExpr()
-		left = &ast.BinaryExpr{
-			Token:    operator,
-			Left:     left,
-			Operator: operator.Lexeme,
-			Right:    right,
-		}
-	}
-
-	return left
-}
-
-func (p *Parser) parseBitwiseAndExpr() ast.Expression {
 	left := p.parseComparisonExpr()
 
-	for p.match(lexer.TOKEN_BIT_AND) {
+	for p.match(lexer.TOKEN_BIT_OR) {
 		operator := p.previousToken()
 		right := p.parseComparisonExpr()
 		left = &ast.BinaryExpr{
@@ -1187,8 +1232,12 @@ func (p *Parser) parsePostfixExpr() ast.Expression {
 		case p.match(lexer.TOKEN_LPAREN):
 			// Function call
 			args := []ast.Expression{}
+			variadic := false
 			if !p.check(lexer.TOKEN_RPAREN) {
 				for {
+					if p.match(lexer.TOKEN_MANY) {
+						variadic = true
+					}
 					args = append(args, p.parseExpression())
 					if !p.match(lexer.TOKEN_COMMA) {
 						break
@@ -1200,6 +1249,7 @@ func (p *Parser) parsePostfixExpr() ast.Expression {
 				Token:     p.previousToken(),
 				Function:  expr,
 				Arguments: args,
+				Variadic:  variadic,
 			}
 
 		case p.match(lexer.TOKEN_DOT):
@@ -1211,8 +1261,12 @@ func (p *Parser) parsePostfixExpr() ast.Expression {
 				// Method call
 				p.advance() // consume '('
 				args := []ast.Expression{}
+				variadic := false
 				if !p.check(lexer.TOKEN_RPAREN) {
 					for {
+						if p.match(lexer.TOKEN_MANY) {
+							variadic = true
+						}
 						args = append(args, p.parseExpression())
 						if !p.match(lexer.TOKEN_COMMA) {
 							break
@@ -1225,7 +1279,17 @@ func (p *Parser) parsePostfixExpr() ast.Expression {
 					Object:    expr,
 					Method:    method,
 					Arguments: args,
+					Variadic:  variadic,
+					IsCall:    true,
 				}
+			} else if p.check(lexer.TOKEN_LPAREN) {
+				// Type assertion: val.(Type)
+				// Wait, the previous block handles calls.
+				// For type assertion, we expect dot then LPAREN then Type then RPAREN.
+				// expr is the value. method is irrelevant here or used as Type?
+				// Actually, it should be postfixExpr -> expr '.' '(' Type ')'
+				// Let's refine this.
+				_ = 0
 			} else {
 				// Field access - treat as method call with no args for now
 				expr = &ast.MethodCallExpr{
@@ -1299,6 +1363,8 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 		return p.parseFloatLiteral()
 	case lexer.TOKEN_STRING:
 		return p.parseStringLiteral()
+	case lexer.TOKEN_RUNE:
+		return p.parseRuneLiteral()
 	case lexer.TOKEN_TRUE, lexer.TOKEN_FALSE:
 		return p.parseBooleanLiteral()
 	case lexer.TOKEN_IDENTIFIER:
@@ -1389,6 +1455,19 @@ func (p *Parser) parseStringLiteral() *ast.StringLiteral {
 		Token:        token,
 		Value:        token.Lexeme,
 		Interpolated: false,
+	}
+}
+
+func (p *Parser) parseRuneLiteral() *ast.RuneLiteral {
+	token := p.advance()
+	// The lexeme contains the character as a string
+	var value rune
+	if len(token.Lexeme) > 0 {
+		value = []rune(token.Lexeme)[0]
+	}
+	return &ast.RuneLiteral{
+		Token: token,
+		Value: value,
 	}
 }
 
@@ -1596,30 +1675,30 @@ func (p *Parser) parseStructTag() string {
 	if !p.check(lexer.TOKEN_IDENTIFIER) {
 		return ""
 	}
-	
+
 	// Look ahead to see if there's a colon
 	// Save current position
 	savedPos := p.pos
 	tagKeyToken := p.advance() // consume identifier
-	
+
 	if !p.check(lexer.TOKEN_COLON) {
 		// Not a tag, restore position and return empty
 		p.pos = savedPos
 		return ""
 	}
-	
+
 	// We have a tag - continue parsing
 	tagKey := tagKeyToken.Lexeme
 	p.consume(lexer.TOKEN_COLON, "expected ':' in struct tag")
-	
+
 	if !p.check(lexer.TOKEN_STRING) {
 		p.error(p.peekToken(), "expected string value in struct tag")
 		return ""
 	}
-	
+
 	tagValueToken := p.advance() // consume string
 	tagValue := tagValueToken.Lexeme
-	
+
 	// Return formatted tag: json:"name"
 	return tagKey + ":" + `"` + tagValue + `"`
 }

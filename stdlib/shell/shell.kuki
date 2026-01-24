@@ -5,35 +5,12 @@ petiole shell
 
 import "os/exec"
 import "os"
-import "bytes"
-import "time"
-import "context"
 
-# Run executes a simple command and returns the output as bytes
+# Run executes a command with arguments and returns the output as bytes
 # Returns stdout and error
-# Example: shell.Run("ls", "-la")
-func Run(name string, arg1 string) (list of byte, error)
-    cmd := exec.Command(name, arg1)
-    output, err := cmd.Output()
-    if err != empty
-        return empty, err
-    return output, err
-
-# Run2 executes a command with two arguments
-# Returns stdout as bytes and error
-# Example: shell.Run2("git", "status", "-s")
-func Run2(name string, arg1 string, arg2 string) (list of byte, error)
-    cmd := exec.Command(name, arg1, arg2)
-    output, err := cmd.Output()
-    if err != empty
-        return empty, err
-    return output, err
-
-# Run3 executes a command with three arguments
-# Returns stdout as bytes and error
-# Example: shell.Run3("git", "commit", "-m", "message")
-func Run3(name string, arg1 string, arg2 string, arg3 string) (list of byte, error)
-    cmd := exec.Command(name, arg1, arg2, arg3)
+# Example: shell.Run("ls", "-la", "/tmp")
+func Run(name string, many args string) (list of byte, error)
+    cmd := exec.Command(name, many args)
     output, err := cmd.Output()
     if err != empty
         return empty, err
@@ -52,8 +29,8 @@ func RunSimple(name string) (list of byte, error)
 # RunWithDir executes a command in a specific directory
 # Returns stdout as bytes and error
 # Example: shell.RunWithDir("ls", "/tmp", "-la")
-func RunWithDir(name string, dir string, arg1 string) (list of byte, error)
-    cmd := exec.Command(name, arg1)
+func RunWithDir(name string, dir string, many args string) (list of byte, error)
+    cmd := exec.Command(name, many args)
     cmd.Dir = dir
     output, err := cmd.Output()
     if err != empty
@@ -89,16 +66,17 @@ func Output(name string, arg1 string) list of byte
     return output
 
 # CombinedOutput runs a command and returns combined stdout and stderr as bytes
+# Note: Returns output even on error (combined stdout+stderr)
 # Example: output := shell.CombinedOutput("ls", "/nonexistent")
-func CombinedOutput(name string, arg1 string) list of byte
+func CombinedOutput(name string, arg1 string) (list of byte, error)
     cmd := exec.Command(name, arg1)
     output, err := cmd.CombinedOutput()
-    return output
+    return output, err
 
 # Success runs a command and returns true if it succeeds
-# Example: if shell.Success("which", "git") ...
-func Success(name string, arg1 string) bool
-    cmd := exec.Command(name, arg1)
+# Example: if shell.Success("git", "status") ...
+func Success(name string, many args string) bool
+    cmd := exec.Command(name, many args)
     err := cmd.Run()
     return err == empty
 

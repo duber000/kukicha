@@ -76,8 +76,8 @@ const (
 	TOKEN_AND_AND       // &&
 	TOKEN_OR            // or
 	TOKEN_OR_OR         // ||
-	TOKEN_BIT_OR        // |
-	TOKEN_BIT_AND       // &
+	TOKEN_BIT_OR        // | (for Go flag combinations like os.O_APPEND | os.O_CREATE)
+	TOKEN_RUNE          // 'a' (character/rune literal)
 	TOKEN_ONERR         // onerr
 	TOKEN_NOT           // not
 	TOKEN_BANG          // !
@@ -250,8 +250,8 @@ func (t TokenType) String() string {
 		return "OR_OR"
 	case TOKEN_BIT_OR:
 		return "BIT_OR"
-	case TOKEN_BIT_AND:
-		return "BIT_AND"
+	case TOKEN_RUNE:
+		return "RUNE"
 	case TOKEN_ONERR:
 		return "ONERR"
 	case TOKEN_NOT:

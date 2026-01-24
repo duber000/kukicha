@@ -652,8 +652,21 @@ func (g *Generator) generateReturnStmt(stmt *ast.ReturnStmt) {
 }
 
 func (g *Generator) generateIfStmt(stmt *ast.IfStmt) {
-	condition := g.exprToString(stmt.Condition)
-	g.writeLine(fmt.Sprintf("if %s {", condition))
+	if stmt.Init != nil {
+		g.write("if ")
+		// Use a separate generator to avoid adding newline to main output
+		tempGen := New(g.program)
+		tempGen.indent = 0
+		tempGen.generateStatement(stmt.Init)
+		initStr := strings.TrimSpace(tempGen.output.String())
+		g.write(initStr)
+		g.write("; ")
+		g.write(g.exprToString(stmt.Condition))
+		g.writeLine(" {")
+	} else {
+		condition := g.exprToString(stmt.Condition)
+		g.writeLine(fmt.Sprintf("if %s {", condition))
+	}
 
 	g.indent++
 	g.generateBlock(stmt.Consequence)
@@ -763,6 +776,8 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		return fmt.Sprintf("%d", e.Value)
 	case *ast.FloatLiteral:
 		return fmt.Sprintf("%f", e.Value)
+	case *ast.RuneLiteral:
+		return fmt.Sprintf("'%s'", g.escapeRune(e.Value))
 	case *ast.StringLiteral:
 		return g.generateStringLiteral(e)
 	case *ast.BooleanLiteral:
@@ -828,8 +843,32 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		return g.generateAddressOfExpr(e)
 	case *ast.DerefExpr:
 		return g.generateDerefExpr(e)
+	case *ast.TypeAssertionExpr:
+		targetType := g.generateTypeAnnotation(e.TargetType)
+		expr := g.exprToString(e.Expression)
+		return fmt.Sprintf("%s.(%s)", expr, targetType)
 	default:
 		return ""
+	}
+}
+
+// escapeRune returns the Go escape sequence for a rune
+func (g *Generator) escapeRune(r rune) string {
+	switch r {
+	case '\n':
+		return "\\n"
+	case '\t':
+		return "\\t"
+	case '\r':
+		return "\\r"
+	case '\\':
+		return "\\\\"
+	case '\'':
+		return "\\'"
+	case '\x00':
+		return "\\x00"
+	default:
+		return string(r)
 	}
 }
 
@@ -962,6 +1001,9 @@ func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 		args[i] = g.exprToString(arg)
 	}
 
+	if expr.Variadic {
+		return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", "))
+	}
 	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 }
 
@@ -969,16 +1011,20 @@ func (g *Generator) generateMethodCallExpr(expr *ast.MethodCallExpr) string {
 	object := g.exprToString(expr.Object)
 	method := expr.Method.Value
 
-	// If no arguments, this might be field access
-	if len(expr.Arguments) == 0 {
+	// If no parentheses were used, it's field access
+	if !expr.IsCall {
 		return fmt.Sprintf("%s.%s", object, method)
 	}
 
+	// Method call with explicit parentheses
 	args := make([]string, len(expr.Arguments))
 	for i, arg := range expr.Arguments {
 		args[i] = g.exprToString(arg)
 	}
 
+	if expr.Variadic {
+		return fmt.Sprintf("%s.%s(%s...)", object, method, strings.Join(args, ", "))
+	}
 	return fmt.Sprintf("%s.%s(%s)", object, method, strings.Join(args, ", "))
 }
 

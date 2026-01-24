@@ -194,11 +194,6 @@ func TestStrings(t *testing.T) {
 			input:    `"line1\nline2"`,
 			expected: "line1\nline2",
 		},
-		{
-			name:     "single quoted string",
-			input:    `'hello'`,
-			expected: "hello",
-		},
 	}
 
 	for _, tt := range tests {
@@ -216,6 +211,59 @@ func TestStrings(t *testing.T) {
 
 			if tokens[0].Lexeme != tt.expected {
 				t.Errorf("Expected string %q, got %q", tt.expected, tokens[0].Lexeme)
+			}
+		})
+	}
+}
+
+func TestRuneLiterals(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "simple rune",
+			input:    `'a'`,
+			expected: "a",
+		},
+		{
+			name:     "newline escape",
+			input:    `'\n'`,
+			expected: "\n",
+		},
+		{
+			name:     "tab escape",
+			input:    `'\t'`,
+			expected: "\t",
+		},
+		{
+			name:     "single quote escape",
+			input:    `'\''`,
+			expected: "'",
+		},
+		{
+			name:     "digit rune",
+			input:    `'0'`,
+			expected: "0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lexer := NewLexer(tt.input, "test.kuki")
+			tokens, err := lexer.ScanTokens()
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if len(tokens) < 1 || tokens[0].Type != TOKEN_RUNE {
+				t.Fatalf("Expected RUNE token, got %v", tokens[0].Type)
+			}
+
+			if tokens[0].Lexeme != tt.expected {
+				t.Errorf("Expected rune %q, got %q", tt.expected, tokens[0].Lexeme)
 			}
 		})
 	}
