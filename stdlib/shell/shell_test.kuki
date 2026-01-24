@@ -1,0 +1,146 @@
+# Shell Package Tests
+
+import "stdlib/shell"
+import "testing"
+import "time"
+
+# Test basic command creation
+func TestNewCommand(t testing.T)
+    cmd := shell.New("echo", "hello", "world")
+    if cmd.name != "echo"
+        t.Error("Expected command name to be 'echo'")
+    if len(cmd.args) != 2 or cmd.args[0] != "hello"
+        t.Error("Expected command args to be ['hello', 'world']")
+
+# Test setting command directory
+func TestCommandDir(t testing.T)
+    cmd := shell.New("ls")
+        |> shell.Dir("/tmp")
+    if cmd.dir != "/tmp"
+        t.Error("Expected command directory to be '/tmp'")
+
+# Test setting environment variables
+func TestCommandEnv(t testing.T)
+    cmd := shell.New("printenv")
+        |> shell.Env("TEST", "value")
+    if cmd.env == empty or cmd.env["TEST"] != "value"
+        t.Error("Expected environment variable TEST to be set")
+
+# Test setting timeout
+func TestCommandTimeout(t testing.T)
+    cmd := shell.New("sleep", "1")
+        |> shell.Timeout(5 * time.Second)
+    if cmd.timeout != 5 * time.Second
+        t.Error("Expected timeout to be 5 seconds")
+
+# Test Result methods
+func TestResultMethods(t testing.T)
+    result := shell.Result{
+        exitCode: 0,
+        stdout: "hello world",
+        stderr: "warning",
+        error: empty,
+    }
+    
+    if shell.Output(result) != "hello world"
+        t.Error("Expected Output() to return stdout")
+    if shell.Error(result) != "warning"
+        t.Error("Expected Error() to return stderr")
+    if shell.ExitCode(result) != 0
+        t.Error("Expected ExitCode() to return 0")
+    if not shell.Success(result)
+        t.Error("Expected Success() to return true for exit code 0")
+
+# Test failure result
+func TestFailureResult(t testing.T)
+    result := shell.Result{
+        exitCode: 1,
+        stdout: "",
+        stderr: "error occurred",
+        error: error "command failed",
+    }
+    
+    if shell.Success(result)
+        t.Error("Expected Success() to return false for non-zero exit code")
+
+# Test Which function
+func TestWhich(t testing.T)
+    # Test with a command that should exist
+    if not shell.Which("ls")
+        t.Error("Expected Which('ls') to return true")
+    
+    # Test with a command that doesn't exist
+    if shell.Which("nonexistent-command-12345")
+        t.Error("Expected Which('nonexistent-command-12345') to return false")
+
+# Test RunSimple with echo command
+func TestRunSimple(t testing.T)
+    output, err := shell.RunSimple("echo", "hello", "world")
+    if err != empty
+        t.Error("Expected no error from echo command")
+    if output != "hello world\n"
+        t.Error("Expected output to be 'hello world\\n'")
+
+# Test RunWithOutput
+func TestRunWithOutput(t testing.T)
+    stdout, stderr, exitCode, err := shell.RunWithOutput("echo", "test")
+    if err != empty
+        t.Error("Expected no error from echo command")
+    if exitCode != 0
+        t.Error("Expected exit code 0")
+    if stdout != "test\n"
+        t.Error("Expected stdout to be 'test\\n'")
+    if stderr != ""
+        t.Error("Expected stderr to be empty")
+
+# Test command with non-zero exit code
+func TestNonZeroExitCode(t testing.T)
+    _, _, exitCode, _ := shell.RunWithOutput("sh", "-c", "exit 42")
+    if exitCode != 42
+        t.Error("Expected exit code 42")
+
+# Test Pipe functionality (basic test)
+func TestPipe(t testing.T)
+    # This is a basic test - actual pipe functionality would need more complex setup
+    cmd1 := shell.New("echo", "hello")
+    cmd2 := shell.New("cat")
+    piped := shell.Pipe(cmd1, cmd2)
+    
+    if piped.name != "pipe"
+        t.Error("Expected piped command name to be 'pipe'")
+
+# Test command with environment variable
+func TestCommandWithEnv(t testing.T)
+    # This would require actual command execution
+    # For now, we'll just test the setup
+    cmd := shell.New("printenv", "TEST_VAR")
+        |> shell.Env("TEST_VAR", "test_value")
+    
+    if cmd.env["TEST_VAR"] != "test_value"
+        t.Error("Expected TEST_VAR to be set in environment")
+
+# Test command with working directory
+func TestCommandWithDir(t testing.T)
+    # This would require actual command execution
+    # For now, we'll just test the setup
+    cmd := shell.New("pwd")
+        |> shell.Dir("/tmp")
+    
+    if cmd.dir != "/tmp"
+        t.Error("Expected working directory to be /tmp")
+
+# Test timeout handling
+func TestCommandTimeoutHandling(t testing.T)
+    # This would require testing with a long-running command
+    # For now, we'll just test the setup
+    cmd := shell.New("sleep", "10")
+        |> shell.Timeout(1 * time.Millisecond)
+    
+    if cmd.timeout != 1 * time.Millisecond
+        t.Error("Expected timeout to be 1 millisecond")
+
+# Test error handling for non-existent command
+func TestNonExistentCommand(t testing.T)
+    _, err := shell.RunSimple("nonexistent-command-12345")
+    if err == empty
+        t.Error("Expected error for non-existent command")

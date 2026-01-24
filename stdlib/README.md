@@ -19,6 +19,97 @@ The Kukicha stdlib only exists where it adds genuine value.
 
 ## Packages
 
+### cli - Command Line Interface
+
+Simple CLI argument parsing for building command-line tools:
+
+```kukicha
+import "stdlib/cli"
+
+func main()
+    # Parse command line arguments
+    flags, positional := cli.Parse()
+    cmd := cli.Command(positional)
+    
+    if cmd == ""
+        cli.PrintUsage("mytool", ["fetch", "process"])
+        return
+    
+    # Get arguments and flags
+    input := cli.String(flags, positional, "1")
+    verbose := cli.BoolFlag(flags, "verbose")
+    format := cli.Flag(flags, "format")
+    
+    if cmd == "fetch"
+        url := cli.String(flags, positional, "1")
+        print "Fetching {url} with format {format}"
+    else if cmd == "process"
+        output := cli.String(flags, positional, "2")
+        print "Processing {input} to {output}"
+```
+
+**Functions:** Parse, Command, String, Flag, BoolFlag, IntFlag, PrintUsage
+
+**Key Features:**
+- Simple argument parsing with `cli.Parse()`
+- Command extraction with `cli.Command()`
+- Flag handling with `cli.Flag()`, `cli.BoolFlag()`, `cli.IntFlag()`
+- Positional argument access with `cli.String()`
+- Usage help with `cli.PrintUsage()`
+
+### shell - Command Execution
+
+Safe command execution with pipes and environment control:
+
+```kukicha
+import "stdlib/shell"
+
+# Run a simple command
+output := shell.RunSimple("ls", "-la") onerr panic "ls failed"
+print output
+
+# Run with options
+result := shell.New("git", "status")
+    |> shell.Dir("./repo")
+    |> shell.Timeout(30 * time.Second)
+    |> shell.Run()
+
+if shell.Success(result)
+    print result.stdout
+else
+    print "Error: {result.stderr}"
+
+# Pipeline commands
+count := shell.New("cat", "data.txt")
+    |> shell.Pipe(shell.New("grep", "ERROR"))
+    |> shell.Pipe(shell.New("wc", "-l"))
+    |> shell.Run()
+    |> shell.Output()
+
+# Check if command exists
+if shell.Which("docker")
+    print "Docker is installed"
+else
+    print "Docker not found"
+
+# Run with environment variables
+output := shell.New("npm", "install")
+    |> shell.Dir("./frontend")
+    |> shell.Env("NODE_ENV", "production")
+    |> shell.Run()
+    |> shell.Output()
+```
+
+**Functions:** New, Dir, Env, Timeout, Run, RunSimple, Output, Error, ExitCode, Success, Which, Pipe
+
+**Key Features:**
+- Safe command execution with `shell.Run()` and `shell.RunSimple()`
+- Command piping with `shell.Pipe()`
+- Environment and directory control with `shell.Env()` and `shell.Dir()`
+- Timeout support with `shell.Timeout()`
+- Result inspection with `shell.Output()`, `shell.Error()`, `shell.ExitCode()`, `shell.Success()`
+- Command existence checking with `shell.Which()`
+
 ### iter - Functional Iterator Operations
 
 Go's `iter.Seq` protocol is low-level. We provide higher-level functional operations:
@@ -220,6 +311,12 @@ See [kukicha-design-philosophy.md](../docs/kukicha-design-philosophy.md) for rat
 
 ```
 stdlib/
+├── cli/           # Command line interface
+│   ├── cli.kuki
+│   └── cli_test.kuki
+├── shell/         # Command execution
+│   ├── shell.kuki
+│   └── shell_test.kuki
 ├── fetch/         # HTTP client for pipes
 │   ├── fetch.kuki
 │   └── fetch_test.kuki

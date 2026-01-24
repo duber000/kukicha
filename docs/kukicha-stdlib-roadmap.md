@@ -50,8 +50,8 @@ These packages make Kukicha perfect for scripts and automation:
 
 | Package | Purpose | Status |
 |---------|---------|--------|
-| **cli** | CLI argument parsing made easy | Planned |
-| **shell** | Safe command execution | Planned |
+| **cli** | CLI argument parsing made easy | ✅ Implemented |
+| **shell** | Safe command execution | ✅ Implemented |
 | **template** | Text templating | Planned |
 | **retry** | Retry logic with backoff | Planned |
 | **result** | Optional/Result types (educational) | Planned |
@@ -309,7 +309,7 @@ type User
 # Csv, CsvWithHeader, Yaml
 ```
 
-### CLI Package (Planned)
+### CLI Package ✅
 
 Build command-line tools easily:
 
@@ -317,35 +317,37 @@ Build command-line tools easily:
 import "stdlib/cli"
 
 func main()
-    app := cli.New("mytool")
-        |> cli.Description("A tool for processing data")
-        |> cli.Version("1.0.0")
-
-    app.Command("fetch")
-        |> cli.Arg("url", "URL to fetch")
-        |> cli.Flag("format", "Output format (json|text)", "json")
-        |> cli.Action(fetchCommand)
-
-    app.Command("process")
-        |> cli.Arg("input", "Input file")
-        |> cli.Flag("output", "Output file", "output.txt")
-        |> cli.Action(processCommand)
-
-    app.Run() onerr panic "command failed"
-
-func fetchCommand(args cli.Args)
-    url := args.String("url")
-    format := args.String("format")
-
-    data := fetch.Get(url)
-        |> fetch.Text()
-        onerr panic "fetch failed"
-
-    if format equals "json"
-        data |> parse.Json() |> print
-    else
-        print data
+    # Parse command line arguments
+    flags, positional := cli.Parse()
+    cmd := cli.Command(positional)
+    
+    if cmd == ""
+        cli.PrintUsage("mytool", ["fetch", "process"])
+        return
+    
+    # Get arguments and flags
+    input := cli.String(flags, positional, "1")
+    verbose := cli.BoolFlag(flags, "verbose")
+    format := cli.Flag(flags, "format")
+    
+    if cmd == "fetch"
+        # Process fetch command
+        url := cli.String(flags, positional, "1")
+        print "Fetching {url} with format {format}"
+    else if cmd == "process"
+        # Process process command
+        output := cli.String(flags, positional, "2")
+        print "Processing {input} to {output}"
 ```
+
+**Key Features:**
+- Simple argument parsing with `cli.Parse()`
+- Command extraction with `cli.Command()`
+- Flag handling with `cli.Flag()`, `cli.BoolFlag()`, `cli.IntFlag()`
+- Positional argument access with `cli.String()`
+- Usage help with `cli.PrintUsage()`
+
+**Available functions:** Parse, Command, String, Flag, BoolFlag, IntFlag, PrintUsage
 
 ### Files Package ✅
 
@@ -391,47 +393,58 @@ result := files.TempFile()
     )  # Auto-deleted after use
 ```
 
-### Shell Package (Planned)
+### Shell Package ✅
 
 Safe command execution without shell injection:
 
 ```kukicha
 import "stdlib/shell"
 
-# Run command and capture output
-output := shell.Run("git", "status")
-    |> shell.Output()
-    |> string.TrimSpace()
-    onerr "git failed"
+# Run a simple command
+output := shell.RunSimple("ls", "-la") onerr panic "ls failed"
+print output
 
-# Pipeline commands (safer than bash pipes)
-result := shell.Run("cat", "data.txt")
-    |> shell.Pipe(shell.Run("grep", "ERROR"))
-    |> shell.Pipe(shell.Run("wc", "-l"))
-    |> shell.Output()
-
-# Run with timeout and working directory
-exitCode := shell.New("npm", "install")
-    |> shell.Dir("./frontend")
-    |> shell.Timeout(5.minutes)
-    |> shell.Env("NODE_ENV", "production")
+# Run with options
+result := shell.New("git", "status")
+    |> shell.Dir("./repo")
+    |> shell.Timeout(30 * time.Second)
     |> shell.Run()
-    |> shell.ExitCode()
-    onerr panic "npm install failed"
 
-# Stream output in real-time
-shell.Run("docker", "build", ".")
-    |> shell.Stdout(line -> print "[build] {line}")
-    |> shell.Stderr(line -> print "[error] {line}")
-    |> shell.Wait()
-    onerr panic "build failed"
+if shell.Success(result)
+    print result.stdout
+else
+    print "Error: {result.stderr}"
+
+# Pipeline commands
+count := shell.New("cat", "data.txt")
+    |> shell.Pipe(shell.New("grep", "ERROR"))
+    |> shell.Pipe(shell.New("wc", "-l"))
+    |> shell.Run()
+    |> shell.Output()
 
 # Check if command exists
 if shell.Which("docker")
-    runDockerBuild()
+    print "Docker is installed"
 else
-    print "Docker not installed"
+    print "Docker not found"
+
+# Run with environment variables
+output := shell.New("npm", "install")
+    |> shell.Dir("./frontend")
+    |> shell.Env("NODE_ENV", "production")
+    |> shell.Run()
+    |> shell.Output()
 ```
+
+**Key Features:**
+- Safe command execution with `shell.Run()` and `shell.RunSimple()`
+- Command piping with `shell.Pipe()`
+- Environment and directory control with `shell.Env()` and `shell.Dir()`
+- Timeout support with `shell.Timeout()`
+- Result inspection with `shell.Output()`, `shell.Error()`, `shell.ExitCode()`, `shell.Success()`
+- Command existence checking with `shell.Which()`
+
+**Available functions:** New, Dir, Env, Timeout, Run, RunSimple, Output, Error, ExitCode, Success, Which, Pipe
 
 ### Template Package (Planned)
 
@@ -746,9 +759,9 @@ To make Kukicha the best scripting language for beginners and automation:
 4. ✅ **concurrent** - Concurrency helpers with Go 1.25+ WaitGroup.Go()
 5. ✅ **http** - HTTP server helpers with Go 1.25+ CSRF protection
 
-### Phase 2: Tools & CLI (Next Priority)
-6. **cli** - Argument parsing (build actual tools)
-7. **shell** - Safe command execution (automation scripts)
+### Phase 2: Tools & CLI ✅ Completed!
+6. ✅ **cli** - Argument parsing (build actual tools) - IMPLEMENTED
+7. ✅ **shell** - Safe command execution (automation scripts) - IMPLEMENTED
 8. **template** - Text generation (code gen, reports)
 
 ### Phase 3: Advanced (Future)

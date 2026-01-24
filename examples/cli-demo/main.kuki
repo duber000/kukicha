@@ -1,0 +1,65 @@
+# CLI and Shell Demo
+
+import "stdlib/cli"
+import "stdlib/shell"
+import "stdlib/files"
+
+func main()
+    # Parse CLI arguments
+    flags, positional := cli.Parse()
+    cmd := cli.Command(positional)
+    
+    if cmd == ""
+        print "Usage: kukicha run examples/cli-demo/main.kuki <command> [args]"
+        print "Commands: echo, ls, info"
+        return
+    
+    # Get verbose flag
+    verbose := cli.BoolFlag(flags, "verbose")
+    if verbose
+        print "Verbose mode enabled"
+    
+    # Handle different commands
+    if cmd == "echo"
+        message := cli.String(flags, positional, "1")
+        if message == ""
+            message = "Hello from CLI!"
+        print message
+        
+    else if cmd == "ls"
+        # Use shell package to run ls command
+        dir := cli.String(flags, positional, "1")
+        if dir == ""
+            dir = "."
+        
+        if verbose
+            print "Listing directory: {dir}"
+        
+        output, err := shell.RunSimple("ls", "-la", dir) onerr panic "ls failed"
+        print output
+        
+    else if cmd == "info"
+        # Show system info using shell commands
+        print "System Information:"
+        
+        # Get hostname
+        hostname, _ := shell.RunSimple("hostname") onerr "unknown"
+        print "Hostname: {hostname}"
+        
+        # Get current directory
+        pwd, _ := shell.RunSimple("pwd") onerr "unknown"
+        print "Current Directory: {pwd}"
+        
+        # Check if git is installed
+        if shell.Which("git")
+            print "Git is installed"
+        else
+            print "Git is not installed"
+    else
+        print "Unknown command: {cmd}"
+        print "Available commands: echo, ls, info"
+
+# Example usage:
+# kukicha run examples/cli-demo/main.kuki echo --verbose "Hello World"
+# kukicha run examples/cli-demo/main.kuki ls --verbose /tmp
+# kukicha run examples/cli-demo/main.kuki info

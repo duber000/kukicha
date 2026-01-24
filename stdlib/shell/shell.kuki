@@ -1,0 +1,241 @@
+# Kukicha Standard Library - Shell (Command Execution)
+
+petiole shell
+
+import "os/exec"
+import "os"
+import "io"
+import "bytes"
+import "time"
+import "context"
+import "strings"
+
+# Command represents a shell command to be executed
+type Command struct
+    name string
+    args list of string
+    dir string
+    env map of string to string
+    timeout time.Duration
+    stdin io.Reader
+    stdout io.Writer
+    stderr io.Writer
+
+# Result represents the result of a command execution
+type Result struct
+    exitCode int
+    stdout string
+    stderr string
+    error error
+
+# New creates a new Command with the specified name and arguments
+func New(name string, args ...string) Command
+    return Command{
+        name: name,
+        args: args,
+        dir: "",
+        env: empty,
+        timeout: 0,
+        stdin: empty,
+        stdout: empty,
+        stderr: empty,
+    }
+
+# Dir sets the working directory for the command
+func Dir(cmd Command, dir string) Command
+    cmd.dir = dir
+    return cmd
+
+# Env sets environment variables for the command
+func Env(cmd Command, key string, value string) Command
+    if cmd.env == empty
+        cmd.env = make(map of string to string)
+    cmd.env[key] = value
+    return cmd
+
+# Timeout sets the maximum execution time for the command
+func Timeout(cmd Command, duration time.Duration) Command
+    cmd.timeout = duration
+    return cmd
+
+# Stdin sets the standard input for the command
+func Stdin(cmd Command, reader io.Reader) Command
+    cmd.stdin = reader
+    return cmd
+
+# Stdout sets the standard output writer for the command
+func Stdout(cmd Command, writer io.Writer) Command
+    cmd.stdout = writer
+    return cmd
+
+# Stderr sets the standard error writer for the command
+func Stderr(cmd Command, writer io.Writer) Command
+    cmd.stderr = writer
+    return cmd
+
+# Run executes the command and returns the result
+func Run(cmd Command) Result
+    ctx := context.Background()
+    if cmd.timeout > 0
+        var cancel func()
+        ctx, cancel = context.WithTimeout(ctx, cmd.timeout)
+        defer cancel()
+
+    execCmd := exec.CommandContext(ctx, cmd.name, cmd.args...)
+    
+    if cmd.dir != ""
+        execCmd.Dir = cmd.dir
+
+    if cmd.env != empty
+        execCmd.Env = os.Environ()
+        for key, value in cmd.env
+            execCmd.Env = append(execCmd.Env, "{key}={value}")
+
+    if cmd.stdin != empty
+        execCmd.Stdin = cmd.stdin
+
+    var stdoutBuf bytes.Buffer
+    var stderrBuf bytes.Buffer
+    
+    if cmd.stdout != empty
+        execCmd.Stdout = cmd.stdout
+    else
+        execCmd.Stdout = reference stdoutBuf
+
+    if cmd.stderr != empty
+        execCmd.Stderr = cmd.stderr
+    else
+        execCmd.Stderr = reference stderrBuf
+
+    err := execCmd.Run()
+    
+    exitCode := 0
+    if err != empty
+        if exitErr, ok := err.(reference exec.ExitError); ok
+            exitCode = exitErr.ExitCode()
+        else
+            exitCode = 1
+
+    return Result{
+        exitCode: exitCode,
+        stdout: stdoutBuf.String(),
+        stderr: stderrBuf.String(),
+        error: err,
+    }
+
+# Output returns the standard output from the command result
+func Output(result Result) string
+    return result.stdout
+
+# Error returns the standard error from the command result
+func Error(result Result) string
+    return result.stderr
+
+# ExitCode returns the exit code from the command result
+func ExitCode(result Result) int
+    return result.exitCode
+
+# Success returns true if the command executed successfully (exit code 0)
+func Success(result Result) bool
+    return result.exitCode == 0 and result.error == empty
+
+# RunSimple executes a simple command and returns the output
+func RunSimple(name string, args ...string) (string, error)
+    cmd := New(name, args...)
+    result := Run(cmd)
+    if not Success(result)
+        return "", result.error
+    return result.stdout, empty
+
+# Which checks if a command exists in the system PATH
+func Which(name string) bool
+    _, err := exec.LookPath(name)
+    return err == empty
+
+# Pipe creates a pipeline of commands
+func Pipe(cmd1 Command, cmd2 Command) Command
+    # Create a pipe between cmd1.stdout and cmd2.stdin
+    pr, pw := io.Pipe()
+    
+    cmd1.stdout = pw
+    cmd2.stdin = pr
+    
+    # Return a new command that runs both in sequence
+    return Command{
+        name: "pipe",
+        args: empty,
+        dir: cmd1.dir,
+        env: cmd1.env,
+        timeout: cmd1.timeout,
+        stdin: cmd1.stdin,
+        stdout: cmd2.stdout,
+        stderr: cmd2.stderr,
+    }
+
+# RunPipeline executes a pipeline of commands
+func RunPipeline(commands ...Command) Result
+    if len(commands) == 0
+        return Result{exitCode: 0, stdout: "", stderr: "", error: empty}
+
+    if len(commands) == 1
+        return Run(commands[0])
+
+    # Create pipes between commands
+    pipes := list of reference io.PipeReader
+    
+    for i := 0; i < len(commands) - 1; i++
+        pr, pw := io.Pipe()
+        commands[i].stdout = pw
+        commands[i+1].stdin = pr
+        pipes = append(pipes, pr)
+
+    # Run all commands concurrently
+    var results list of Result
+    var wg sync.WaitGroup
+    
+    for _, cmd in commands
+        wg.Add(1)
+        go func(c Command)
+            defer wg.Done()
+            results = append(results, Run(c))
+        (cmd)
+
+    wg.Wait()
+
+    # Close all pipes
+    for _, pipe in pipes
+        pipe.Close()
+
+    # Return the result of the last command
+    return results[len(results) - 1]
+
+# RunWithOutput executes a command and captures both stdout and stderr
+func RunWithOutput(name string, args ...string) (string, string, int, error)
+    cmd := New(name, args...)
+    result := Run(cmd)
+    return result.stdout, result.stderr, result.exitCode, result.error
+
+# RunWithContext executes a command with a custom context
+func RunWithContext(ctx context.Context, name string, args ...string) Result
+    execCmd := exec.CommandContext(ctx, name, args...)
+    
+    var stdoutBuf bytes.Buffer
+    var stderrBuf bytes.Buffer
+    execCmd.Stdout = reference stdoutBuf
+    execCmd.Stderr = reference stderrBuf
+
+    err := execCmd.Run()
+    
+    exitCode := 0
+    if err != empty
+        if exitErr, ok := err.(reference exec.ExitError); ok
+            exitCode = exitErr.ExitCode()
+        else
+            exitCode = 1
+
+    return Result{
+        exitCode: exitCode,
+        stdout: stdoutBuf.String(),
+        stderr: stderrBuf.String(),
+        error: err,
+    }
