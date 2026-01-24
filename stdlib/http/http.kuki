@@ -7,10 +7,12 @@ import "net/http"
 # WithCSRF wraps a handler with Cross-Origin protection
 # Uses Fetch metadata headers (modern browsers)
 # Example: http.WithCSRF(myHandler)
-func WithCSRF(handler http.Handler) http.Handler
+# Note: Using 'any' for http.Handler due to type checker limitations
+func WithCSRF(handler any) any
     return http.CrossOriginProtection(handler)
 
 # Serve starts an HTTP server on the specified address
 # Example: http.Serve(":8080", handler)
-func Serve(addr string, handler http.Handler) error
+# Note: Using 'any' for http.Handler due to type checker limitations
+func Serve(addr string, handler any) error
     return http.ListenAndServe(addr, handler)

@@ -183,18 +183,16 @@ func (l *Lexer) scanToken() {
 	case '|':
 		if l.match('>') {
 			l.addToken(TOKEN_PIPE)
+		} else if l.match('|') {
+			l.addToken(TOKEN_OR_OR)
 		} else {
-			if l.match('|') {
-				l.addToken(TOKEN_OR_OR)
-			} else {
-				l.error("Unexpected character '|'. Did you mean '|>' for pipe operator?")
-			}
+			l.addToken(TOKEN_BIT_OR)
 		}
 	case '&':
 		if l.match('&') {
 			l.addToken(TOKEN_AND_AND)
 		} else {
-			l.error("Unexpected character '&'. Did you mean '&&'?")
+			l.addToken(TOKEN_BIT_AND)
 		}
 	default:
 		if isDigit(c) {

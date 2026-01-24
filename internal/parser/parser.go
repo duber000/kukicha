@@ -726,32 +726,60 @@ func (p *Parser) parseForStmt() ast.Statement {
 func (p *Parser) parseDeferStmt() *ast.DeferStmt {
 	token := p.advance() // consume 'defer'
 
-	call, ok := p.parseExpression().(*ast.CallExpr)
-	if !ok {
+	expr := p.parseExpression()
+
+	// Accept both regular function calls and method calls
+	switch call := expr.(type) {
+	case *ast.CallExpr:
+		p.skipNewlines()
+		return &ast.DeferStmt{
+			Token: token,
+			Call:  call,
+		}
+	case *ast.MethodCallExpr:
+		// Convert MethodCallExpr to CallExpr for defer
+		p.skipNewlines()
+		return &ast.DeferStmt{
+			Token: token,
+			Call: &ast.CallExpr{
+				Token:     call.Token,
+				Function:  call,
+				Arguments: nil, // Method call arguments are already in the MethodCallExpr
+			},
+		}
+	default:
 		p.error(token, "defer must be followed by a function call")
 		return nil
-	}
-
-	p.skipNewlines()
-	return &ast.DeferStmt{
-		Token: token,
-		Call:  call,
 	}
 }
 
 func (p *Parser) parseGoStmt() *ast.GoStmt {
 	token := p.advance() // consume 'go'
 
-	call, ok := p.parseExpression().(*ast.CallExpr)
-	if !ok {
+	expr := p.parseExpression()
+
+	// Accept both regular function calls and method calls
+	switch call := expr.(type) {
+	case *ast.CallExpr:
+		p.skipNewlines()
+		return &ast.GoStmt{
+			Token: token,
+			Call:  call,
+		}
+	case *ast.MethodCallExpr:
+		// Convert MethodCallExpr to CallExpr for go
+		p.skipNewlines()
+		return &ast.GoStmt{
+			Token: token,
+			Call: &ast.CallExpr{
+				Token:     call.Token,
+				Function:  call,
+				Arguments: nil, // Method call arguments are already in the MethodCallExpr
+			},
+		}
+	default:
 		p.error(token, "go must be followed by a function call")
 		return nil
-	}
-
-	p.skipNewlines()
-	return &ast.GoStmt{
-		Token: token,
-		Call:  call,
 	}
 }
 
@@ -1012,9 +1040,43 @@ func (p *Parser) parseOnErrExpr() ast.Expression {
 }
 
 func (p *Parser) parseAndExpr() ast.Expression {
-	left := p.parseComparisonExpr()
+	left := p.parseBitwiseOrExpr()
 
 	for p.match(lexer.TOKEN_AND) {
+		operator := p.previousToken()
+		right := p.parseBitwiseOrExpr()
+		left = &ast.BinaryExpr{
+			Token:    operator,
+			Left:     left,
+			Operator: operator.Lexeme,
+			Right:    right,
+		}
+	}
+
+	return left
+}
+
+func (p *Parser) parseBitwiseOrExpr() ast.Expression {
+	left := p.parseBitwiseAndExpr()
+
+	for p.match(lexer.TOKEN_BIT_OR) {
+		operator := p.previousToken()
+		right := p.parseBitwiseAndExpr()
+		left = &ast.BinaryExpr{
+			Token:    operator,
+			Left:     left,
+			Operator: operator.Lexeme,
+			Right:    right,
+		}
+	}
+
+	return left
+}
+
+func (p *Parser) parseBitwiseAndExpr() ast.Expression {
+	left := p.parseComparisonExpr()
+
+	for p.match(lexer.TOKEN_BIT_AND) {
 		operator := p.previousToken()
 		right := p.parseComparisonExpr()
 		left = &ast.BinaryExpr{

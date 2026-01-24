@@ -5,7 +5,7 @@ petiole iter
 import "iter"
 
 # Filter returns an iterator that yields only items matching the predicate
-func Filter(seq iter.Seq, keep func(any) bool) iter.Seq
+func Filter(seq any, keep func(any) bool) any
     return func(yield func(any) bool) bool
         for item in seq
             if keep(item)
@@ -14,16 +14,16 @@ func Filter(seq iter.Seq, keep func(any) bool) iter.Seq
         return true
 
 # Map transforms each item in the iterator
-func Map(seq iter.Seq, transform func(any) any2) iter.Seq
-    return func(yield func(any2) bool) bool
+func Map(seq any, transform func(any) any) any
+    return func(yield func(any) bool) bool
         for item in seq
             if !yield(transform(item))
                 return false
         return true
 
 # FlatMap maps each element to an iterator and flattens the result
-func FlatMap(seq iter.Seq, transform func(any) iter.SeqU) iter.Seq
-    return func(yield func(any2) bool) bool
+func FlatMap(seq any, transform func(any) any) any
+    return func(yield func(any) bool) bool
         for item in seq
             for subItem in transform(item)
                 if !yield(subItem)
@@ -31,7 +31,7 @@ func FlatMap(seq iter.Seq, transform func(any) iter.SeqU) iter.Seq
         return true
 
 # Take returns an iterator of the first n items
-func Take(seq iter.Seq, n int) iter.Seq
+func Take(seq any, n int) any
     return func(yield func(any) bool) bool
         count := 0
         for item in seq
@@ -43,7 +43,7 @@ func Take(seq iter.Seq, n int) iter.Seq
         return true
 
 # Skip returns an iterator that skips the first n items
-func Skip(seq iter.Seq, n int) iter.Seq
+func Skip(seq any, n int) any
     return func(yield func(any) bool) bool
         count := 0
         for item in seq
@@ -54,7 +54,7 @@ func Skip(seq iter.Seq, n int) iter.Seq
         return true
 
 # Enumerate yields pairs of (index, value) for the iterator
-func Enumerate(seq iter.Seq) iter.Seq2
+func Enumerate(seq any) any
     return func(yield func(int, any) bool) bool
         i := 0
         for item in seq
@@ -64,7 +64,7 @@ func Enumerate(seq iter.Seq) iter.Seq2
         return true
 
 # Chunk yields slices of n items from the iterator
-func Chunk(seq iter.Seq, n int) iter.SeqSlice
+func Chunk(seq any, n int) any
     return func(yield func(list of any) bool) bool
         chunk := make(list of any, 0)
         for item in seq
@@ -80,7 +80,7 @@ func Chunk(seq iter.Seq, n int) iter.SeqSlice
 
 # Zip combines two iterators into pairs
 # It yields tuples of (value1, value2) until either iterator is exhausted
-func Zip(seq1 iter.Seq, seq2 iter.Seq) iter.Seq2
+func Zip(seq1 any, seq2 any) any
     return func(yield func(any, any) bool) bool
         done := false
         for v1 in seq1
@@ -100,28 +100,28 @@ func Zip(seq1 iter.Seq, seq2 iter.Seq) iter.Seq2
 
 # Reduce accumulates values from the iterator using a reducing function
 # It takes an initial accumulator value and combines it with each item
-func Reduce(seq iter.Seq, initial any2, reducer func(any2, any) any2) any2
+func Reduce(seq any, initial any, reducer func(any, any) any) any
     acc := initial
     for item in seq
         acc = reducer(acc, item)
     return acc
 
 # Collect converts an iterator to a slice by consuming all values
-func Collect(seq iter.Seq) list of any
+func Collect(seq any) list of any
     result := make(list of any, 0)
     for item in seq
         result = append(result, item)
     return result
 
 # Any returns true if at least one element satisfies the predicate
-func Any(seq iter.Seq, predicate func(any) bool) bool
+func Any(seq any, predicate func(any) bool) bool
     for item in seq
         if predicate(item)
             return true
     return false
 
 # All returns true if all elements satisfy the predicate
-func All(seq iter.Seq, predicate func(any) bool) bool
+func All(seq any, predicate func(any) bool) bool
     for item in seq
         if !predicate(item)
             return false
@@ -129,7 +129,7 @@ func All(seq iter.Seq, predicate func(any) bool) bool
 
 # Find returns the first element matching the predicate, or empty if none found
 # Returns (value, true) if found, (empty, false) if not found
-func Find(seq iter.Seq, predicate func(any) bool) (any, bool)
+func Find(seq any, predicate func(any) bool) (any, bool)
     for item in seq
         if predicate(item)
             return item, true
