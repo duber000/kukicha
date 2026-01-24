@@ -41,29 +41,32 @@ func Parse() (map of string to string, list of string)
             # Parse positional argument
             positional = append(positional, arg)
         i++
-    
-    return flags
-    return positional
+
+    return flags, positional
 
 # String returns the value of a string argument or flag
 func String(flags map of string to string, positional list of string, name string) string
     # Check flags first
-    if val, exists := flags[name]; exists
+    val := flags[name]
+    if val != ""
         return val
-    
+
     # Check positional arguments by index
     # Try to parse as positional argument index
     # Simple parsing - in real implementation, use strconv.Atoi
     index := 0
-    for _, ch in name
-        if ch >= '0' and ch <= '9'
-            index = index * 10 + (int(ch) - int('0'))
-        else
-            return ""
-    
-    if index >= 0 and index < len(positional)
-        return positional[index]
-    
+    nameLen := len(name)
+    if nameLen > 0
+        for i from 0 to nameLen
+            ch := name[i]
+            if ch >= 48 and ch <= 57
+                index = index * 10 + (ch - 48)
+            else
+                return ""
+
+        if index >= 0 and index < len(positional)
+            return positional[index]
+
     return ""
 
 # Command returns the command name (first positional argument)
@@ -74,9 +77,8 @@ func Command(positional list of string) string
 
 # Flag returns the value of a flag
 func Flag(flags map of string to string, name string) string
-    if val, exists := flags[name]; exists
-        return val
-    return ""
+    val := flags[name]
+    return val
 
 # BoolFlag returns the value of a boolean flag
 func BoolFlag(flags map of string to string, name string) bool
@@ -91,13 +93,15 @@ func IntFlag(flags map of string to string, name string) (int, error)
     
     # Simple parsing - in real implementation, use strconv.Atoi
     num := 0
-    for _, ch in strVal
-        if ch >= '0' and ch <= '9'
-            num = num * 10 + (int(ch) - int('0'))
-        else
-            return 0, error "invalid integer: {strVal}"
-    return num
-    return empty
+    strLen := len(strVal)
+    if strLen > 0
+        for i from 0 to strLen
+            ch := strVal[i]
+            if ch >= 48 and ch <= 57
+                num = num * 10 + (ch - 48)
+            else
+                return 0, error "invalid integer: {strVal}"
+    return num, empty
 
 # PrintUsage prints basic usage information
 func PrintUsage(appName string, commands list of string)
