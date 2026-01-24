@@ -9,8 +9,12 @@ func main()
     users := fetchUsers() onerr panic "failed to fetch"
 
     active := users
-        |> slice.Filter(u -> u.active)
-        |> slice.Map(u -> u.name)
+        |> slice.Filter(func(u User) bool
+            return u.active
+        )
+        |> slice.Map(func(u User) string
+            return u.name
+        )
 
     for name in active
         print("Hello {name}!")
@@ -44,8 +48,12 @@ Kukicha fixes this:
 pods := k8s.ListPods(namespace) onerr panic "k8s unavailable"
 
 failing := pods
-    |> slice.Filter(p -> p.status != "Running")
-    |> slice.Map(p -> "{p.name}: {p.status}")
+    |> slice.Filter(func(p Pod) bool
+        return p.status != "Running"
+    )
+    |> slice.Map(func(p Pod) string
+        return "{p.name}: {p.status}"
+    )
 
 if len(failing) > 0
     slack.Alert(channel, "Pods failing:\n" + strings.Join(failing, "\n"))
@@ -68,7 +76,8 @@ import "net/http"
 import "encoding/json/v2"  # Go 1.25+ jsonv2 for 2-10x faster JSON
 
 func HandleUser(w http.ResponseWriter, r reference http.Request)
-    user := parseUser(r.Body) onerr
+    user, err := parseUser(r.Body)
+    if err != empty
         http.Error(w, "invalid request", 400)
         return
 

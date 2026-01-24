@@ -1,5 +1,7 @@
 # Kukicha Language Syntax Reference v1.0
 
+> **Note:** This document describes a future version of the Kukicha language. The current implementation may differ. For features available in the current version, please see the [Language Features](language-features.md) document.
+
 ## Overview
 
 Kukicha is a high-level language that compiles to Go 1.25+ with the Green Tea garbage collector. It prioritizes readability and English-like syntax while maintaining Go's explicit type system and performance.

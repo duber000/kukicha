@@ -171,13 +171,10 @@ func Filter(items list of int, predicate func(int) bool) list of int
             result = append(result, item)
     return result
 
-# Lambda syntax
+# Function literal syntax
 evens := Filter(numbers, func(n int) bool
     return n % 2 equals 0
 )
-
-# Arrow syntax for simple lambdas
-evens := Filter(numbers, n -> n % 2 equals 0)
 ```
 
 ---
@@ -223,14 +220,14 @@ user := User{id: 1, name: "Alice", email: "alice@example.com", active: true}
 
 ### Struct Tags
 
-Add metadata to struct fields using `key:"value"` syntax. Tags enable JSON marshaling, database mapping, and other Go reflection-based features.
+Add metadata to struct fields using `key: "value"` syntax. Tags enable JSON marshaling, database mapping, and other Go reflection-based features.
 
 ```kukicha
 type User
-    ID int64 json:"id"
-    Name string json:"name"
-    Email string json:"email" db:"user_email"
-    Active bool json:"active"
+    ID int64 json: "id"
+    Name string json: "name"
+    Email string json: "email" db: "user_email"
+    Active bool json: "active"
 
 # Transpiles to Go with proper struct tags:
 # type User struct {
@@ -247,11 +244,11 @@ json.Unmarshal([]byte(jsonData), &user)  # Works correctly with tags
 ```
 
 Struct tags support any Go tag format:
-- `json:"fieldname"` - JSON marshaling
-- `xml:"fieldname"` - XML marshaling
-- `db:"column_name"` - Database mapping
-- `validate:"required"` - Validation rules
-- Multiple tags: `json:"name" db:"user_name"`
+- `json: "fieldname"` - JSON marshaling
+- `xml: "fieldname"` - XML marshaling
+- `db: "column_name"` - Database mapping
+- `validate: "required"` - Validation rules
+- Multiple tags: `json: "name" db: "user_name"`
 
 ### Collection Types
 
@@ -367,19 +364,14 @@ for true
 
 ### The onerr Operator
 
+**Note:** The `onerr` operator is currently a placeholder and has a simplified implementation. More advanced error handling features are planned for a future version.
+
 ```kukicha
 # Panic on error
 config := loadConfig() onerr panic "failed to load config"
 
 # Return error to caller
 data := fetchData() onerr return empty, error
-
-# Provide default value
-port := getPort() onerr 8080
-name := getName() onerr "anonymous"
-
-# Discard error (use sparingly)
-result := riskyOperation() onerr discard
 ```
 
 ### Creating Errors
@@ -657,7 +649,7 @@ func main()
     for task in tasks
         fmt.Println(task.Display())
 
-    pending := slice.Filter(tasks, t -> not t.done)
+    pending := slice.Filter(tasks, func(t Task) bool { return not t.done })
     fmt.Println("\nPending: {len(pending)} tasks")
 ```
 
