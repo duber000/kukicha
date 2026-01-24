@@ -43,6 +43,8 @@ Kukicha combines two powerful ideas:
 | **parse** | JSON/YAML/CSV parsing | Format-specific parsing functions (Go 1.25+ jsonv2) |
 | **concurrent** | Concurrency helpers | Go 1.25+ WaitGroup.Go() patterns |
 | **http** | HTTP server helpers | Go 1.25+ CSRF protection |
+| **cli** | CLI argument parsing made easy | ??? |
+| **shell** | Safe command execution | ??? |
 
 ### 🚧 Planned Scripting Packages (Priority Order)
 
@@ -50,15 +52,11 @@ These packages make Kukicha perfect for scripts and automation:
 
 | Package | Purpose | Status |
 |---------|---------|--------|
-| **cli** | CLI argument parsing made easy | ✅ Implemented |
-| **shell** | Safe command execution | ✅ Implemented |
 | **template** | Text templating | Planned |
 | **retry** | Retry logic with backoff | Planned |
 | **result** | Optional/Result types (educational) | Planned |
 
 ---
-
-## Completed Packages ✅
 
 ### Iter Package
 
@@ -446,6 +444,8 @@ output := shell.New("npm", "install")
 
 **Available functions:** New, Dir, Env, Timeout, Run, RunSimple, Output, Error, ExitCode, Success, Which, Pipe
 
+## Planned Scripting Packages 🚧
+
 ### Template Package (Planned)
 
 Text templating for code generation and reports:
@@ -748,34 +748,12 @@ We provide high-level helpers for common patterns, but:
 
 ---
 
-## Implementation Priorities
-
-To make Kukicha the best scripting language for beginners and automation:
-
-### Phase 1: Essential Scripting ✅ Completed!
-1. ✅ **fetch** - HTTP client with Go 1.25+ jsonv2 streaming
-2. ✅ **parse** - JSON/YAML/CSV parsing with Go 1.25+ jsonv2 (2-10x faster)
-3. ✅ **files** - File operations (basic scripting need)
-4. ✅ **concurrent** - Concurrency helpers with Go 1.25+ WaitGroup.Go()
-5. ✅ **http** - HTTP server helpers with Go 1.25+ CSRF protection
-
-### Phase 2: Tools & CLI ✅ Completed!
-6. ✅ **cli** - Argument parsing (build actual tools) - IMPLEMENTED
-7. ✅ **shell** - Safe command execution (automation scripts) - IMPLEMENTED
-8. **template** - Text generation (code gen, reports)
-
-### Phase 3: Advanced (Future)
-9. **retry** - Reliability patterns
-10. **result** - Educational type for learning FP concepts
-
----
-
 ## Contributing
 
 We welcome contributions! Focus areas:
 
 ### High Priority:
-- **Implementing scripting packages** (fetch, parse, files, cli, shell)
+- **Implementing scripting packages** 
 - **Writing examples** showcasing pipe-based workflows
 - **Tutorial content** for beginners learning programming
 
@@ -791,21 +769,3 @@ We welcome contributions! Focus areas:
 3. **Build on Go stdlib** - Don't reinvent wheels, provide convenience
 4. **Focus on scripting** - Use cases: automation, data processing, CLI tools
 5. **Beginner-friendly** - Clear names, good docs, simple APIs
-
----
-
-## Success Metrics
-
-We'll know Kukicha stdlib is successful when:
-
-- ✅ Complete beginners can fetch API data and save to JSON in 10 lines
-- ✅ Go developers reach for Kukicha for one-off scripts
-- ✅ "Script it in Kukicha" blog posts appear
-- ✅ Educational content uses Kukicha for teaching
-- ✅ Someone says "I love the pipe operator" unprompted
-
----
-
-**Last Updated:** 2026-01-23
-**Philosophy Document:** [kukicha-design-philosophy.md](kukicha-design-philosophy.md)
-**Target Users:** Beginners learning programming, Go developers writing scripts, automation enthusiasts

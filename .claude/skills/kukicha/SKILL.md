@@ -318,12 +318,6 @@ todo := Todo
     completed: false
 ```
 
-### Lambda/Arrow Functions
-```kukicha
-filtered := slice.Filter(items, x -> x > 10)
-mapped := slice.Map(items, x -> x * 2)
-```
-
 ### Defer
 ```kukicha
 func ProcessFile(path string)

@@ -728,8 +728,8 @@ Ready for the next step? Follow this learning path:
 
 ### Additional Resources
 
-- **[Kukicha Syntax Reference](kukicha-syntax-v1.0.md)** - Complete language reference
-- **[Quick Reference](kukicha-quick-reference.md)** - Cheat sheet for quick lookups
+- **[Kukicha Syntax Reference](../kukicha-syntax-v1.0.md)** - Complete language reference
+- **[Quick Reference](../kukicha-quick-reference.md)** - Cheat sheet for quick lookups
 - **examples/** directory - More example programs
 
 ### Practice Exercises
@@ -743,51 +743,4 @@ Try building these programs to practice your skills:
 
 ---
 
-## Summary of String Petiole Functions
-
-Here's a quick reference of all 28 functions in the string package:
-
-### Case Conversion
-- `string.ToUpper(s)` - Convert to UPPERCASE
-- `string.ToLower(s)` - Convert to lowercase
-- `string.Title(s)` - Convert To Title Case
-
-### Trimming
-- `string.TrimSpace(s)` - Remove leading/trailing spaces
-- `string.TrimPrefix(s, prefix)` - Remove prefix if present
-- `string.TrimSuffix(s, suffix)` - Remove suffix if present
-- `string.Trim(s, cutset)` - Remove leading/trailing characters from cutset
-- `string.TrimLeft(s, cutset)` - Remove leading characters from cutset
-- `string.TrimRight(s, cutset)` - Remove trailing characters from cutset
-
-### Splitting & Joining
-- `string.Split(s, sep)` - Split string by separator
-- `string.SplitN(s, sep, n)` - Split string by separator, max n parts
-- `string.Fields(s)` - Split by whitespace
-- `string.Lines(s)` - Split by newlines
-- `string.Join(list, sep)` - Join list of strings with separator
-
-### Searching
-- `string.Contains(s, substr)` - Check if s contains substr
-- `string.HasPrefix(s, prefix)` - Check if s starts with prefix
-- `string.HasSuffix(s, suffix)` - Check if s ends with suffix
-- `string.Index(s, substr)` - Find first position of substr (-1 if not found)
-- `string.LastIndex(s, substr)` - Find last position of substr
-- `string.Count(s, substr)` - Count occurrences of substr
-
-### Replacement
-- `string.ReplaceAll(s, old, new)` - Replace all occurrences
-- `string.Replace(s, old, new, n)` - Replace first n occurrences (-1 for all)
-
-### Other
-- `string.Repeat(s, count)` - Repeat string count times
-- `string.Compare(a, b)` - Compare two strings (-1, 0, or 1)
-- `string.EqualFold(a, b)` - Case-insensitive equality check
-- `string.Clone(s)` - Create a copy of string
-- `string.Cut(s, sep)` - Split at first separator, return before/after/found
-- `string.CutPrefix(s, prefix)` - Remove prefix, return result and whether it was present
-- `string.CutSuffix(s, suffix)` - Remove suffix, return result and whether it was present
-
----
-
-**Welcome to the world of programming with Kukicha! Happy coding! 🌱**
+**Welcome to the world of programming with Kukicha! Happy coding!**
