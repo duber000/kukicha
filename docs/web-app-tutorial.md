@@ -105,24 +105,27 @@ Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks 
 {"id": 1, "title": "Buy groceries", "completed": false}
 ```
 
-> **📚 Note: When to use `parse` vs `encoding/json`**
+> **📚 Note: JSON in Kukicha with Go 1.25+**
 >
-> Kukicha's stdlib has a `parse` package for parsing JSON from strings (like when reading files or API responses):
+> Kukicha's stdlib `parse` and `fetch` packages use Go 1.25+ `encoding/json/v2` for 2-10x faster JSON parsing:
 > ```kukicha
 > config := files.Read("config.json") |> parse.Json() as Config
+> response := fetch.Get(url) |> fetch.Json() as Data  # Streams efficiently!
 > ```
 >
-> But in web servers, we work with **streams** (http.ResponseWriter, http.Request.Body), so we use `encoding/json` directly for better performance:
+> For web servers, you can use `encoding/json/v2` for streaming:
 > ```kukicha
-> response |> json.NewEncoder() |> .Encode(data)  # Streaming
+> import "encoding/json/v2"
+> json.MarshalWrite(response, data)  # Write JSON directly to response
+> json.UnmarshalRead(request.Body, reference result)  # Stream from request
 > ```
 >
-> **Rule of thumb:** Use `parse.Json()` for strings, use `encoding/json` for streams.
+> **Rule of thumb:** Use `parse.Json()`/`fetch.Json()` for convenience, use `encoding/json/v2` directly for custom streaming needs.
 
 Kukicha makes sending JSON easy:
 
 ```kukicha
-import "encoding/json"
+import "encoding/json/v2"  # Go 1.25+ for better performance
 
 type Todo
     id int
@@ -207,7 +210,7 @@ Now let's put it all together! Create `main.kuki`:
 ```kukicha
 import "fmt"
 import "net/http"
-import "encoding/json"
+import "encoding/json/v2"  # Go 1.25+ for better performance
 import "strconv"
 import "slices"
 import "stdlib/string"

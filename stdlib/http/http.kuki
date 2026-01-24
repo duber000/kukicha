@@ -1,0 +1,16 @@
+# Kukicha Standard Library - HTTP (Server Helpers)
+
+petiole http
+
+import "net/http"
+
+# WithCSRF wraps a handler with Cross-Origin protection
+# Uses Fetch metadata headers (modern browsers)
+# Example: http.WithCSRF(myHandler)
+func WithCSRF(handler http.Handler) http.Handler
+    return http.CrossOriginProtection(handler)
+
+# Serve starts an HTTP server on the specified address
+# Example: http.Serve(":8080", handler)
+func Serve(addr string, handler http.Handler) error
+    return http.ListenAndServe(addr, handler)

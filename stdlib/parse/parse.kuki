@@ -2,10 +2,12 @@
 
 petiole parse
 
-import "encoding/json"
+import "encoding/json/v2"
 import "encoding/csv"
 import "strings"
 import "gopkg.in/yaml.v3"
+import "io"
+import "bytes"
 
 # Json parses a JSON string into a value
 # Use type assertion to specify the expected type
@@ -13,10 +15,48 @@ import "gopkg.in/yaml.v3"
 # Example: jsonStr |> parse.Json() as Config
 func Json(data string) (any, error)
     result := any
-    err := json.Unmarshal(list of byte(data), reference result)
+    err := json.UnmarshalRead(strings.NewReader(data), reference result)
     if err != empty
         return empty, err
     return result, empty
+
+# JsonFromReader parses JSON directly from a reader (streaming, memory efficient)
+# Useful for large JSON files or HTTP response bodies
+# Example: file |> parse.JsonFromReader() as Config
+func JsonFromReader(reader reference io.Reader) (any, error)
+    result := any
+    err := json.UnmarshalRead(reader, reference result)
+    if err != empty
+        return empty, err
+    return result, empty
+
+# JsonLines parses newline-delimited JSON (NDJSON format)
+# Each line is parsed as a separate JSON object
+# Example: logData |> parse.JsonLines() as list of LogEntry
+func JsonLines(data string) (list of any, error)
+    lines := strings.Split(data, "\n")
+    results := make(list of any, 0, len(lines))
+
+    for line in lines
+        if strings.TrimSpace(line) equals ""
+            continue
+
+        item := any
+        err := json.UnmarshalRead(strings.NewReader(line), reference item)
+        if err != empty
+            return empty, err
+        results = append(results, item)
+
+    return results, empty
+
+# JsonPretty formats a value as indented JSON string
+# Example: config |> parse.JsonPretty()
+func JsonPretty(value any) (string, error)
+    var buf bytes.Buffer
+    err := json.MarshalWrite(reference buf, value, json.Indent("  "))
+    if err != empty
+        return "", err
+    return buf.String(), empty
 
 # Csv parses a CSV string into a list of records
 # Each record is a list of strings representing the columns

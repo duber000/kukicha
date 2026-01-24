@@ -231,7 +231,7 @@ Now let's put it all together into a production-ready server:
 ```kukicha
 import "fmt"
 import "net/http"
-import "encoding/json"
+import "encoding/json/v2"
 import "strconv"
 import "stdlib/string"
 import "database/sql"

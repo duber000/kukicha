@@ -1,0 +1,38 @@
+# Kukicha Standard Library - Concurrent (Concurrency Helpers)
+
+petiole concurrent
+
+import "sync"
+
+# Parallel executes multiple functions concurrently and waits for all to complete
+# Returns when all functions have finished
+# Example: concurrent.Parallel(task1, task2, task3)
+func Parallel(tasks many func())
+    wg := reference sync.WaitGroup{}
+    for task in tasks
+        wg.Go(task)  # Go 1.25: automatic Add(1) and Done()
+    wg.Wait()
+
+# ParallelWithLimit executes functions with a maximum concurrency limit
+# At most 'limit' functions run simultaneously
+# Example: concurrent.ParallelWithLimit(4, tasks...)
+func ParallelWithLimit(limit int, tasks many func())
+    sem := make(channel of struct{}, limit)
+    wg := reference sync.WaitGroup{}
+
+    for task in tasks
+        sem <- struct{}{}
+        wg.Go(func()
+            defer func() { <-sem }()
+            task()
+        )
+
+    wg.Wait()
+
+# Go runs a function in a new goroutine with WaitGroup tracking
+# Returns a WaitGroup that completes when the function finishes
+# Example: wg := concurrent.Go(myFunc); wg.Wait()
+func Go(fn func()) reference sync.WaitGroup
+    wg := reference sync.WaitGroup{}
+    wg.Go(fn)
+    return wg

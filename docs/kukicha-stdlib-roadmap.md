@@ -38,9 +38,11 @@ Kukicha combines two powerful ideas:
 | **iter** | Functional iteration (Filter, Map, Reduce) | Lazy evaluation with pipes |
 | **slice** | Slice operations (First, Last, Drop, Unique) | Pipeline-friendly helpers |
 | **string** | String utilities | Thin wrappers for Go's strings package |
-| **fetch** | HTTP client optimized for pipes | Request builder with JSON parsing |
+| **fetch** | HTTP client optimized for pipes | Request builder with JSON parsing (Go 1.25+ jsonv2) |
 | **files** | File operations with pipes | Read/write with path utilities |
-| **parse** | JSON/YAML/CSV parsing | Format-specific parsing functions |
+| **parse** | JSON/YAML/CSV parsing | Format-specific parsing functions (Go 1.25+ jsonv2) |
+| **concurrent** | Concurrency helpers | Go 1.25+ WaitGroup.Go() patterns |
+| **http** | HTTP server helpers | Go 1.25+ CSRF protection |
 
 ### 🚧 Planned Scripting Packages (Priority Order)
 
@@ -144,6 +146,64 @@ cleanUrl := url
 # Split, Join, Contains, HasPrefix, HasSuffix, Replace, ReplaceAll
 ```
 
+### Concurrent Package
+
+Concurrency helpers leveraging Go 1.25+ `sync.WaitGroup.Go()`:
+
+```kukicha
+import "stdlib/concurrent"
+
+# Run multiple tasks concurrently
+concurrent.Parallel(
+    func() { fetchUsers() },
+    func() { fetchOrders() },
+    func() { fetchProducts() }
+)
+
+# Run with concurrency limit (max 4 at a time)
+tasks := list of func(){}
+for url in urls
+    tasks = append(tasks, func() { processUrl(url) })
+
+concurrent.ParallelWithLimit(4, tasks...)
+
+# Track a goroutine with WaitGroup
+wg := concurrent.Go(func() {
+    processLargeFile()
+})
+# Do other work...
+wg.Wait()
+
+# Available functions:
+# Parallel, ParallelWithLimit, Go
+```
+
+### HTTP Package
+
+HTTP server helpers using Go 1.25+ features:
+
+```kukicha
+import "stdlib/http"
+import "net/http"
+
+func main()
+    mux := http.NewServeMux()
+    mux.HandleFunc("/api/data", handleData)
+
+    # Wrap with CSRF protection (Go 1.25+ CrossOriginProtection)
+    handler := mux |> http.WithCSRF()
+
+    # Start server
+    http.Serve(":8080", handler) onerr panic "server failed"
+
+func handleData(w http.ResponseWriter, r reference http.Request)
+    data := fetchData()
+    json.NewEncoder(w).Encode(data)
+
+# Available functions:
+# WithCSRF, Serve
+```
+
 ---
 
 ## Planned Scripting Packages 🚧
@@ -152,12 +212,12 @@ These packages showcase the pipe operator and make scripting delightful:
 
 ### Fetch Package ✅
 
-HTTP client designed for data pipelines:
+HTTP client designed for data pipelines (Go 1.25+ jsonv2 streaming):
 
 ```kukicha
 import "stdlib/fetch"
 
-# Simple GET with automatic JSON parsing
+# Simple GET with automatic JSON parsing (streams with jsonv2)
 users := fetch.Get("https://api.github.com/users")
     |> fetch.Json() as list of User
     |> slice.Filter(u -> u.Followers > 100)
@@ -187,17 +247,32 @@ results := urls
 
 ### Parse Package ✅
 
-Universal parsing with pipes:
+Universal parsing with pipes (Go 1.25+ jsonv2 for 2-10x faster JSON):
 
 ```kukicha
 import "stdlib/parse"
 
-# JSON parsing pipeline
+# JSON parsing pipeline (uses Go 1.25+ jsonv2)
 config := "config.json"
     |> files.Read()
     |> parse.Json() as Config
     |> validateConfig()
     onerr defaultConfig()
+
+# Stream JSON from reader (memory efficient for large files)
+data := fileReader
+    |> parse.JsonFromReader() as LargeDataset
+    onerr panic "failed to parse"
+
+# Parse NDJSON (newline-delimited JSON logs)
+entries := logData
+    |> parse.JsonLines() as list of LogEntry
+    |> slice.Filter(e -> e.Level equals "ERROR")
+
+# Format as pretty JSON
+output := config
+    |> parse.JsonPretty()
+    |> files.Write("config-formatted.json")
 
 # CSV to structured data
 users := "data.csv"
@@ -214,15 +289,9 @@ settings := "settings.yaml"
     |> applyDefaults()
     onerr panic "invalid settings"
 
-# TOML (like stem.toml)
-project := "stem.toml"
-    |> files.Read()
-    |> parse.Toml() as ProjectConfig
-
-# XML parsing
-feed := fetch.Get("https://example.com/rss")
-    |> parse.Xml() as RssFeed
-    |> extractItems()
+# Available functions:
+# Json, JsonFromReader, JsonLines, JsonPretty (Go 1.25+ jsonv2)
+# Csv, CsvWithHeader, Yaml
 ```
 
 ### CLI Package (Planned)
@@ -656,18 +725,20 @@ We provide high-level helpers for common patterns, but:
 To make Kukicha the best scripting language for beginners and automation:
 
 ### Phase 1: Essential Scripting ✅ Completed!
-1. ✅ **fetch** - HTTP client (most requested, enables tons of examples)
-2. ✅ **parse** - JSON/YAML/CSV parsing (pairs with fetch)
+1. ✅ **fetch** - HTTP client with Go 1.25+ jsonv2 streaming
+2. ✅ **parse** - JSON/YAML/CSV parsing with Go 1.25+ jsonv2 (2-10x faster)
 3. ✅ **files** - File operations (basic scripting need)
+4. ✅ **concurrent** - Concurrency helpers with Go 1.25+ WaitGroup.Go()
+5. ✅ **http** - HTTP server helpers with Go 1.25+ CSRF protection
 
-### Phase 2: Tools & CLI (After Phase 1)
-4. **cli** - Argument parsing (build actual tools)
-5. **shell** - Safe command execution (automation scripts)
-6. **template** - Text generation (code gen, reports)
+### Phase 2: Tools & CLI (Next Priority)
+6. **cli** - Argument parsing (build actual tools)
+7. **shell** - Safe command execution (automation scripts)
+8. **template** - Text generation (code gen, reports)
 
 ### Phase 3: Advanced (Future)
-7. **retry** - Reliability patterns
-8. **result** - Educational type for learning FP concepts
+9. **retry** - Reliability patterns
+10. **result** - Educational type for learning FP concepts
 
 ---
 

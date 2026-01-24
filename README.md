@@ -1,350 +1,259 @@
-# Kukicha Programming Language
+# Kukicha
 
-Kukicha (茎 = stem in Japanese) is a high-level, beginner-friendly programming language that compiles to idiomatic Go code. It combines English-like syntax with Go's performance and explicit type system.
+**Write code that reads like English. Compile it to blazing-fast Go.**
 
-## Project Status
+Kukicha is a beginner-friendly programming language that transpiles to idiomatic Go code. No runtime overhead. No magic. Just cleaner syntax that becomes real Go.
 
-**Current Version:** 1.0.0 🎉- Ready for Testing
+```kukicha
+func main()
+    users := fetchUsers() onerr panic "failed to fetch"
 
-## Quick Start
+    active := users
+        |> slice.Filter(u -> u.active)
+        |> slice.Map(u -> u.name)
 
-### Prerequisites
-
-- Go 1.24+ (required)
-- Go 1.25+ recommended for Green Tea GC performance improvements (10-40% faster GC)
-
-### Installation
-
-```bash
-git clone https://github.com/duber000/kukicha.git
-cd kukicha
-go mod tidy
-go build -o kukicha ./cmd/kukicha
+    for name in active
+        fmt.Println("Hello {name}!")
 ```
 
-This builds the `kukicha` binary in your current directory. You can move it to a location in your `$PATH`:
+---
+
+## Why Kukicha?
+
+### For Beginners
+
+**Go is powerful but intimidating.** Pointers (`*`, `&`), error handling boilerplate, and cryptic symbols create a steep learning curve.
+
+Kukicha fixes this:
+
+| Go | Kukicha |
+|----|---------|
+| `&&`, `\|\|`, `!` | `and`, `or`, `not` |
+| `*User`, `&user` | `reference User`, `reference of user` |
+| `nil` | `empty` |
+| `if err != nil { return err }` | `onerr return error` |
+
+**Learn programming concepts, not symbols.** When you're ready, the generated Go code teaches you Go itself.
+
+### For DevOps Engineers
+
+**Automate infrastructure with Go's reliability, without Go's verbosity.**
+
+```kukicha
+# Fetch pod status, filter failures, alert
+pods := k8s.ListPods(namespace) onerr panic "k8s unavailable"
+
+failing := pods
+    |> slice.Filter(p -> p.status != "Running")
+    |> slice.Map(p -> "{p.name}: {p.status}")
+
+if len(failing) > 0
+    slack.Alert(channel, "Pods failing:\n" + strings.Join(failing, "\n"))
+```
+
+Kukicha compiles to a **single static binary**. No Python dependencies. No Node.js runtime. Just copy and run.
+
+### For Go Developers
+
+**It's still Go.** Kukicha is syntactic sugar, not a new language.
+
+- **Zero runtime overhead** - compiles to idiomatic Go
+- **Full Go stdlib access** - import any Go package
+- **Gradual adoption** - mix with existing Go code
+- **Green Tea GC optimized** - designed for Go 1.25+ performance
+
+```kukicha
+# This IS Go, just friendlier
+import "net/http"
+import "encoding/json/v2"  # Go 1.25+ jsonv2 for 2-10x faster JSON
+
+func HandleUser(w http.ResponseWriter, r reference http.Request)
+    user := parseUser(r.Body) onerr
+        http.Error(w, "invalid request", 400)
+        return
+
+    json.MarshalWrite(w, user)
+```
+
+---
+
+## The Green Tea Ecosystem
+
+Kukicha (茎茶) is Japanese green tea made from **stems and twigs** - the parts usually discarded. We take the "rough edges" of Go and brew something smooth.
+
+| Term | Meaning | Go Equivalent |
+|------|---------|---------------|
+| **Kukicha** | The language (green tea stems) | - |
+| **Stem** | Your project root | Go module |
+| **Petiole** | A package (leaf stem) | Go package |
+| **Green Tea GC** | Go 1.25+ garbage collector | 10-40% faster GC |
+
+Kukicha is optimized for Go's **Green Tea GC** - the experimental garbage collector in Go 1.25 that will become default in Go 1.26. Your Kukicha code is ready for the future.
+
+---
+
+## Quick Taste
+
+```kukicha
+type Todo
+    id int
+    title string
+    done bool
+
+func Display on todo Todo string
+    status := "[x]" if todo.done else "[ ]"
+    return "{status} {todo.title}"
+
+func main()
+    todos := list of Todo{
+        Todo{id: 1, title: "Learn Kukicha", done: true},
+        Todo{id: 2, title: "Build something", done: false},
+    }
+
+    for todo in todos
+        fmt.Println(todo.Display())
+```
+
+**Transpiles to clean Go:**
+
+```go
+type Todo struct {
+    ID    int
+    Title string
+    Done  bool
+}
+
+func (todo Todo) Display() string {
+    status := "[x]"
+    if !todo.Done {
+        status = "[ ]"
+    }
+    return fmt.Sprintf("%s %s", status, todo.Title)
+}
+```
+
+---
+
+## Install
+
+**Requirements:** Go 1.25+
 
 ```bash
-# Optional: install to ~/go/bin (or any directory in your PATH)
+# Clone and build
+git clone https://github.com/duber000/kukicha.git
+cd kukicha
+go build -o kukicha ./cmd/kukicha
+
+# Optional: install globally
 go install ./cmd/kukicha
 ```
 
-### Enabling Green Tea GC (Go 1.25+)
-
-For optimal performance, build with the Green Tea garbage collector:
+**For maximum performance** (Go 1.25+):
 
 ```bash
 GOEXPERIMENT=greenteagc go build -o kukicha ./cmd/kukicha
 ```
 
-Or run tests with Green Tea GC:
+---
+
+## Usage
 
 ```bash
-GOEXPERIMENT=greenteagc go test ./...
-```
+# Compile to binary
+kukicha build myapp.kuki
 
-Note: Green Tea GC will be enabled by default in Go 1.26+ (expected February 2026)
-
-### Usage
-
-Once built, use the `kukicha` CLI to work with `.kuki` files:
-
-```bash
-# Transpile and build a Kukicha file to a Go binary
-./kukicha build hello.kuki
-
-# Transpile and run immediately
-./kukicha run hello.kuki
+# Compile and run immediately
+kukicha run myapp.kuki
 
 # Type-check without compiling
-./kukicha check hello.kuki
+kukicha check myapp.kuki
 
-# Format Kukicha source files
-./kukicha fmt hello.kuki          # Output to stdout
-./kukicha fmt -w hello.kuki       # Write formatted output back to file
-./kukicha fmt --check hello.kuki  # Check if file is formatted (exit 1 if not)
-./kukicha fmt ./src/              # Format all .kuki files in directory
+# Format source files
+kukicha fmt myapp.kuki
+kukicha fmt -w myapp.kuki      # Write changes
+kukicha fmt --check src/       # CI check
 
 # Show version
-./kukicha version
+kukicha version
 ```
-
-### Running Tests
-
-```bash
-# Run all tests
-go test ./...
-
-# Run lexer tests with verbose output
-go test ./internal/lexer/... -v
-```
-
-## Language Features
-
-### Core Design Decisions (v1.0.0)
-
-Kukicha v1.0.0 introduces key refinements that balance simplicity, performance, and consistency:
-
-1. **📦 Optional Petiole Declarations** - Folder-based package model with automatic Petiole (package) calculation from file path. No more header/directory sync issues!
-
-2. **🎯 Signature-First Type Inference** - Explicit types required for function parameters and returns; inference only for local variables. Maintains Go's performance while reducing boilerplate.
-
-3. **⚡ Literal vs Dynamic Indexing** - Negative indices with literal constants (e.g., `items[-1]`) compile to zero-overhead code. Dynamic indices require explicit `.at()` method.
-
-4. **📏 Indentation as Canonical** - The `kuki fmt` tool converts all code to standard 4-space indentation format, preventing "dialect drift" between coding styles.
-
-5. **🔧 Context-Sensitive Type Keywords** - `list`, `map`, and `channel` are context-sensitive. In type contexts (parameters, fields), they start composite types. No lookahead needed at lexer level.
-
-6. **📝 Explicit Receiver Names** - Methods use `func Display on todo Todo` syntax where the receiver is explicitly named, following Go's philosophy that "methods are just functions".
-
-7. **🔄 Empty Literal Lookahead** - `empty` uses 1-token lookahead to determine if it's standalone (`nil`) or typed (`empty list of Todo`).
-
-8. **🎭 Unified `func` Syntax** - Use `func` for both declarations and types (like Go). Simple, consistent, one keyword to learn.
-
-### Philosophy
-
-Kukicha smooths Go's rough edges while preserving its power:
-
-- ✅ **Keep**: Explicit types, static typing, performance, Go's stdlib
-- ✅ **Smooth**: Symbols minimized, English-like keywords, consistent syntax
-- ✅ **Star**: The walrus operator `:=` for clean variable binding
-- ✅ **Simple**: Two-level module hierarchy (Stem → Petiole)
-
-### Key Syntax Highlights
-
-#### Variables (Walrus Operator ⭐)
-
-```kukicha
-# Create new binding
-count := 42
-
-# Reassign existing
-count = 100
-```
-
-#### Functions & Methods
-
-```kukicha
-# Function with explicit types (required)
-func Greet(name string) string
-    return "Hello {name}"
-
-# Method with explicit receiver name
-func Display on todo Todo string
-    return "{todo.id}: {todo.title}"
-
-# Receiver is just a parameter - no special 'this' or 'self'
-func Summary on t Todo string
-    return t.title
-```
-
-#### Function Types (Callbacks)
-
-```kukicha
-# Function types use 'func' keyword (consistent with Go)
-func Filter(items list of int, predicate func(int) bool) list of int
-    result := list of int{}
-    for item in items
-        if predicate(item)
-            result = append(result, item)
-    return result
-
-# Use with lambdas
-evens := Filter(numbers, func(n int) bool
-    return n % 2 == 0
-)
-```
-
-#### Error Handling (OnErr Operator)
-
-```kukicha
-# Auto-unwrap (T, error) tuples
-content := file.read("config.json") onerr panic "missing file"
-
-# Provide default value
-port := env.get("PORT") onerr "8080"
-```
-
-#### Pipe Operator
-
-```kukicha
-# Clean data pipelines
-result := data
-    |> parse()
-    |> transform()
-    |> process()
-```
-
-#### Concurrency
-
-```kukicha
-# Goroutines
-go fetchData(url)
-
-# Channels
-ch := make channel of string
-send ch, "message"
-msg := receive ch
-```
-
-#### Pointers & References
-
-```kukicha
-# Taking address of variable
-user := User{}
-userPtr := reference of user
-
-# Getting value from pointer
-val := dereference userPtr
-
-# Useful for stdlib functions that need pointers
-json.Unmarshal(data, reference of user) onerr panic "parse failed"
-```
-
-#### Collections with Membership Testing
-
-```kukicha
-# Lists
-items := list of string{"a", "b", "c"}
-last := items[-1]  # Negative indexing
-
-# Membership testing
-if user in admins
-    grantAccess()
-```
-
-## Project Structure
-
-```
-kukicha/
-├── cmd/
-│   └── kukicha/           # ✅ CLI entry point
-├── internal/
-│   ├── lexer/             # ✅ Lexer implementation
-│   │   ├── lexer.go
-│   │   ├── token.go
-│   │   └── lexer_test.go
-│   ├── parser/            # ✅ Parser implementation
-│   ├── semantic/          # ✅ Semantic analysis
-│   ├── codegen/           # ✅ Code generation
-│   ├── formatter/         # ✅ Code formatter (kukicha fmt)
-│   └── ast/               # ✅ AST definitions
-├── docs/                  # Language documentation
-├── examples/              # Example programs
-├── testdata/              # Test fixtures
-├── go.mod
-└── README.md
-```
-
-## Transpiler Implementation
-
-The Kukicha transpiler converts `.kuki` source files into idiomatic Go code through four phases:
-
-1. **Lexer** - Tokenizes source with indentation support
-2. **Parser** - Builds Abstract Syntax Tree (AST)
-3. **Semantic Analysis** - Type checking and validation
-4. **Code Generation** - Produces idiomatic Go code
-
-### Example
-
-```kukicha
-func Greet(name string) string
-    return "Hello {name}"
-```
-
-Transpiles to:
-
-```go
-func Greet(name string) string {
-    return fmt.Sprintf("Hello %s", name)
-}
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-go test ./...
-
-# Run specific package tests
-go test ./internal/lexer/... -v
-go test ./internal/parser/... -v
-go test ./internal/semantic/... -v
-go test ./internal/codegen/... -v
-```
-
-## Documentation
-
-### Tutorials
-- [Beginner Tutorial](docs/beginner-tutorial.md) - Learn Kukicha from scratch (strings & functions)
-- [Web App Tutorial](docs/web-app-tutorial.md) - Build a REST API with Go stdlib packages
-
-### References
-- [Language Syntax Reference](docs/kukicha-syntax-v1.0.md) - Complete syntax guide
-- [Quick Reference](docs/kukicha-quick-reference.md) - Developer cheat sheet
-- [Design Philosophy](docs/kukicha-design-philosophy.md) - Core principles and approach
-
-### Technical
-- [Compiler Architecture](docs/kukicha-compiler-architecture.md) - Implementation details
-- [Grammar (EBNF)](docs/kukicha-grammar.ebnf.md) - Formal grammar definition
-- [Standard Library Roadmap](docs/kukicha-stdlib-roadmap.md) - Future library features
-
-## Development
-
-### Adding New Features
-
-1. Update the specification in `docs/`
-2. Update the grammar in `kukicha-grammar.ebnf.md`
-3. Implement in the appropriate phase (lexer/parser/semantic/codegen)
-4. Add comprehensive tests
-5. Update documentation
-
-### Running Tests
-
-```bash
-# Run all tests
-go test ./...
-
-# Run with coverage
-go test ./... -cover
-
-# Run specific package
-go test ./internal/lexer/...
-```
-
-## Future Enhancements
-
-Key word changes:
-
-1. onerr doesn't roll off the tongue.
-
-See [Standard Library Roadmap](docs/kukicha-stdlib-roadmap.md) for planned features:
-
-1. **Standard Library** - ✅ Iter/Slice/String complete, 📋 HTTP, JSON, File I/O, Docker, K8s, LLM packages planned
-2. **Package Manager** - Dependency management and versioning
-3. **IDE Support** - VS Code extension with syntax highlighting and IntelliSense
-4. **Debugger** - Source-level debugging support
-5. **Formatter Enhancements** - Style options (`--style=compact`, `--style=expanded`), auto-fix
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Follow the existing code style
-2. Add tests for new features
-3. Update documentation
-4. Ensure all tests pass
-
-## License
-
-See [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-Kukicha is designed for programming beginners while maintaining compatibility with Go's ecosystem and performance characteristics.
 
 ---
 
-**Status**: Ready for testing!
-**Version**: 1.0.0
-**Go Compatibility**: 1.24+ (1.25+ recommended for Green Tea GC optimization)
+## Development
+
+### Run Tests
+
+```bash
+go test ./...                    # All tests
+go test ./internal/parser/... -v # Specific package
+go test ./... -cover             # With coverage
+```
+
+### Project Structure
+
+```
+kukicha/
+├── cmd/kukicha/     # CLI
+├── internal/        # Compiler (lexer, parser, semantic, codegen)
+├── stdlib/          # Standard library (iter, slice, fetch, parse, concurrent, http, etc.)
+├── docs/            # Documentation
+└── examples/        # Example programs
+```
+
+See [Project Structure](docs/project-structure.md) for details.
+
+### Adding Features
+
+1. Update docs and grammar specification
+2. Implement in the appropriate compiler phase
+3. Add tests
+4. Submit PR
+
+See [Contributing Guide](docs/contributing.md) for full details.
+
+---
+
+## Documentation
+
+### Learn Kukicha
+
+- [Beginner Tutorial](docs/beginner-tutorial.md) - Start here
+- [Language Features](docs/language-features.md) - Complete syntax reference
+- [Quick Reference](docs/kukicha-quick-reference.md) - Cheat sheet
+
+### Tutorials
+
+- [Console Todo App](docs/console-todo-tutorial.md) - Build a CLI app
+- [Web App Tutorial](docs/web-app-tutorial.md) - Build a REST API
+- [Production Patterns](docs/production-patterns-tutorial.md) - Best practices
+
+### Technical
+
+- [Design Philosophy](docs/kukicha-design-philosophy.md) - Why Kukicha works this way
+- [Compiler Architecture](docs/kukicha-compiler-architecture.md) - How the transpiler works
+- [Grammar (EBNF)](docs/kukicha-grammar.ebnf.md) - Formal specification
+- [Go 1.25 Roadmap](docs/go_1.25_roadmap.md) - Upcoming improvements
+
+### Standard Library
+
+- [stdlib Roadmap](docs/kukicha-stdlib-roadmap.md) - Current and planned packages
+
+---
+
+## Status
+
+**Version:** 1.0.0
+**Status:** Ready for testing
+**Go:** 1.25+ required
+
+---
+
+## License
+
+See [LICENSE](LICENSE) for details.
+
+---
+
+<p align="center">
+  <strong>Kukicha</strong> - Smooth syntax. Go performance. Green tea vibes.
+</p>

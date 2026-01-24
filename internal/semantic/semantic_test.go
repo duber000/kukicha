@@ -3,6 +3,7 @@ package semantic
 import (
 	"strings"
 	"testing"
+	"testing/synctest"
 
 	"github.com/duber000/kukicha/internal/parser"
 )
@@ -311,4 +312,70 @@ func TestInvalidBooleanOperand(t *testing.T) {
 	if !strings.Contains(errors[0].Error(), "logical operator requires boolean") {
 		t.Errorf("expected boolean operator error, got: %v", errors[0])
 	}
+}
+
+// TestConcurrentSemanticAnalysis tests that the semantic analyzer is thread-safe
+// and multiple analyzers can run concurrently using synctest
+func TestConcurrentSemanticAnalysis(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		// Test that semantic analyzer is thread-safe
+		// Multiple analyzers should be able to run concurrently
+
+		programs := []string{
+			`func Add(a int, b int) int
+    return a + b`,
+			`type User
+    name string
+    age int`,
+			`func Test() bool
+    x := 5
+    return x > 3`,
+		}
+
+		results := make(chan bool, len(programs))
+
+		for _, src := range programs {
+			go func(source string) {
+				p, err := parser.New(source, "test.kuki")
+				if err != nil {
+					t.Errorf("parser error: %v", err)
+					results <- false
+					return
+				}
+				program, parseErrors := p.Parse()
+				if len(parseErrors) > 0 {
+					t.Errorf("parse errors: %v", parseErrors)
+					results <- false
+					return
+				}
+				analyzer := New(program)
+				errors := analyzer.Analyze()
+				if len(errors) > 0 {
+					t.Errorf("semantic errors: %v", errors)
+					results <- false
+					return
+				}
+				results <- true
+			}(src)
+		}
+
+		synctest.Wait()
+
+		// Verify all completed successfully
+		successCount := 0
+		for range programs {
+			select {
+			case success := <-results:
+				if success {
+					successCount++
+				}
+			default:
+				t.Error("Expected result not received")
+			}
+		}
+
+		if successCount != len(programs) {
+			t.Errorf("Expected %d successful analyses, got %d", len(programs), successCount)
+		}
+	})
 }

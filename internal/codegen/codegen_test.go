@@ -3,6 +3,7 @@ package codegen
 import (
 	"strings"
 	"testing"
+	"testing/synctest"
 
 	"github.com/duber000/kukicha/internal/parser"
 )
@@ -553,3 +554,62 @@ func TestAddressOfWithFieldAccess(t *testing.T) {
 // REMOVED: Old generics tests - generics syntax has been removed from Kukicha
 // Generic functionality is now provided by the stdlib (written in Go) with special transpilation
 // See stdlib/iter/ for examples of special transpilation
+
+// TestConcurrentCodeGeneration tests that multiple code generators can run
+// concurrently without data races or interference using synctest
+func TestConcurrentCodeGeneration(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		// Test that multiple code generators can run concurrently
+		// without data races or interference
+
+		programs := []string{
+			`func main()
+    x := 1`,
+			`func add(a int, b int) int
+    return a + b`,
+			`type User
+    name string`,
+		}
+
+		results := make(chan string, len(programs))
+
+		for _, src := range programs {
+			go func(source string) {
+				p, err := parser.New(source, "test.kuki")
+				if err != nil {
+					t.Errorf("parser error: %v", err)
+					results <- ""
+					return
+				}
+				program, parseErrors := p.Parse()
+				if len(parseErrors) > 0 {
+					t.Errorf("parse errors: %v", parseErrors)
+					results <- ""
+					return
+				}
+				gen := New(program)
+				code, err := gen.Generate()
+				if err != nil {
+					t.Errorf("codegen error: %v", err)
+					results <- ""
+					return
+				}
+				results <- code
+			}(src)
+		}
+
+		synctest.Wait()
+
+		// Verify all completed
+		for range programs {
+			select {
+			case result := <-results:
+				if result == "" {
+					t.Error("Expected non-empty result")
+				}
+			default:
+				t.Error("Expected result not received")
+			}
+		}
+	})
+}

@@ -4,7 +4,7 @@ petiole fetch
 
 import "net/http"
 import "io"
-import "encoding/json"
+import "encoding/json/v2"
 import "bytes"
 import "time"
 
@@ -38,12 +38,8 @@ func Json(resp reference http.Response) (any, error)
 
     defer resp.Body.Close()
 
-    body, err := io.ReadAll(resp.Body)
-    if err != empty
-        return empty, err
-
     result := any
-    err = json.Unmarshal(body, reference result)
+    err := json.UnmarshalRead(resp.Body, reference result)
     if err != empty
         return empty, err
 
