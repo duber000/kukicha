@@ -46,7 +46,19 @@ type Todo
     settings reference Settings
     tags list of string
     metadata map of string to string
+
+# With struct tags (for JSON, database mapping, etc.)
+type User
+    ID int64 json:"id"
+    Name string json:"name"
+    Email string json:"email"
+    Active bool json:"active"
 ```
+
+**Struct Tags:** Add metadata with `key:"value"` syntax:
+- `json:"fieldname"` - JSON marshaling
+- `db:"column"` - Database column mapping
+- Multiple tags: `json:"name" db:"user_name"`
 
 ### Function Types
 

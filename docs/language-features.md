@@ -221,6 +221,38 @@ user := User
 user := User{id: 1, name: "Alice", email: "alice@example.com", active: true}
 ```
 
+### Struct Tags
+
+Add metadata to struct fields using `key:"value"` syntax. Tags enable JSON marshaling, database mapping, and other Go reflection-based features.
+
+```kukicha
+type User
+    ID int64 json:"id"
+    Name string json:"name"
+    Email string json:"email" db:"user_email"
+    Active bool json:"active"
+
+# Transpiles to Go with proper struct tags:
+# type User struct {
+#     ID     int64  `json:"id"`
+#     Name   string `json:"name"`
+#     Email  string `json:"email" db:"user_email"`
+#     Active bool   `json:"active"`
+# }
+
+# Now compatible with encoding/json:
+jsonData := `{"id": 1, "name": "Alice", "email": "alice@example.com", "active": true}`
+user := User{}
+json.Unmarshal([]byte(jsonData), &user)  # Works correctly with tags
+```
+
+Struct tags support any Go tag format:
+- `json:"fieldname"` - JSON marshaling
+- `xml:"fieldname"` - XML marshaling
+- `db:"column_name"` - Database mapping
+- `validate:"required"` - Validation rules
+- Multiple tags: `json:"name" db:"user_name"`
+
 ### Collection Types
 
 ```kukicha

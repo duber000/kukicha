@@ -167,7 +167,11 @@ func (g *Generator) generateTypeDecl(decl *ast.TypeDecl) {
 
 	for _, field := range decl.Fields {
 		fieldType := g.generateTypeAnnotation(field.Type)
-		g.writeLine(fmt.Sprintf("%s %s", field.Name.Value, fieldType))
+		line := fmt.Sprintf("%s %s", field.Name.Value, fieldType)
+		if field.Tag != "" {
+			line += fmt.Sprintf(" `%s`", field.Tag)
+		}
+		g.writeLine(line)
 	}
 
 	g.indent--

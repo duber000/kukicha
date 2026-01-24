@@ -249,9 +249,14 @@ func (p *Parser) parseTypeDecl() ast.Declaration {
 
 		fieldName := p.parseIdentifier()
 		fieldType := p.parseTypeAnnotation()
+		
+		// Parse optional struct tag (e.g., json:"name")
+		tag := p.parseStructTag()
+		
 		fields = append(fields, &ast.FieldDecl{
 			Name: fieldName,
 			Type: fieldType,
+			Tag:  tag,
 		})
 		p.skipNewlines()
 	}
@@ -1520,4 +1525,39 @@ func (p *Parser) parseFunctionLiteral() *ast.FunctionLiteral {
 		Returns:    returns,
 		Body:       body,
 	}
+}
+
+// parseStructTag parses a struct tag like json:"name" or empty string if none present
+// Format: identifier:stringLiteral
+func (p *Parser) parseStructTag() string {
+	// Check if next token is an identifier (tag name like "json", "xml", etc.)
+	if !p.check(lexer.TOKEN_IDENTIFIER) {
+		return ""
+	}
+	
+	// Look ahead to see if there's a colon
+	// Save current position
+	savedPos := p.pos
+	tagKeyToken := p.advance() // consume identifier
+	
+	if !p.check(lexer.TOKEN_COLON) {
+		// Not a tag, restore position and return empty
+		p.pos = savedPos
+		return ""
+	}
+	
+	// We have a tag - continue parsing
+	tagKey := tagKeyToken.Lexeme
+	p.consume(lexer.TOKEN_COLON, "expected ':' in struct tag")
+	
+	if !p.check(lexer.TOKEN_STRING) {
+		p.error(p.peekToken(), "expected string value in struct tag")
+		return ""
+	}
+	
+	tagValueToken := p.advance() // consume string
+	tagValue := tagValueToken.Lexeme
+	
+	// Return formatted tag: json:"name"
+	return tagKey + ":" + `"` + tagValue + `"`
 }

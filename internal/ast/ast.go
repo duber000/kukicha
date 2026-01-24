@@ -100,6 +100,7 @@ func (d *TypeDecl) declNode() {}
 type FieldDecl struct {
 	Name *Identifier
 	Type TypeAnnotation
+	Tag  string // Struct tag (e.g., `json:"name"`)
 }
 
 type InterfaceDecl struct {

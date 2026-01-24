@@ -247,10 +247,16 @@ results := urls
 
 ### Parse Package ✅
 
-Universal parsing with pipes (Go 1.25+ jsonv2 for 2-10x faster JSON):
+Universal parsing with pipes (Go 1.25+ jsonv2 for 2-10x faster JSON). Works seamlessly with struct tags for automatic field mapping.
 
 ```kukicha
 import "stdlib/parse"
+
+# Define struct with JSON tags
+type Config
+    Port int json:"port"
+    Host string json:"host"
+    Debug bool json:"debug"
 
 # JSON parsing pipeline (uses Go 1.25+ jsonv2)
 config := "config.json"
@@ -288,6 +294,15 @@ settings := "settings.yaml"
     |> parse.Yaml() as Settings
     |> applyDefaults()
     onerr panic "invalid settings"
+```
+
+**Struct Tags:** JSON and other parsers use struct tags for field mapping:
+```kukicha
+type User
+    ID int json:"id"
+    Name string json:"name"
+    Email string json:"email"
+```
 
 # Available functions:
 # Json, JsonFromReader, JsonLines, JsonPretty (Go 1.25+ jsonv2)

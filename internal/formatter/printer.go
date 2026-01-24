@@ -77,7 +77,11 @@ func (p *Printer) printTypeDecl(decl *ast.TypeDecl) {
 
 	for _, field := range decl.Fields {
 		fieldType := p.typeAnnotationToString(field.Type)
-		p.writeLine(fmt.Sprintf("%s %s", field.Name.Value, fieldType))
+		line := fmt.Sprintf("%s %s", field.Name.Value, fieldType)
+		if field.Tag != "" {
+			line += fmt.Sprintf(" %s", field.Tag)
+		}
+		p.writeLine(line)
 	}
 
 	p.indentLevel--

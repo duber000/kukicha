@@ -128,6 +128,16 @@ type Todo
     tags list of string
     metadata map of string to string
 
+# With struct tags (for JSON, database mapping, etc.)
+type User
+    ID int64 json:"id"
+    Name string json:"name"
+    Email string json:"email"
+    Active bool json:"active"
+
+# Struct tags support any Go format: json, xml, db, validate, etc.
+# Multiple tags: json:"name" db:"user_name"
+
 # Interface
 interface Storage
     Save(item Todo) error
@@ -207,10 +217,11 @@ if x != y          # Not equals still uses !=
 | `reference of x` | `&x` |
 | `dereference ptr` | `*ptr` |
 | `empty` | `nil` |
-| `and`, `or`, `not` | `&&`, `\|\|`, `!` |
+| `and`, `or`, `not` | &&, \|\|, ! |
 | `equals` | `==` |
 | `"Hello {name}"` | `fmt.Sprintf("Hello %s", name)` |
 | `items[-1]` | `items[len(items)-1]` |
+| `json:"name"` (struct tag) | `` `json:"name"` `` (backtick-quoted) |
 | Indentation blocks | `{ }` braces |
 
 ## Standard Library
@@ -222,9 +233,11 @@ Located in `stdlib/`:
 | `iter` | Functional iterators (Filter, Map, Take, Skip) |
 | `slice` | Slice operations (First, Last, Reverse, Unique) |
 | `string` | String utilities (ToUpper, Split, Contains) |
-| `fetch` | HTTP client for pipe-based requests |
+| `fetch` | HTTP client for pipe-based requests (uses jsonv2) |
 | `files` | File operations (Read, Write, List) |
-| `parse` | Data format parsing (JSON, CSV, YAML) |
+| `parse` | Data format parsing (JSON, CSV, YAML) - uses jsonv2 for 2-10x faster JSON |
+| `concurrent` | Concurrency helpers (Parallel, ParallelWithLimit, Go) |
+| `http` | HTTP server helpers (WithCSRF, Serve) |
 
 Example with stdlib:
 ```kukicha
@@ -238,6 +251,47 @@ repos := "https://api.github.com/users/golang/repos"
     |> fetch.Text()
     |> parse.Json() as list of Repo
     |> slice.Filter(r -> r.Stars > 100)
+```
+
+### Parse Package (jsonv2 powered)
+```kukicha
+# Standard JSON parsing
+data := jsonStr |> parse.Json() as Config
+
+# Streaming JSON from readers (memory efficient)
+config := file |> parse.JsonFromReader() as Config
+
+# NDJSON (newline-delimited JSON) parsing
+logs := logData |> parse.JsonLines() as list of LogEntry
+
+# Pretty-print JSON
+output := config |> parse.JsonPretty()
+```
+
+### Concurrent Package
+```kukicha
+import "stdlib/concurrent"
+
+# Run multiple tasks in parallel
+concurrent.Parallel(task1, task2, task3)
+
+# Limit concurrent execution (at most 4 tasks at once)
+concurrent.ParallelWithLimit(4, tasks...)
+
+# Run with WaitGroup tracking
+wg := concurrent.Go(myFunc)
+wg.Wait()
+```
+
+### HTTP Package
+```kukicha
+import "stdlib/http"
+
+# Add Cross-Origin protection to handler
+handler := http.WithCSRF(myHandler)
+
+# Start server
+http.Serve(":8080", handler)
 ```
 
 ## Project Structure
@@ -277,6 +331,15 @@ func ProcessFile(path string)
     defer file.Close()
     # ... process file
 ```
+
+## Go 1.25+ Features
+
+Kukicha leverages modern Go features:
+
+- **encoding/json/v2**: 2-10x faster JSON parsing in `stdlib/parse` and `stdlib/fetch`
+- **WaitGroup.Go()**: Automatic Add(1) and Done() tracking (used in `stdlib/concurrent`)
+- **testing/synctest**: Deterministic concurrency testing in compiler tests
+- **Green Tea GC**: Improved garbage collection (no code changes needed)
 
 ## Architecture (for compiler work)
 

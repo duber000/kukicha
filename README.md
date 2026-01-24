@@ -96,9 +96,9 @@ Kukicha is optimized for Go's **Green Tea GC** - the experimental garbage collec
 
 ```kukicha
 type Todo
-    id int
-    title string
-    done bool
+    id int json:"id"
+    title string json:"title"
+    done bool json:"done"
 
 func Display on todo Todo string
     status := "[x]" if todo.done else "[ ]"
