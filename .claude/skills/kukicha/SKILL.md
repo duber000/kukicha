@@ -215,12 +215,35 @@ print("Value:", count, "items")       # Variadic - accepts multiple arguments
 print(user.Name, user.Age)            # Works with any types
 ```
 
+### Function Types (Callbacks & Higher-Order Functions)
+```kukicha
+# Simple callback: takes int, returns bool
+func Filter(items list of int, predicate func(int) bool) list of int
+    result := list of int{}
+    for item in items
+        if predicate(item)
+            result = append(result, item)
+    return result
+
+# No return type
+func ForEach(items list of string, action func(string))
+    for item in items
+        action(item)
+
+# Pass function literal as callback
+evens := Filter(list of int{1, 2, 3, 4}, func(n int) bool
+    return n % 2 equals 0
+)
+```
+
 ## Transpilation Patterns
 
 | Kukicha | Go |
 |---------|-----|
 | `list of int` | `[]int` |
 | `map of string to int` | `map[string]int` |
+| `func(int) bool` | `func(int) bool` |
+| `func(string)` | `func(string)` |
 | `reference User` | `*User` |
 | `reference of x` | `&x` |
 | `dereference ptr` | `*ptr` |

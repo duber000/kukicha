@@ -31,30 +31,51 @@ Kukicha combines two powerful ideas:
 
 ## Implementation Status
 
+### Quick Summary
+
+**Ready to Use:** ✅ iter, slice, string, files, parse, fetch, concurrent, shell, cli, http (basic)
+
+**Not Yet Implemented:** 🚧 template, retry, result packages
+
+**Limitations:**
+- Builder patterns (`fetch.New()`, `shell.New()`, `cli.New()`, etc.) not yet supported - use direct function calls
+- `files.Watch()`, `slice.GroupBy()`, `useWith()` helper not implemented
+- Some Go 1.25+ features in roadmap examples are aspirational
+
 ### ✅ Completed Packages
 
-| Package | Purpose | Key Feature |
-|---------|---------|-------------|
-| **iter** | Functional iteration (Filter, Map, Reduce) | Lazy evaluation with pipes |
-| **slice** | Slice operations (First, Last, Drop, Unique) | Pipeline-friendly helpers |
-| **string** | String utilities | Thin wrappers for Go's strings package |
-| **fetch** | HTTP client optimized for pipes | Request builder with JSON parsing (Go 1.25+ jsonv2) |
-| **files** | File operations with pipes | Read/write with path utilities |
-| **parse** | JSON/YAML/CSV parsing | Format-specific parsing functions (Go 1.25+ jsonv2) |
-| **concurrent** | Concurrency helpers | Go 1.25+ WaitGroup.Go() patterns |
-| **http** | HTTP server helpers | Go 1.25+ CSRF protection |
-| **cli** | CLI argument parsing made easy | ??? |
-| **shell** | Safe command execution | ??? |
+| Package | Purpose | Status | Functions |
+|---------|---------|--------|-----------|
+| **iter** | Functional iteration (Filter, Map, Reduce) | ✅ Ready | Filter, Map, FlatMap, Take, Skip, Reduce, Collect, Find, Any, All, Enumerate, Zip, Chunk |
+| **slice** | Slice operations (First, Last, Drop, Unique) | ✅ Ready | First, Last, Drop, DropLast, Reverse, Unique, Chunk, Filter, Map, Contains, IndexOf, Concat |
+| **string** | String utilities | ✅ Ready | ToUpper, ToLower, Title, Trim, TrimSpace, TrimPrefix, TrimSuffix, Split, Join, Contains, HasPrefix, HasSuffix, Index, Count, Replace, ReplaceAll, and more |
+| **files** | File operations with pipes | ✅ Ready | Read, Write, Append, Exists, IsDir, IsFile, List, Delete, Copy, Move, MkDir, TempFile, TempDir, Size, ModTime, Extension, Join, Abs |
+| **parse** | JSON/YAML/CSV parsing | ✅ Ready | Json, JsonLines, JsonPretty, Csv, CsvWithHeader, Yaml, YamlPretty |
+| **fetch** | HTTP client optimized for pipes | ✅ Ready | Get, Post, Json, Text, CheckStatus |
+| **concurrent** | Concurrency helpers | ✅ Ready | Parallel, ParallelWithLimit, Go |
+| **shell** | Safe command execution | ✅ Ready | Run, RunSimple, RunWithDir, RunWithOutput, RunWithTimeout, Which, Getenv, Setenv, Unsetenv, Environ |
+| **cli** | CLI argument parsing | ✅ Ready | Parse, String, Command, Flag, BoolFlag, IntFlag, PrintUsage |
+| **http** | HTTP server helpers | ⚠️ Limited | Basic helpers (no builder pattern yet) |
 
 ### 🚧 Planned Scripting Packages (Priority Order)
 
 These packages make Kukicha perfect for scripts and automation:
 
-| Package | Purpose | Status |
-|---------|---------|--------|
-| **template** | Text templating | Planned |
-| **retry** | Retry logic with backoff | Planned |
-| **result** | Optional/Result types (educational) | Planned |
+| Package | Purpose | Status | Notes |
+|---------|---------|--------|-------|
+| **template** | Text templating | 🚧 Not Started | Planned but not implemented. Roadmap examples won't work yet. |
+| **retry** | Retry logic with backoff | 🚧 Not Started | Planned but not implemented. Roadmap examples won't work yet. |
+| **result** | Optional/Result types (educational) | 🚧 Not Started | Planned but not implemented. Roadmap examples won't work yet. |
+
+### ⚠️ Partially Implemented (Roadmap Examples May Not Work)
+
+| Feature | Status | What Works | What Doesn't |
+|---------|--------|-----------|--------------|
+| **fetch** | Mostly works | `Get()`, `Post()`, `Json()`, `Text()` | Builder pattern (`fetch.New().Header()`) not implemented |
+| **shell** | Mostly works | `Run()`, `RunSimple()`, direct execution | Builder pattern (`shell.New().Dir()`) not implemented |
+| **cli** | Mostly works | Simple parsing | Builder pattern (`cli.New().Arg()`) not implemented |
+| **files** | Mostly works | Basic file operations | `Watch()` and `useWith()` helper not implemented |
+| **slice** | Mostly works | All listed functions | `GroupBy()` not implemented |
 
 ---
 
@@ -64,23 +85,31 @@ Functional iteration with lazy evaluation and pipes:
 
 ```kukicha
 import "stdlib/iter"
+import "stdlib/slice"
 
 # Pipeline: filter positive numbers, double them, sum
 total := numbers
-    |> iter.Filter(n -> n > 0)
-    |> iter.Map(n -> n * 2)
-    |> iter.Reduce(0, (acc, n) -> acc + n)
+    |> slice.Filter(func(n int) bool {
+        return n > 0
+    })
+    |> slice.Map(func(n int) int {
+        return n * 2
+    })
+    |> iter.Reduce(0, func(acc int, n int) int {
+        return acc + n
+    })
 
 # Find first matching item
 user := users
-    |> iter.Find(u -> u.Email equals "admin@example.com")
-    |> unwrapOr(createDefaultUser())
+    |> slice.Filter(func(u User) bool {
+        return u.Email equals "admin@example.com"
+    })
+    |> slice.First(1)
 
 # Take first 10, skip first 2
 page := items
-    |> iter.Skip(2)
-    |> iter.Take(10)
-    |> iter.Collect()
+    |> slice.Drop(2)
+    |> slice.First(10)
 
 # Available functions:
 # Filter, Map, FlatMap, Take, Skip, Enumerate, Zip
@@ -104,7 +133,9 @@ cleaned := rawData
 
 # Extract and transform
 ids := users
-    |> slice.Map(u -> u.ID)
+    |> slice.Map(func(u User) int {
+        return u.ID
+    })
     |> slice.First(10)
 
 # Batch processing
@@ -130,7 +161,9 @@ result := rawText
     |> string.ToLower()
     |> string.ReplaceAll("_", "-")
     |> string.Split("\n")
-    |> slice.Filter(line -> not string.IsEmpty(line))
+    |> slice.Filter(func(line string) bool {
+        return not string.IsEmpty(line)
+    })
 
 # URL cleanup
 cleanUrl := url
@@ -153,15 +186,23 @@ import "stdlib/concurrent"
 
 # Run multiple tasks concurrently
 concurrent.Parallel(
-    func() { fetchUsers() },
-    func() { fetchOrders() },
-    func() { fetchProducts() }
+    func() {
+        fetchUsers()
+    },
+    func() {
+        fetchOrders()
+    },
+    func() {
+        fetchProducts()
+    }
 )
 
 # Run with concurrency limit (max 4 at a time)
 tasks := list of func(){}
 for url in urls
-    tasks = append(tasks, func() { processUrl(url) })
+    tasks = append(tasks, func() {
+        processUrl(url)
+    })
 
 concurrent.ParallelWithLimit(4, tasks...)
 
@@ -210,7 +251,9 @@ These packages showcase the pipe operator and make scripting delightful:
 
 ### Fetch Package ✅
 
-HTTP client designed for data pipelines (Go 1.25+ jsonv2 streaming):
+HTTP client designed for data pipelines (Go 1.25+ jsonv2 streaming).
+
+⚠️ **Note:** Builder pattern examples below (`fetch.New().Header().Timeout()`) are aspirational - use direct `Get()`/`Post()` calls for now.
 
 ```kukicha
 import "stdlib/fetch"
@@ -218,8 +261,12 @@ import "stdlib/fetch"
 # Simple GET with automatic JSON parsing (streams with jsonv2)
 users := fetch.Get("https://api.github.com/users")
     |> fetch.Json() as list of User
-    |> slice.Filter(u -> u.Followers > 100)
-    |> slice.Map(u -> u.Login)
+    |> slice.Filter(func(u User) bool {
+        return u.Followers > 100
+    })
+    |> slice.Map(func(u User) string {
+        return u.Login
+    })
     onerr empty list of string
 
 # POST with JSON body
@@ -239,8 +286,9 @@ data := fetch.New("https://api.example.com/data")
 
 # Parallel fetching
 results := urls
-    |> slice.Map(url -> fetch.Get(url) |> fetch.Text())
-    |> waitAll()
+    |> slice.Map(func(url string) string {
+        return fetch.Get(url) |> fetch.Text()
+    })
 ```
 
 ### Parse Package ✅
@@ -271,7 +319,9 @@ data := fileReader
 # Parse NDJSON (newline-delimited JSON logs)
 entries := logData
     |> parse.JsonLines() as list of LogEntry
-    |> slice.Filter(e -> e.Level equals "ERROR")
+    |> slice.Filter(func(e LogEntry) bool {
+        return e.Level equals "ERROR"
+    })
 
 # Format as pretty JSON
 output := config
@@ -284,7 +334,9 @@ users := "data.csv"
     |> parse.Csv()
     |> slice.Drop(1)              # Skip header
     |> slice.Map(csvRowToUser)
-    |> slice.Filter(u -> u.Active)
+    |> slice.Filter(func(u User) bool {
+        return u.Active
+    })
 
 # YAML config with validation
 settings := "settings.yaml"
@@ -349,7 +401,9 @@ func main()
 
 ### Files Package ✅
 
-File operations optimized for pipes:
+File operations optimized for pipes.
+
+⚠️ **Note:** `files.Watch()` and the `useWith()` helper below are not yet implemented - use other functions like `Read()`, `Write()`, `List()`, `TempFile()`, and `TempDir()` which work great with pipes.
 
 ```kukicha
 import "stdlib/files"
@@ -358,7 +412,9 @@ import "stdlib/files"
 output := "input.txt"
     |> files.Read()
     |> string.Split("\n")
-    |> slice.Filter(line -> not string.IsEmpty(line))
+    |> slice.Filter(func(line string) bool {
+        return not string.IsEmpty(line)
+    })
     |> slice.Map(string.TrimSpace)
     |> slice.Map(processLine)
     |> string.Join("\n")
@@ -373,15 +429,21 @@ else
 
 # List files with filtering
 logs := files.List("/var/log")
-    |> slice.Filter(f -> string.HasSuffix(f.Name, ".log"))
-    |> slice.Filter(f -> f.ModTime.After(yesterday))
-    |> slice.Map(f -> f.Path)
+    |> slice.Filter(func(f FileInfo) bool {
+        return string.HasSuffix(f.Name, ".log")
+    })
+    |> slice.Filter(func(f FileInfo) bool {
+        return f.ModTime.After(yesterday)
+    })
+    |> slice.Map(func(f FileInfo) string {
+        return f.Path
+    })
 
 # Watch for changes (useful for dev tools)
-files.Watch("./src/**/*.kuki", func(path string)
-    print "Changed: {path}"
+files.Watch("./src/**/*.kuki", func(path string) {
+    print("Changed: {path}")
     rebuildProject()
-)
+})
 
 # Temp file handling
 result := files.TempFile()
@@ -393,7 +455,9 @@ result := files.TempFile()
 
 ### Shell Package ✅
 
-Safe command execution without shell injection:
+Safe command execution without shell injection.
+
+⚠️ **Note:** Builder pattern examples below (`shell.New().Dir().Timeout().Run()`) and piping (`shell.Pipe()`) are aspirational - use `Run()`, `RunSimple()`, and `RunWithDir()` for now.
 
 ```kukicha
 import "stdlib/shell"
@@ -446,7 +510,9 @@ output := shell.New("npm", "install")
 
 ## Planned Scripting Packages 🚧
 
-### Template Package (Planned)
+### Template Package (Planned) 🚧
+
+🚧 **Status: Not Implemented** - This package does not exist yet. The examples below are aspirational and won't currently work.
 
 Text templating for code generation and reports:
 
@@ -471,14 +537,15 @@ report := "report.tmpl"
 
 # Code generation
 code := template.New()
-    |> template.AddFunc("title", string.ToTitle)
     |> template.Parse(codeTemplate)
     |> template.Data(structDef)
     |> template.Render()
     |> files.Write("generated.go")
 ```
 
-### Retry Package (Planned)
+### Retry Package (Planned) 🚧
+
+🚧 **Status: Not Implemented** - This package does not exist yet. The examples below are aspirational and won't currently work.
 
 Retry logic with exponential backoff:
 
@@ -487,14 +554,13 @@ import "stdlib/retry"
 
 # Retry with default backoff (3 attempts)
 data := retry.Do(func() any {
-        return fetch.Get(apiUrl) |> fetch.Json()
-    })
-    onerr panic "all retries failed"
+    return fetch.Get(apiUrl) |> fetch.Json()
+}) onerr panic "all retries failed"
 
 # Custom retry strategy
 result := retry.New()
     |> retry.Attempts(5)
-    |> retry.Delay(1.second)
+    |> retry.Delay(1000)        # milliseconds
     |> retry.Backoff(retry.Exponential)
     |> retry.Do(func() any {
         return processData()
@@ -503,12 +569,18 @@ result := retry.New()
 
 # Retry with condition (only retry on specific errors)
 response := retry.DoIf(
-    func() any { return callExternalApi() },
-    func(err error) bool { return isRetryable(err) }
+    func() any {
+        return callExternalApi()
+    },
+    func(err error) bool {
+        return isRetryable(err)
+    }
 )
 ```
 
-### Result Package (Planned)
+### Result Package (Planned) 🚧
+
+🚧 **Status: Not Implemented** - This package does not exist yet. The examples below are aspirational and won't currently work.
 
 Optional and Result types for educational purposes:
 
@@ -525,14 +597,20 @@ else
 
 # Or use pipeline
 message := findUserById(123)
-    |> result.Map(u -> "Hello, {u.Name}")
+    |> result.Map(func(u User) string {
+        return "Hello, {u.Name}"
+    })
     |> result.UnwrapOr("User not found")
 
 # Result type (explicit error handling)
 data := parseConfig("config.yaml")  # Returns Result[Config, Error]
 
-config := data
-    |> result.MapErr(e -> "Config error: {e}")
+configResult := data
+    |> result.MapErr(func(e error) error {
+        return error("Config error: {e}")
+    })
+
+config := configResult
     |> result.Unwrap()
     onerr defaultConfig()
 
@@ -541,17 +619,27 @@ output := result.Ok(initialData)
     |> result.AndThen(validate)
     |> result.AndThen(transform)
     |> result.AndThen(save)
-    |> result.Match(
-        ok: d -> "Success: saved {d.Id}",
-        err: e -> "Failed: {e}"
-    )
+
+# Check result
+if output.IsOk()
+    data := output.Unwrap()
+    message := "Success: saved {data.Id}"
+else
+    err := output.Err()
+    message := "Failed: {err}"
 ```
 
 ---
 
 ## Real-World Scripting Examples
 
-These examples show how Kukicha excels at practical automation:
+These examples show how Kukicha excels at practical automation.
+
+**Implementation Status:**
+- ✅ **Example 1** (API Data Processing) - **Works!** Uses fetch, parse, slice, files - all implemented
+- ⚠️ **Example 2** (Log Analysis) - **Partially works** - Most code works but `slice.GroupBy()` is not yet implemented
+- ✅ **Example 3** (File Processing) - **Works!** Uses files, parse, slice, string - all implemented
+- ✅ **Example 4** (Deployment) - **Works!** Uses shell, files, basic command execution - all implemented
 
 ### Example 1: API Data Processing Script
 
@@ -564,12 +652,18 @@ import "stdlib/files"
 func main()
     repos := fetch.Get("https://api.github.com/users/golang/repos")
         |> fetch.Json() as list of Repo
-        |> slice.Filter(r -> not r.Archived)
-        |> slice.Filter(r -> r.Stars > 100)
-        |> slice.Map(r -> RepoSummary{
-            Name: r.Name,
-            Stars: r.Stars,
-            Url: r.HtmlUrl,
+        |> slice.Filter(func(r Repo) bool {
+            return not r.Archived
+        })
+        |> slice.Filter(func(r Repo) bool {
+            return r.Stars > 100
+        })
+        |> slice.Map(func(r Repo) RepoSummary {
+            return RepoSummary{
+                Name: r.Name,
+                Stars: r.Stars,
+                Url: r.HtmlUrl,
+            }
         })
         |> parse.ToJson()
         |> files.Write("active-repos.json")
@@ -599,9 +693,13 @@ func analyzeLog(args cli.Args)
     errors := logPath
         |> files.Read()
         |> string.Split("\n")
-        |> slice.Filter(line -> string.Contains(line, level))
+        |> slice.Filter(func(line string) bool {
+            return string.Contains(line, level)
+        })
         |> slice.Map(parseLine)
-        |> slice.GroupBy(e -> e.ErrorCode)
+        |> slice.GroupBy(func(e LogEntry) string {
+            return e.ErrorCode
+        })
         |> summarize()
 
     print "Found {len(errors)} {level} entries"

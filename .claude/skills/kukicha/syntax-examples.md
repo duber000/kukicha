@@ -313,3 +313,136 @@ func toJSON(data APIResponse) string
     bytes := json.MarshalIndent(data, "", "  ") onerr return "{}"
     return string(bytes)
 ```
+
+## Function Types (Callbacks & Higher-Order Functions)
+
+### Map/Filter/Reduce Pattern
+
+```kukicha
+# Generic filter function
+func Filter(items list of int, predicate func(int) bool) list of int
+    result := list of int{}
+    for item in items
+        if predicate(item)
+            result = append(result, item)
+    return result
+
+# Generic map function
+func Map(items list of int, transform func(int) int) list of int
+    result := list of int{}
+    for item in items
+        result = append(result, transform(item))
+    return result
+
+# Generic reduce function
+func Reduce(items list of int, initial int, reducer func(int, int) int) int
+    accumulator := initial
+    for item in items
+        accumulator = reducer(accumulator, item)
+    return accumulator
+
+func main()
+    numbers := list of int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+
+    # Filter for even numbers
+    evens := Filter(numbers, func(n int) bool
+        return n % 2 equals 0
+    )
+
+    # Map to squares
+    squares := Map(evens, func(n int) int
+        return n * n
+    )
+
+    # Sum all squares
+    total := Reduce(squares, 0, func(acc int, n int) int
+        return acc + n
+    )
+
+    print(total)  # 4 + 16 + 36 + 64 + 100 = 220
+```
+
+### ForEach Pattern
+
+```kukicha
+func ForEach(items list of string, action func(string))
+    for item in items
+        action(item)
+
+func main()
+    names := list of string{"Alice", "Bob", "Charlie"}
+
+    ForEach(names, func(name string)
+        print("Hello, {name}!")
+    )
+```
+
+### Complex Callback Example
+
+```kukicha
+type User
+    name string
+    age int
+
+# Callback-based filtering
+func FilterUsers(users list of User, check func(reference User) bool) list of User
+    result := list of User{}
+    for user in users
+        if check(reference of user)
+            result = append(result, user)
+    return result
+
+# Callback-based transformation
+func TransformUsers(users list of User, transform func(reference User) string) list of string
+    result := list of string{}
+    for user in users
+        result = append(result, transform(reference of user))
+    return result
+
+func main()
+    users := list of User{
+        User
+            name: "Alice"
+            age: 30
+        User
+            name: "Bob"
+            age: 25
+        User
+            name: "Charlie"
+            age: 35
+    }
+
+    # Filter adults (age >= 30)
+    adults := FilterUsers(users, func(u reference User) bool
+        return u.age >= 30
+    )
+
+    # Transform to display names
+    names := TransformUsers(adults, func(u reference User) string
+        return "{u.name} ({u.age})"
+    )
+
+    for name in names
+        print(name)
+```
+
+### Async Operations with Callbacks
+
+```kukicha
+# Execute operation with success/error callbacks
+func DoAsync(operation func() string, onSuccess func(string), onError func(error))
+    result := operation()
+    onSuccess(result)
+
+func main()
+    DoAsync(
+        func() string
+            return "Success!"
+
+        func(msg string)
+            print("Result: {msg}")
+
+        func(err error)
+            print("Error: {err}")
+    )
+```

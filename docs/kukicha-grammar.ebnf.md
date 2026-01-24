@@ -106,6 +106,7 @@ TypeAnnotation ::=
     | ListType
     | MapType
     | ChannelType
+    | FunctionType
     | QualifiedType
     | GoStyleType
 
@@ -130,6 +131,10 @@ GoStyleType ::=
     | "[" "]" TypeAnnotation
     | "map" "[" TypeAnnotation "]" TypeAnnotation
     | "chan" TypeAnnotation
+
+FunctionType ::= "func" "(" [ FunctionTypeParameterList ] ")" [ TypeAnnotation ]
+
+FunctionTypeParameterList ::= TypeAnnotation { "," TypeAnnotation }
 ```
 
 **Parser Implementation Note**: When in type annotation context, if the parser sees `list`, `map`, or `channel`, it MUST be followed by `of`. This is not ambiguous because the parser knows when it expects a type.
@@ -868,13 +873,14 @@ func Process(data)  # Warning: Type inference may fail. Consider explicit type.
 - [x] Program structure (petiole, imports)
 - [x] Type declarations (structs, interfaces)
 - [x] Function declarations (functions, methods)
+- [x] Function types (callbacks, higher-order functions)
 - [x] Control flow (if/else, for loops)
 - [x] Error handling (or operator)
 - [x] Concurrency (go, channels, send/receive)
 - [x] Expressions (arithmetic, boolean, comparison)
 - [x] Pipe operator (|> for data pipelines)
 - [x] Literals (all types including string interpolation)
-- [x] Type annotations (all forms)
+- [x] Type annotations (all forms including function types)
 - [x] Defer/recover
 - [x] Lexical elements (identifiers, keywords, operators)
 - [x] Indentation handling (4 spaces, tabs rejected)
@@ -976,6 +982,31 @@ func EmptyExamples()
     emptyList := empty list of Todo        # typed empty list
     emptyMap := empty map of string to int # typed empty map
     nilPtr := empty reference User         # nil pointer
+
+# 8. Function types (callbacks and higher-order functions)
+func Filter(items list of int, predicate func(int) bool) list of int
+    result := list of int{}
+    for item in items
+        if predicate(item)
+            result = append(result, item)
+    return result
+
+func ForEach(items list of string, action func(string))
+    for item in items
+        action(item)
+
+func main()
+    numbers := list of int{1, 2, 3, 4, 5}
+
+    # Pass a function literal as callback
+    evens := Filter(numbers, func(n int) bool
+        return n % 2 == 0
+    )
+
+    # Pass another callback
+    ForEach(list of string{"a", "b", "c"}, func(s string)
+        print s
+    )
 ```
 
 ---

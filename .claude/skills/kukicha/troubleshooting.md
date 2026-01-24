@@ -284,6 +284,72 @@ kukicha check myfile.kuki
 | "undeclared name" | Variable used before declaration |
 | "not enough arguments" | Missing function arguments |
 
+## Function Type Errors
+
+### "undefined function type"
+
+**Cause:** Using function type syntax incorrectly or with wrong parameter/return types.
+
+```kukicha
+# Wrong - mixed Go and Kukicha syntax
+callback func(int) -> int
+
+# Correct
+callback func(int) int
+```
+
+### "function expects N arguments, got M"
+
+**Cause:** Passing function literal with wrong number of parameters.
+
+```kukicha
+func Filter(items list of int, predicate func(int) bool) list of int
+    # ...
+
+# Wrong - takes 2 parameters instead of 1
+result := Filter(numbers, func(a int, b int) bool
+    return a > b
+)
+
+# Correct - takes 1 parameter
+result := Filter(numbers, func(n int) bool
+    return n > 5
+)
+```
+
+### "function literal must return type"
+
+**Cause:** Function type requires return type but function literal doesn't specify it.
+
+```kukicha
+# Wrong - no return type specified
+callback := func(n int)
+    return n * 2
+
+# Correct
+callback := func(n int) int
+    return n * 2
+```
+
+### "cannot use func with wrong signature"
+
+**Cause:** Function signature doesn't match the parameter type.
+
+```kukicha
+func Process(handler func(string) int)
+    # ...
+
+# Wrong - returns string, not int
+Process(func(s string) string
+    return s
+)
+
+# Correct - returns int
+Process(func(s string) int
+    return len(s)
+)
+```
+
 ## Performance Considerations
 
 ### Negative Indexing
