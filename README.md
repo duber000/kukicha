@@ -111,7 +111,7 @@ func main()
     }
 
     for todo in todos
-        fmt.Println(todo.Display())
+        print(todo.Display())
 ```
 
 **Transpiles to clean Go:**
