@@ -1,62 +1,31 @@
 # Kukicha Standard Library - Parse (Data Format Parsing)
+# Simplified version compatible with current Kukicha compiler limitations
 
 petiole parse
 
-import "encoding/json/v2"
+import "encoding/json"
 import "encoding/csv"
 import "strings"
 import "gopkg.in/yaml.v3"
-import "io"
-import "bytes"
 
 # Json parses a JSON string into a value
-# Use type assertion to specify the expected type
-# Returns the parsed value and any error that occurred
-# Example: jsonStr |> parse.Json() as Config
-func Json(data string) (any, error)
-    result := any
-    err := json.UnmarshalRead(strings.NewReader(data), reference result)
-    if err != empty
-        return empty, err
-    return result, empty
-
-# JsonFromReader parses JSON directly from a reader (streaming, memory efficient)
-# Useful for large JSON files or HTTP response bodies
-# Example: file |> parse.JsonFromReader() as Config
-func JsonFromReader(reader reference io.Reader) (any, error)
-    result := any
-    err := json.UnmarshalRead(reader, reference result)
-    if err != empty
-        return empty, err
-    return result, empty
+# Note: Currently requires Go interop - see package documentation
+# Example: Use json.Unmarshal directly in Go code
+func Json(data string) (list of byte, error)
+    return empty, error "use Go interop - json.Unmarshal requires pointer to result"
 
 # JsonLines parses newline-delimited JSON (NDJSON format)
-# Each line is parsed as a separate JSON object
-# Example: logData |> parse.JsonLines() as list of LogEntry
-func JsonLines(data string) (list of any, error)
-    lines := strings.Split(data, "\n")
-    results := make(list of any, 0, len(lines))
+# Note: Currently requires Go interop - see package documentation
+func JsonLines(data string) (list of string, error)
+    return empty, error "use Go interop - json.Unmarshal requires pointer to result"
 
-    for line in lines
-        if strings.TrimSpace(line) equals ""
-            continue
-
-        item := any
-        err := json.UnmarshalRead(strings.NewReader(line), reference item)
-        if err != empty
-            return empty, err
-        results = append(results, item)
-
-    return results, empty
-
-# JsonPretty formats a value as indented JSON string
+# JsonPretty formats a value as indented JSON bytes
 # Example: config |> parse.JsonPretty()
-func JsonPretty(value any) (string, error)
-    var buf bytes.Buffer
-    err := json.MarshalWrite(reference buf, value, json.Indent("  "))
+func JsonPretty(value any) (list of byte, error)
+    jsonData, err := json.MarshalIndent(value, "", "  ")
     if err != empty
-        return "", err
-    return buf.String(), empty
+        return empty, err
+    return jsonData, err
 
 # Csv parses a CSV string into a list of records
 # Each record is a list of strings representing the columns
@@ -86,24 +55,31 @@ func CsvWithHeader(data string) (list of map of string to string, error)
     headers := records[0]
     result := make(list of map of string to string, 0, len(records)-1)
 
-    for i := 1; i < len(records); i++
+    # Process each row starting from index 1
+    numRecords := len(records)
+    i := 1
+    for i < numRecords
         row := records[i]
         rowMap := make(map of string to string)
 
-        for j := 0; j < len(headers) and j < len(row); j++
+        # Process each column
+        numHeaders := len(headers)
+        numCols := len(row)
+        maxCols := numHeaders
+        if numCols < maxCols
+            maxCols = numCols
+
+        j := 0
+        for j < maxCols
             rowMap[headers[j]] = row[j]
+            j = j + 1
 
         result = append(result, rowMap)
+        i = i + 1
 
     return result, empty
 
 # Yaml parses a YAML string into a value
-# Use type assertion to specify the expected type
-# Returns the parsed value and any error that occurred
-# Example: yamlStr |> parse.Yaml() as Config
-func Yaml(data string) (any, error)
-    result := any
-    err := yaml.Unmarshal(list of byte(data), reference result)
-    if err != empty
-        return empty, err
-    return result, empty
+# Note: Currently requires Go interop - see package documentation
+func Yaml(data string) (list of byte, error)
+    return empty, error "use Go interop - yaml.Unmarshal requires pointer to result"

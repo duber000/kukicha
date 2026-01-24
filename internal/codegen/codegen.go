@@ -118,6 +118,12 @@ func (g *Generator) generateImports() {
 		imports["fmt"] = ""
 	}
 
+	// Check if we need errors for error expressions
+	needsErrors := g.needsErrorsPackage()
+	if needsErrors {
+		imports["errors"] = ""
+	}
+
 	// Add auto-imports (e.g., cmp for generic constraints)
 	for path := range g.autoImports {
 		if _, exists := imports[path]; !exists {
@@ -1302,6 +1308,116 @@ func (g *Generator) checkExprForPrint(expr ast.Expression) bool {
 	case *ast.FunctionLiteral:
 		if e.Body != nil {
 			return g.checkBlockForPrint(e.Body)
+		}
+	}
+
+	return false
+}
+
+func (g *Generator) needsErrorsPackage() bool {
+	// Check if any error expressions are used
+	return g.checkProgramForErrors(g.program)
+}
+
+func (g *Generator) checkProgramForErrors(program *ast.Program) bool {
+	for _, decl := range program.Declarations {
+		if fn, ok := decl.(*ast.FunctionDecl); ok {
+			if fn.Body != nil && g.checkBlockForErrors(fn.Body) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (g *Generator) checkBlockForErrors(block *ast.BlockStmt) bool {
+	for _, stmt := range block.Statements {
+		if g.checkStmtForErrors(stmt) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *Generator) checkStmtForErrors(stmt ast.Statement) bool {
+	switch s := stmt.(type) {
+	case *ast.VarDeclStmt:
+		for _, val := range s.Values {
+			if g.checkExprForErrors(val) {
+				return true
+			}
+		}
+		return false
+	case *ast.AssignStmt:
+		for _, val := range s.Values {
+			if g.checkExprForErrors(val) {
+				return true
+			}
+		}
+		return false
+	case *ast.ReturnStmt:
+		for _, val := range s.Values {
+			if g.checkExprForErrors(val) {
+				return true
+			}
+		}
+	case *ast.IfStmt:
+		if g.checkExprForErrors(s.Condition) {
+			return true
+		}
+		if s.Consequence != nil && g.checkBlockForErrors(s.Consequence) {
+			return true
+		}
+		if s.Alternative != nil {
+			return g.checkStmtForErrors(s.Alternative)
+		}
+	case *ast.ForRangeStmt:
+		if s.Body != nil {
+			return g.checkBlockForErrors(s.Body)
+		}
+	case *ast.ForNumericStmt:
+		if s.Body != nil {
+			return g.checkBlockForErrors(s.Body)
+		}
+	case *ast.ForConditionStmt:
+		if s.Body != nil {
+			return g.checkBlockForErrors(s.Body)
+		}
+	case *ast.ExpressionStmt:
+		return g.checkExprForErrors(s.Expression)
+	}
+	return false
+}
+
+func (g *Generator) checkExprForErrors(expr ast.Expression) bool {
+	if expr == nil {
+		return false
+	}
+
+	switch e := expr.(type) {
+	case *ast.ErrorExpr:
+		return true
+	case *ast.BinaryExpr:
+		return g.checkExprForErrors(e.Left) || g.checkExprForErrors(e.Right)
+	case *ast.UnaryExpr:
+		return g.checkExprForErrors(e.Right)
+	case *ast.CallExpr:
+		for _, arg := range e.Arguments {
+			if g.checkExprForErrors(arg) {
+				return true
+			}
+		}
+	case *ast.MethodCallExpr:
+		for _, arg := range e.Arguments {
+			if g.checkExprForErrors(arg) {
+				return true
+			}
+		}
+	case *ast.PipeExpr:
+		return g.checkExprForErrors(e.Left) || g.checkExprForErrors(e.Right)
+	case *ast.FunctionLiteral:
+		if e.Body != nil {
+			return g.checkBlockForErrors(e.Body)
 		}
 	}
 
