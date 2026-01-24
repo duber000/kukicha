@@ -50,8 +50,6 @@ In the beginner tutorial, you learned about basic types like `string`, `int`, an
 Create a file called `todo.kuki`:
 
 ```kukicha
-import "fmt"
-
 # A Todo represents a single task
 # It has an id to identify it, a title describing the task,
 # and completed tells us if it's done or not
@@ -152,7 +150,7 @@ To go through each item in a list, use `for item in list`:
 # Print all todos
 for todo in todos
     message := todo.Display()
-    fmt.Println(message)
+    print(message)
 ```
 
 **Output:**
@@ -199,20 +197,20 @@ func Add on list reference TodoList, title string
     todo := CreateTodo(list.nextId, title)
     list.items = append(list.items, todo)
     list.nextId = list.nextId + 1
-    fmt.Println("Added: {title}")
+    print("Added: {title}")
 ```
 
 ```kukicha
 # ShowAll displays all todos in the list
 func ShowAll on list TodoList
     if len(list.items) equals 0
-        fmt.Println("No todos yet! Use 'add' to create one.")
+        print("No todos yet! Use 'add' to create one.")
         return
     
-    fmt.Println("\n=== Your Todos ===")
+    print("\n=== Your Todos ===")
     for todo in list.items
-        fmt.Println(todo.Display())
-    fmt.Println("")
+        print(todo.Display())
+    print("")
 ```
 
 ```kukicha
@@ -221,9 +219,9 @@ func Complete on list reference TodoList, id int bool
     for i, todo in list.items
         if todo.id equals id
             list.items[i].completed = true
-            fmt.Println("Completed: {todo.title}")
+            print("Completed: {todo.title}")
             return true
-    fmt.Println("Todo #{id} not found")
+    print("Todo #{id} not found")
     return false
 ```
 
@@ -241,7 +239,7 @@ Kukicha makes error handling readable with the `onerr` keyword.
 # Without onerr - lots of repetitive code
 result, err := somethingThatMightFail()
 if err not equals empty
-    fmt.Println("Something went wrong!")
+    print("Something went wrong!")
     return
 ```
 
@@ -250,7 +248,7 @@ if err not equals empty
 ```kukicha
 # With onerr - handle the error inline
 result := somethingThatMightFail() onerr
-    fmt.Println("Something went wrong!")
+    print("Something went wrong!")
     return
 ```
 
@@ -262,7 +260,7 @@ name := getUserInput() onerr "Anonymous"
 
 # Pattern 2: Print an error and return
 data := loadFile() onerr
-    fmt.Println("Could not load file")
+    print("Could not load file")
     return
 
 # Pattern 3: Panic (crash) with a message
@@ -300,7 +298,7 @@ func Save on list TodoList, filename string error
         |> files.WriteString(filename)
         onerr return error
 
-    fmt.Println("Saved {len(list.items)} todos to {filename}")
+    print("Saved {len(list.items)} todos to {filename}")
     return empty
 
 # Load reads todos from a file
@@ -343,7 +341,7 @@ func Load(filename string) (TodoList, error)
             maxId = id
     
     list.nextId = maxId + 1
-    fmt.Println("Loaded {len(list.items)} todos from {filename}")
+    print("Loaded {len(list.items)} todos from {filename}")
     return list, empty
 ```
 
@@ -395,25 +393,25 @@ func Add on list reference TodoList, title string
         completed: false
     list.items = append(list.items, todo)
     list.nextId = list.nextId + 1
-    fmt.Println("Added: {title}")
+    print("Added: {title}")
 
 func ShowAll on list TodoList
     if len(list.items) equals 0
-        fmt.Println("\nNo todos yet! Use 'add <task>' to create one.\n")
+        print("\nNo todos yet! Use 'add <task>' to create one.\n")
         return
     
-    fmt.Println("\n=== Your Todos ===")
+    print("\n=== Your Todos ===")
     for todo in list.items
-        fmt.Println(todo.Display())
-    fmt.Println("")
+        print(todo.Display())
+    print("")
 
 func Complete on list reference TodoList, id int
     for i, todo in list.items
         if todo.id equals id
             list.items[i].completed = true
-            fmt.Println("Completed: {todo.title}")
+            print("Completed: {todo.title}")
             return
-    fmt.Println("Todo #{id} not found")
+    print("Todo #{id} not found")
 
 func Save on list TodoList, filename string
     lines := empty list of string
@@ -426,10 +424,10 @@ func Save on list TodoList, filename string
 
     content := lines |> string.Join("\n")
     content |> files.WriteString(filename) onerr
-        fmt.Println("Error saving: could not write file")
+        print("Error saving: could not write file")
         return
 
-    fmt.Println("Saved {len(list.items)} todos to {filename}")
+    print("Saved {len(list.items)} todos to {filename}")
 
 # --- Helper Functions ---
 
@@ -469,13 +467,13 @@ func LoadTodos(filename string) TodoList
     return list
 
 func PrintHelp()
-    fmt.Println("Commands:")
-    fmt.Println("  add <task>  - Add a new todo")
-    fmt.Println("  done <id>   - Mark a todo as complete")
-    fmt.Println("  list        - Show all todos")
-    fmt.Println("  save        - Save todos to file")
-    fmt.Println("  help        - Show this help")
-    fmt.Println("  quit        - Exit the app")
+    print("Commands:")
+    print("  add <task>  - Add a new todo")
+    print("  done <id>   - Mark a todo as complete")
+    print("  list        - Show all todos")
+    print("  save        - Save todos to file")
+    print("  help        - Show this help")
+    print("  quit        - Exit the app")
 
 # --- Main Program ---
 
@@ -485,8 +483,8 @@ func main()
     # Try to load existing todos
     list := LoadTodos(filename)
     
-    fmt.Println("=== Kukicha Todo App ===")
-    fmt.Println("Type 'help' for commands\n")
+    print("=== Kukicha Todo App ===")
+    print("Type 'help' for commands\n")
     
     # Show existing todos if any
     if len(list.items) > 0
@@ -502,7 +500,7 @@ func main()
         
         # Read user input
         input := reader.ReadString('\n') onerr
-            fmt.Println("Error reading input")
+            print("Error reading input")
             continue
         
         # Clean up the input using pipe
@@ -517,7 +515,7 @@ func main()
         command := parts[0] |> string.ToLower()
         
         if command equals "quit" or command equals "exit" or command equals "q"
-            fmt.Println("Goodbye!")
+            print("Goodbye!")
             running = false
         
         else if command equals "help" or command equals "?"
@@ -528,17 +526,17 @@ func main()
         
         else if command equals "add"
             if len(parts) < 2
-                fmt.Println("Usage: add <task description>")
+                print("Usage: add <task description>")
                 continue
             title := parts[1]
             list.Add(title)
         
         else if command equals "done" or command equals "complete"
             if len(parts) < 2
-                fmt.Println("Usage: done <id>")
+                print("Usage: done <id>")
                 continue
             id := parts[1] |> strconv.Atoi() onerr
-                fmt.Println("Invalid id: {parts[1]}")
+                print("Invalid id: {parts[1]}")
                 continue
             list.Complete(id)
         
@@ -546,8 +544,8 @@ func main()
             list.Save(filename)
         
         else
-            fmt.Println("Unknown command: {command}")
-            fmt.Println("Type 'help' for available commands")
+            print("Unknown command: {command}")
+            print("Type 'help' for available commands")
 ```
 
 ---

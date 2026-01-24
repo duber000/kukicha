@@ -59,10 +59,10 @@ func main()
     todos = append(todos, todo1, todo2)
 
     for todo in todos
-        fmt.Println(Display(todo))
+        print(Display(todo))
 
     SaveTodos(todos, "todos.json") onerr panic "failed to save"
-    fmt.Println("Saved successfully!")
+    print("Saved successfully!")
 ```
 
 ## Error Handling Patterns
@@ -158,7 +158,7 @@ func Format on f JSONFormatter string
     return "{\"type\": \"json\", \"indent\": {f.indent}}"
 
 func PrintFormatted(f Formatter)
-    fmt.Println(f.Format())
+    print(f.Format())
 
 func main()
     plain := PlainFormatter{prefix: "LOG"}
@@ -174,7 +174,7 @@ func main()
 ```kukicha
 func worker(id int, jobs channel of int, results channel of int)
     for job in jobs
-        fmt.Println("Worker {id} processing job {job}")
+        print("Worker {id} processing job {job}")
         send results, job * 2
 
 func main()
@@ -193,7 +193,7 @@ func main()
     # Collect results
     for a from 1 through 5
         result := receive results
-        fmt.Println("Result: {result}")
+        print("Result: {result}")
 ```
 
 ### Fan-Out/Fan-In
@@ -216,7 +216,7 @@ func main()
     go square(numbers, squares)
 
     for result in squares
-        fmt.Println(result)
+        print(result)
 ```
 
 ## Generics via stdlib/iter
@@ -290,8 +290,8 @@ func main()
             age: 3
         breed: "Golden Retriever"
 
-    fmt.Println(dog.name)      # Access embedded field
-    fmt.Println(dog.Speak())   # Calls Dog's Speak method
+    print(dog.name)      # Access embedded field
+    print(dog.Speak())   # Calls Dog's Speak method
 ```
 
 ## JSON Handling

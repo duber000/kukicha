@@ -46,7 +46,7 @@ func main()
     # When someone visits the homepage, say hello
     http.HandleFunc("/", sayHello)
     
-    fmt.Println("Server starting on http://localhost:8080")
+    print("Server starting on http://localhost:8080")
     http.ListenAndServe(":8080", empty) onerr panic "server failed to start"
 
 # This function handles requests to "/"
@@ -170,7 +170,7 @@ func createTodo(response http.ResponseWriter, request reference http.Request)
         return
     
     # Now 'todo' contains the data the user sent!
-    fmt.Println("Received todo: {todo.title}")
+    print("Received todo: {todo.title}")
     
     # Send back a success response
     response.Header().Set("Content-Type", "application/json")
@@ -208,7 +208,6 @@ func findTodoById(id int) (Todo, int, bool)
 Now let's put it all together! Create `main.kuki`:
 
 ```kukicha
-import "fmt"
 import "net/http"
 import "encoding/json/v2"  # Go 1.25+ for better performance
 import "strconv"
@@ -388,13 +387,13 @@ func main()
     http.HandleFunc("/todos", handleTodos)
     http.HandleFunc("/todos/", handleTodos)
     
-    fmt.Println("=== Kukicha Todo API ===")
-    fmt.Println("Server running on http://localhost:8080")
-    fmt.Println("")
-    fmt.Println("Try these commands in another terminal:")
-    fmt.Println("  curl http://localhost:8080/todos")
-    fmt.Println("  curl -X POST -d '{\"title\":\"Learn Kukicha\"}' http://localhost:8080/todos")
-    fmt.Println("")
+    print("=== Kukicha Todo API ===")
+    print("Server running on http://localhost:8080")
+    print("")
+    print("Try these commands in another terminal:")
+    print("  curl http://localhost:8080/todos")
+    print("  curl -X POST -d '{\"title\":\"Learn Kukicha\"}' http://localhost:8080/todos")
+    print("")
     
     http.ListenAndServe(":8080", empty) onerr panic "server failed to start"
 ```

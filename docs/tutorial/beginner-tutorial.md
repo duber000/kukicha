@@ -60,18 +60,15 @@ Let's start with the traditional "Hello, World!" program. This is usually the fi
 Create a file called `hello.kuki` with this content:
 
 ```kukicha
-import "fmt"
-
 func main()
-    fmt.Println("Hello, World!")
+    print("Hello, World!")
 ```
 
 **What's happening here?**
 
-1. `import "fmt"` - We're bringing in the "fmt" package, which lets us print text to the screen
-2. `func main()` - This defines a function named "main". Every Kukicha program starts by running the `main` function
-3. `fmt.Println("Hello, World!")` - This prints the text "Hello, World!" to the screen
-4. Notice: **No semicolons!** Kukicha uses indentation (spaces) to understand where code blocks begin and end
+1. `func main()` - This defines a function named "main". Every Kukicha program starts by running the `main` function
+2. `print("Hello, World!")` - This built-in function prints the text "Hello, World!" to the screen (and automatically imports `fmt` for you)
+3. Notice: **No semicolons!** Kukicha uses indentation (spaces) to understand where code blocks begin and end
 
 **Try it yourself:**
 ```bash
@@ -95,12 +92,11 @@ In Kukicha, any line starting with `#` is a comment - the computer ignores it co
 
 ```kukicha
 # This is a comment - the computer skips this line
-import "fmt"
 
 # Comments help you remember what your code does
 func main()
     # Print a greeting to the screen
-    fmt.Println("Hello!")
+    print("Hello!")
 ```
 
 **When to use comments:**
@@ -121,8 +117,6 @@ A **variable** is like a labeled box where you store information. You give it a 
 Use the **walrus operator** `:=` to create a new variable:
 
 ```kukicha
-import "fmt"
-
 func main()
     # Create a variable named 'age' and store 25 in it
     age := 25
@@ -131,8 +125,8 @@ func main()
     name := "Alice"
 
     # Use the variables
-    fmt.Println(name)
-    fmt.Println(age)
+    print(name)
+    print(age)
 ```
 
 **Output:**
@@ -146,17 +140,15 @@ Alice
 Once a variable exists, use a single `=` to change its value:
 
 ```kukicha
-import "fmt"
-
 func main()
     score := 0          # Create score, set to 0
-    fmt.Println(score)  # Prints: 0
+    print(score)  # Prints: 0
 
     score = 10          # Update score to 10
-    fmt.Println(score)  # Prints: 10
+    print(score)  # Prints: 10
 
     score = score + 5   # Add 5 to current score
-    fmt.Println(score)  # Prints: 15
+    print(score)  # Prints: 15
 ```
 
 **Key difference:**
@@ -203,11 +195,9 @@ A **function** is a named block of code that performs a specific task. Think of 
 ### Basic Function
 
 ```kukicha
-import "fmt"
-
 # Define a function named Greet
 func Greet()
-    fmt.Println("Hello!")
+    print("Hello!")
 
 # The main function - where your program starts
 func main()
@@ -226,11 +216,9 @@ Hello!
 Functions can accept **parameters** (inputs):
 
 ```kukicha
-import "fmt"
-
 # This function takes one parameter: a string named 'name'
 func Greet(name string)
-    fmt.Println("Hello, {name}!")
+    print("Hello, {name}!")
 
 func main()
     Greet("Alice")  # Prints: Hello, Alice!
@@ -244,15 +232,13 @@ func main()
 Functions can give back (return) a value:
 
 ```kukicha
-import "fmt"
-
 # This function takes two ints and returns their sum (also an int)
 func Add(a int, b int) int
     return a + b
 
 func main()
     result := Add(5, 3)
-    fmt.Println(result)  # Prints: 8
+    print(result)  # Prints: 8
 ```
 
 **Key points:**
@@ -270,16 +256,14 @@ A **string** is text - any sequence of characters. Strings are surrounded by dou
 ### Creating Strings
 
 ```kukicha
-import "fmt"
-
 func main()
     greeting := "Hello"
     name := "World"
     sentence := "Programming is fun!"
 
-    fmt.Println(greeting)
-    fmt.Println(name)
-    fmt.Println(sentence)
+    print(greeting)
+    print(name)
+    print(sentence)
 ```
 
 ### Combining Strings
@@ -287,8 +271,6 @@ func main()
 Use the `+` operator to join (concatenate) strings:
 
 ```kukicha
-import "fmt"
-
 func main()
     firstName := "Alice"
     lastName := "Johnson"
@@ -296,7 +278,7 @@ func main()
     # Combine strings
     fullName := firstName + " " + lastName
 
-    fmt.Println(fullName)  # Prints: Alice Johnson
+    print(fullName)  # Prints: Alice Johnson
 ```
 
 ### String Comparisons
@@ -304,15 +286,13 @@ func main()
 Compare strings using English words:
 
 ```kukicha
-import "fmt"
-
 func main()
     password := "secret123"
 
     if password equals "secret123"
-        fmt.Println("Access granted!")
+        print("Access granted!")
     else
-        fmt.Println("Access denied!")
+        print("Access denied!")
 ```
 
 **String comparison operators:**
@@ -328,8 +308,6 @@ func main()
 ### Basic Interpolation
 
 ```kukicha
-import "fmt"
-
 func main()
     name := "Alice"
     age := 25
@@ -337,7 +315,7 @@ func main()
     # Insert variables into the string using {variable}
     message := "My name is {name} and I am {age} years old"
 
-    fmt.Println(message)
+    print(message)
     # Prints: My name is Alice and I am 25 years old
 ```
 
@@ -358,8 +336,6 @@ message := "My name is {name} and I am {age} years old"
 ### Interpolation in Functions
 
 ```kukicha
-import "fmt"
-
 func Greet(name string, time string) string
     return "Good {time}, {name}!"
 
@@ -367,8 +343,8 @@ func main()
     morning := Greet("Alice", "morning")
     evening := Greet("Bob", "evening")
 
-    fmt.Println(morning)  # Prints: Good morning, Alice!
-    fmt.Println(evening)  # Prints: Good evening, Bob!
+    print(morning)  # Prints: Good morning, Alice!
+    print(evening)  # Prints: Good evening, Bob!
 ```
 
 ### Interpolation with Expressions
@@ -376,8 +352,6 @@ func main()
 You can put more than just variables in `{}`!
 
 ```kukicha
-import "fmt"
-
 func main()
     x := 5
     y := 3
@@ -385,7 +359,7 @@ func main()
     # You can do calculations inside {}
     result := "The sum of {x} and {y} is {x + y}"
 
-    fmt.Println(result)
+    print(result)
     # Prints: The sum of 5 and 3 is 8
 ```
 
@@ -412,7 +386,6 @@ Now you have access to all 28 string functions!
 Change text to UPPERCASE, lowercase, or Title Case:
 
 ```kukicha
-import "fmt"
 import "stdlib/string"
 
 func main()
@@ -422,9 +395,9 @@ func main()
     lower := string.ToLower(text)
     title := string.Title(text)
 
-    fmt.Println(upper)  # Prints: HELLO WORLD
-    fmt.Println(lower)  # Prints: hello world
-    fmt.Println(title)  # Prints: Hello World
+    print(upper)  # Prints: HELLO WORLD
+    print(lower)  # Prints: hello world
+    print(title)  # Prints: Hello World
 ```
 
 **Real-world use case:** Converting user input to a consistent format before comparing it.
@@ -451,15 +424,14 @@ It's called a "pipe" because it acts like a pipe at a construction site - data g
 Remove extra spaces from the beginning and end of strings:
 
 ```kukicha
-import "fmt"
 import "stdlib/string"
 
 func main()
     messy := "   hello   "
     clean := string.TrimSpace(messy)
 
-    fmt.Println("Messy: [{messy}]")   # Prints: Messy: [   hello   ]
-    fmt.Println("Clean: [{clean}]")   # Prints: Clean: [hello]
+    print("Messy: [{messy}]")   # Prints: Messy: [   hello   ]
+    print("Clean: [{clean}]")   # Prints: Clean: [hello]
 ```
 
 **Real-world use case:** Cleaning up user input from forms.
@@ -467,7 +439,6 @@ func main()
 ### Removing Prefixes and Suffixes
 
 ```kukicha
-import "fmt"
 import "stdlib/string"
 
 func main()
@@ -476,11 +447,11 @@ func main()
 
     # Remove the "https://" prefix
     domain := string.TrimPrefix(url, "https://")
-    fmt.Println(domain)  # Prints: example.com
+    print(domain)  # Prints: example.com
 
     # Remove the ".pdf" suffix
     name := string.TrimSuffix(filename, ".pdf")
-    fmt.Println(name)  # Prints: document
+    print(name)  # Prints: document
 ```
 
 ### Splitting Strings
@@ -488,7 +459,6 @@ func main()
 Break a string into pieces:
 
 ```kukicha
-import "fmt"
 import "stdlib/string"
 
 func main()
@@ -497,9 +467,9 @@ func main()
     parts := string.Split(colors, ",")
 
     # parts is now a list: ["red", "green", "blue"]
-    fmt.Println(parts[0])  # Prints: red
-    fmt.Println(parts[1])  # Prints: green
-    fmt.Println(parts[2])  # Prints: blue
+    print(parts[0])  # Prints: red
+    print(parts[1])  # Prints: green
+    print(parts[2])  # Prints: blue
 ```
 
 **Real-world use case:** Parsing CSV data or command-line arguments.
@@ -509,7 +479,6 @@ func main()
 Combine a list of strings into one string:
 
 ```kukicha
-import "fmt"
 import "stdlib/string"
 
 func main()
@@ -517,11 +486,11 @@ func main()
 
     # Join with spaces
     sentence := string.Join(words, " ")
-    fmt.Println(sentence)  # Prints: Hello World from Kukicha
+    print(sentence)  # Prints: Hello World from Kukicha
 
     # Join with dashes
     dashed := string.Join(words, "-")
-    fmt.Println(dashed)  # Prints: Hello-World-from-Kukicha
+    print(dashed)  # Prints: Hello-World-from-Kukicha
 ```
 
 ### Searching Within Strings
@@ -529,7 +498,6 @@ func main()
 Check if a string contains another string:
 
 ```kukicha
-import "fmt"
 import "stdlib/string"
 
 func main()
@@ -537,16 +505,16 @@ func main()
 
     # Check if the message contains "Error"
     if string.Contains(message, "Error")
-        fmt.Println("This is an error message!")
+        print("This is an error message!")
 
     # Check if the message starts with "Error:"
     if string.HasPrefix(message, "Error:")
-        fmt.Println("Error detected!")
+        print("Error detected!")
 
     # Check if a filename ends with .txt
     filename := "data.txt"
     if string.HasSuffix(filename, ".txt")
-        fmt.Println("This is a text file!")
+        print("This is a text file!")
 ```
 
 ### The 'in' Operator - Membership Testing
@@ -554,18 +522,16 @@ func main()
 Kukicha has a super convenient shortcut for checking if text contains something:
 
 ```kukicha
-import "fmt"
-
 func main()
     message := "Error: File not found"
 
     # Check if "Error" is in the message
     if "Error" in message
-        fmt.Println("This is an error message!")
+        print("This is an error message!")
 
     # Check if "Success" is NOT in the message
     if "Success" not in message
-        fmt.Println("Operation did not succeed")
+        print("Operation did not succeed")
 ```
 
 This is easier than using `string.Contains`!
@@ -575,7 +541,6 @@ This is easier than using `string.Contains`!
 Find where a substring appears:
 
 ```kukicha
-import "fmt"
 import "stdlib/string"
 
 func main()
@@ -583,11 +548,11 @@ func main()
 
     # Find the position of "World"
     position := string.Index(text, "World")
-    fmt.Println(position)  # Prints: 7
+    print(position)  # Prints: 7
 
     # If not found, returns -1
     notFound := string.Index(text, "Kukicha")
-    fmt.Println(notFound)  # Prints: -1
+    print(notFound)  # Prints: -1
 ```
 
 ### Counting Occurrences
@@ -595,14 +560,13 @@ func main()
 Count how many times a substring appears:
 
 ```kukicha
-import "fmt"
 import "stdlib/string"
 
 func main()
     text := "apple banana apple cherry apple"
 
     count := string.Count(text, "apple")
-    fmt.Println("The word 'apple' appears {count} times")
+    print("The word 'apple' appears {count} times")
     # Prints: The word 'apple' appears 3 times
 ```
 
@@ -611,7 +575,6 @@ func main()
 Replace parts of a string:
 
 ```kukicha
-import "fmt"
 import "stdlib/string"
 
 func main()
@@ -620,7 +583,7 @@ func main()
     # Replace all occurrences of "cats" with "dogs"
     newText := string.ReplaceAll(text, "cats", "dogs")
 
-    fmt.Println(newText)
+    print(newText)
     # Prints: I love dogs. dogs are great!
 ```
 
@@ -631,7 +594,6 @@ func main()
 Let's combine everything we've learned to build a practical program: a **name formatter** that takes messy user input and formats it nicely.
 
 ```kukicha
-import "fmt"
 import "stdlib/string"
 
 # Clean and format a person's name using pipes
@@ -647,7 +609,7 @@ func CreateGreeting(name string, age int) string
 
 # Main program
 func main()
-    fmt.Println("=== Name Formatter ===")
+    print("=== Name Formatter ===")
 
     # Simulate messy user input
     messyName1 := "  alice johnson  "
@@ -665,18 +627,18 @@ func main()
     greeting3 := CreateGreeting(name3, 22)
 
     # Print results
-    fmt.Println(greeting1)
-    fmt.Println(greeting2)
-    fmt.Println(greeting3)
+    print(greeting1)
+    print(greeting2)
+    print(greeting3)
 
     # Demonstrate string searching
-    fmt.Println("\n=== Name Search ===")
+    print("\n=== Name Search ===")
 
     if "Alice" in name1
-        fmt.Println("Found Alice!")
+        print("Found Alice!")
 
     if string.Contains(name2, "Bob")
-        fmt.Println("Found Bob!")
+        print("Found Bob!")
 ```
 
 **Output:**

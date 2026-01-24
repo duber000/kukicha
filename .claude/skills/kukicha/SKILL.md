@@ -207,6 +207,14 @@ if x equals y      # Same as ==
 if x != y          # Not equals still uses !=
 ```
 
+### Output (print Builtin)
+```kukicha
+# print automatically imports fmt and transpiles to fmt.Println()
+print("Hello World")
+print("Value:", count, "items")       # Variadic - accepts multiple arguments
+print(user.Name, user.Age)            # Works with any types
+```
+
 ## Transpilation Patterns
 
 | Kukicha | Go |
@@ -219,6 +227,7 @@ if x != y          # Not equals still uses !=
 | `empty` | `nil` |
 | `and`, `or`, `not` | &&, \|\|, ! |
 | `equals` | `==` |
+| `print(...)` | `fmt.Println(...)` |
 | `"Hello {name}"` | `fmt.Sprintf("Hello %s", name)` |
 | `items[-1]` | `items[len(items)-1]` |
 | `json:"name"` (struct tag) | `` `json:"name"` `` (backtick-quoted) |
