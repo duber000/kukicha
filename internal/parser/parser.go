@@ -799,15 +799,11 @@ func (p *Parser) parseDeferStmt() *ast.DeferStmt {
 			Call:  call,
 		}
 	case *ast.MethodCallExpr:
-		// Convert MethodCallExpr to CallExpr for defer
+		// Use MethodCallExpr directly - no wrapping needed
 		p.skipNewlines()
 		return &ast.DeferStmt{
 			Token: token,
-			Call: &ast.CallExpr{
-				Token:     call.Token,
-				Function:  call,
-				Arguments: nil, // Method call arguments are already in the MethodCallExpr
-			},
+			Call:  call,
 		}
 	default:
 		p.error(token, "defer must be followed by a function call")
@@ -829,15 +825,11 @@ func (p *Parser) parseGoStmt() *ast.GoStmt {
 			Call:  call,
 		}
 	case *ast.MethodCallExpr:
-		// Convert MethodCallExpr to CallExpr for go
+		// Use MethodCallExpr directly - no wrapping needed
 		p.skipNewlines()
 		return &ast.GoStmt{
 			Token: token,
-			Call: &ast.CallExpr{
-				Token:     call.Token,
-				Function:  call,
-				Arguments: nil, // Method call arguments are already in the MethodCallExpr
-			},
+			Call:  call,
 		}
 	default:
 		p.error(token, "go must be followed by a function call")
@@ -1290,6 +1282,49 @@ func (p *Parser) parsePostfixExpr() ast.Expression {
 				// Actually, it should be postfixExpr -> expr '.' '(' Type ')'
 				// Let's refine this.
 				_ = 0
+			} else if p.check(lexer.TOKEN_LBRACE) {
+				// Qualified struct literal: pkg.Type{}
+				// expr should be the package identifier
+				if ident, ok := expr.(*ast.Identifier); ok {
+					qualifiedName := ident.Value + "." + method.Value
+					p.advance() // consume '{'
+
+					// Parse struct literal fields
+					fields := []*ast.FieldValue{}
+					if !p.check(lexer.TOKEN_RBRACE) {
+						for {
+							fieldName := p.parseIdentifier()
+							p.consume(lexer.TOKEN_COLON, "expected ':' after field name")
+							fieldValue := p.parseExpression()
+							fields = append(fields, &ast.FieldValue{
+								Name:  fieldName,
+								Value: fieldValue,
+							})
+							if p.match(lexer.TOKEN_COMMA) {
+								continue
+							}
+							break
+						}
+					}
+					p.consume(lexer.TOKEN_RBRACE, "expected '}' after struct literal")
+
+					expr = &ast.StructLiteralExpr{
+						Token: ident.Token,
+						Type: &ast.NamedType{
+							Token: ident.Token,
+							Name:  qualifiedName,
+						},
+						Fields: fields,
+					}
+				} else {
+					// Not a simple package.Type, treat as field access
+					expr = &ast.MethodCallExpr{
+						Token:     dotToken,
+						Object:    expr,
+						Method:    method,
+						Arguments: []ast.Expression{},
+					}
+				}
 			} else {
 				// Field access - treat as method call with no args for now
 				expr = &ast.MethodCallExpr{

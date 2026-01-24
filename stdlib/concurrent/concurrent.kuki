@@ -8,19 +8,32 @@ import "sync"
 # Returns when all functions have finished
 # Example: concurrent.Parallel(task1, task2, task3)
 func Parallel(many tasks func())
-    # Simplified: Execute tasks sequentially for now
-    # TODO: Implement with goroutines when struct literal syntax is supported
+    wg := sync.WaitGroup{}
+    wg.Add(len(tasks))
     for task in tasks
-        task()
+        t := task
+        go func()
+            t()
+            wg.Done()
+        ()
+    wg.Wait()
 
 # ParallelWithLimit executes functions with a maximum concurrency limit
 # At most 'limit' functions run simultaneously
 # Example: concurrent.ParallelWithLimit(4, tasks...)
 func ParallelWithLimit(limit int, many tasks func())
-    # Simplified: Execute tasks sequentially for now
-    # TODO: Implement with goroutines when struct literal syntax is supported
+    wg := sync.WaitGroup{}
+    semaphore := make(channel of int, limit)
+    wg.Add(len(tasks))
     for task in tasks
-        task()
+        send 1 to semaphore
+        t := task
+        go func()
+            t()
+            receive from semaphore
+            wg.Done()
+        ()
+    wg.Wait()
 
 # Go runs a function in a new goroutine with WaitGroup tracking
 # Returns empty for now

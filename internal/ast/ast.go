@@ -376,7 +376,7 @@ func (s *ForConditionStmt) stmtNode() {}
 
 type DeferStmt struct {
 	Token lexer.Token // The 'defer' token
-	Call  *CallExpr
+	Call  Expression  // Can be CallExpr or MethodCallExpr
 }
 
 func (s *DeferStmt) TokenLiteral() string { return s.Token.Lexeme }
@@ -387,7 +387,7 @@ func (s *DeferStmt) stmtNode() {}
 
 type GoStmt struct {
 	Token lexer.Token // The 'go' token
-	Call  *CallExpr
+	Call  Expression  // Can be CallExpr or MethodCallExpr
 }
 
 func (s *GoStmt) TokenLiteral() string { return s.Token.Lexeme }
