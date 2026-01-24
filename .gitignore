@@ -15,6 +15,7 @@
 go.work
 
 # Compiled binaries
+kukicha
 
 # Temporary test files
 test_*.kuki

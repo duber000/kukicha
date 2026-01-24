@@ -1,9 +1,6 @@
 # Kukicha is a Go-compatible language with Python-like syntax.
 # Blocks are defined by indentation (must be 4 spaces).
 
-# Standard Go packages can be imported directly
-import "fmt"
-
 # Function declaration follows Go's type system
 # Note: No curly braces needed, just indentation
 func Greet(name string) string
@@ -12,5 +9,5 @@ func Greet(name string) string
 
 # The main function is the entry point of the program
 func main()
-    # You can call standard Go library functions
-    fmt.Println(Greet("World"))
+    # Built-in print() function automatically imports fmt
+    print(Greet("World"))

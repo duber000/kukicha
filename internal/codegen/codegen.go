@@ -69,8 +69,8 @@ func (g *Generator) Generate() (string, error) {
 	// Generate package declaration
 	g.generatePackage()
 
-	// Generate imports (including auto-imports like fmt for string interpolation)
-	needsFmt := g.needsStringInterpolation()
+	// Generate imports (including auto-imports like fmt for string interpolation and print builtin)
+	needsFmt := g.needsStringInterpolation() || g.needsPrintBuiltin()
 	if len(g.program.Imports) > 0 || needsFmt || len(g.autoImports) > 0 {
 		g.writeLine("")
 		g.generateImports()
@@ -112,8 +112,8 @@ func (g *Generator) generateImports() {
 		imports[path] = alias
 	}
 
-	// Check if we need fmt for string interpolation
-	needsFmt := g.needsStringInterpolation()
+	// Check if we need fmt for string interpolation or print builtin
+	needsFmt := g.needsStringInterpolation() || g.needsPrintBuiltin()
 	if needsFmt {
 		imports["fmt"] = ""
 	}
@@ -939,6 +939,14 @@ func (g *Generator) generateOnErrExpr(expr *ast.OnErrExpr) string {
 
 func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 	funcName := g.exprToString(expr.Function)
+
+	// Check if this is a print() builtin - transpile to fmt.Println()
+	if id, ok := expr.Function.(*ast.Identifier); ok {
+		if id.Value == "print" {
+			funcName = "fmt.Println"
+		}
+	}
+
 	args := make([]string, len(expr.Arguments))
 	for i, arg := range expr.Arguments {
 		args[i] = g.exprToString(arg)
@@ -1167,6 +1175,129 @@ func (g *Generator) checkExprForInterpolation(expr ast.Expression) bool {
 			if g.checkExprForInterpolation(arg) {
 				return true
 			}
+		}
+	}
+
+	return false
+}
+
+func (g *Generator) needsPrintBuiltin() bool {
+	// Check if any calls use the print() builtin
+	return g.checkProgramForPrint(g.program)
+}
+
+func (g *Generator) checkProgramForPrint(program *ast.Program) bool {
+	for _, decl := range program.Declarations {
+		if fn, ok := decl.(*ast.FunctionDecl); ok {
+			if fn.Body != nil && g.checkBlockForPrint(fn.Body) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (g *Generator) checkBlockForPrint(block *ast.BlockStmt) bool {
+	for _, stmt := range block.Statements {
+		if g.checkStmtForPrint(stmt) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *Generator) checkStmtForPrint(stmt ast.Statement) bool {
+	switch s := stmt.(type) {
+	case *ast.VarDeclStmt:
+		for _, val := range s.Values {
+			if g.checkExprForPrint(val) {
+				return true
+			}
+		}
+		return false
+	case *ast.AssignStmt:
+		for _, val := range s.Values {
+			if g.checkExprForPrint(val) {
+				return true
+			}
+		}
+		return false
+	case *ast.ReturnStmt:
+		for _, val := range s.Values {
+			if g.checkExprForPrint(val) {
+				return true
+			}
+		}
+	case *ast.IfStmt:
+		if g.checkExprForPrint(s.Condition) {
+			return true
+		}
+		if s.Consequence != nil && g.checkBlockForPrint(s.Consequence) {
+			return true
+		}
+		if s.Alternative != nil {
+			return g.checkStmtForPrint(s.Alternative)
+		}
+	case *ast.ForRangeStmt:
+		if s.Body != nil {
+			return g.checkBlockForPrint(s.Body)
+		}
+	case *ast.ForNumericStmt:
+		if s.Body != nil {
+			return g.checkBlockForPrint(s.Body)
+		}
+	case *ast.ForConditionStmt:
+		if s.Body != nil {
+			return g.checkBlockForPrint(s.Body)
+		}
+	case *ast.ExpressionStmt:
+		return g.checkExprForPrint(s.Expression)
+	case *ast.DeferStmt:
+		if s.Call != nil {
+			return g.checkExprForPrint(s.Call)
+		}
+	case *ast.GoStmt:
+		if s.Call != nil {
+			return g.checkExprForPrint(s.Call)
+		}
+	}
+	return false
+}
+
+func (g *Generator) checkExprForPrint(expr ast.Expression) bool {
+	if expr == nil {
+		return false
+	}
+
+	switch e := expr.(type) {
+	case *ast.CallExpr:
+		// Check if this is a print() call
+		if id, ok := e.Function.(*ast.Identifier); ok {
+			if id.Value == "print" {
+				return true
+			}
+		}
+		// Also check arguments recursively
+		for _, arg := range e.Arguments {
+			if g.checkExprForPrint(arg) {
+				return true
+			}
+		}
+	case *ast.BinaryExpr:
+		return g.checkExprForPrint(e.Left) || g.checkExprForPrint(e.Right)
+	case *ast.UnaryExpr:
+		return g.checkExprForPrint(e.Right)
+	case *ast.MethodCallExpr:
+		for _, arg := range e.Arguments {
+			if g.checkExprForPrint(arg) {
+				return true
+			}
+		}
+	case *ast.PipeExpr:
+		return g.checkExprForPrint(e.Left) || g.checkExprForPrint(e.Right)
+	case *ast.FunctionLiteral:
+		if e.Body != nil {
+			return g.checkBlockForPrint(e.Body)
 		}
 	}
 
