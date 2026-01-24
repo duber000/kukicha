@@ -43,7 +43,9 @@ func main() {
 		}
 		checkCommand(os.Args[2])
 	case "fmt":
-		fmtCommand(os.Args[2:])
+		// TODO: Implement fmtCommand
+		fmt.Println("Error: fmt command not yet implemented")
+		os.Exit(1)
 	case "version":
 		fmt.Printf("kukicha version %s\n", version)
 	case "help", "-h", "--help":

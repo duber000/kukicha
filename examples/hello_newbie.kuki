@@ -1,10 +1,6 @@
 # This is a computer program written in Kukicha.
 # Lines starting with # are comments for humans to read; the computer ignores them.
 
-# "import" tells the computer we want to use a toolset called "fmt" (short for format).
-# This toolset lets us print text to the screen.
-import "fmt"
-
 # A "func" (function) is like a small recipe or a list of instructions.
 # We are naming this recipe "Greet".
 # It needs one ingredient: a "name", which must be text (called a "string").
@@ -22,6 +18,6 @@ func main()
     # Here we use the "Greet" recipe we wrote above, giving it the ingredient "World".
     # The result will be "Hello World".
 
-    # Then we use the "Println" tool from "fmt" to show that result on the screen.
-    # Note: In the future, you will be able to just use print("Hello World").
-    fmt.Println(Greet("World"))
+    # Then we use the built-in "print" function to show that result on the screen.
+    # The print function automatically imports the "fmt" package for you.
+    print(Greet("World"))

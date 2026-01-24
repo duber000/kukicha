@@ -583,6 +583,17 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 }
 
 func (a *Analyzer) analyzeIdentifier(ident *ast.Identifier) *TypeInfo {
+	// Check for builtin functions first
+	if ident.Value == "print" {
+		// print is a variadic builtin that accepts any types
+		return &TypeInfo{
+			Kind:     TypeKindFunction,
+			Params:   []*TypeInfo{{Kind: TypeKindUnknown}},
+			Variadic: true,
+			Returns:  nil, // print doesn't return anything
+		}
+	}
+
 	symbol := a.symbolTable.Resolve(ident.Value)
 	if symbol == nil {
 		a.error(ident.Pos(), fmt.Sprintf("undefined identifier '%s'", ident.Value))
