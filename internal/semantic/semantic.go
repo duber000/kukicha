@@ -594,6 +594,26 @@ func (a *Analyzer) analyzeIdentifier(ident *ast.Identifier) *TypeInfo {
 		}
 	}
 
+	if ident.Value == "len" {
+		// len is a builtin that returns int
+		return &TypeInfo{
+			Kind:     TypeKindFunction,
+			Params:   []*TypeInfo{{Kind: TypeKindUnknown}}, // accepts any collection type
+			Variadic: false,
+			Returns:  []*TypeInfo{{Kind: TypeKindInt}},
+		}
+	}
+
+	if ident.Value == "append" {
+		// append is a variadic builtin
+		return &TypeInfo{
+			Kind:     TypeKindFunction,
+			Params:   []*TypeInfo{{Kind: TypeKindUnknown}}, // slice and variadic elements
+			Variadic: true,
+			Returns:  []*TypeInfo{{Kind: TypeKindUnknown}}, // returns same type as input slice
+		}
+	}
+
 	symbol := a.symbolTable.Resolve(ident.Value)
 	if symbol == nil {
 		a.error(ident.Pos(), fmt.Sprintf("undefined identifier '%s'", ident.Value))

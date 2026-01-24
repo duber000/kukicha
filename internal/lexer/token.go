@@ -28,6 +28,9 @@ const (
 	TOKEN_FROM
 	TOKEN_TO
 	TOKEN_THROUGH
+	TOKEN_SWITCH
+	TOKEN_CASE
+	TOKEN_DEFAULT
 	TOKEN_GO
 	TOKEN_DEFER
 	TOKEN_MAKE
@@ -73,6 +76,8 @@ const (
 	TOKEN_AND_AND       // &&
 	TOKEN_OR            // or
 	TOKEN_OR_OR         // ||
+	TOKEN_BIT_OR        // |
+	TOKEN_BIT_AND       // &
 	TOKEN_ONERR         // onerr
 	TOKEN_NOT           // not
 	TOKEN_BANG          // !
@@ -151,6 +156,12 @@ func (t TokenType) String() string {
 		return "TO"
 	case TOKEN_THROUGH:
 		return "THROUGH"
+	case TOKEN_SWITCH:
+		return "SWITCH"
+	case TOKEN_CASE:
+		return "CASE"
+	case TOKEN_DEFAULT:
+		return "DEFAULT"
 	case TOKEN_GO:
 		return "GO"
 	case TOKEN_DEFER:
@@ -237,6 +248,10 @@ func (t TokenType) String() string {
 		return "OR"
 	case TOKEN_OR_OR:
 		return "OR_OR"
+	case TOKEN_BIT_OR:
+		return "BIT_OR"
+	case TOKEN_BIT_AND:
+		return "BIT_AND"
 	case TOKEN_ONERR:
 		return "ONERR"
 	case TOKEN_NOT:
@@ -306,6 +321,9 @@ var keywords = map[string]TokenType{
 	"from":      TOKEN_FROM,
 	"to":        TOKEN_TO,
 	"through":   TOKEN_THROUGH,
+	"switch":    TOKEN_SWITCH,
+	"case":      TOKEN_CASE,
+	"default":   TOKEN_DEFAULT,
 	"go":        TOKEN_GO,
 	"defer":     TOKEN_DEFER,
 	"make":      TOKEN_MAKE,
