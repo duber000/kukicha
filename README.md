@@ -232,7 +232,6 @@ See [Contributing Guide](docs/contributing.md) for full details.
 - [Design Philosophy](docs/kukicha-design-philosophy.md) - Why Kukicha works this way
 - [Compiler Architecture](docs/kukicha-compiler-architecture.md) - How the transpiler works
 - [Grammar (EBNF)](docs/kukicha-grammar.ebnf.md) - Formal specification
-- [Go 1.25 Roadmap](docs/go_1.25_roadmap.md) - Upcoming improvements
 
 ### Standard Library
 
