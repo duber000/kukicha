@@ -13,7 +13,7 @@ func main()
         |> slice.Map(u -> u.name)
 
     for name in active
-        fmt.Println("Hello {name}!")
+        print("Hello {name}!")
 ```
 
 ---
