@@ -9,10 +9,13 @@ import "net/http"
 # Example: http.WithCSRF(myHandler)
 # Note: Using 'any' for http.Handler due to type checker limitations
 func WithCSRF(handler any) any
-    return http.CrossOriginProtection(handler)
+    protection := http.NewCrossOriginProtection()
+    h := handler as http.Handler
+    return protection.Handler(h)
 
 # Serve starts an HTTP server on the specified address
 # Example: http.Serve(":8080", handler)
 # Note: Using 'any' for http.Handler due to type checker limitations
 func Serve(addr string, handler any) error
-    return http.ListenAndServe(addr, handler)
+    h := handler as http.Handler
+    return http.ListenAndServe(addr, h)

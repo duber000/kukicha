@@ -815,6 +815,11 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 	case *ast.TypeCastExpr:
 		targetType := g.generateTypeAnnotation(e.TargetType)
 		expr := g.exprToString(e.Expression)
+		// Use type assertion syntax for interface types (contains a dot like http.Handler)
+		// or when likely asserting from any/interface
+		if strings.Contains(targetType, ".") {
+			return fmt.Sprintf("%s.(%s)", expr, targetType)
+		}
 		return fmt.Sprintf("%s(%s)", targetType, expr)
 	case *ast.EmptyExpr:
 		if e.Type != nil {
@@ -872,9 +877,33 @@ func (g *Generator) escapeRune(r rune) string {
 	}
 }
 
+// escapeString returns a string with special characters escaped for Go string literals
+func (g *Generator) escapeString(s string) string {
+	var result strings.Builder
+	for _, r := range s {
+		switch r {
+		case '\n':
+			result.WriteString("\\n")
+		case '\t':
+			result.WriteString("\\t")
+		case '\r':
+			result.WriteString("\\r")
+		case '\\':
+			result.WriteString("\\\\")
+		case '"':
+			result.WriteString("\\\"")
+		case '\x00':
+			result.WriteString("\\x00")
+		default:
+			result.WriteRune(r)
+		}
+	}
+	return result.String()
+}
+
 func (g *Generator) generateStringLiteral(lit *ast.StringLiteral) string {
 	if !lit.Interpolated {
-		return fmt.Sprintf("\"%s\"", lit.Value)
+		return fmt.Sprintf("\"%s\"", g.escapeString(lit.Value))
 	}
 
 	// Parse string interpolation
@@ -887,22 +916,22 @@ func (g *Generator) generateStringInterpolation(str string) string {
 	matches := re.FindAllStringSubmatchIndex(str, -1)
 
 	if len(matches) == 0 {
-		return fmt.Sprintf("\"%s\"", str)
+		return fmt.Sprintf("\"%s\"", g.escapeString(str))
 	}
 
 	// Build format string and args
-	format := ""
+	var format strings.Builder
 	args := []string{}
 	lastIndex := 0
 
 	for _, match := range matches {
-		// Add literal part before the interpolation
+		// Add literal part before the interpolation (escaped)
 		if match[0] > lastIndex {
-			format += str[lastIndex:match[0]]
+			format.WriteString(g.escapeString(str[lastIndex:match[0]]))
 		}
 
 		// Add format specifier
-		format += "%v"
+		format.WriteString("%v")
 
 		// Extract expression
 		expr := str[match[2]:match[3]]
@@ -911,14 +940,14 @@ func (g *Generator) generateStringInterpolation(str string) string {
 		lastIndex = match[1]
 	}
 
-	// Add remaining literal part
+	// Add remaining literal part (escaped)
 	if lastIndex < len(str) {
-		format += str[lastIndex:]
+		format.WriteString(g.escapeString(str[lastIndex:]))
 	}
 
 	// Generate fmt.Sprintf call
 	argsStr := strings.Join(args, ", ")
-	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", format, argsStr)
+	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", format.String(), argsStr)
 }
 
 func (g *Generator) generateBinaryExpr(expr *ast.BinaryExpr) string {
@@ -1105,6 +1134,10 @@ func (g *Generator) generateMakeExpr(expr *ast.MakeExpr) string {
 	targetType := g.generateTypeAnnotation(expr.Type)
 
 	if len(expr.Args) == 0 {
+		// Slices require a size argument, maps and channels don't
+		if strings.HasPrefix(targetType, "[]") {
+			return fmt.Sprintf("make(%s, 0)", targetType)
+		}
 		return fmt.Sprintf("make(%s)", targetType)
 	}
 

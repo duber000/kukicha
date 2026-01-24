@@ -48,6 +48,10 @@ func (a *Analyzer) collectDeclarations() {
 			path := strings.Trim(imp.Path.Value, "\"")
 			parts := strings.Split(path, "/")
 			name = parts[len(parts)-1]
+			// Handle gopkg.in version suffixes (e.g., yaml.v3 -> yaml)
+			if idx := strings.Index(name, ".v"); idx != -1 {
+				name = name[:idx]
+			}
 		}
 
 		err := a.symbolTable.Define(&Symbol{

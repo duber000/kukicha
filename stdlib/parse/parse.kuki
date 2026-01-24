@@ -83,3 +83,11 @@ func CsvWithHeader(data string) (list of map of string to string, error)
 # Note: Currently requires Go interop - see package documentation
 func Yaml(data string) (list of byte, error)
     return empty, error "use Go interop - yaml.Unmarshal requires pointer to result"
+
+# YamlPretty formats a value as YAML bytes
+# Example: config |> parse.YamlPretty()
+func YamlPretty(value any) (list of byte, error)
+    yamlData, err := yaml.Marshal(value)
+    if err != empty
+        return empty, err
+    return yamlData, empty
