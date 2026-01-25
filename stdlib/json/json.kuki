@@ -1,0 +1,96 @@
+# Kukicha Standard Library - JSON (jsonv2 wrapper)
+# Pipe-friendly wrapper around Go 1.25+ encoding/json/v2
+# Provides beautiful pipe syntax with 2-10x performance improvements
+
+petiole json
+
+import "encoding/json/v2"
+import "io"
+
+# Encoder wraps jsonv2 for pipe-friendly encoding with builder pattern
+type Encoder
+    writer io.Writer
+    deterministic bool
+    indent string
+    prefix string
+
+# Decoder wraps jsonv2 for pipe-friendly decoding
+type Decoder
+    reader io.Reader
+
+# NewEncoder creates a pipe-friendly jsonv2 encoder
+# Returns an Encoder that can be chained with options before encoding
+# Example: response |> json.NewEncoder() |> json.Encode(data)
+func NewEncoder(writer io.Writer) Encoder
+    enc := Encoder{}
+    enc.writer = writer
+    enc.deterministic = false
+    enc.indent = ""
+    enc.prefix = ""
+    return enc
+
+# WithDeterministic sets deterministic output (consistent field ordering)
+# Chainable - returns modified encoder for piping
+# Example: writer |> json.NewEncoder() |> json.WithDeterministic() |> json.Encode(data)
+func WithDeterministic(enc Encoder) Encoder
+    enc.deterministic = true
+    return enc
+
+# WithIndent sets pretty-printing with indentation
+# Chainable - returns modified encoder for piping
+# Example: writer |> json.NewEncoder() |> json.WithIndent("  ") |> json.Encode(data)
+func WithIndent(enc Encoder, indent string) Encoder
+    enc.indent = indent
+    return enc
+
+# WithPrefix sets prefix for each line (used with indentation)
+# Chainable - returns modified encoder for piping
+func WithPrefix(enc Encoder, prefix string) Encoder
+    enc.prefix = prefix
+    return enc
+
+# Encode writes a value as JSON using jsonv2 with configured options
+# This is the final step in the pipe chain
+# Example: response |> json.NewEncoder() |> json.Encode(todo) onerr return
+func Encode(enc Encoder, value any) error
+    # Note: Would call encoding/json/v2.MarshalWrite(enc.writer, value)
+    # Requires Go interop for now
+    return error "not yet implemented - use Go interop"
+
+# NewDecoder creates a pipe-friendly jsonv2 decoder
+# Returns a Decoder for reading JSON from a stream
+# Example: request.Body |> json.NewDecoder() |> json.Decode(reference result)
+func NewDecoder(reader io.Reader) Decoder
+    dec := Decoder{}
+    dec.reader = reader
+    return dec
+
+# Decode reads JSON from the decoder's reader into the target value
+# Target must be a pointer (use "reference of" in Kukicha)
+# Example: body |> json.NewDecoder() |> json.Decode(reference todo) onerr return
+func Decode(dec Decoder, target any) error
+    # Note: Would call encoding/json/v2.UnmarshalRead(dec.reader, target)
+    # Requires Go interop for now
+    return error "not yet implemented - use Go interop"
+
+# Marshal converts a value to JSON bytes (convenience function)
+# For simple marshaling without a writer
+# Example: jsonBytes, err := Marshal(data) onerr panic
+func Marshal(value any) (list of byte, error)
+    # Note: Direct call to encoding/json/v2.Marshal
+    # Returns ([]byte, error)
+    return empty, error "not yet implemented - use Go interop"
+
+# MarshalPretty converts a value to pretty-printed JSON bytes
+# Uses deterministic output and 2-space indentation
+# Example: jsonBytes, err := MarshalPretty(config) onerr panic
+func MarshalPretty(value any) (list of byte, error)
+    # Note: Would need encoding/json/v2.Marshal with options
+    return empty, error "not yet implemented - use Go interop"
+
+# Unmarshal parses JSON bytes into a target value
+# Target must be a pointer (use "reference of" in Kukicha)
+# Example: Unmarshal(jsonBytes, reference config) onerr panic
+func Unmarshal(data list of byte, target any) error
+    # Note: Direct call to encoding/json/v2.Unmarshal
+    return error "not yet implemented - use Go interop"

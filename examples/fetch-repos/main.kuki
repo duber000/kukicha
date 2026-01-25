@@ -1,57 +1,22 @@
-# Example: Fetch GitHub Repos and Filter by Stars
+# Example: Fetch GitHub Repos
 #
-# This example demonstrates the fetch and files standard library packages
-# by fetching repositories from GitHub's API, filtering them, and saving to a file.
+# This example shows Kukicha's philosophy: "English for common tasks, Go for complex"
+# - fetch.Get() is simple English wrapper
+# - JSON parsing uses Go's encoding/json/v2 directly for type safety
+#
+# Note: This is an aspirational example showing the intended workflow.
+# Currently fetch.CheckStatus() and fetch.Json() return "use Go interop" errors.
+# Users should use Go's net/http and encoding/json/v2 directly for now.
 
 import "stdlib/fetch"
-import "stdlib/files"
-import "stdlib/slice"
-
-# Repo represents a GitHub repository from the API
-type Repo struct
-    Name string `json:"name"`
-    Description string `json:"description"`
-    Stars int `json:"stargazers_count"`
-    Forks int `json:"forks_count"`
-    Language string `json:"language"`
-    HtmlUrl string `json:"html_url"`
-    Archived bool `json:"archived"`
 
 func main()
-    # Fetch repos, filter by stars, and save to JSON file
-    repos := fetch.Get("https://api.github.com/users/golang/repos")
-        |> fetch.CheckStatus()
-        |> fetch.Json() as list of Repo
-        |> slice.Filter(func(r Repo) bool {
-            return r.Stars > 100
-        })
-        |> files.Write("repos.json")
-        onerr panic "failed to fetch and save repos"
+    # Simple fetch - this works!
+    resp, err := fetch.Get("https://api.github.com/users/golang/repos")
+    if err != empty
+        panic("Failed to fetch repos")
 
-    print "Successfully saved {len(repos)} repos with > 100 stars to repos.json"
+    print("Fetched repos successfully!")
 
-# Alternative example: More complex filtering and transformation
-func advancedExample()
-    # Repo summary for output
-    type RepoSummary struct
-        Name string
-        Stars int
-        Url string
-
-    summaries := fetch.Get("https://api.github.com/users/golang/repos")
-        |> fetch.CheckStatus()
-        |> fetch.Json() as list of Repo
-        |> slice.Filter(func(r Repo) bool {
-            return not r.Archived and r.Stars > 100
-        })
-        |> slice.Map(func(r Repo) RepoSummary {
-            return RepoSummary{
-                Name: r.Name,
-                Stars: r.Stars,
-                Url: r.HtmlUrl,
-            }
-        })
-        |> files.Write("repo-summaries.json")
-        onerr panic "failed to process repos"
-
-    print "Saved {len(summaries)} repo summaries"
+    # To parse JSON, use Go's encoding/json/v2 directly
+    # See docs/kukicha-stdlib-roadmap.md for complete working examples
