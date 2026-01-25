@@ -33,15 +33,14 @@ Kukicha combines two powerful ideas:
 
 ### Quick Summary
 
-**Ready to Use:** ✅ iter, slice, string, files, parse, fetch, concurrent, shell, cli, http (basic)
+**Ready to Use:** ✅ iter, slice, string, files, json, parse (CSV/YAML), fetch, concurrent, shell, cli, http (basic)
 
 **Not Yet Implemented:** 🚧 template, retry, result packages
 
 **Limitations:**
 - Builder patterns for `shell.New()`, `cli.New()` not yet supported - use direct function calls
-- `fetch.New()` builder pattern is now ✅ implemented
 - `files.Watch()`, `useWith()` helper not implemented
-- Some Go 1.25+ features in roadmap examples are aspirational
+- Some Go 1.25+ features in roadmap examples are aspirational (arrow functions, multiline pipes)
 
 ### ✅ Completed Packages
 
@@ -51,9 +50,9 @@ Kukicha combines two powerful ideas:
 | **slice** | Slice operations with generics | ✅ Ready | First, Last, Drop, DropLast, Reverse, Unique, Chunk, Filter, Map, Contains, IndexOf, Concat, GroupBy |
 | **string** | String utilities | ✅ Ready | ToUpper, ToLower, Title, Trim, TrimSpace, TrimPrefix, TrimSuffix, Split, Join, Contains, HasPrefix, HasSuffix, Index, Count, Replace, ReplaceAll, and more |
 | **files** | File operations with pipes | ✅ Ready | Read, Write, Append, Exists, IsDir, IsFile, List, Delete, Copy, Move, MkDir, TempFile, TempDir, Size, ModTime, Extension, Join, Abs |
-| **json** | Pipe-friendly jsonv2 wrapper | ✅ Ready | NewEncoder, WithDeterministic, WithIndent, Encode, NewDecoder, Decode, Marshal, MarshalPretty, Unmarshal |
-| **parse** | JSON/YAML/CSV parsing | ✅ Ready | Json, JsonLines, JsonPretty, Csv, CsvWithHeader, Yaml, YamlPretty |
-| **fetch** | HTTP client with jsonv2 support | ✅ Ready | Get, Post, CheckStatus, Text, Bytes, New, Header, Timeout, Method, Do |
+| **json** | Pipe-friendly jsonv2 wrapper | ✅ Ready | NewEncoder, WithDeterministic, WithIndent, Encode, NewDecoder, Decode, Marshal, MarshalPretty, Unmarshal, MarshalWrite, UnmarshalRead |
+| **parse** | CSV/YAML parsing | ✅ Ready | JsonPretty, Csv, CsvWithHeader, YamlPretty |
+| **fetch** | HTTP client with json integration | ✅ Ready | Get, Post, New, Header, Timeout, Method, Body, Do, CheckStatus, Text, Bytes |
 | **concurrent** | Concurrency helpers | ✅ Ready | Parallel, ParallelWithLimit, Go |
 | **shell** | Safe command execution | ✅ Ready | Run, RunSimple, RunWithDir, RunWithOutput, RunWithTimeout, Which, Getenv, Setenv, Unsetenv, Environ |
 | **cli** | CLI argument parsing | ✅ Ready | Parse, String, Command, Flag, BoolFlag, IntFlag, PrintUsage |
@@ -273,12 +272,13 @@ HTTP client with fluent builder pattern and response helpers. **Important**: JSO
 - ✅ `Header(req, name, value)` - Add HTTP header (chainable)
 - ✅ `Timeout(req, duration)` - Set timeout (chainable)
 - ✅ `Method(req, method)` - Set HTTP method (chainable)
+- ✅ `Body(req, data)` - Set request body (chainable)
 - ✅ `Do(req)` - Execute the request
 - ✅ `Get(url)` - Quick GET request
-- ✅ `Post(data, url)` - POST with auto-serialized JSON body (uses jsonv2)
+- ✅ `Post(data, url)` - POST with auto-serialized JSON body using stdlib/json
 - ✅ `CheckStatus(resp)` - Verify HTTP status code (2xx)
 - ✅ `Text(resp)` - Read response body as string
-- ✅ `Bytes(resp)` - Read response body as bytes (for manual unmarshaling)
+- ✅ `Bytes(resp)` - Read response body as bytes for use with stdlib/json
 
 **Working Examples (request building):**
 ```kukicha
@@ -317,25 +317,22 @@ text := fetch.Get("https://api.example.com/version")
     |> fetch.Text()
     onerr panic "fetch failed"
 
-# Example 2: Typed JSON with stdlib/json (RECOMMENDED)
+# Example 2: Typed JSON with stdlib/json - Simple approach
 type User
     ID int json:"id"
     Name string json:"name"
     Followers int json:"followers"
 
-# Fetch response
-resp, err := fetch.Get("https://api.github.com/users/golang")
-if err != empty
-    panic("fetch failed")
-defer resp.Body.Close()
-
-# Parse JSON with beautiful pipes
 user := User{}
-resp.Body |> json.NewDecoder() |> json.Decode(reference user) onerr panic
+fetch.Get("https://api.github.com/users/golang")
+    |> fetch.CheckStatus()
+    |> fetch.Bytes()
+    |> json.Unmarshal(reference user)
+    onerr panic "fetch failed"
 
 print("User: {user.Name} with {user.Followers} followers")
 
-# Example 3: List of items with filtering
+# Example 3: Streaming JSON (for large responses)
 type Repo
     Name string json:"name"
     Stars int json:"stargazers_count"
@@ -357,16 +354,19 @@ active := repos
 
 print("Found {len(active)} active repos")
 
-# Example 4: POST with auto-serialization
+# Example 4: POST with auto-serialization (uses stdlib/json internally)
 newUser := User{Name: "Alice"}
 resp := fetch.Post(newUser, "https://api.example.com/users")
     |> fetch.CheckStatus()
     onerr panic "create failed"
 ```
 
-**Why no `fetch.Json()` helper?**
+**Design Philosophy:**
 
-Go's type system requires knowing the target type BEFORE unmarshaling. A generic `Json()` function would return `map[string]any` instead of your typed struct, losing all type safety. Instead, use `stdlib/json` which provides beautiful pipe syntax: `resp.Body |> json.NewDecoder() |> json.Decode(reference user)`. This combines jsonv2's performance with Kukicha's pipe-friendly philosophy!
+- Use `fetch.Bytes()` + `json.Unmarshal()` for simple cases
+- Use streaming with `json.NewDecoder()` for large responses
+- `fetch.Post()` auto-serializes request body using stdlib/json
+- No `fetch.Json()` helper - Go's type system requires knowing the target type at compile time, so we provide `Bytes()` for use with `stdlib/json` instead
 
 ### JSON Package ✅
 
@@ -429,13 +429,17 @@ json.Unmarshal(jsonBytes, reference result) onerr panic
 - `Marshal(value)` - Convert to JSON bytes
 - `MarshalPretty(value)` - Convert to pretty JSON bytes
 - `Unmarshal(data, target)` - Parse JSON bytes
+- `MarshalWrite(writer, value)` - Write JSON directly to io.Writer (streaming)
+- `UnmarshalRead(reader, target)` - Read JSON directly from io.Reader (streaming)
 
 ### Parse Package ✅
 
-Universal parsing with pipes (Go 1.25+ jsonv2 for 2-10x faster JSON). Works seamlessly with struct tags for automatic field mapping.
+Universal parsing for CSV and YAML. **For JSON parsing, use `stdlib/json` directly** (see JSON package above).
 
 ```kukicha
 import "stdlib/parse"
+import "stdlib/json"
+import "stdlib/files"
 
 # Define struct with JSON tags
 type Config
@@ -443,26 +447,20 @@ type Config
     Host string json:"host"
     Debug bool json:"debug"
 
-# JSON parsing pipeline (uses Go 1.25+ jsonv2)
-config := "config.json"
+# JSON parsing: Use stdlib/json directly for type safety
+config := Config{}
+"config.json"
     |> files.Read()
-    |> parse.Json() as Config
-    |> validateConfig()
-    onerr defaultConfig()
+    |> json.Unmarshal(reference config)
+    onerr panic "parse failed"
 
-# Stream JSON from reader (memory efficient for large files)
-data := fileReader
-    |> parse.JsonFromReader() as LargeDataset
-    onerr panic "failed to parse"
+# Or with pipes using json.NewDecoder:
+file := files.Open("config.json") onerr panic
+defer file.Close()
+config := Config{}
+file |> json.NewDecoder() |> json.Decode(reference config) onerr panic
 
-# Parse NDJSON (newline-delimited JSON logs)
-entries := logData
-    |> parse.JsonLines() as list of LogEntry
-    |> slice.Filter(func(e LogEntry) bool {
-        return e.Level equals "ERROR"
-    })
-
-# Format as pretty JSON
+# Format as pretty JSON (convenience function)
 output := config
     |> parse.JsonPretty()
     |> files.Write("config-formatted.json")
@@ -477,15 +475,16 @@ users := "data.csv"
         return u.Active
     })
 
-# YAML config with validation
-settings := "settings.yaml"
-    |> files.Read()
-    |> parse.Yaml() as Settings
-    |> applyDefaults()
-    onerr panic "invalid settings"
+# YAML config parsing (requires Go interop)
+# Note: Use gopkg.in/yaml.v3 directly for YAML parsing
+
+# YAML formatting (convenience function)
+settings := config
+    |> parse.YamlPretty()
+    |> files.Write("config.yaml")
 ```
 
-**Struct Tags:** JSON and other parsers use struct tags for field mapping:
+**Struct Tags:** JSON and other parsers use struct tags for automatic field mapping:
 ```kukicha
 type User
     ID int json:"id"
@@ -493,9 +492,13 @@ type User
     Email string json:"email"
 ```
 
-# Available functions:
-# Json, JsonFromReader, JsonLines, JsonPretty (Go 1.25+ jsonv2)
-# Csv, CsvWithHeader, Yaml
+**Available functions:**
+- `JsonPretty(value)` - Format value as indented JSON (uses jsonv1 for compatibility)
+- `Csv(data)` - Parse CSV string into list of records
+- `CsvWithHeader(data)` - Parse CSV with headers into list of maps
+- `YamlPretty(value)` - Format value as YAML
+
+**Deprecated:** `Json()`, `JsonLines()`, `Yaml()` - Use `stdlib/json` and Go's yaml library directly instead
 ```
 
 ### CLI Package ✅
@@ -693,7 +696,7 @@ import "stdlib/retry"
 
 # Retry with default backoff (3 attempts)
 data := retry.Do(func() any {
-    return fetch.Get(apiUrl) |> fetch.Json()
+    return fetch.Get(apiUrl) |> fetch.CheckStatus() |> fetch.Bytes()
 }) onerr panic "all retries failed"
 
 # Custom retry strategy
@@ -775,24 +778,24 @@ else
 These examples show how Kukicha excels at practical automation.
 
 **Implementation Status:**
-- ✅ **Example 1** (API Data Processing) - **Works!** Uses fetch, parse, slice, files - all implemented
-- ✅ **Example 2** (Log Analysis) - **Works!** Uses files, slice.GroupBy, parse, string - all implemented
-- ✅ **Example 3** (File Processing) - **Works!** Uses files, parse, slice, string - all implemented
+- ✅ **Example 1** (API Data Processing) - **Works!** Uses fetch, json, slice, files - all implemented
+- ✅ **Example 2** (Log Analysis) - **Works!** Uses files, slice.GroupBy, string - all implemented
+- ✅ **Example 3** (File Processing) - **Works!** Uses files, slice, string - all implemented
 - ✅ **Example 4** (Deployment) - **Works!** Uses shell, files, basic command execution - all implemented
 
 ### Example 1: API Data Processing Script
 
 ```kukicha
 import "stdlib/fetch"
-import "stdlib/parse"
+import "stdlib/json"
 import "stdlib/slice"
-import "encoding/json/v2"
+import "stdlib/files"
 
 type Repo
-    Name string `json:"name"`
-    Stars int `json:"stargazers_count"`
-    Archived bool `json:"archived"`
-    HtmlUrl string `json:"html_url"`
+    Name string json:"name"
+    Stars int json:"stargazers_count"
+    Archived bool json:"archived"
+    HtmlUrl string json:"html_url"
 
 type RepoSummary
     Name string
@@ -800,19 +803,13 @@ type RepoSummary
     Url string
 
 func main()
-    # Fetch repos from GitHub API
-    resp := fetch.Get("https://api.github.com/users/golang/repos")
-        |> fetch.CheckStatus()
-        onerr panic "failed to fetch repos"
-
-    # Parse JSON using jsonv2
-    httpResp := resp.(reference http.Response)
-    defer httpResp.Body.Close()
-
+    # Fetch and parse repos from GitHub API (simple approach)
     repos := list of Repo{}
-    err := json.UnmarshalRead(httpResp.Body, reference repos)
-    if err != empty
-        panic("failed to parse repos: {err}")
+    fetch.Get("https://api.github.com/users/golang/repos")
+        |> fetch.CheckStatus()
+        |> fetch.Bytes()
+        |> json.Unmarshal(reference repos)
+        onerr panic "failed to fetch repos"
 
     # Filter and transform using slice helpers
     summaries := repos
@@ -827,9 +824,9 @@ func main()
             }
         })
 
-    # Save to file using parse.JsonPretty
+    # Save to file using json.MarshalPretty
     output := summaries
-        |> parse.JsonPretty()
+        |> json.MarshalPretty()
         onerr panic "failed to serialize"
 
     string(output)
@@ -940,7 +937,7 @@ users := http.Get("https://api.example.com/users")
     |> checkStatus()
     |> .Body
     |> io.ReadAll()
-    |> parse.Json() as list of User
+    |> json.Unmarshal(_, reference users) as list of User
     onerr empty list of User
 
 func checkStatus(resp reference http.Response, err error) (reference http.Response, error)
@@ -992,7 +989,7 @@ func readLines(file reference os.File) list of string
 
 We provide high-level helpers for common patterns, but:
 
-- ✅ Provide: Helpers Go lacks (fetch.Json, files.Read piping)
+- ✅ Provide: Helpers Go lacks (fetch.CheckStatus/Bytes/Text, files.Read piping)
 - ✅ Provide: Ergonomic patterns (retry, CLI parsing)
 - ❌ Don't wrap: Every Go stdlib function (maintenance hell)
 - ❌ Don't duplicate: Functionality Go already does well

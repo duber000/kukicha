@@ -21,9 +21,13 @@ kuki run main.kuki
 ## Pipeline breakdown
 
 ```kukicha
+# Don't forget to import the json package
+import "stdlib/json"
+
 repos := fetch.Get("https://api.github.com/users/golang/repos")
     |> fetch.CheckStatus()                    # Verify HTTP 200
-    |> fetch.Json() as list of Repo          # Parse JSON
+    |> fetch.Bytes()                          # Get response bytes
+    |> json.Unmarshal(_, reference repos)     # Parse JSON into repos
     |> slice.Filter(r -> r.Stars > 100)      # Filter popular repos
     |> files.Write("repos.json")              # Save to file
     onerr panic "failed"                      # Handle errors

@@ -274,9 +274,10 @@ Located in `stdlib/`:
 | `iter` | Functional iterators with Go 1.25+ generics (Filter, Map, Take, Skip) |
 | `slice` | Slice operations with Go 1.25+ generics (First, Last, Reverse, Unique, **GroupBy**) |
 | `string` | String utilities (ToUpper, Split, Contains) |
-| `fetch` | HTTP client for pipe-based requests (uses jsonv2) |
+| `json` | Pipe-friendly jsonv2 wrapper (Marshal, Unmarshal, MarshalWrite, UnmarshalRead, Encoder/Decoder) |
+| `fetch` | HTTP client with builder pattern (Get, Post, CheckStatus, Text, Bytes) |
 | `files` | File operations (Read, Write, List) |
-| `parse` | Data format parsing (JSON, CSV, YAML) - uses jsonv2 for 2-10x faster JSON |
+| `parse` | Data format parsing (CSV, YAML) - delegates JSON to stdlib/json |
 | `concurrent` | Concurrency helpers (Parallel, ParallelWithLimit, Go) |
 | `http` | HTTP server helpers (WithCSRF, Serve) |
 
@@ -284,28 +285,29 @@ Example with stdlib:
 ```kukicha
 import "stdlib/fetch"
 import "stdlib/slice"
-import "stdlib/parse"
+import "stdlib/json"
+import "stdlib/fetch"
 
 repos := "https://api.github.com/users/golang/repos"
     |> fetch.Get()
     |> fetch.CheckStatus()
-    |> fetch.Text()
-    |> parse.Json() as list of Repo
+    |> fetch.Bytes()
+    |> json.Unmarshal(_, reference repos) as list of Repo
     |> slice.Filter(r -> r.Stars > 100)
 ```
 
 ### Parse Package (jsonv2 powered)
 ```kukicha
-# Standard JSON parsing
-data := jsonStr |> parse.Json() as Config
-
-# Streaming JSON from readers (memory efficient)
-config := file |> parse.JsonFromReader() as Config
+# Standard JSON parsing - use json.Unmarshal with parse.Json()
+config := Config{}
+jsonStr |> parse.Json() |> json.Unmarshal(_, reference config) onerr panic "parse failed"
 
 # NDJSON (newline-delimited JSON) parsing
-logs := logData |> parse.JsonLines() as list of LogEntry
+lines := logData |> parse.JsonLines()  # Returns list of JSON strings
+logs := lines |> slice.Map(parse.Json)  # Convert each line to bytes
+           |> slice.Map(json.Unmarshal(_, reference of LogEntry{}))
 
-# Pretty-print JSON
+# Pretty-print JSON - delegates to json.MarshalPretty
 output := config |> parse.JsonPretty()
 ```
 

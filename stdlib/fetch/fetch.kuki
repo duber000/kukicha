@@ -15,6 +15,9 @@ petiole fetch
 
 import "net/http"
 import "time"
+import "io"
+import "strings"
+import "stdlib/json"
 
 # Request represents an HTTP request with builder pattern support
 type Request
@@ -55,6 +58,13 @@ func Method(req Request, method string) Request
     req.method = method
     return req
 
+# Body sets the request body and returns the modified request for chaining
+# Can accept any data type - will be automatically serialized to JSON
+# Example: req := fetch.New(url) |> fetch.Body(data)
+func Body(req Request, data any) Request
+    req.body = data
+    return req
+
 # Do executes the configured HTTP request
 # Returns the HTTP response and any error that occurred
 # Example: resp, err := fetch.New(url) |> fetch.Header(...) |> fetch.Do()
@@ -62,13 +72,30 @@ func Do(req Request) (any, error)
     client := http.Client{}
     client.Timeout = time.Duration(req.timeoutNs)
 
-    httpReq, reqErr := http.NewRequest(req.method, req.url, empty)
+    # Create body if data is provided
+    var bodyReader io.Reader
+    if req.body != empty
+        # If body is already a reader, use it directly
+        if reader, ok := req.body as io.Reader; ok
+            bodyReader = reader
+        else
+            # Otherwise, marshal to JSON
+            jsonBytes, marshalErr := json.Marshal(req.body)
+            if marshalErr != empty
+                return empty, marshalErr
+            bodyReader = strings.NewReader(string(jsonBytes))
+    
+    httpReq, reqErr := http.NewRequest(req.method, req.url, bodyReader)
     if reqErr != empty
         return empty, reqErr
 
     # Add headers to request
     for name, value in req.headers
         httpReq.Header.Set(name, value)
+
+    # Set Content-Type if body is provided and not already set
+    if req.body != empty and httpReq.Header.Get("Content-Type") equals ""
+        httpReq.Header.Set("Content-Type", "application/json")
 
     resp, doErr := client.Do(httpReq)
     return resp, doErr
@@ -82,25 +109,42 @@ func Get(url string) (any, error)
     return resp, err
 
 # Post performs an HTTP POST request (quick function)
+# Automatically serializes data to JSON using stdlib/json
 # Returns the HTTP response and any error that occurred
-# Example: resp, err := fetch.Post(data, "https://api.example.com/users")
+# Example: resp, err := fetch.Post(userData, "https://api.example.com/users")
 func Post(data any, url string) (any, error)
     req := New(url)
     req = Method(req, "POST")
+    req.body = data  # Set the body data for automatic JSON serialization
     resp, err := Do(req)
     return resp, err
 
-# Json reads and parses JSON from an HTTP response
-# Note: Requires manual Go interop - resp is *http.Response
-func Json(resp any) (any, error)
-    return empty, error "use Go interop"
+# CheckStatus checks if response status is successful (2xx)
+# Returns the response if successful, error otherwise
+# Example: resp |> fetch.CheckStatus() |> fetch.Text()
+func CheckStatus(resp any) (any, error)
+    httpResp := resp as reference http.Response
+    if httpResp.StatusCode >= 400
+        return empty, error "request failed: {httpResp.Status}"
+    return resp, empty
 
 # Text reads the response body as text
-# Note: Requires manual Go interop - resp is *http.Response
+# Example: resp |> fetch.Text()
 func Text(resp any) (string, error)
-    return "", error "use Go interop"
+    httpResp := resp as reference http.Response
+    defer httpResp.Body.Close()
+    bodyBytes, err := io.ReadAll(httpResp.Body)
+    if err != empty
+        return "", err
+    return string(bodyBytes), empty
 
-# CheckStatus checks if response status is successful (2xx)
-# Note: Requires manual Go interop - resp is *http.Response
-func CheckStatus(resp any) (any, error)
-    return empty, error "use Go interop"
+# Bytes reads the response body as bytes
+# Perfect for JSON parsing: resp |> fetch.Bytes() |> json.Unmarshal(_, reference data)
+# Example: resp |> fetch.Bytes()
+func Bytes(resp any) (list of byte, error)
+    httpResp := resp as reference http.Response
+    defer httpResp.Body.Close()
+    bodyBytes, err := io.ReadAll(httpResp.Body)
+    if err != empty
+        return empty, err
+    return bodyBytes, empty

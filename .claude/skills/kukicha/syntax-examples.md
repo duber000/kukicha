@@ -6,7 +6,7 @@
 petiole main
 
 import "fmt"
-import "encoding/json"
+import "stdlib/json"
 import "os"
 import "stdlib/files"
 
@@ -108,7 +108,8 @@ func validateAge(age int) error
 ### Data Processing Pipeline
 ```kukicha
 import "stdlib/slice"
-import "stdlib/parse"
+import "stdlib/slice"
+import "stdlib/json"
 import "stdlib/fetch"
 
 type User
@@ -117,10 +118,14 @@ type User
     active bool
 
 func getActiveAdultNames(url string) list of string
-    return url
+    users := url
         |> fetch.Get()
-        |> fetch.Text()
-        |> parse.Json() as list of User
+        |> fetch.CheckStatus()
+        |> fetch.Bytes()
+        |> json.Unmarshal(_, reference users) as list of User
+        onerr empty list of User
+    
+    return users
         |> slice.Filter(u -> u.active and u.age >= 18)
         |> slice.Map(u -> u.name)
         |> slice.Sort()

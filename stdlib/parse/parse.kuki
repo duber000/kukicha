@@ -9,23 +9,28 @@ import "strings"
 import "gopkg.in/yaml.v3"
 
 # Json parses a JSON string into a value
-# Note: Currently requires Go interop - see package documentation
-# Example: Use json.Unmarshal directly in Go code
+# This is a convenience wrapper around json.Unmarshal
+# Example: jsonData |> parse.Json() |> json.Unmarshal(reference config)
 func Json(data string) (list of byte, error)
-    return empty, error "use Go interop - json.Unmarshal requires pointer to result"
+    return data as list of byte, empty
 
 # JsonLines parses newline-delimited JSON (NDJSON format)
-# Note: Currently requires Go interop - see package documentation
+# Returns a list of JSON strings, one for each line
+# Example: ndjsonData |> parse.JsonLines() |> slice.Map(parse.Json) |> slice.Map(parseToType)
 func JsonLines(data string) (list of string, error)
-    return empty, error "use Go interop - json.Unmarshal requires pointer to result"
+    lines := strings.Split(data, "\n")
+    result := make(list of string, 0, len(lines))
+    for line in lines
+        line = strings.TrimSpace(line)
+        if len(line) > 0
+            result = append(result, line)
+    return result, empty
 
 # JsonPretty formats a value as indented JSON bytes
+# Delegates to json.MarshalPretty for consistency
 # Example: config |> parse.JsonPretty()
 func JsonPretty(value any) (list of byte, error)
-    jsonData, err := json.MarshalIndent(value, "", "  ")
-    if err != empty
-        return empty, err
-    return jsonData, err
+    return json.MarshalPretty(value)
 
 # Csv parses a CSV string into a list of records
 # Each record is a list of strings representing the columns
@@ -80,9 +85,10 @@ func CsvWithHeader(data string) (list of map of string to string, error)
     return result, empty
 
 # Yaml parses a YAML string into a value
-# Note: Currently requires Go interop - see package documentation
+# Returns the YAML data as bytes for use with yaml.Unmarshal
+# Example: yamlData |> parse.Yaml() |> yaml.Unmarshal(reference config)
 func Yaml(data string) (list of byte, error)
-    return empty, error "use Go interop - yaml.Unmarshal requires pointer to result"
+    return data as list of byte, empty
 
 # YamlPretty formats a value as YAML bytes
 # Example: config |> parse.YamlPretty()

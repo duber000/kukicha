@@ -642,7 +642,30 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 		value := g.exprToString(s.Value)
 		g.writeLine(fmt.Sprintf("%s <- %s", channel, value))
 	case *ast.ExpressionStmt:
-		g.writeLine(g.exprToString(s.Expression))
+		// Special handling for OnErrExpr at statement level
+		if onErr, ok := s.Expression.(*ast.OnErrExpr); ok {
+			g.generateOnErrStmt(onErr)
+		} else if pipe, ok := s.Expression.(*ast.PipeExpr); ok {
+			// Check if pipe has OnErrExpr on the right
+			if onErr, ok := pipe.Right.(*ast.OnErrExpr); ok {
+				// Transform: data |> (expr onerr handler) at statement level
+				newPipe := &ast.PipeExpr{
+					Token: pipe.Token,
+					Left:  pipe.Left,
+					Right: onErr.Left,
+				}
+				newOnErr := &ast.OnErrExpr{
+					Token:   onErr.Token,
+					Left:    newPipe,
+					Handler: onErr.Handler,
+				}
+				g.generateOnErrStmt(newOnErr)
+			} else {
+				g.writeLine(g.exprToString(s.Expression))
+			}
+		} else {
+			g.writeLine(g.exprToString(s.Expression))
+		}
 	}
 }
 
@@ -652,6 +675,26 @@ func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
 		if onErr, ok := stmt.Values[0].(*ast.OnErrExpr); ok {
 			g.generateOnErrVarDecl(stmt.Names, onErr)
 			return
+		}
+		// Also check if it's a PipeExpr with OnErrExpr on the right
+		// e.g., result := data |> json.Marshal() onerr panic
+		if pipe, ok := stmt.Values[0].(*ast.PipeExpr); ok {
+			if onErr, ok := pipe.Right.(*ast.OnErrExpr); ok {
+				// Transform: data |> (expr onerr handler)
+				// Into: OnErr with Left being pipe(data, expr)
+				newPipe := &ast.PipeExpr{
+					Token: pipe.Token,
+					Left:  pipe.Left,
+					Right: onErr.Left,
+				}
+				newOnErr := &ast.OnErrExpr{
+					Token:   onErr.Token,
+					Left:    newPipe,
+					Handler: onErr.Handler,
+				}
+				g.generateOnErrVarDecl(stmt.Names, newOnErr)
+				return
+			}
 		}
 	}
 
@@ -742,6 +785,31 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 			g.writeLine(fmt.Sprintf("%s = %s", names[0].Value, g.exprToString(handler)))
 		}
 	}
+}
+
+// generateOnErrStmt handles statement-level OnErr expressions
+// e.g., todo |> json.MarshalWrite(w, _) onerr panic("failed")
+// Generates: if err := json.MarshalWrite(w, todo); err != nil { panic("failed") }
+func (g *Generator) generateOnErrStmt(onErr *ast.OnErrExpr) {
+	// Check for discard case - just execute and ignore error
+	if _, isDiscard := onErr.Handler.(*ast.DiscardExpr); isDiscard {
+		// Generate: _, _ = expression (or just call it if it returns nothing)
+		g.writeLine(fmt.Sprintf("_, _ = %s", g.exprToString(onErr.Left)))
+		return
+	}
+
+	// Generate unique error variable name
+	errVar := g.uniqueId("err")
+
+	// Generate: if err := expression; err != nil { handler }
+	g.writeLine(fmt.Sprintf("if %s := %s; %s != nil {", errVar, g.exprToString(onErr.Left), errVar))
+	g.indent++
+
+	// Generate the error handler (no variable names for statement-level)
+	g.generateOnErrHandler([]*ast.Identifier{}, onErr.Handler)
+
+	g.indent--
+	g.writeLine("}")
 }
 
 func (g *Generator) generateAssignStmt(stmt *ast.AssignStmt) {
@@ -1121,16 +1189,31 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 	// Transform a |> b() into b(a)
 	// Supports placeholder strategy: a |> b(x, _) becomes b(x, a)
 
-	// Right side must be a call expression
-	call, ok := expr.Right.(*ast.CallExpr)
-	if !ok {
-		// Fallback: If piping into something that isn't a direct call
+	// Right side can be a CallExpr or MethodCallExpr
+	var funcName string
+	var arguments []ast.Expression
+	var isVariadic bool
+
+	if call, ok := expr.Right.(*ast.CallExpr); ok {
+		funcName = g.exprToString(call.Function)
+		arguments = call.Arguments
+		isVariadic = call.Variadic
+	} else if method, ok := expr.Right.(*ast.MethodCallExpr); ok {
+		if !method.IsCall {
+			// It's a field access, not a method call - can't pipe into it
+			return g.exprToString(expr.Left) + " |> " + g.exprToString(expr.Right)
+		}
+		funcName = g.exprToString(method.Object) + "." + method.Method.Value
+		arguments = method.Arguments
+		isVariadic = method.Variadic
+	} else {
+		// Fallback: If piping into something that isn't a call
 		return g.exprToString(expr.Left) + " |> " + g.exprToString(expr.Right)
 	}
 
 	// Scan arguments for the placeholder "_" (either Identifier or DiscardExpr)
 	placeholderIndex := -1
-	for i, arg := range call.Arguments {
+	for i, arg := range arguments {
 		if ident, isIdent := arg.(*ast.Identifier); isIdent && ident.Value == "_" {
 			placeholderIndex = i
 			break
@@ -1141,14 +1224,12 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 		}
 	}
 
-	// Generate the function name
-	funcName := g.exprToString(call.Function)
+	// Build the argument list
 	var args []string
-
 	if placeholderIndex != -1 {
 		// STRATEGY A: Explicit placeholder found (e.g., json.MarshalWrite(w, _))
 		// Replace "_" with the piped expression
-		for i, arg := range call.Arguments {
+		for i, arg := range arguments {
 			if i == placeholderIndex {
 				args = append(args, g.exprToString(expr.Left))
 			} else {
@@ -1159,12 +1240,12 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 		// STRATEGY B: No placeholder -> Default "Data First" pipe
 		// Inject piped expr as the VERY FIRST argument
 		args = append(args, g.exprToString(expr.Left))
-		for _, arg := range call.Arguments {
+		for _, arg := range arguments {
 			args = append(args, g.exprToString(arg))
 		}
 	}
 
-	if call.Variadic {
+	if isVariadic {
 		return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", "))
 	}
 	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))

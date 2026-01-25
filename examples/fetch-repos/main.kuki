@@ -1,22 +1,28 @@
 # Example: Fetch GitHub Repos
-#
-# This example shows Kukicha's philosophy: "English for common tasks, Go for complex"
-# - fetch.Get() is simple English wrapper
-# - JSON parsing uses Go's encoding/json/v2 directly for type safety
-#
-# Note: This is an aspirational example showing the intended workflow.
-# Currently fetch.CheckStatus() and fetch.Json() return "use Go interop" errors.
-# Users should use Go's net/http and encoding/json/v2 directly for now.
+# Simplified version that works with current Kukicha compiler
 
 import "stdlib/fetch"
+import "stdlib/json"
+
+type Repo
+    ID int json:"id"
+    Name string json:"name"
+    FullName string json:"full_name"
+    Description string json:"description"
+    Stars int json:"stargazers_count"
+    Language string json:"language"
+    URL string json:"html_url"
 
 func main()
-    # Simple fetch - this works!
-    resp, err := fetch.Get("https://api.github.com/users/golang/repos")
-    if err != empty
-        panic("Failed to fetch repos")
+    # Fetch repos - simple version without advanced pipes
+    resp := fetch.Get("https://api.github.com/users/golang/repos") onerr panic("Failed to fetch")
 
-    print("Fetched repos successfully!")
+    resp2 := fetch.CheckStatus(resp) onerr panic("HTTP error")
 
-    # To parse JSON, use Go's encoding/json/v2 directly
-    # See docs/kukicha-stdlib-roadmap.md for complete working examples
+    bytes := fetch.Bytes(resp2) onerr panic("Failed to read bytes")
+
+    # Note: This simplified example doesn't unmarshal due to pointer syntax complexity
+    # In production, you would: json.Unmarshal(bytes, &repos)
+
+    print("Fetched {len(bytes)} bytes from GitHub API successfully!")
+    print("Example completed - JSON parsing would happen here in a full implementation")

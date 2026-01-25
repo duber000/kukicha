@@ -107,10 +107,18 @@ Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks 
 
 > **📚 Note: JSON in Kukicha with Go 1.25+**
 >
-> Kukicha's stdlib `parse` and `fetch` packages use Go 1.25+ `encoding/json/v2` for 2-10x faster JSON parsing:
+> Kukicha's stdlib `json` package uses Go 1.25+ `encoding/json/v2` for 2-10x faster JSON parsing:
 > ```kukicha
-> config := files.Read("config.json") |> parse.Json() as Config
-> response := fetch.Get(url) |> fetch.Json() as Data  # Streams efficiently!
+> import "stdlib/json"
+> 
+> # Parse JSON from file
+> configData := files.Read("config.json")
+> config := Config{}
+> json.Unmarshal(configData as list of byte, reference config) onerr panic "parse failed"
+> 
+> # Or using the pipe pattern:
+> config := Config{}
+> files.Read("config.json") |> json.Unmarshal(_, reference config) onerr panic "parse failed"
 > ```
 >
 > For web servers, you can use `encoding/json/v2` for streaming:
@@ -123,7 +131,7 @@ Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks 
 > data |> json.MarshalWrite(response, _)  # _ marks where piped value goes
 > ```
 >
-> **Rule of thumb:** Use `parse.Json()`/`fetch.Json()` for convenience, use `encoding/json/v2` directly for custom streaming needs.
+> **Rule of thumb:** Use `json.Unmarshal()` for parsing JSON data, use `json.Marshal()` for creating JSON, and use the streaming functions for web servers.
 
 Kukicha makes sending JSON easy:
 

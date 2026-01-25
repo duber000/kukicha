@@ -107,3 +107,18 @@ func MarshalPretty(value any) (list of byte, error)
 # Or with onerr: Unmarshal(jsonBytes, reference config) onerr return error
 func Unmarshal(data list of byte, target any) error
     return json.Unmarshal(data, target)
+
+# MarshalWrite writes JSON directly to an io.Writer (Go 1.25+ jsonv2)
+# Perfect for HTTP responses and streaming scenarios
+# Uses placeholder strategy: todo |> MarshalWrite(response, _)
+# Example: todo |> json.MarshalWrite(w, _) onerr panic
+func MarshalWrite(writer io.Writer, value any) error
+    return json.MarshalWrite(writer, value)
+
+# UnmarshalRead reads JSON directly from an io.Reader into the target value
+# Target must be a pointer (use "reference of" in Kukicha)
+# Uses encoding/json/v2.UnmarshalRead for direct io.Reader support
+# Perfect for HTTP request bodies with pipe placeholder strategy
+# Example: request.Body |> json.UnmarshalRead(_, reference todo) onerr return
+func UnmarshalRead(reader io.Reader, target any) error
+    return json.UnmarshalRead(reader, target)

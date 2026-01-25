@@ -1195,9 +1195,22 @@ result, _ := riskyOp()
 
 **Implementation Details:**
 - `generateVarDeclStmt()` detects `OnErrExpr` values and delegates to `generateOnErrVarDecl()`
+- `generateOnErrStmt()` handles statement-level onerr (e.g., `todo |> json.MarshalWrite(w, _) onerr panic("failed")`)
 - `uniqueId()` generates unique error variable names (`err_1`, `err_2`) to prevent shadowing
 - `generateOnErrHandler()` generates appropriate handler code based on handler type (PanicExpr, ErrorExpr, EmptyExpr, or default value)
+
+**Pipe + OnErr Integration:**
+When `PipeExpr` contains `OnErrExpr` on the right side (parser creates `PipeExpr{ Right: OnErrExpr{...} }`), the code generator restructures it to `OnErrExpr{ Left: PipeExpr{...} }` for proper code generation. This enables patterns like:
+```kukicha
+todo |> json.MarshalWrite(w, _) onerr panic("marshal failed")
 ```
+Generates:
+```go
+if err_1 := json.MarshalWrite(w, todo); err_1 != nil {
+    panic("marshal failed")
+}
+```
+
 
 ---
 
