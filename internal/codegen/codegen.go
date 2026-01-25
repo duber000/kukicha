@@ -111,6 +111,10 @@ func (g *Generator) generateImports() {
 		if imp.Alias != nil {
 			alias = imp.Alias.Value
 		}
+
+		// Rewrite stdlib imports to full module path
+		path = g.rewriteStdlibImport(path)
+
 		imports[path] = alias
 	}
 
@@ -155,6 +159,21 @@ func (g *Generator) generateImports() {
 		g.indent--
 		g.writeLine(")")
 	}
+}
+
+// rewriteStdlibImport rewrites stdlib/ import paths to full module paths
+// e.g., "stdlib/json" → "github.com/duber000/kukicha/stdlib/json"
+// Note: Returns path without quotes (quotes are added by generateImports)
+func (g *Generator) rewriteStdlibImport(path string) string {
+	// Remove quotes to check the path
+	cleanPath := strings.Trim(path, "\"")
+
+	// Rewrite stdlib/ prefix to full module path
+	if strings.HasPrefix(cleanPath, "stdlib/") {
+		return "github.com/duber000/kukicha/" + cleanPath
+	}
+
+	return cleanPath
 }
 
 func (g *Generator) generateDeclaration(decl ast.Declaration) {

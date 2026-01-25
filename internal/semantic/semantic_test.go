@@ -379,3 +379,247 @@ func TestConcurrentSemanticAnalysis(t *testing.T) {
 		}
 	})
 }
+
+func TestQualifiedTypes(t *testing.T) {
+	tests := []struct {
+		name    string
+		source  string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "valid qualified type in struct field",
+			source: `
+import "io"
+
+type Writer
+    output io.Writer
+`,
+			wantErr: false,
+		},
+		{
+			name: "valid qualified type in function parameter",
+			source: `
+import "io"
+
+func Write(w io.Writer, data string)
+    return
+`,
+			wantErr: false,
+		},
+		{
+			name: "valid qualified type in function return",
+			source: `
+import "io"
+
+func GetWriter() io.Writer
+    return empty
+`,
+			wantErr: false,
+		},
+		{
+			name: "multiple qualified types",
+			source: `
+import "io"
+import "bytes"
+
+type Wrapper
+    writer io.Writer
+    reader io.Reader
+    buffer bytes.Buffer
+`,
+			wantErr: false,
+		},
+		{
+			name: "unimported package",
+			source: `
+type Writer
+    output io.Writer
+`,
+			wantErr: true,
+			errMsg:  "package 'io' not imported",
+		},
+		{
+			name: "qualified type in list",
+			source: `
+import "io"
+
+type Readers
+    readers list of io.Reader
+`,
+			wantErr: false,
+		},
+		{
+			name: "qualified type in map",
+			source: `
+import "io"
+
+type WriterMap
+    writers map of string to io.Writer
+`,
+			wantErr: false,
+		},
+		{
+			name: "qualified type as pointer",
+			source: `
+import "bytes"
+
+type BufferPtr
+    buf reference bytes.Buffer
+`,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := parser.New(tt.source, "test.kuki")
+			if err != nil {
+				t.Fatalf("parser error: %v", err)
+			}
+
+			program, parseErrors := p.Parse()
+			if len(parseErrors) > 0 {
+				t.Fatalf("parse errors: %v", parseErrors)
+			}
+
+			analyzer := New(program)
+			errors := analyzer.Analyze()
+
+			if tt.wantErr {
+				if len(errors) == 0 {
+					t.Fatalf("expected error containing '%s', but got no errors", tt.errMsg)
+				}
+				found := false
+				for _, err := range errors {
+					if strings.Contains(err.Error(), tt.errMsg) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected error containing '%s', got: %v", tt.errMsg, errors)
+				}
+			} else {
+				if len(errors) > 0 {
+					t.Errorf("expected no errors, got: %v", errors)
+				}
+			}
+		})
+	}
+}
+
+func TestVersionedPackageNameInference(t *testing.T) {
+	tests := []struct {
+		name        string
+		importPath  string
+		expectedPkg string
+		source      string
+	}{
+		{
+			name:        "slash-version suffix v2",
+			importPath:  "encoding/json/v2",
+			expectedPkg: "json",
+			source: `import "encoding/json/v2"
+
+type Config
+    Name string
+
+func main()
+    cfg := Config{}
+    cfg.Name = "test"
+    data, _ := json.Marshal(cfg)
+`,
+		},
+		{
+			name:        "slash-version suffix v3",
+			importPath:  "google.golang.org/protobuf/v3",
+			expectedPkg: "protobuf",
+			source: `import "google.golang.org/protobuf/v3"
+
+func main()
+    protobuf.NewMessage()
+`,
+		},
+		{
+			name:        "slash-version suffix v10",
+			importPath:  "example.com/pkg/v10",
+			expectedPkg: "pkg",
+			source: `import "example.com/pkg/v10"
+
+func main()
+    pkg.DoSomething()
+`,
+		},
+		{
+			name:        "dot-version suffix (gopkg.in style)",
+			importPath:  "gopkg.in/yaml.v3",
+			expectedPkg: "yaml",
+			source: `import "gopkg.in/yaml.v3"
+
+type Data
+    Value string
+
+func main()
+    d := Data{}
+    yaml.Marshal(d)
+`,
+		},
+		{
+			name:        "no version suffix",
+			importPath:  "encoding/json",
+			expectedPkg: "json",
+			source: `import "encoding/json"
+
+type Data
+    Value string
+
+func main()
+    d := Data{}
+    json.Marshal(d)
+`,
+		},
+		{
+			name:        "package named vendor (not a version)",
+			importPath:  "github.com/company/vendor",
+			expectedPkg: "vendor",
+			source: `import "github.com/company/vendor"
+
+func main()
+    vendor.DoSomething()
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := parser.New(tt.source, "test.kuki")
+			if err != nil {
+				t.Fatalf("parser error: %v", err)
+			}
+
+			program, parseErrors := p.Parse()
+			if len(parseErrors) > 0 {
+				t.Fatalf("parse errors: %v", parseErrors)
+			}
+
+			analyzer := New(program)
+			errors := analyzer.Analyze()
+
+			// We expect no errors because the package name should be inferred correctly
+			// and the functions should be resolved
+			if len(errors) > 0 {
+				t.Errorf("expected no errors for package %s (inferred as %s), got: %v", tt.importPath, tt.expectedPkg, errors)
+			}
+
+			// Verify the package was added to the symbol table with the correct name
+			pkgSymbol := analyzer.symbolTable.Resolve(tt.expectedPkg)
+			if pkgSymbol == nil {
+				t.Errorf("expected package %s to be in symbol table, but it wasn't found", tt.expectedPkg)
+			}
+			if pkgSymbol != nil && pkgSymbol.Kind != SymbolVariable {
+				t.Errorf("expected symbol %s to be a variable (imports are stored as variables), got kind: %v", tt.expectedPkg, pkgSymbol.Kind)
+			}
+		})
+	}
+}

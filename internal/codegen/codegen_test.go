@@ -694,3 +694,112 @@ func TestGroupByFunction(t *testing.T) {
 		t.Errorf("expected append to result[key], got: %s", output)
 	}
 }
+
+func TestStdlibImportRewriting(t *testing.T) {
+	tests := []struct {
+		name           string
+		source         string
+		expectedImport string
+		shouldContain  string
+	}{
+		{
+			name: "stdlib/json import",
+			source: `import "stdlib/json"
+
+type Config
+    Name string
+
+func main()
+    cfg := Config{}
+    cfg.Name = "test"
+    data, _ := json.Marshal(cfg)
+`,
+			expectedImport: `"github.com/duber000/kukicha/stdlib/json"`,
+			shouldContain:  "json.Marshal",
+		},
+		{
+			name: "stdlib/fetch import",
+			source: `import "stdlib/fetch"
+
+func main()
+    req := fetch.New("https://example.com")
+`,
+			expectedImport: `"github.com/duber000/kukicha/stdlib/fetch"`,
+			shouldContain:  "fetch.New",
+		},
+		{
+			name: "stdlib/json with alias",
+			source: `import "stdlib/json" as j
+
+type Data
+    Value string
+
+func main()
+    d := Data{}
+    j.Marshal(d)
+`,
+			expectedImport: `j "github.com/duber000/kukicha/stdlib/json"`,
+			shouldContain:  "j.Marshal",
+		},
+		{
+			name: "multiple imports with stdlib",
+			source: `import "fmt"
+import "stdlib/json"
+
+type User
+    Name string
+
+func main()
+    u := User{}
+    data, _ := json.Marshal(u)
+    fmt.Println(data)
+`,
+			expectedImport: `"github.com/duber000/kukicha/stdlib/json"`,
+			shouldContain:  "json.Marshal",
+		},
+		{
+			name: "non-stdlib import unchanged",
+			source: `import "encoding/json"
+
+type Data
+    Value string
+
+func main()
+    d := Data{}
+    json.Marshal(d)
+`,
+			expectedImport: `"encoding/json"`,
+			shouldContain:  "json.Marshal",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := parser.New(tt.source, "test.kuki")
+			if err != nil {
+				t.Fatalf("parser error: %v", err)
+			}
+
+			program, parseErrors := p.Parse()
+			if len(parseErrors) > 0 {
+				t.Fatalf("parse errors: %v", parseErrors)
+			}
+
+			gen := New(program)
+			output, err := gen.Generate()
+			if err != nil {
+				t.Fatalf("codegen error: %v", err)
+			}
+
+			// Verify the import was rewritten correctly
+			if !strings.Contains(output, tt.expectedImport) {
+				t.Errorf("expected import %s in output, got: %s", tt.expectedImport, output)
+			}
+
+			// Verify the code using the import is present
+			if !strings.Contains(output, tt.shouldContain) {
+				t.Errorf("expected code %s in output, got: %s", tt.shouldContain, output)
+			}
+		})
+	}
+}

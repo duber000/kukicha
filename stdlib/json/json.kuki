@@ -5,6 +5,7 @@
 petiole json
 
 import "encoding/json/v2"
+import "encoding/json" as jsonv1
 import "io"
 
 # Encoder wraps jsonv2 for pipe-friendly encoding with builder pattern
@@ -51,11 +52,17 @@ func WithPrefix(enc Encoder, prefix string) Encoder
 
 # Encode writes a value as JSON using jsonv2 with configured options
 # This is the final step in the pipe chain
+# Uses encoding/json/v2.MarshalWrite for direct io.Writer support
+# Note: indent/prefix options not yet supported (limitation of current jsonv2 wrapper)
 # Example: response |> json.NewEncoder() |> json.Encode(todo) onerr return
+# Or with onerr: json.Encode(enc, todo) onerr return error
 func Encode(enc Encoder, value any) error
-    # Note: Would call encoding/json/v2.MarshalWrite(enc.writer, value)
-    # Requires Go interop for now
-    return error "not yet implemented - use Go interop"
+    # Apply deterministic encoding if requested
+    if enc.deterministic
+        return json.MarshalWrite(enc.writer, value, json.Deterministic(true))
+
+    # Default: standard marshaling to writer
+    return json.MarshalWrite(enc.writer, value)
 
 # NewDecoder creates a pipe-friendly jsonv2 decoder
 # Returns a Decoder for reading JSON from a stream
@@ -67,30 +74,36 @@ func NewDecoder(reader io.Reader) Decoder
 
 # Decode reads JSON from the decoder's reader into the target value
 # Target must be a pointer (use "reference of" in Kukicha)
+# Uses encoding/json/v2.UnmarshalRead for direct io.Reader support
 # Example: body |> json.NewDecoder() |> json.Decode(reference todo) onerr return
+# Or with onerr: json.Decode(dec, reference todo) onerr return error
 func Decode(dec Decoder, target any) error
-    # Note: Would call encoding/json/v2.UnmarshalRead(dec.reader, target)
-    # Requires Go interop for now
-    return error "not yet implemented - use Go interop"
+    return json.UnmarshalRead(dec.reader, target)
 
 # Marshal converts a value to JSON bytes (convenience function)
 # For simple marshaling without a writer
+# Uses encoding/json/v2 for 2-10x performance improvement
 # Example: jsonBytes, err := Marshal(data) onerr panic
+# Or with onerr: jsonBytes := Marshal(data) onerr return empty, error
 func Marshal(value any) (list of byte, error)
-    # Note: Direct call to encoding/json/v2.Marshal
-    # Returns ([]byte, error)
-    return empty, error "not yet implemented - use Go interop"
+    bytes, err := json.Marshal(value)
+    return bytes, err
 
-# MarshalPretty converts a value to pretty-printed JSON bytes
-# Uses deterministic output and 2-space indentation
+# MarshalPretty converts a value to pretty-printed JSON bytes with 2-space indentation
+# Uses encoding/json (v1) MarshalIndent for compatibility
+# Note: Slightly slower than Marshal but provides readable output
 # Example: jsonBytes, err := MarshalPretty(config) onerr panic
+# Or with onerr: jsonBytes := MarshalPretty(config) onerr return empty, error
 func MarshalPretty(value any) (list of byte, error)
-    # Note: Would need encoding/json/v2.Marshal with options
-    return empty, error "not yet implemented - use Go interop"
+    # Use v1 MarshalIndent for pretty-printing (2-space indentation)
+    # TODO: Migrate to jsonv2 options when textual encoding API is available
+    bytes, err := jsonv1.MarshalIndent(value, "", "  ")
+    return bytes, err
 
 # Unmarshal parses JSON bytes into a target value
 # Target must be a pointer (use "reference of" in Kukicha)
+# Uses encoding/json/v2 for 2-10x performance improvement
 # Example: Unmarshal(jsonBytes, reference config) onerr panic
+# Or with onerr: Unmarshal(jsonBytes, reference config) onerr return error
 func Unmarshal(data list of byte, target any) error
-    # Note: Direct call to encoding/json/v2.Unmarshal
-    return error "not yet implemented - use Go interop"
+    return json.Unmarshal(data, target)

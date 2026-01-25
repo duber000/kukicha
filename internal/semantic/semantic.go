@@ -46,11 +46,31 @@ func (a *Analyzer) collectDeclarations() {
 		} else {
 			// Extract package name from path
 			path := strings.Trim(imp.Path.Value, "\"")
+
+			// Rewrite stdlib imports to full module path before extracting package name
+			if strings.HasPrefix(path, "stdlib/") {
+				path = "github.com/duber000/kukicha/" + path
+			}
+
 			parts := strings.Split(path, "/")
 			name = parts[len(parts)-1]
-			// Handle gopkg.in version suffixes (e.g., yaml.v3 -> yaml)
+
+			// Handle version suffixes
+			// 1. Dot-versions: gopkg.in/yaml.v3 → yaml
 			if idx := strings.Index(name, ".v"); idx != -1 {
 				name = name[:idx]
+			}
+
+			// 2. Slash-versions: encoding/json/v2 → use second-to-last segment
+			//    This handles Go module major version suffixes
+			if len(parts) >= 2 && len(name) >= 2 && name[0] == 'v' && name[1] >= '0' && name[1] <= '9' {
+				// This looks like a version suffix (v2, v3, etc.)
+				name = parts[len(parts)-2] // Use parent directory name
+
+				// Handle gopkg.in dot-versions in parent too
+				if idx := strings.Index(name, ".v"); idx != -1 {
+					name = name[:idx]
+				}
 			}
 		}
 
@@ -852,6 +872,29 @@ func (a *Analyzer) validateTypeAnnotation(typeAnn ast.TypeAnnotation) {
 		}
 		if builtInTypes[t.Name] {
 			return // Built-in type is valid
+		}
+
+		// Check for qualified type (package.Type)
+		if strings.Contains(t.Name, ".") {
+			parts := strings.Split(t.Name, ".")
+			if len(parts) != 2 {
+				a.error(t.Pos(), fmt.Sprintf("invalid qualified type '%s'", t.Name))
+				return
+			}
+
+			pkgName := parts[0]
+			// typeName := parts[1] // Not needed - we trust the package
+
+			// Verify the package is imported
+			pkgSymbol := a.symbolTable.Resolve(pkgName)
+			if pkgSymbol == nil {
+				a.error(t.Pos(), fmt.Sprintf("package '%s' not imported (for type '%s')", pkgName, t.Name))
+				return
+			}
+
+			// Package is imported - trust that the type exists
+			// We can't validate external package types at Kukicha compile time
+			return
 		}
 
 		// Check that the type exists in symbol table
