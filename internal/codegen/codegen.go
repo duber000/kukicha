@@ -27,6 +27,7 @@ type Generator struct {
 	sourceFile           string            // Source file path for detecting stdlib
 	currentFuncName      string            // Current function being generated (for context-aware decisions)
 	processingReturnType bool              // Whether we are currently generating return types
+	tempCounter          int               // Counter for generating unique temporary variable names
 }
 
 // New creates a new code generator
@@ -627,6 +628,14 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 }
 
 func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
+	// Check if any value is an OnErrExpr - needs special handling
+	if len(stmt.Values) == 1 {
+		if onErr, ok := stmt.Values[0].(*ast.OnErrExpr); ok {
+			g.generateOnErrVarDecl(stmt.Names, onErr)
+			return
+		}
+	}
+
 	// Build comma-separated list of names
 	names := make([]string, len(stmt.Names))
 	for i, n := range stmt.Names {
@@ -648,6 +657,71 @@ func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
 	} else {
 		// Type inference with :=
 		g.writeLine(fmt.Sprintf("%s := %s", namesStr, valuesStr))
+	}
+}
+
+// generateOnErrVarDecl handles variable declarations with onerr
+// e.g., val := foo() onerr panic "error" → val, err := foo(); if err != nil { panic("error") }
+// e.g., port := getPort() onerr "8080" → port, err := getPort(); if err != nil { port = "8080" }
+func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, onErr *ast.OnErrExpr) {
+	// Check for discard case first - we can skip error handling entirely
+	if _, isDiscard := onErr.Handler.(*ast.DiscardExpr); isDiscard {
+		// For discard, just ignore the error by using _
+		var lhsParts []string
+		for _, name := range names {
+			lhsParts = append(lhsParts, name.Value)
+		}
+		lhsParts = append(lhsParts, "_")
+		g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), g.exprToString(onErr.Left)))
+		return
+	}
+
+	// Generate unique error variable name to prevent shadowing
+	errVar := g.uniqueId("err")
+
+	// Build the LHS: user variables + error variable
+	var lhsParts []string
+	for _, name := range names {
+		lhsParts = append(lhsParts, name.Value)
+	}
+	lhsParts = append(lhsParts, errVar)
+
+	// Generate: names..., err := expression
+	g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), g.exprToString(onErr.Left)))
+
+	// Generate error check block
+	g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
+	g.indent++
+	g.generateOnErrHandler(names, onErr.Handler)
+	g.indent--
+	g.writeLine("}")
+}
+
+// generateOnErrHandler generates code for the onerr handler expression
+func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Expression) {
+	switch h := handler.(type) {
+	case *ast.PanicExpr:
+		// onerr panic "message"
+		g.writeLine(g.exprToString(h))
+	case *ast.ErrorExpr:
+		// onerr return empty, error - generate return with error
+		// This assumes the function returns (T, error)
+		if len(names) > 0 {
+			// Return zero value for first var and the error
+			g.writeLine(fmt.Sprintf("return %s, %s", names[0].Value, g.exprToString(h)))
+		} else {
+			g.writeLine(fmt.Sprintf("return %s", g.exprToString(h)))
+		}
+	case *ast.EmptyExpr:
+		// onerr return empty - generate bare return (for named return values)
+		g.writeLine("return")
+	default:
+		// onerr expression (default value case)
+		// e.g., port := getPort() onerr "8080"
+		// Assign the default value to the first variable
+		if len(names) > 0 {
+			g.writeLine(fmt.Sprintf("%s = %s", names[0].Value, g.exprToString(handler)))
+		}
 	}
 }
 
@@ -1026,19 +1100,55 @@ func (g *Generator) generateDerefExpr(expr *ast.DerefExpr) string {
 
 func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 	// Transform a |> b() into b(a)
-	left := g.exprToString(expr.Left)
+	// Supports placeholder strategy: a |> b(x, _) becomes b(x, a)
 
 	// Right side must be a call expression
-	if call, ok := expr.Right.(*ast.CallExpr); ok {
-		funcName := g.exprToString(call.Function)
-		args := []string{left}
+	call, ok := expr.Right.(*ast.CallExpr)
+	if !ok {
+		// Fallback: If piping into something that isn't a direct call
+		return g.exprToString(expr.Left) + " |> " + g.exprToString(expr.Right)
+	}
+
+	// Scan arguments for the placeholder "_" (either Identifier or DiscardExpr)
+	placeholderIndex := -1
+	for i, arg := range call.Arguments {
+		if ident, isIdent := arg.(*ast.Identifier); isIdent && ident.Value == "_" {
+			placeholderIndex = i
+			break
+		}
+		if _, isDiscard := arg.(*ast.DiscardExpr); isDiscard {
+			placeholderIndex = i
+			break
+		}
+	}
+
+	// Generate the function name
+	funcName := g.exprToString(call.Function)
+	var args []string
+
+	if placeholderIndex != -1 {
+		// STRATEGY A: Explicit placeholder found (e.g., json.MarshalWrite(w, _))
+		// Replace "_" with the piped expression
+		for i, arg := range call.Arguments {
+			if i == placeholderIndex {
+				args = append(args, g.exprToString(expr.Left))
+			} else {
+				args = append(args, g.exprToString(arg))
+			}
+		}
+	} else {
+		// STRATEGY B: No placeholder -> Default "Data First" pipe
+		// Inject piped expr as the VERY FIRST argument
+		args = append(args, g.exprToString(expr.Left))
 		for _, arg := range call.Arguments {
 			args = append(args, g.exprToString(arg))
 		}
-		return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 	}
 
-	return g.exprToString(expr.Right)
+	if call.Variadic {
+		return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", "))
+	}
+	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 }
 
 func (g *Generator) generateOnErrExpr(expr *ast.OnErrExpr) string {
@@ -1201,6 +1311,12 @@ func (g *Generator) writeLine(s string) {
 
 func (g *Generator) indentStr() string {
 	return strings.Repeat("\t", g.indent)
+}
+
+// uniqueId generates unique identifiers to prevent variable shadowing
+func (g *Generator) uniqueId(prefix string) string {
+	g.tempCounter++
+	return fmt.Sprintf("%s_%d", prefix, g.tempCounter)
 }
 
 func (g *Generator) needsStringInterpolation() bool {

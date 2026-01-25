@@ -419,6 +419,12 @@ upper := text |> string.TrimSpace() |> string.ToUpper()
 
 It's called a "pipe" because it acts like a pipe at a construction site - data goes in one end and comes out the other end, transformed!
 
+**Advanced tip:** By default, the piped value becomes the first argument. If you need it elsewhere, use `_` as a placeholder:
+```kukicha
+# Put "text" as the second argument instead of first
+text |> process(config, _)  # Becomes: process(config, text)
+```
+
 ### Trimming Whitespace
 
 Remove extra spaces from the beginning and end of strings:

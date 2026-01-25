@@ -90,6 +90,11 @@ result := data
 users := fetchUsers()
     |> slice.Filter(u -> u.active)
     |> slice.Map(u -> u.name)
+
+# Placeholder strategy: use _ to specify where piped value goes
+# Useful when piped value isn't the first argument
+todo |> json.MarshalWrite(writer, _)     # Becomes: json.MarshalWrite(writer, todo)
+data |> encode(options, _, format)       # Becomes: encode(options, data, format)
 ```
 
 ### Control Flow
@@ -255,6 +260,10 @@ evens := Filter(list of int{1, 2, 3, 4}, func(n int) bool
 | `items[-1]` | `items[len(items)-1]` |
 | `json:"name"` (struct tag) | `` `json:"name"` `` (backtick-quoted) |
 | Indentation blocks | `{ }` braces |
+| `a \|> f(b)` | `f(a, b)` |
+| `a \|> f(b, _)` | `f(b, a)` (placeholder) |
+| `x := f() onerr "default"` | `x, err := f(); if err != nil { x = "default" }` |
+| `x := f() onerr discard` | `x, _ := f()` |
 
 ## Standard Library
 

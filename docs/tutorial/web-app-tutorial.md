@@ -118,6 +118,9 @@ Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks 
 > import "encoding/json/v2"
 > json.MarshalWrite(response, data)  # Write JSON directly to response
 > json.UnmarshalRead(request.Body, reference result)  # Stream from request
+>
+> # With pipe placeholder (_), you can pipe data into any argument position:
+> data |> json.MarshalWrite(response, _)  # _ marks where piped value goes
 > ```
 >
 > **Rule of thumb:** Use `parse.Json()`/`fetch.Json()` for convenience, use `encoding/json/v2` directly for custom streaming needs.

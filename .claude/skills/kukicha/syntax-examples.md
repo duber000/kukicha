@@ -126,6 +126,38 @@ func getActiveAdultNames(url string) list of string
         |> slice.Sort()
 ```
 
+### Pipe with Placeholder (Advanced)
+
+When the piped value isn't the first argument, use `_` as a placeholder:
+
+```kukicha
+import "encoding/json"
+import "io"
+
+type Todo
+    id int64
+    title string
+
+# Without placeholder: data |> func() makes data the FIRST arg
+# With placeholder: data |> func(x, _) puts data where _ appears
+
+func writeTodoAsJson(w io.Writer, todo Todo) error
+    # Placeholder puts 'todo' as second arg to json.NewEncoder().Encode()
+    return todo |> json.NewEncoder(w).Encode(_)
+
+# Another example: writing to specific position in args
+func formatWithPrefix(prefix string, data string) string
+    return data |> fmt.Sprintf("{prefix}: %s", _)
+
+# Multiple args with placeholder in the middle
+func processWithOptions(opts Options, data Data, format Format) Result
+    return data |> transform(opts, _, format)
+```
+
+Transpilation:
+- `todo |> json.NewEncoder(w).Encode(_)` → `json.NewEncoder(w).Encode(todo)`
+- `data |> transform(opts, _, format)` → `transform(opts, data, format)`
+
 ### File Processing Pipeline
 ```kukicha
 import "stdlib/files"

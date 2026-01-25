@@ -518,6 +518,8 @@ Here's a quick reference for translating between Kukicha and Go:
 | `for item in list` | `for _, item := range list` |
 | `func Name on x Type` | `func (x Type) Name()` |
 | `result onerr default` | `if err != nil { ... }` |
+| `a \|> f(b)` | `f(a, b)` |
+| `a \|> f(b, _)` | `f(b, a)` (placeholder) |
 
 ---
 

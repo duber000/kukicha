@@ -1057,6 +1057,7 @@ type Generator struct {
     sourceFile           string            // Source file path for detecting stdlib
     currentFuncName      string            // Current function being generated (for context-aware decisions)
     processingReturnType bool              // Whether we are currently generating return types
+    tempCounter          int               // Counter for generating unique temporary variable names
 }
 
 func New(program *ast.Program) *Generator {
@@ -1126,6 +1127,76 @@ When processing function declarations in stdlib packages, the code generator:
 5. Generates proper Go generic syntax in the output
 
 This ensures that stdlib functions automatically receive proper Go 1.25+ generic type parameters without users needing to write generic syntax in their Kukicha code.
+
+### Pipe Operator with Placeholder Strategy
+
+The pipe operator (`|>`) supports two strategies for argument injection:
+
+#### Strategy A: Default (Data First)
+When no placeholder is present, the piped value becomes the first argument:
+```kukicha
+data |> transform(opts)
+```
+Generates:
+```go
+transform(data, opts)
+```
+
+#### Strategy B: Explicit Placeholder
+When `_` appears in the argument list, the piped value replaces it:
+```kukicha
+todo |> json.MarshalWrite(writer, _)
+data |> encode(opts, _, format)
+```
+Generates:
+```go
+json.MarshalWrite(writer, todo)
+encode(opts, data, format)
+```
+
+**Implementation:** `generatePipeExpr()` scans arguments for `_` (Identifier or DiscardExpr). If found, replaces that position with the piped value. Otherwise, prepends the piped value as the first argument.
+
+### Error Handling Code Generation (onerr)
+
+The `onerr` operator generates idiomatic Go error handling patterns:
+
+#### Pattern 1: Default Value
+```kukicha
+port := getPort() onerr "8080"
+```
+Generates:
+```go
+port, err_1 := getPort()
+if err_1 != nil {
+    port = "8080"
+}
+```
+
+#### Pattern 2: Panic
+```kukicha
+config := loadConfig() onerr panic "config missing"
+```
+Generates:
+```go
+config, err_1 := loadConfig()
+if err_1 != nil {
+    panic("config missing")
+}
+```
+
+#### Pattern 3: Discard
+```kukicha
+result := riskyOp() onerr discard
+```
+Generates (optimized - no error check needed):
+```go
+result, _ := riskyOp()
+```
+
+**Implementation Details:**
+- `generateVarDeclStmt()` detects `OnErrExpr` values and delegates to `generateOnErrVarDecl()`
+- `uniqueId()` generates unique error variable names (`err_1`, `err_2`) to prevent shadowing
+- `generateOnErrHandler()` generates appropriate handler code based on handler type (PanicExpr, ErrorExpr, EmptyExpr, or default value)
 ```
 
 ---
