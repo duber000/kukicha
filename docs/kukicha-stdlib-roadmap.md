@@ -40,7 +40,6 @@ Kukicha combines two powerful ideas:
 **Limitations:**
 - Builder patterns for `shell.New()`, `cli.New()` not yet supported - use direct function calls
 - `files.Watch()`, `useWith()` helper not implemented
-- Some Go 1.25+ features in roadmap examples are aspirational (arrow functions, multiline pipes)
 
 ### ✅ Completed Packages
 
@@ -588,11 +587,10 @@ files.Watch("./src/**/*.kuki", func(path string) {
 })
 
 # Temp file handling
-result := files.TempFile()
-    |> useWith(tempFile ->
-        tempFile |> files.Write(data)
-        processFile(tempFile.Path)
-    )  # Auto-deleted after use
+tempPath := files.TempFile() onerr panic "temp file failed"
+files.Write(tempPath, data) onerr panic "write failed"
+processFile(tempPath)
+# Note: Manual cleanup needed - useWith() helper not yet implemented
 ```
 
 ### Shell Package ✅
@@ -910,11 +908,10 @@ func deploy(version string)
         |> shell.Must()
 
     # Create deployment package
-    files.TempDir()
-        |> useWith(tmpDir ->
-            shell.Run("cp", "-r", "dist", tmpDir)
-            shell.Run("tar", "-czf", "deploy-{version}.tar.gz", tmpDir)
-        )
+    tmpDir := files.TempDir() onerr panic "temp dir failed"
+    shell.Run("cp", "-r", "dist", tmpDir)
+    shell.Run("tar", "-czf", "deploy-{version}.tar.gz", tmpDir)
+    # Note: Manual cleanup needed - useWith() helper not yet implemented
 
     print "Deployment package ready: deploy-{version}.tar.gz"
 ```
