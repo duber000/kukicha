@@ -34,8 +34,8 @@ func main()
         
         if verbose
             print "Listing directory: {dir}"
-        
-        output, err := shell.RunSimple("ls", "-la", dir) onerr panic "ls failed"
+
+        output, err := shell.Run("ls", "-la", dir) onerr panic "ls failed"
         print output
         
     else if cmd == "info"
@@ -43,11 +43,11 @@ func main()
         print "System Information:"
         
         # Get hostname
-        hostname, _ := shell.RunSimple("hostname") onerr "unknown"
+        hostname, err1 := shell.RunSimple("hostname") onerr "unknown"
         print "Hostname: {hostname}"
-        
+
         # Get current directory
-        pwd, _ := shell.RunSimple("pwd") onerr "unknown"
+        pwd, err2 := shell.RunSimple("pwd") onerr "unknown"
         print "Current Directory: {pwd}"
         
         # Check if git is installed

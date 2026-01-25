@@ -27,10 +27,11 @@ func JsonLines(data string) (list of string, error)
     return result, empty
 
 # JsonPretty formats a value as indented JSON bytes
-# Delegates to json.MarshalPretty for consistency
+# Uses encoding/json MarshalIndent for pretty-printing
 # Example: config |> parse.JsonPretty()
 func JsonPretty(value any) (list of byte, error)
-    return json.MarshalPretty(value)
+    bytes, err := json.MarshalIndent(value, "", "  ")
+    return bytes, err
 
 # Csv parses a CSV string into a list of records
 # Each record is a list of strings representing the columns

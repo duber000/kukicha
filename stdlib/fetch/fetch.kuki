@@ -16,7 +16,8 @@ petiole fetch
 import "net/http"
 import "time"
 import "io"
-import "strings"
+import "bytes"
+import "fmt"
 import "stdlib/json"
 
 # Request represents an HTTP request with builder pattern support
@@ -73,17 +74,13 @@ func Do(req Request) (any, error)
     client.Timeout = time.Duration(req.timeoutNs)
 
     # Create body if data is provided
-    var bodyReader io.Reader
+    bodyReader := empty
     if req.body != empty
-        # If body is already a reader, use it directly
-        if reader, ok := req.body as io.Reader; ok
-            bodyReader = reader
-        else
-            # Otherwise, marshal to JSON
-            jsonBytes, marshalErr := json.Marshal(req.body)
-            if marshalErr != empty
-                return empty, marshalErr
-            bodyReader = strings.NewReader(string(jsonBytes))
+        # Marshal body to JSON (stdlib/json uses jsonv2 for performance)
+        jsonBytes, marshalErr := json.Marshal(req.body)
+        if marshalErr != empty
+            return empty, marshalErr
+        bodyReader = bytes.NewReader(jsonBytes)
     
     httpReq, reqErr := http.NewRequest(req.method, req.url, bodyReader)
     if reqErr != empty
@@ -94,8 +91,10 @@ func Do(req Request) (any, error)
         httpReq.Header.Set(name, value)
 
     # Set Content-Type if body is provided and not already set
-    if req.body != empty and httpReq.Header.Get("Content-Type") equals ""
-        httpReq.Header.Set("Content-Type", "application/json")
+    if req.body != empty
+        contentType := httpReq.Header.Get("Content-Type")
+        if contentType == ""
+            httpReq.Header.Set("Content-Type", "application/json")
 
     resp, doErr := client.Do(httpReq)
     return resp, doErr
@@ -136,7 +135,9 @@ func Text(resp any) (string, error)
     bodyBytes, err := io.ReadAll(httpResp.Body)
     if err != empty
         return "", err
-    return string(bodyBytes), empty
+    # Convert bytes to string using Go's built-in conversion
+    text := bodyBytes as string
+    return text, empty
 
 # Bytes reads the response body as bytes
 # Perfect for JSON parsing: resp |> fetch.Bytes() |> json.Unmarshal(_, reference data)

@@ -134,6 +134,7 @@ func buildCommand(filename string) {
 
 	// Optionally run go build on the generated file
 	cmd := exec.Command("go", "build", outputFile)
+	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2,greenteagc")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -203,6 +204,7 @@ func runCommand(filename string) {
 
 	// Run with go run
 	cmd := exec.Command("go", "run", tmpFile)
+	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2,greenteagc")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
