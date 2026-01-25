@@ -39,7 +39,7 @@ Kukicha combines two powerful ideas:
 
 **Limitations:**
 - Builder patterns (`fetch.New()`, `shell.New()`, `cli.New()`, etc.) not yet supported - use direct function calls
-- `files.Watch()`, `slice.GroupBy()`, `useWith()` helper not implemented
+- `files.Watch()`, `useWith()` helper not implemented
 - Some Go 1.25+ features in roadmap examples are aspirational
 
 ### ✅ Completed Packages
@@ -47,7 +47,7 @@ Kukicha combines two powerful ideas:
 | Package | Purpose | Status | Functions |
 |---------|---------|--------|-----------|
 | **iter** | Functional iteration (Filter, Map, Reduce) | ✅ Ready | Filter, Map, FlatMap, Take, Skip, Reduce, Collect, Find, Any, All, Enumerate, Zip, Chunk |
-| **slice** | Slice operations (First, Last, Drop, Unique) | ✅ Ready | First, Last, Drop, DropLast, Reverse, Unique, Chunk, Filter, Map, Contains, IndexOf, Concat |
+| **slice** | Slice operations with generics | ✅ Ready | First, Last, Drop, DropLast, Reverse, Unique, Chunk, Filter, Map, Contains, IndexOf, Concat, GroupBy |
 | **string** | String utilities | ✅ Ready | ToUpper, ToLower, Title, Trim, TrimSpace, TrimPrefix, TrimSuffix, Split, Join, Contains, HasPrefix, HasSuffix, Index, Count, Replace, ReplaceAll, and more |
 | **files** | File operations with pipes | ✅ Ready | Read, Write, Append, Exists, IsDir, IsFile, List, Delete, Copy, Move, MkDir, TempFile, TempDir, Size, ModTime, Extension, Join, Abs |
 | **parse** | JSON/YAML/CSV parsing | ✅ Ready | Json, JsonLines, JsonPretty, Csv, CsvWithHeader, Yaml, YamlPretty |
@@ -75,7 +75,6 @@ These packages make Kukicha perfect for scripts and automation:
 | **shell** | Mostly works | `Run()`, `RunSimple()`, direct execution | Builder pattern (`shell.New().Dir()`) not implemented |
 | **cli** | Mostly works | Simple parsing | Builder pattern (`cli.New().Arg()`) not implemented |
 | **files** | Mostly works | Basic file operations | `Watch()` and `useWith()` helper not implemented |
-| **slice** | Mostly works | All listed functions | `GroupBy()` not implemented |
 
 ---
 
@@ -143,10 +142,25 @@ batches := items
     |> slice.Chunk(100)
     |> slice.Map(processBatch)
 
+# Group items by category (Go 1.25+ generics with comparable constraints)
+type LogEntry
+    Level string
+    Message string
+
+entries := logs
+    |> slice.GroupBy(func(e LogEntry) string {
+        return e.Level
+    })
+# Result: map[string][]LogEntry with keys like "ERROR", "WARN", "INFO"
+
 # Available functions:
 # First, Last, Drop, DropLast, Reverse
-# Unique, Chunk, Filter, Map
+# Unique, Chunk, Filter, Map, GroupBy
 ```
+
+**Note on GroupBy:** This function uses Go 1.25+ generics with proper type constraints:
+- `GroupBy[T any, K comparable](items []T, keyFunc func(T) K) map[K][]T`
+- The `K` type parameter is constrained to `comparable` (required for map keys)
 
 ### String Package
 
@@ -637,7 +651,7 @@ These examples show how Kukicha excels at practical automation.
 
 **Implementation Status:**
 - ✅ **Example 1** (API Data Processing) - **Works!** Uses fetch, parse, slice, files - all implemented
-- ⚠️ **Example 2** (Log Analysis) - **Partially works** - Most code works but `slice.GroupBy()` is not yet implemented
+- ✅ **Example 2** (Log Analysis) - **Works!** Uses files, slice.GroupBy, parse, string - all implemented
 - ✅ **Example 3** (File Processing) - **Works!** Uses files, parse, slice, string - all implemented
 - ✅ **Example 4** (Deployment) - **Works!** Uses shell, files, basic command execution - all implemented
 

@@ -219,9 +219,11 @@ func main()
         print(result)
 ```
 
-## Generics via stdlib/iter
+## Generics via stdlib/iter and stdlib/slice
 
-The `stdlib/iter` package uses special transpilation for generics:
+Kukicha uses special transpilation for Go 1.25+ generics without requiring you to write generic syntax:
+
+### Functional Iteration (iter package)
 
 ```kukicha
 import "stdlib/iter"
@@ -239,6 +241,42 @@ func main()
         |> slice.Collect()
 
     # result is [4, 16, 36]
+```
+
+### Grouping with Comparable Constraint (slice.GroupBy)
+
+```kukicha
+import "stdlib/slice"
+
+type LogEntry
+    timestamp int64
+    level string      # ERROR, WARN, INFO
+    message string
+
+type DayStats
+    day string
+    count int
+
+func analyzeLog(entries list of LogEntry) map of string to list of LogEntry
+    # GroupBy automatically generates: GroupBy[LogEntry, string](items, keyFunc)
+    # The key type (string) must be comparable - the transpiler ensures this!
+    return entries
+        |> slice.GroupBy(func(e LogEntry) string {
+            return e.level
+        })
+
+func main()
+    logs := list of LogEntry{
+        LogEntry{timestamp: 1000, level: "ERROR", message: "Connection failed"},
+        LogEntry{timestamp: 1001, level: "WARN", message: "Retry attempt"},
+        LogEntry{timestamp: 1002, level: "ERROR", message: "Timeout"},
+        LogEntry{timestamp: 1003, level: "INFO", message: "Recovered"},
+    }
+
+    grouped := analyzeLog(logs)
+
+    for level, entries in grouped
+        print("Level {level}: {len(entries)} entries")
 ```
 
 ## Testing in Kukicha

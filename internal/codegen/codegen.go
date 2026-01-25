@@ -43,6 +43,7 @@ func (g *Generator) SetSourceFile(path string) {
 	g.sourceFile = path
 	// Enable special transpilation for stdlib/iter files
 	g.isStdlibIter = strings.Contains(path, "stdlib/iter/") || strings.Contains(path, "stdlib\\iter\\")
+	// Note: stdlib/slice uses a different approach - type parameters are detected per-function
 }
 
 // addImport adds an auto-import
@@ -211,11 +212,17 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 
 	g.currentFuncName = decl.Name.Value
 
-	// Check if this is a stdlib/iter function that needs special transpilation
+	// Check if this is a stdlib function that needs special transpilation
 	var typeParams []*TypeParameter
 	if g.isStdlibIter {
-		// Generate type parameters from function signature
+		// Generate type parameters from function signature for iter
 		typeParams = g.inferStdlibTypeParameters(decl)
+		for _, tp := range typeParams {
+			g.placeholderMap[tp.Placeholder] = tp.Name
+		}
+	} else if g.isStdlibSlice() {
+		// Generate type parameters from function signature for slice
+		typeParams = g.inferSliceTypeParameters(decl)
 		for _, tp := range typeParams {
 			g.placeholderMap[tp.Placeholder] = tp.Name
 		}
@@ -394,6 +401,35 @@ func (g *Generator) inferStdlibTypeParameters(decl *ast.FunctionDecl) []*TypePar
 	return typeParams
 }
 
+// isStdlibSlice checks if we're generating code in stdlib/slice
+func (g *Generator) isStdlibSlice() bool {
+	return strings.Contains(g.sourceFile, "stdlib/slice/") || strings.Contains(g.sourceFile, "stdlib\\slice\\")
+}
+
+// inferSliceTypeParameters infers type parameters for stdlib/slice functions like GroupBy
+// GroupBy needs two type parameters: T (element type) and K (key type, must be comparable)
+func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
+	var typeParams []*TypeParameter
+
+	// Special handling for GroupBy: func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of any
+	if decl.Name.Value == "GroupBy" {
+		// GroupBy returns map[K][]T where K is the key type and T is the element type
+		// The function signature uses placeholders: "any" for T, "any2" for K
+		typeParams = append(typeParams, &TypeParameter{
+			Name:        "T",
+			Placeholder: "any",
+			Constraint:  "any",
+		})
+		typeParams = append(typeParams, &TypeParameter{
+			Name:        "K",
+			Placeholder: "any2",
+			Constraint:  "comparable",
+		})
+	}
+
+	return typeParams
+}
+
 // isIterSeqType checks if a type is iter.Seq (to be made generic)
 func (g *Generator) isIterSeqType(typeAnn ast.TypeAnnotation) bool {
 	if namedType, ok := typeAnn.(*ast.NamedType); ok {
@@ -525,6 +561,7 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 		keyType := g.generateTypeAnnotation(t.KeyType)
 		valueType := g.generateTypeAnnotation(t.ValueType)
 		return fmt.Sprintf("map[%s]%s", keyType, valueType)
+		// Note: keyType and valueType already have placeholders substituted via recursion
 	case *ast.ChannelType:
 		return "chan " + g.generateTypeAnnotation(t.ElementType)
 	case *ast.FunctionType:

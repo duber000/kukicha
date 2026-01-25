@@ -262,8 +262,8 @@ Located in `stdlib/`:
 
 | Package | Purpose |
 |---------|---------|
-| `iter` | Functional iterators (Filter, Map, Take, Skip) |
-| `slice` | Slice operations (First, Last, Reverse, Unique) |
+| `iter` | Functional iterators with Go 1.25+ generics (Filter, Map, Take, Skip) |
+| `slice` | Slice operations with Go 1.25+ generics (First, Last, Reverse, Unique, **GroupBy**) |
 | `string` | String utilities (ToUpper, Split, Contains) |
 | `fetch` | HTTP client for pipe-based requests (uses jsonv2) |
 | `files` | File operations (Read, Write, List) |
@@ -325,6 +325,36 @@ handler := http.WithCSRF(myHandler)
 # Start server
 http.Serve(":8080", handler)
 ```
+
+### Slice Package with Generics
+```kukicha
+import "stdlib/slice"
+
+type LogEntry
+    level string
+    message string
+
+# Group log entries by level (automatically generates [T any, K comparable])
+entries := logs
+    |> slice.GroupBy(func(e LogEntry) string {
+        return e.level
+    })
+# Result: map[string][]LogEntry with keys "ERROR", "WARN", "INFO", etc.
+
+# GroupBy is Go 1.25+ generic - you write simple Kukicha code, transpiler handles the generics
+```
+
+## Transparent Go 1.25+ Generics
+
+**Important:** You don't write generic syntax in Kukicha! The transpiler automatically generates proper Go generics for stdlib functions.
+
+When you use `slice.GroupBy`, `iter.Map`, etc., the transpiler:
+- Infers type parameters from your code (`T` for element type, `K` for key type)
+- Applies proper constraints where needed (`K comparable` for map keys)
+- Generates correct Go 1.25+ generic syntax
+- All type safety benefits without the syntax burden
+
+This is part of Kukicha's philosophy: **"It's Just Go"** - zero runtime overhead, full type safety, no learning curve for generics.
 
 ## Project Structure
 

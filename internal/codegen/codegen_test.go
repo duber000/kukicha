@@ -613,3 +613,84 @@ func TestConcurrentCodeGeneration(t *testing.T) {
 		}
 	})
 }
+
+func TestGroupByGenerics(t *testing.T) {
+	input := `petiole slice
+
+func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of any
+    result := make(map of any2 to list of any)
+    for item in items
+        key := keyFunc(item)
+        result[key] = append(result[key], item)
+    return result
+`
+
+	p, err := parser.New(input, "stdlib/slice/slice.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	gen.SetSourceFile("stdlib/slice/slice.kuki")
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	// Verify generic type parameters are generated
+	if !strings.Contains(output, "func GroupBy[T any, K comparable]") {
+		t.Errorf("expected generic function signature with [T any, K comparable], got: %s", output)
+	}
+
+	// Verify the parameter signature
+	if !strings.Contains(output, "(items []T, keyFunc func(T) K)") {
+		t.Errorf("expected correct parameter types, got: %s", output)
+	}
+
+	// Verify return type
+	if !strings.Contains(output, "map[K][]T") {
+		t.Errorf("expected return type map[K][]T, got: %s", output)
+	}
+}
+
+func TestGroupByFunction(t *testing.T) {
+	input := `func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of any
+    result := make(map of any2 to list of any)
+    for item in items
+        key := keyFunc(item)
+        result[key] = append(result[key], item)
+    return result
+`
+
+	p, err := parser.New(input, "stdlib/slice/slice.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	gen.SetSourceFile("stdlib/slice/slice.kuki")
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	// Verify function creates the result map properly
+	if !strings.Contains(output, "result := make(map[K][]T)") {
+		t.Errorf("expected make(map[K][]T), got: %s", output)
+	}
+
+	// Verify append is called correctly
+	if !strings.Contains(output, "result[key] = append(result[key], item)") {
+		t.Errorf("expected append to result[key], got: %s", output)
+	}
+}
