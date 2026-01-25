@@ -1,82 +1,106 @@
 # Kukicha Standard Library - Fetch (HTTP Client)
-# Simplified version compatible with current Kukicha compiler limitations
+# Provides both simple functions (Get, Post) and a fluent builder pattern
 #
-# This minimal version provides only basic HTTP request functions.
-# Additional functionality requires Go interop due to type system limitations.
+# Examples:
+#   # Simple usage
+#   resp, err := fetch.Get("https://api.example.com/data")
+#
+#   # Builder pattern with chaining
+#   resp, err := fetch.New("https://api.example.com/data")
+#       |> fetch.Header("Authorization", "Bearer token")
+#       |> fetch.Timeout(30 * time.Second)
+#       |> fetch.Do()
 
 petiole fetch
 
 import "net/http"
+import "time"
 
-# Get performs an HTTP GET request to the specified URL
+# Request represents an HTTP request with builder pattern support
+type Request
+    url string
+    headers map of string to string
+    timeoutNs int64
+    method string
+    body any
+
+# New creates a new HTTP request builder for the given URL
+# Returns a Request that can be configured with Header(), Timeout(), etc.
+# Example: req := fetch.New("https://api.example.com/data")
+func New(url string) Request
+    req := Request{}
+    req.url = url
+    req.headers = make(map of string to string)
+    req.timeoutNs = 30000000000
+    req.method = "GET"
+    req.body = empty
+    return req
+
+# Header adds an HTTP header to the request and returns the modified request for chaining
+# Example: req := fetch.New(url) |> fetch.Header("Authorization", "Bearer token")
+func Header(req Request, name string, value string) Request
+    req.headers[name] = value
+    return req
+
+# Timeout sets the request timeout and returns the modified request for chaining
+# Accepts int64 in nanoseconds (use time.Second, time.Millisecond constants)
+# Example: req := fetch.New(url) |> fetch.Timeout(30 * time.Second)
+func Timeout(req Request, durationNs int64) Request
+    req.timeoutNs = durationNs
+    return req
+
+# Method sets the HTTP method and returns the modified request for chaining
+# Example: req := fetch.New(url) |> fetch.Method("POST")
+func Method(req Request, method string) Request
+    req.method = method
+    return req
+
+# Do executes the configured HTTP request
+# Returns the HTTP response and any error that occurred
+# Example: resp, err := fetch.New(url) |> fetch.Header(...) |> fetch.Do()
+func Do(req Request) (any, error)
+    client := http.Client{}
+    client.Timeout = time.Duration(req.timeoutNs)
+
+    httpReq, reqErr := http.NewRequest(req.method, req.url, empty)
+    if reqErr != empty
+        return empty, reqErr
+
+    # Add headers to request
+    for name, value in req.headers
+        httpReq.Header.Set(name, value)
+
+    resp, doErr := client.Do(httpReq)
+    return resp, doErr
+
+# Get performs an HTTP GET request to the specified URL (quick function)
 # Returns the HTTP response and any error that occurred
 # Example: resp, err := fetch.Get("https://api.example.com/data")
-# Note: Returns 'any' type due to type checker limitations with http.Response
-#
-# To use the response with Go interop:
-#   resp, err := fetch.Get(url)
-#   if err != nil { return err }
-#   defer resp.(*http.Response).Body.Close()
-#   body, _ := io.ReadAll(resp.(*http.Response).Body)
 func Get(url string) (any, error)
-    resp, err := http.Get(url)
+    req := New(url)
+    resp, err := Do(req)
     return resp, err
 
-# Post performs an HTTP POST request with an empty body
+# Post performs an HTTP POST request (quick function)
 # Returns the HTTP response and any error that occurred
-# Example: resp, err := fetch.Post("https://api.example.com/users")
-# Note: Simplified version - body handling removed due to type complexity
-# Note: Returns 'any' type due to type checker limitations with http.Response
-#
-# To use the response with Go interop:
-#   resp, err := fetch.Post(url)
-#   if err != nil { return err }
-#   defer resp.(*http.Response).Body.Close()
-#   body, _ := io.ReadAll(resp.(*http.Response).Body)
-func Post(url string) (any, error)
-    resp, err := http.Post(url, "application/json", empty)
+# Example: resp, err := fetch.Post(data, "https://api.example.com/users")
+func Post(data any, url string) (any, error)
+    req := New(url)
+    req = Method(req, "POST")
+    resp, err := Do(req)
     return resp, err
 
-# The following functions are simplified stubs that compile but require Go interop to use:
+# Json reads and parses JSON from an HTTP response
+# Note: Requires manual Go interop - resp is *http.Response
+func Json(resp any) (any, error)
+    return empty, error "use Go interop"
 
-# Json - use this pattern instead:
-#   resp, err := fetch.Get(url)
-#   httpResp := resp.(*http.Response)
-#   defer httpResp.Body.Close()
-#   body, err := io.ReadAll(httpResp.Body)
-#   var data YourType
-#   json.Unmarshal(body, &data)
+# Text reads the response body as text
+# Note: Requires manual Go interop - resp is *http.Response
+func Text(resp any) (string, error)
+    return "", error "use Go interop"
 
-# Text - use this pattern instead:
-#   resp, err := fetch.Get(url)
-#   httpResp := resp.(*http.Response)
-#   defer httpResp.Body.Close()
-#   body, err := io.ReadAll(httpResp.Body)
-#   text := string(body)  # in Go code
-
-# CheckStatus - use this pattern instead:
-#   resp, err := fetch.Get(url)
-#   httpResp := resp.(*http.Response)
-#   if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-#       return errors.New("request failed")
-#   }
-
-# These simplified stub functions are provided for future compatibility
-# once the Kukicha compiler supports type assertions and field access on 'any'
-
-# Json reads bytes from an io.Reader
-# Note: Currently requires Go interop - see examples above
-func Json(reader any) (list of byte, error)
-    return empty, error "use Go interop - see package documentation"
-
-# Text reads bytes from an io.Reader
-# Note: Currently requires Go interop - see examples above
-func Text(reader any) (list of byte, error)
-    return empty, error "use Go interop - see package documentation"
-
-# CheckStatus checks if a status code is successful
-# Note: Currently requires Go interop - see examples above
-func CheckStatus(statusCode int) error
-    if statusCode >= 200 and statusCode < 300
-        return empty
-    return error "use Go interop - see package documentation"
+# CheckStatus checks if response status is successful (2xx)
+# Note: Requires manual Go interop - resp is *http.Response
+func CheckStatus(resp any) (any, error)
+    return empty, error "use Go interop"

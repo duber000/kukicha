@@ -38,7 +38,8 @@ Kukicha combines two powerful ideas:
 **Not Yet Implemented:** 🚧 template, retry, result packages
 
 **Limitations:**
-- Builder patterns (`fetch.New()`, `shell.New()`, `cli.New()`, etc.) not yet supported - use direct function calls
+- Builder patterns for `shell.New()`, `cli.New()` not yet supported - use direct function calls
+- `fetch.New()` builder pattern is now ✅ implemented
 - `files.Watch()`, `useWith()` helper not implemented
 - Some Go 1.25+ features in roadmap examples are aspirational
 
@@ -71,7 +72,7 @@ These packages make Kukicha perfect for scripts and automation:
 
 | Feature | Status | What Works | What Doesn't |
 |---------|--------|-----------|--------------|
-| **fetch** | Mostly works | `Get()`, `Post()`, `Json()`, `Text()` | Builder pattern (`fetch.New().Header()`) not implemented |
+| **fetch** | ✅ Complete | `Get()`, `Post()`, `New()`, `Header()`, `Timeout()`, `Method()`, `Do()` | `Json()`, `Text()`, `CheckStatus()` helpers require Go interop |
 | **shell** | Mostly works | `Run()`, `RunSimple()`, direct execution | Builder pattern (`shell.New().Dir()`) not implemented |
 | **cli** | Mostly works | Simple parsing | Builder pattern (`cli.New().Arg()`) not implemented |
 | **files** | Mostly works | Basic file operations | `Watch()` and `useWith()` helper not implemented |
@@ -263,46 +264,64 @@ func handleData(w http.ResponseWriter, r reference http.Request)
 
 These packages showcase the pipe operator and make scripting delightful:
 
-### Fetch Package ✅
+### Fetch Package ⚠️
 
-HTTP client designed for data pipelines (Go 1.25+ jsonv2 streaming).
+HTTP client with fluent builder pattern. Request building complete, response parsing in progress.
 
-⚠️ **Note:** Builder pattern examples below (`fetch.New().Header().Timeout()`) are aspirational - use direct `Get()`/`Post()` calls for now.
+**Partially Implemented:**
+- ✅ `New(url)` - Create a request builder
+- ✅ `Header(req, name, value)` - Add HTTP header (chainable)
+- ✅ `Timeout(req, duration)` - Set timeout (chainable)
+- ✅ `Method(req, method)` - Set HTTP method (chainable)
+- ✅ `Do(req)` - Execute the request
+- ✅ `Get(url)` - Quick GET request
+- ✅ `Post(data, url)` - Quick POST request
+- 🚧 `Json(resp)` - Parse JSON with streaming support
+- 🚧 `Text(resp)` - Read response as text
+- 🚧 `CheckStatus(resp)` - Verify HTTP status code (2xx)
 
+**Working Examples (request building):**
 ```kukicha
 import "stdlib/fetch"
 
-# Simple GET with automatic JSON parsing (streams with jsonv2)
-users := fetch.Get("https://api.github.com/users")
+# Builder pattern with headers and timeouts
+resp, err := fetch.New("https://api.example.com/data")
+    |> fetch.Header("Authorization", "Bearer token")
+    |> fetch.Timeout(30 * time.Second)
+    |> fetch.Do()
+
+# Simple GET request
+resp, err := fetch.Get("https://api.github.com/users")
+
+# POST request
+resp, err := fetch.Post(data, "https://api.example.com/users")
+
+# Multiple headers and custom timeout
+resp, err := fetch.New("https://api.example.com/data")
+    |> fetch.Header("Authorization", "Bearer token")
+    |> fetch.Header("Content-Type", "application/json")
+    |> fetch.Timeout(60 * time.Second)
+    |> fetch.Method("POST")
+    |> fetch.Do()
+```
+
+**Aspirational Examples (need response parsing helpers):**
+```kukicha
+# These examples will work once Json(), Text(), CheckStatus() are implemented
+
+# Parse JSON with streaming
+data := fetch.Get("https://api.github.com/users")
+    |> fetch.CheckStatus()
     |> fetch.Json() as list of User
     |> slice.Filter(func(u User) bool {
         return u.Followers > 100
     })
-    |> slice.Map(func(u User) string {
-        return u.Login
-    })
-    onerr empty list of string
 
-# POST with JSON body
-response := user
-    |> fetch.JsonBody()
-    |> fetch.Post("https://api.example.com/users")
+# Read response as text
+text := fetch.New("https://api.example.com/data")
+    |> fetch.Header("Authorization", "Bearer token")
+    |> fetch.Do()
     |> fetch.Text()
-    onerr "request failed"
-
-# Pipeline with headers and timeouts
-data := fetch.New("https://api.example.com/data")
-    |> fetch.Header("Authorization", "Bearer {token}")
-    |> fetch.Timeout(30.seconds)
-    |> fetch.Get()
-    |> fetch.Json() as Response
-    onerr panic "fetch failed"
-
-# Parallel fetching
-results := urls
-    |> slice.Map(func(url string) string {
-        return fetch.Get(url) |> fetch.Text()
-    })
 ```
 
 ### Parse Package ✅
