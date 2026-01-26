@@ -669,6 +669,16 @@ func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
 	// Build comma-separated list of values
 	values := make([]string, len(stmt.Values))
 	for i, v := range stmt.Values {
+		// Special case: multi-value declaration with TypeCastExpr should use assertion syntax
+		// e.g., val, ok := x as Type -> val, ok := x.(Type)
+		if len(stmt.Names) == 2 && len(stmt.Values) == 1 {
+			if typeCast, ok := v.(*ast.TypeCastExpr); ok {
+				targetType := g.generateTypeAnnotation(typeCast.TargetType)
+				expr := g.exprToString(typeCast.Expression)
+				values[i] = fmt.Sprintf("%s.(%s)", expr, targetType)
+				continue
+			}
+		}
 		values[i] = g.exprToString(v)
 	}
 	valuesStr := strings.Join(values, ", ")
@@ -800,6 +810,16 @@ func (g *Generator) generateAssignStmt(stmt *ast.AssignStmt) {
 	// Build comma-separated list of values
 	values := make([]string, len(stmt.Values))
 	for i, v := range stmt.Values {
+		// Special case: multi-value assignment with TypeCastExpr should use assertion syntax
+		// e.g., val, ok := x as Type -> val, ok := x.(Type)
+		if len(stmt.Targets) == 2 && len(stmt.Values) == 1 {
+			if typeCast, ok := v.(*ast.TypeCastExpr); ok {
+				targetType := g.generateTypeAnnotation(typeCast.TargetType)
+				expr := g.exprToString(typeCast.Expression)
+				values[i] = fmt.Sprintf("%s.(%s)", expr, targetType)
+				continue
+			}
+		}
 		values[i] = g.exprToString(v)
 	}
 	valuesStr := strings.Join(values, ", ")

@@ -3,43 +3,23 @@
 petiole retry
 
 import "time"
-import "math"
 
-# BackoffStrategy defines how delays increase between retry attempts
-type BackoffStrategy int
-
-const (
-    # Linear backoff - delay stays constant
-    Linear BackoffStrategy = 0
-    # Exponential backoff - delay doubles each time
-    Exponential BackoffStrategy = 1
-)
+# Note: This package has limited functionality due to current Kukicha limitations:
+# - No constants or type aliases
+# - Functions passed to retry need to return (any, error) but Kukicha uses onerr
+# - Type conversions (float64, int) not supported
+#
+# This is a simplified stub implementation for now.
 
 # Config holds retry configuration
 type Config
     MaxAttempts int
     InitialDelay int  # milliseconds
-    Strategy BackoffStrategy
-    Condition func(error) bool
+    Strategy int  # 0 = Linear, 1 = Exponential
 
-# defaultConfig returns the default retry configuration
-func defaultConfig() Config
-    return Config{
-        MaxAttempts: 3,
-        InitialDelay: 1000,
-        Strategy: Exponential,
-        Condition: empty,
-    }
-
-# Do executes a function with default retry settings (3 attempts, exponential backoff)
-# Returns the result or the last error encountered
-func Do(fn func() any) (any, error)
-    cfg := defaultConfig()
-    return doWithConfig(cfg, fn)
-
-# New creates a new retry configuration builder
+# New creates a default retry configuration
 func New() Config
-    return defaultConfig()
+    return Config{MaxAttempts: 3, InitialDelay: 1000, Strategy: 1}
 
 # Attempts sets the maximum number of retry attempts
 func Attempts(cfg Config, maxAttempts int) Config
@@ -51,96 +31,38 @@ func Delay(cfg Config, delayMs int) Config
     cfg.InitialDelay = delayMs
     return cfg
 
-# Backoff sets the backoff strategy (Linear or Exponential)
-func Backoff(cfg Config, strategy BackoffStrategy) Config
+# Backoff sets the backoff strategy (0 = Linear, 1 = Exponential)
+func Backoff(cfg Config, strategy int) Config
     cfg.Strategy = strategy
     return cfg
 
-# DoWithConfig executes a function with the given retry configuration
-# This is the final step in the pipeline
-func DoWithConfig(cfg Config, fn func() any) (any, error)
-    return doWithConfig(cfg, fn)
-
-# doWithConfig is the internal implementation
-func doWithConfig(cfg Config, fn func() any) (any, error)
-    lastErr := error("")
-
-    for attempt := 0; attempt < cfg.MaxAttempts; attempt = attempt + 1
-        # Try to execute the function
-        # In Kukicha, we need to handle this carefully
-        # For now, we'll use a helper approach
-        result, err := tryExecute(fn)
-
-        if err == empty
-            return result, empty
-
-        lastErr = err
-
-        # Don't sleep after the last attempt
-        if attempt < cfg.MaxAttempts - 1
-            delay := calculateDelay(cfg, attempt)
-            time.Sleep(time.Duration(delay) * time.Millisecond)
-
-    return empty, lastErr
-
-# tryExecute attempts to execute a function and recover from panics
-func tryExecute(fn func() any) (any, error)
-    # This is a simplified version
-    # In real implementation, we'd need proper error handling
-    result := fn()
-    return result, empty
+# Sleep pauses execution for the configured delay
+# This is a helper for manual retry logic
+func Sleep(cfg Config, attempt int)
+    delay := calculateDelay(cfg, attempt)
+    time.Sleep(time.Duration(delay) * time.Millisecond)
 
 # calculateDelay calculates the delay for a given attempt
 func calculateDelay(cfg Config, attempt int) int
-    if cfg.Strategy == Linear
+    if cfg.Strategy == 0
         return cfg.InitialDelay
 
-    # Exponential backoff
-    multiplier := math.Pow(2.0, float64(attempt))
-    return int(float64(cfg.InitialDelay) * multiplier)
+    # Exponential backoff: calculate 2^attempt using a loop
+    multiplier := 1
+    i := 0
+    for i < attempt
+        multiplier = multiplier * 2
+        i = i + 1
 
-# DoIf executes a function with retry, but only retries if the condition returns true
-# The condition function receives the error and returns true to retry
-func DoIf(fn func() any, condition func(error) bool) (any, error)
-    cfg := defaultConfig()
-    cfg.Condition = condition
-    return doWithConfigIf(cfg, fn)
+    return cfg.InitialDelay * multiplier
 
-# doWithConfigIf is like doWithConfig but checks the condition before retrying
-func doWithConfigIf(cfg Config, fn func() any) (any, error)
-    lastErr := error("")
-
-    for attempt := 0; attempt < cfg.MaxAttempts; attempt = attempt + 1
-        result, err := tryExecute(fn)
-
-        if err == empty
-            return result, empty
-
-        lastErr = err
-
-        # Check if we should retry based on the condition
-        if cfg.Condition != empty and not cfg.Condition(err)
-            return empty, lastErr
-
-        # Don't sleep after the last attempt
-        if attempt < cfg.MaxAttempts - 1
-            delay := calculateDelay(cfg, attempt)
-            time.Sleep(time.Duration(delay) * time.Millisecond)
-
-    return empty, lastErr
-
-# WithCondition sets a condition for retrying
-# Only retry if the condition function returns true for the error
-func WithCondition(cfg Config, condition func(error) bool) Config
-    cfg.Condition = condition
-    return cfg
-
-# DoSimple is a convenience function that retries a function with simple settings
-func DoSimple(fn func() any, maxAttempts int, delayMs int) (any, error)
-    cfg := Config{
-        MaxAttempts: maxAttempts,
-        InitialDelay: delayMs,
-        Strategy: Exponential,
-        Condition: empty,
-    }
-    return doWithConfig(cfg, fn)
+# Example manual retry pattern:
+# cfg := retry.New() |> retry.Attempts(5) |> retry.Delay(500)
+# attempt := 0
+# for attempt < cfg.MaxAttempts
+#     result := doSomething() onerr discard
+#     if result != empty
+#         # Success!
+#         break
+#     retry.Sleep(cfg, attempt)
+#     attempt = attempt + 1

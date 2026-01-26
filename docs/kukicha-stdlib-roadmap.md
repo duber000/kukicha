@@ -33,12 +33,14 @@ Kukicha combines two powerful ideas:
 
 ### Quick Summary
 
-**Ready to Use:** ✅ iter, slice, string, files, json, parse (CSV/YAML), fetch, concurrent, shell, cli, http (basic)
+**Ready to Use:** ✅ iter, slice, string, files, json, parse (CSV/YAML), fetch, concurrent, shell, cli, http (basic), template, result
 
-**Not Yet Implemented:** 🚧 template, retry, result packages
+**Partially Implemented:** ⚠️ retry (limited stub due to error handling design constraints)
 
 **Limitations:**
 - Builder patterns for `shell.New()`, `cli.New()` not yet supported - use direct function calls
+- Constants with types not supported
+- Retry package has limited functionality - see package documentation
 
 ### ✅ Completed Packages
 
@@ -54,24 +56,25 @@ Kukicha combines two powerful ideas:
 | **concurrent** | Concurrency helpers | ✅ Ready | Parallel, ParallelWithLimit, Go |
 | **shell** | Safe command execution | ✅ Ready | Run, RunSimple, RunWithDir, RunWithOutput, RunWithTimeout, Which, Getenv, Setenv, Unsetenv, Environ |
 | **cli** | CLI argument parsing | ✅ Ready | Parse, String, Command, Flag, BoolFlag, IntFlag, PrintUsage |
-| **http** | HTTP server helpers | ⚠️ Limited | Basic helpers (no builder pattern yet) |
+| **http** | HTTP server helpers | ✅ Ready | WithCSRF, Serve |
+| **template** | Text templating | ✅ Ready | Render, Data, Execute, Parse, New, WithContent, RenderSimple, Must |
+| **result** | Optional/Result types | ✅ Ready | Some, None, Ok, Err, Map, UnwrapOr, AndThen, Match, ToOptional, FromOptional, Flatten, FlattenResult, All, Any |
 
-### 🚧 Planned Scripting Packages (Priority Order)
-
-These packages make Kukicha perfect for scripts and automation:
+### 🚧 Future Enhancements
 
 | Package | Purpose | Status | Notes |
 |---------|---------|--------|-------|
-| **template** | Text templating | 🚧 Not Started | Planned but not implemented. Roadmap examples won't work yet. |
-| **retry** | Retry logic with backoff | 🚧 Not Started | Planned but not implemented. Roadmap examples won't work yet. |
-| **result** | Optional/Result types (educational) | 🚧 Not Started | Planned but not implemented. Roadmap examples won't work yet. |
+| **retry** | Full retry logic with automatic error handling | ⚠️ Limited | Currently a stub with helper functions. Full implementation requires language support for passing functions that return errors. See stdlib/retry/retry.kuki for manual retry patterns. |
 
-### ⚠️ Partially Implemented (Roadmap Examples May Not Work)
+### ⚠️ Known Limitations in Examples
 
-| Feature | Status | What Works | What Doesn't |
-|---------|--------|-----------|--------------|
-| **shell** | Mostly works | `Run()`, `RunSimple()`, direct execution | Builder pattern (`shell.New().Dir()`) not implemented |
-| **cli** | Mostly works | Simple parsing | Builder pattern (`cli.New().Arg()`) not implemented |
+Some roadmap examples use aspirational syntax not yet supported:
+
+| Feature | What's Not Supported | Workaround |
+|---------|---------------------|------------|
+| **shell** | Builder pattern (`shell.New().Dir()`) | Use `shell.RunWithDir()` instead |
+| **cli** | Builder pattern (`cli.New().Arg()`) | Use `cli.Parse()` with flag maps instead |
+| **retry** | Automatic retry with `retry.Do()` | Use manual retry loops (see stdlib/retry/retry.kuki) |
 
 ---
 
@@ -594,11 +597,9 @@ output := shell.New("npm", "install")
 - Result inspection with `shell.Output()`, `shell.Error()`, `shell.ExitCode()`, `shell.Success()`
 - Command existence checking with `shell.Which()`
 
-## Planned Scripting Packages 🚧
+## Additional Scripting Packages
 
-### Template Package (Planned) 🚧
-
-🚧 **Status: Not Implemented** - This package does not exist yet. The examples below are aspirational and won't currently work.
+### Template Package ✅
 
 Text templating for code generation and reports:
 
@@ -629,46 +630,69 @@ code := template.New()
     |> files.Write("generated.go")
 ```
 
-### Retry Package (Planned) 🚧
+### Retry Package ⚠️
 
-🚧 **Status: Not Implemented** - This package does not exist yet. The examples below are aspirational and won't currently work.
+⚠️ **Status: Limited Implementation** - The retry package provides helper functions for manual retry patterns. Automatic retry with `retry.Do()` requires language features not yet supported. See stdlib/retry/retry.kuki for working examples.
 
-Retry logic with exponential backoff:
+Manual retry pattern with helper functions:
 
 ```kukicha
 import "stdlib/retry"
+import "stdlib/fetch"
 
-# Retry with default backoff (3 attempts)
-data := retry.Do(func() any {
-    return fetch.Get(apiUrl) |> fetch.CheckStatus() |> fetch.Bytes()
-}) onerr panic "all retries failed"
+# Manual retry with configuration
+func fetchWithRetry(url string) (list of byte, error)
+    cfg := retry.New()
+        |> retry.Attempts(5)
+        |> retry.Delay(500)
+        |> retry.Backoff(1)  # 1 = Exponential
 
-# Custom retry strategy
-result := retry.New()
-    |> retry.Attempts(5)
-    |> retry.Delay(1000)        # milliseconds
-    |> retry.Backoff(retry.Exponential)
-    |> retry.Do(func() any {
-        return processData()
-    })
-    onerr logError("processing failed after 5 attempts")
+    attempt := 0
+    for attempt < cfg.MaxAttempts
+        # Try the operation
+        data := fetch.Get(url)
+            |> fetch.CheckStatus()
+            |> fetch.Bytes()
+            onerr discard
 
-# Retry with condition (only retry on specific errors)
-response := retry.DoIf(
-    func() any {
-        return callExternalApi()
-    },
-    func(err error) bool {
-        return isRetryable(err)
-    }
-)
+        # Check if it succeeded
+        if data != empty
+            return data, empty
+
+        # Sleep with exponential backoff before next attempt
+        if attempt < cfg.MaxAttempts - 1
+            retry.Sleep(cfg, attempt)
+
+        attempt = attempt + 1
+
+    return empty, error("all retries failed")
+
+# Simple retry with linear backoff
+func processWithRetry() bool
+    cfg := retry.New()
+        |> retry.Attempts(3)
+        |> retry.Delay(1000)
+        |> retry.Backoff(0)  # 0 = Linear
+
+    attempt := 0
+    for attempt < cfg.MaxAttempts
+        success := processData() onerr discard
+        if success
+            return true
+
+        retry.Sleep(cfg, attempt)
+        attempt = attempt + 1
+
+    return false
 ```
 
-### Result Package (Planned) 🚧
+**Note:** The automatic `retry.Do()` pattern shown in many retry libraries requires passing functions that return `(value, error)` tuples, which conflicts with Kukicha's `onerr` operator. The manual pattern above is the recommended approach.
 
-🚧 **Status: Not Implemented** - This package does not exist yet. The examples below are aspirational and won't currently work.
+### Result Package ✅
 
-Optional and Result types for educational purposes:
+✅ **Status: Implemented** - Optional and Result types for educational purposes and explicit error handling patterns.
+
+Optional and Result types:
 
 ```kukicha
 import "stdlib/result"
@@ -713,6 +737,13 @@ if output.IsOk()
 else
     err := output.Err()
     message := "Failed: {err}"
+```
+
+**Type Assertions:** Kukicha supports type assertions using the `as` keyword with multi-value assignment:
+```kukicha
+inner, ok := opt.value as Optional
+if ok
+    # Type assertion succeeded, inner is of type Optional
 ```
 
 ---

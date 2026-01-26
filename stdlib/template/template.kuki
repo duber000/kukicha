@@ -14,10 +14,7 @@ type TemplateData
 # Render renders a template string with the provided data map
 # This is the simple string templating version
 func Render(tmplStr string) TemplateData
-    return TemplateData{
-        Content: tmplStr,
-        Data: make(map of string to any),
-    }
+    return TemplateData{Content: tmplStr, Data: make(map of string to any)}
 
 # Data sets the data for template rendering
 # Takes a TemplateData and a data map, returns TemplateData for piping
@@ -33,7 +30,7 @@ func Execute(td TemplateData) (string, error)
         return "", err
 
     buf := bytes.Buffer{}
-    err = tmpl.Execute(reference buf, td.Data)
+    err = tmpl.Execute(reference of buf, td.Data)
     if err != empty
         return "", err
 
@@ -42,18 +39,12 @@ func Execute(td TemplateData) (string, error)
 # Parse parses template content from a string
 # Returns a TemplateData for piping
 func Parse(content string) TemplateData
-    return TemplateData{
-        Content: content,
-        Data: make(map of string to any),
-    }
+    return TemplateData{Content: content, Data: make(map of string to any)}
 
 # New creates a new empty TemplateData
 # Can be used to start a template pipeline
 func New() TemplateData
-    return TemplateData{
-        Content: "",
-        Data: make(map of string to any),
-    }
+    return TemplateData{Content: "", Data: make(map of string to any)}
 
 # WithContent sets the template content
 func WithContent(td TemplateData, content string) TemplateData
@@ -68,7 +59,7 @@ func RenderSimple(tmplStr string, data map of string to any) (string, error)
         return "", err
 
     buf := bytes.Buffer{}
-    err = tmpl.Execute(reference buf, data)
+    err = tmpl.Execute(reference of buf, data)
     if err != empty
         return "", err
 

@@ -19,17 +19,11 @@ type Result
 
 # Some creates an Optional containing a value
 func Some(value any) Optional
-    return Optional{
-        hasValue: true,
-        value: value,
-    }
+    return Optional{hasValue: true, value: value}
 
 # None creates an Optional with no value
 func None() Optional
-    return Optional{
-        hasValue: false,
-        value: empty,
-    }
+    return Optional{hasValue: false, value: empty}
 
 # IsSome returns true if the Optional contains a value
 func IsSome(opt Optional) bool
@@ -79,19 +73,11 @@ func Filter(opt Optional, predicate func(any) bool) Optional
 
 # Ok creates a successful Result containing a value
 func Ok(value any) Result
-    return Result{
-        isOk: true,
-        value: value,
-        err: empty,
-    }
+    return Result{isOk: true, value: value, err: empty}
 
 # Err creates a failed Result containing an error
 func Err(err error) Result
-    return Result{
-        isOk: false,
-        value: empty,
-        err: err,
-    }
+    return Result{isOk: false, value: empty, err: err}
 
 # IsOk returns true if the Result is successful
 func IsOk(res Result) bool
@@ -185,7 +171,7 @@ func Flatten(opt Optional) Optional
         return None()
 
     # Check if the value is itself an Optional
-    inner, ok := opt.value.(Optional)
+    inner, ok := opt.value as Optional
     if ok
         return inner
 
@@ -197,7 +183,7 @@ func FlattenResult(res Result) Result
         return res
 
     # Check if the value is itself a Result
-    inner, ok := res.value.(Result)
+    inner, ok := res.value as Result
     if ok
         return inner
 
