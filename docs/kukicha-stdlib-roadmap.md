@@ -53,8 +53,8 @@ Kukicha combines two powerful ideas:
 | **parse** | CSV/YAML parsing | ✅ Ready | JsonPretty, Csv, CsvWithHeader, YamlPretty |
 | **fetch** | HTTP client with json integration | ✅ Ready | Get, Post, New, Header, Timeout, Method, Body, Do, CheckStatus, Text, Bytes |
 | **concurrent** | Concurrency helpers | ✅ Ready | Parallel, ParallelWithLimit, Go |
-| **shell** | Safe command execution | ✅ Ready | Builder: New, Dir, SetTimeout, Env, Execute, Success, GetOutput, GetError, ExitCode. Direct: Run, RunSimple, RunWithDir, Which, Getenv, Setenv, Environ |
-| **cli** | CLI argument parsing | ✅ Ready | Builder: New, Arg, AddFlag, Action, RunApp, GetString, GetBool, GetInt. Direct: Parse, String, Command, Flag, BoolFlag, IntFlag, PrintUsage |
+| **shell** | Safe command execution | ✅ Ready | Builder: New, Dir, SetTimeout, Env, Execute. Result helpers: Success, GetOutput, GetError, ExitCode. Utilities: Which, Getenv, Setenv, Environ |
+| **cli** | CLI argument parsing | ✅ Ready | Builder: New, Arg, AddFlag, Action, RunApp. Args helpers: GetString, GetBool, GetInt |
 | **http** | HTTP server helpers | ✅ Ready | WithCSRF, Serve |
 | **template** | Text templating | ✅ Ready | Render, Data, Execute, Parse, New, WithContent, RenderSimple, Must |
 | **result** | Optional/Result types | ✅ Ready | Some, None, Ok, Err, Map, UnwrapOr, AndThen, Match, ToOptional, FromOptional, Flatten, FlattenResult, All, Any |
@@ -456,43 +456,41 @@ type User
     Email string json:"email"
 ```
 
-### CLI Package 
+### CLI Package
 
-Build command-line tools easily:
+Build command-line tools easily with builder pattern:
 
 ```kukicha
 import "stdlib/cli"
 
 func main()
-    # Parse command line arguments
-    flags, positional := cli.Parse()
-    cmd := cli.Command(positional)
-    
-    if cmd == ""
-        cli.PrintUsage("mytool", ["fetch", "process"])
-        return
-    
-    # Get arguments and flags
-    input := cli.String(flags, positional, "1")
-    verbose := cli.BoolFlag(flags, "verbose")
-    format := cli.Flag(flags, "format")
-    
-    if cmd == "fetch"
-        # Process fetch command
-        url := cli.String(flags, positional, "1")
-        print "Fetching {url} with format {format}"
-    else if cmd == "process"
-        # Process process command
-        output := cli.String(flags, positional, "2")
-        print "Processing {input} to {output}"
+    app := cli.New("mytool")
+        |> cli.Arg("command", "Command to run (fetch|process)")
+        |> cli.Arg("input", "Input file or URL")
+        |> cli.AddFlag("verbose", "Enable verbose output", "false")
+        |> cli.AddFlag("format", "Output format", "json")
+        |> cli.Action(handleCommand)
+
+    cli.RunApp(app) onerr panic "command failed"
+
+func handleCommand(args cli.Args)
+    command := cli.GetString(args, "command")
+    input := cli.GetString(args, "input")
+    verbose := cli.GetBool(args, "verbose")
+    format := cli.GetString(args, "format")
+
+    if command == "fetch"
+        print("Fetching {input} with format {format}")
+    else if command == "process"
+        output := cli.GetString(args, "output")
+        print("Processing {input} to {output}")
 ```
 
 **Key Features:**
-- Simple argument parsing with `cli.Parse()`
-- Command extraction with `cli.Command()`
-- Flag handling with `cli.Flag()`, `cli.BoolFlag()`, `cli.IntFlag()`
-- Positional argument access with `cli.String()`
-- Usage help with `cli.PrintUsage()`
+- Builder pattern with `cli.New()`, `cli.Arg()`, `cli.AddFlag()`, `cli.Action()`
+- Application execution with `cli.RunApp()`
+- Argument access with `cli.GetString()`, `cli.GetBool()`, `cli.GetInt()`
+- Clean separation of app definition and handler logic
 
 ### Files Package 
 
@@ -549,11 +547,13 @@ Safe command execution without shell injection with builder pattern support.
 ```kukicha
 import "stdlib/shell"
 
-# Run a simple command
-output := shell.RunSimple("ls", "-la") onerr panic "ls failed"
-print output
+# Simple command
+cmd := shell.New("ls", "-la")
+result := shell.Execute(cmd)
+if shell.Success(result)
+    print(string(shell.GetOutput(result)))
 
-# Builder pattern: Run with options
+# Run with options using builder pattern
 cmd := shell.New("git", "status") |> shell.Dir("./repo") |> shell.SetTimeout(30)
 result := shell.Execute(cmd)
 
@@ -561,10 +561,6 @@ if shell.Success(result)
     print(string(shell.GetOutput(result)))
 else
     print("Error: {string(shell.GetError(result))}")
-
-# Direct execution (legacy)
-output := shell.RunSimple("pwd") onerr panic "command failed"
-print(string(output))
 
 # Check if command exists
 if shell.Which("docker")
@@ -583,9 +579,8 @@ if shell.Success(result)
 - Builder pattern with `shell.New()`, `shell.Dir()`, `shell.SetTimeout()`, `shell.Env()`
 - Command execution with `shell.Execute()` returning `Result` type
 - Result inspection with `shell.Success()`, `shell.GetOutput()`, `shell.GetError()`, `shell.ExitCode()`
-- Legacy direct functions: `shell.Run()`, `shell.RunSimple()`, `shell.RunWithDir()`
 - Command existence checking with `shell.Which()`
-- Environment variable helpers: `shell.Getenv()`, `shell.Setenv()`
+- Environment variable helpers: `shell.Getenv()`, `shell.Setenv()`, `shell.Environ()`
 
 ## Additional Scripting Packages
 
@@ -853,24 +848,23 @@ import "stdlib/shell"
 import "stdlib/files"
 
 func deploy(version string)
-    print "Building version {version}..."
+    print("Building version {version}...")
 
     # Build and test
-    shell.Run("go", "test", "./...")
-        |> shell.Dir("./backend")
-        |> shell.Must()
+    result := shell.New("go", "test", "./...") |> shell.Dir("./backend") |> shell.Execute()
+    if not shell.Success(result)
+        panic("tests failed: {string(shell.GetError(result))}")
 
-    shell.Run("npm", "run", "build")
-        |> shell.Dir("./frontend")
-        |> shell.Must()
+    result2 := shell.New("npm", "run", "build") |> shell.Dir("./frontend") |> shell.Execute()
+    if not shell.Success(result2)
+        panic("build failed: {string(shell.GetError(result2))}")
 
     # Create deployment package
     tmpDir := files.TempDir() onerr panic "temp dir failed"
-    shell.Run("cp", "-r", "dist", tmpDir)
-    shell.Run("tar", "-czf", "deploy-{version}.tar.gz", tmpDir)
-    # Note: Manual cleanup needed - useWith() helper not yet implemented
+    shell.New("cp", "-r", "dist", tmpDir) |> shell.Execute()
+    shell.New("tar", "-czf", "deploy-{version}.tar.gz", tmpDir) |> shell.Execute()
 
-    print "Deployment package ready: deploy-{version}.tar.gz"
+    print("Deployment package ready: deploy-{version}.tar.gz")
 ```
 
 ---

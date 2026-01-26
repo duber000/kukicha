@@ -121,89 +121,13 @@ func GetError(result Result) list of byte
 func ExitCode(result Result) int
     return result.exitCode
 
-# Direct Execution Functions (legacy, use builder pattern instead)
-
-# Run executes a command with arguments and returns the output as bytes
-# Returns stdout and error
-# Example: shell.Run("ls", "-la", "/tmp")
-func Run(name string, many args string) (list of byte, error)
-    cmd := exec.Command(name, many args)
-    output, err := cmd.Output()
-    if err != empty
-        return empty, err
-    return output, err
-
-# RunSimple executes a command with no arguments
-# Returns stdout as bytes and error
-# Example: shell.RunSimple("pwd")
-func RunSimple(name string) (list of byte, error)
-    cmd := exec.Command(name)
-    output, err := cmd.Output()
-    if err != empty
-        return empty, err
-    return output, err
-
-# RunWithDir executes a command in a specific directory
-# Returns stdout as bytes and error
-# Example: shell.RunWithDir("ls", "/tmp", "-la")
-func RunWithDir(name string, dir string, many args string) (list of byte, error)
-    cmd := exec.Command(name, many args)
-    cmd.Dir = dir
-    output, err := cmd.Output()
-    if err != empty
-        return empty, err
-    return output, err
-
-# RunWithOutput - simplified stub due to buffer assignment limitations
-# Use Go interop for capturing both stdout and stderr
-func RunWithOutput(name string, arg1 string) (list of byte, list of byte, error)
-    return empty, empty, error "use Go interop - buffer assignment requires pointers"
-
-# RunWithTimeout executes a command with a timeout
-# Example: shell.RunWithTimeout("sleep", 2, "10")
-func RunWithTimeout(name string, timeoutSeconds int, arg1 string) (list of byte, error)
-    # 1. Creation Phase: Standard tuple assignment (Kukicha supports this!)
-    # We must do this to capture 'cancel' for the defer
-    ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds) * time.Second)
-    defer cancel()
-
-    # 2. Execution Phase: Level 2 Smart Pipe
-    # The compiler injects 'ctx' into exec.CommandContext(ctx, ...) automatically
-    output := ctx |> exec.CommandContext(name, arg1) |> .Output() onerr return empty, error "command failed"
-    
-    return output, empty
+# Utility Functions
 
 # Which checks if a command exists in the system PATH
 # Returns true if the command is found, false otherwise
 # Example: if shell.Which("git") ...
 func Which(name string) bool
     _, err := exec.LookPath(name)
-    return err == empty
-
-# Output runs a command and returns just the output as bytes
-# Returns empty on error
-# Example: output := shell.Output("echo", "hello")
-func Output(name string, arg1 string) list of byte
-    cmd := exec.Command(name, arg1)
-    output, err := cmd.Output()
-    if err != empty
-        return empty
-    return output
-
-# CombinedOutput runs a command and returns combined stdout and stderr as bytes
-# Note: Returns output even on error (combined stdout+stderr)
-# Example: output := shell.CombinedOutput("ls", "/nonexistent")
-func CombinedOutput(name string, arg1 string) (list of byte, error)
-    cmd := exec.Command(name, arg1)
-    output, err := cmd.CombinedOutput()
-    return output, err
-
-# IsSuccessful runs a command and returns true if it succeeds
-# Example: if shell.IsSuccessful("git", "status") ...
-# Note: Use builder pattern instead: shell.New("git", "status") |> shell.Execute() |> shell.Success()
-func IsSuccessful(name string, many args string) bool
-    cmd := exec.Command(name, many args)
-    err := cmd.Run()
     return err == empty
 
 # Getenv returns the value of an environment variable
