@@ -1,140 +1,64 @@
 # CLI Package Tests
 
+petiole cli_test
+
 import "stdlib/cli"
 import "testing"
 
-# Test basic CLI app creation
-func TestNewApp(t testing.T)
-    app := cli.New("testapp")
-    if app.name != "testapp"
-        t.Error("Expected app name to be 'testapp'")
-    if app.version != "1.0.0"
-        t.Error("Expected default version to be '1.0.0'")
+# Test basic CLI parsing (this is hard to test without mocking os.Args)
+# We test the helper functions instead
 
-# Test setting app description and version
-func TestAppProperties(t testing.T)
-    app := cli.New("testapp")
-        |> cli.Description("A test application")
-        |> cli.Version("2.0.0")
+func TestFlagHelpers(t reference testing.T)
+    flags := make(map of string to string)
+    flags["verbose"] = "true"
+    flags["count"] = "42"
+    flags["mode"] = "fast"
     
-    if app.description != "A test application"
-        t.Error("Expected description to be set")
-    if app.version != "2.0.0"
-        t.Error("Expected version to be '2.0.0'")
-
-# Test adding commands
-func TestAddCommand(t testing.T)
-    app := cli.New("testapp")
-    cmd := cli.Command(app, "testcmd")
-        |> cli.Description("Test command")
+    # Test Flag
+    if cli.Flag(flags, "mode") != "fast"
+        t.Error("Expected Flag('mode') to be 'fast'")
     
-    if len(app.commands) != 1
-        t.Error("Expected 1 command")
-    if cmd.name != "testcmd"
-        t.Error("Expected command name to be 'testcmd'")
-
-# Test adding arguments to command
-func TestAddArguments(t testing.T)
-    app := cli.New("testapp")
-    cmd := cli.Command(app, "testcmd")
-        |> cli.Arg("input", "Input file")
-        |> cli.OptionalArg("output", "Output file")
+    # Test BoolFlag
+    if not cli.BoolFlag(flags, "verbose")
+        t.Error("Expected BoolFlag('verbose') to be true")
     
-    if len(cmd.args) != 2
-        t.Error("Expected 2 arguments")
-    if cmd.args[0].name != "input" or not cmd.args[0].required
-        t.Error("Expected first argument to be required")
-    if cmd.args[1].name != "output" or cmd.args[1].required
-        t.Error("Expected second argument to be optional")
-
-# Test adding flags to command
-func TestAddFlags(t testing.T)
-    app := cli.New("testapp")
-    cmd := cli.Command(app, "testcmd")
-        |> cli.Flag("verbose", "Enable verbose output", "false")
-        |> cli.RequiredFlag("config", "Configuration file")
-    
-    if len(cmd.flags) != 2
-        t.Error("Expected 2 flags")
-    if cmd.flags["verbose"].defaultValue != "false"
-        t.Error("Expected verbose flag default to be 'false'")
-    if not cmd.flags["config"].required
-        t.Error("Expected config flag to be required")
-
-# Test adding global flags
-func TestAddGlobalFlags(t testing.T)
-    app := cli.New("testapp")
-        |> cli.GlobalFlag("debug", "Enable debug mode", "false")
-        |> cli.RequiredGlobalFlag("env", "Environment name")
-    
-    if len(app.globalFlags) != 2
-        t.Error("Expected 2 global flags")
-    if app.globalFlags["debug"].defaultValue != "false"
-        t.Error("Expected debug flag default to be 'false'")
-    if not app.globalFlags["env"].required
-        t.Error("Expected env flag to be required")
-
-# Test Args methods
-func TestArgsMethods(t testing.T)
-    args := cli.Args{
-        args: map of string to string{"input": "file.txt"},
-        flags: map of string to string{"verbose": "true"},
-    }
-    
-    if cli.String(args, "input") != "file.txt"
-        t.Error("Expected String() to return 'file.txt'")
-    if cli.String(args, "verbose") != "true"
-        t.Error("Expected String() to return 'true' for flags")
-    if cli.String(args, "missing") != ""
-        t.Error("Expected String() to return empty for missing arg")
-
-# Test Int parsing
-func TestIntParsing(t testing.T)
-    args := cli.Args{
-        args: map of string to string{"count": "42"},
-    }
-    
-    val, err := cli.Int(args, "count")
+    # Test IntFlag
+    val, err := cli.IntFlag(flags, "count")
     if err != empty or val != 42
-        t.Error("Expected Int() to parse '42' correctly")
+        t.Error("Expected IntFlag('count') to be 42")
     
-    _, err = cli.Int(args, "missing")
-    if err == empty
-        t.Error("Expected error for missing argument")
+    _, missingErr := cli.IntFlag(flags, "missing")
+    if missingErr == empty
+        t.Error("Expected error for missing int flag")
 
-# Test Bool parsing
-func TestBoolParsing(t testing.T)
-    args := cli.Args{
-        args: map of string to string{"flag": "true"},
-    }
+func TestStringHelper(t reference testing.T)
+    flags := make(map of string to string)
+    flags["format"] = "json"
     
-    val, err := cli.Bool(args, "flag")
-    if err != empty or not val
-        t.Error("Expected Bool() to parse 'true' correctly")
+    positional := make(list of string)
+    positional = append(positional, "input.txt")
+    positional = append(positional, "output.txt")
     
-    args2 := cli.Args{
-        args: map of string to string{"flag": "1"},
-    }
-    val2, _ := cli.Bool(args2, "flag")
-    if not val2
-        t.Error("Expected Bool() to parse '1' as true")
+    # Test String with flag
+    if cli.String(flags, positional, "format") != "json"
+        t.Error("Expected String('format') to be 'json'")
+    
+    # Test String with positional index
+    # Note: cli.String uses strconv.Atoi on the name if not found in flags
+    if cli.String(flags, positional, "0") != "input.txt"
+        t.Error("Expected String('0') to be 'input.txt'")
+    
+    if cli.String(flags, positional, "1") != "output.txt"
+        t.Error("Expected String('1') to be 'output.txt'")
 
-# Test command action execution
-func TestCommandAction(t testing.T)
-    executed := false
-    action := func(args cli.Args) error
-        executed = true
-        return empty
+func TestCommandHelper(t reference testing.T)
+    positional := make(list of string)
+    positional = append(positional, "build")
+    positional = append(positional, "main.kuki")
     
-    app := cli.New("testapp")
-    cmd := cli.Command(app, "testcmd")
-        |> cli.Action(action)
+    if cli.Command(positional) != "build"
+        t.Error("Expected Command() to be 'build'")
     
-    if cmd.action == empty
-        t.Error("Expected command action to be set")
-
-# Mock os.Args for testing
-func mockOsArgs(args ...string)
-    # This would require more complex testing setup
-    # For now, we'll skip this test
-    t.Skip("Mocking os.Args requires more complex setup")
+    emptyPos := make(list of string)
+    if cli.Command(emptyPos) != ""
+        t.Error("Expected Command() to be empty for no positional args")

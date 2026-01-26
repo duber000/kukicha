@@ -494,8 +494,7 @@ func main()
     reader := bufio.NewReader(os.Stdin)
     
     # Main loop
-    running := true
-    for running
+    for
         fmt.Print("> ")
         
         # Read user input
@@ -516,7 +515,7 @@ func main()
         
         if command equals "quit" or command equals "exit" or command equals "q"
             print("Goodbye!")
-            running = false
+            break
         
         else if command equals "help" or command equals "?"
             PrintHelp()

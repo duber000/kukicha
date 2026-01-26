@@ -305,6 +305,26 @@ func (s *ReturnStmt) Pos() Position {
 }
 func (s *ReturnStmt) stmtNode() {}
 
+type ContinueStmt struct {
+	Token lexer.Token // The 'continue' token
+}
+
+func (s *ContinueStmt) TokenLiteral() string { return s.Token.Lexeme }
+func (s *ContinueStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *ContinueStmt) stmtNode() {}
+
+type BreakStmt struct {
+	Token lexer.Token // The 'break' token
+}
+
+func (s *BreakStmt) TokenLiteral() string { return s.Token.Lexeme }
+func (s *BreakStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *BreakStmt) stmtNode() {}
+
 type IfStmt struct {
 	Token       lexer.Token // The 'if' token
 	Init        Statement   // Optional initialization statement (can be nil)
@@ -774,7 +794,7 @@ func (e *FunctionLiteral) exprNode() {}
 
 type AddressOfExpr struct {
 	Token   lexer.Token // The 'reference' token
-	Operand Expression   // The expression to take address of
+	Operand Expression  // The expression to take address of
 }
 
 func (e *AddressOfExpr) TokenLiteral() string { return e.Token.Lexeme }
@@ -785,7 +805,7 @@ func (e *AddressOfExpr) exprNode() {}
 
 type DerefExpr struct {
 	Token   lexer.Token // The 'dereference' token
-	Operand Expression   // The expression to dereference
+	Operand Expression  // The expression to dereference
 }
 
 func (e *DerefExpr) TokenLiteral() string { return e.Token.Lexeme }

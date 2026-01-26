@@ -32,6 +32,8 @@ Kukicha fixes this:
 | `*User`, `&user` | `reference User`, `reference of user` |
 | `nil` | `empty` |
 | `if err != nil { return err }` | `onerr return error` |
+| `break`, `continue` | `break`, `continue` |
+| `for { ... }` | `for` |
 
 **Learn programming concepts, not symbols.** When you're ready, the generated Go code teaches you Go itself.
 

@@ -39,7 +39,6 @@ Kukicha combines two powerful ideas:
 
 **Limitations:**
 - Builder patterns for `shell.New()`, `cli.New()` not yet supported - use direct function calls
-- `files.Watch()`, `useWith()` helper not implemented
 
 ### ✅ Completed Packages
 
@@ -48,7 +47,7 @@ Kukicha combines two powerful ideas:
 | **iter** | Functional iteration (Filter, Map, Reduce) | ✅ Ready | Filter, Map, FlatMap, Take, Skip, Reduce, Collect, Find, Any, All, Enumerate, Zip, Chunk |
 | **slice** | Slice operations with generics | ✅ Ready | First, Last, Drop, DropLast, Reverse, Unique, Chunk, Filter, Map, Contains, IndexOf, Concat, GroupBy |
 | **string** | String utilities | ✅ Ready | ToUpper, ToLower, Title, Trim, TrimSpace, TrimPrefix, TrimSuffix, Split, Join, Contains, HasPrefix, HasSuffix, Index, Count, Replace, ReplaceAll, and more |
-| **files** | File operations with pipes | ✅ Ready | Read, Write, Append, Exists, IsDir, IsFile, List, Delete, Copy, Move, MkDir, TempFile, TempDir, Size, ModTime, Extension, Join, Abs |
+| **files** | File operations with pipes | ✅ Ready | Read, Write, Append, Exists, IsDir, IsFile, List, Delete, Copy, Move, MkDir, TempFile, TempDir, Size, ModTime, Extension, Join, Abs, Watch, UseWith |
 | **json** | Pipe-friendly jsonv2 wrapper | ✅ Ready | NewEncoder, WithDeterministic, WithIndent, Encode, NewDecoder, Decode, Marshal, MarshalPretty, Unmarshal, MarshalWrite, UnmarshalRead |
 | **parse** | CSV/YAML parsing | ✅ Ready | JsonPretty, Csv, CsvWithHeader, YamlPretty |
 | **fetch** | HTTP client with json integration | ✅ Ready | Get, Post, New, Header, Timeout, Method, Body, Do, CheckStatus, Text, Bytes |
@@ -73,7 +72,7 @@ These packages make Kukicha perfect for scripts and automation:
 |---------|--------|-----------|--------------|
 | **shell** | Mostly works | `Run()`, `RunSimple()`, direct execution | Builder pattern (`shell.New().Dir()`) not implemented |
 | **cli** | Mostly works | Simple parsing | Builder pattern (`cli.New().Arg()`) not implemented |
-| **files** | Mostly works | Basic file operations | `Watch()` and `useWith()` helper not implemented |
+| **files** | ✅ Ready | Basic file operations | None (Watch and UseWith now implemented) |
 
 ---
 
@@ -544,8 +543,6 @@ func main()
 
 File operations optimized for pipes.
 
-⚠️ **Note:** `files.Watch()` and the `useWith()` helper below are not yet implemented - use other functions like `Read()`, `Write()`, `List()`, `TempFile()`, and `TempDir()` which work great with pipes.
-
 ```kukicha
 import "stdlib/files"
 
@@ -570,14 +567,11 @@ else
 
 # List files with filtering
 logs := files.List("/var/log")
-    |> slice.Filter(func(f FileInfo) bool {
-        return string.HasSuffix(f.Name, ".log")
+    |> slice.Filter(func(f string) bool {
+        return string.HasSuffix(f, ".log")
     })
-    |> slice.Filter(func(f FileInfo) bool {
-        return f.ModTime.After(yesterday)
-    })
-    |> slice.Map(func(f FileInfo) string {
-        return f.Path
+    |> slice.Map(func(f string) string {
+        return f
     })
 
 # Watch for changes (useful for dev tools)
@@ -586,11 +580,11 @@ files.Watch("./src/**/*.kuki", func(path string) {
     rebuildProject()
 })
 
-# Temp file handling
-tempPath := files.TempFile() onerr panic "temp file failed"
-files.Write(tempPath, data) onerr panic "write failed"
-processFile(tempPath)
-# Note: Manual cleanup needed - useWith() helper not yet implemented
+# Temp file handling with automatic cleanup
+files.TempFile("test-") |> files.UseWith(func(path string) {
+    files.Write(path, data) onerr panic "write failed"
+    processFile(path)
+})
 ```
 
 ### Shell Package ✅

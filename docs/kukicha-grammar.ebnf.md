@@ -155,6 +155,8 @@ Statement ::=
     | DeferStatement
     | GoStatement
     | SendStatement
+    | ContinueStatement
+    | BreakStatement
     | ExpressionStatement
     | NEWLINE
 
@@ -166,6 +168,10 @@ Assignment ::=
 
 ReturnStatement ::= "return" [ ExpressionList ] NEWLINE
 
+ContinueStatement ::= "continue" NEWLINE
+
+BreakStatement ::= "break" NEWLINE
+
 IfStatement ::=
     "if" Expression NEWLINE
     INDENT StatementList DEDENT
@@ -176,9 +182,14 @@ ElseClause ::=
     | "else" IfStatement
 
 ForStatement ::=
+    | ForBareLoop
     | ForRangeLoop
     | ForCollectionLoop
     | ForGoStyleLoop
+
+ForBareLoop ::=
+    "for" NEWLINE
+    INDENT StatementList DEDENT
 
 ForRangeLoop ::=
     "for" IDENTIFIER "from" Expression ( "to" | "through" ) Expression NEWLINE
@@ -372,6 +383,7 @@ defer       make        list        map         channel
 send        receive     close       panic       recover
 error       empty       reference   on          this
 discard     true        false       equals      as
+continue    break
 ```
 
 **Note:** The keywords `list`, `map`, and `channel` are context-sensitive and may also be used as identifiers in certain contexts.

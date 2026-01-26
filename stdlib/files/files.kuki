@@ -7,6 +7,7 @@ import "os"
 import "io"
 import "path/filepath"
 import "encoding/json"
+import "time"
 
 # Read reads the entire contents of a file as bytes
 # Returns the file contents and any error that occurred
@@ -228,3 +229,47 @@ func Join(part1 string, part2 string) string
 func Abs(path string) (string, error)
     absPath, err := filepath.Abs(path)
     return absPath, err
+
+# UseWith executes an action on a file path and ensures it is deleted afterwards
+# Useful for temporary files and directories
+# Example: files.TempDir("test") |> files.UseWith(processDir)
+func UseWith(path string, action func(string))
+    defer os.RemoveAll(path)
+    action(path)
+
+# Watch monitors files matching a pattern for changes
+# Polls for changes every 500ms
+# Example: files.Watch("./*.txt", func(path string) { print("Changed: " + path) })
+func Watch(pattern string, callback func(string))
+    lastModified := make(map of string to int64)
+
+    # Initial scan to populate baseline
+    matches, _ := filepath.Glob(pattern)
+    if matches != empty
+        for match in matches
+            info, err := os.Stat(match)
+            if err == empty
+                lastModified[match] = info.ModTime().UnixNano()
+
+    for
+        time.Sleep(500 * time.Millisecond)
+        
+        matches, err := filepath.Glob(pattern)
+        if err == empty
+            for match in matches
+                info, statErr := os.Stat(match)
+                if statErr == empty
+                    currentModTime := info.ModTime().UnixNano()
+                    
+                    # Check for zero value (implies new/not found)
+                    lastModTime := lastModified[match]
+                    
+                    if lastModTime == 0
+                        # New file found
+                        lastModified[match] = currentModTime
+                        callback(match)
+                    else if currentModTime > lastModTime
+                        # File modified
+                        lastModified[match] = currentModTime
+                        callback(match)
+

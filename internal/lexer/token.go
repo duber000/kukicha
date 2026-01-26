@@ -24,6 +24,8 @@ const (
 	TOKEN_IF
 	TOKEN_ELSE
 	TOKEN_FOR
+	TOKEN_CONTINUE
+	TOKEN_BREAK
 	TOKEN_IN
 	TOKEN_FROM
 	TOKEN_TO
@@ -148,6 +150,10 @@ func (t TokenType) String() string {
 		return "ELSE"
 	case TOKEN_FOR:
 		return "FOR"
+	case TOKEN_CONTINUE:
+		return "CONTINUE"
+	case TOKEN_BREAK:
+		return "BREAK"
 	case TOKEN_IN:
 		return "IN"
 	case TOKEN_FROM:
@@ -308,51 +314,53 @@ func (t Token) String() string {
 
 // keywords maps keyword strings to their token types
 var keywords = map[string]TokenType{
-	"petiole":    TOKEN_PETIOLE,
-	"import":    TOKEN_IMPORT,
-	"type":      TOKEN_TYPE,
-	"interface": TOKEN_INTERFACE,
-	"func":      TOKEN_FUNC,
-	"return":    TOKEN_RETURN,
-	"if":        TOKEN_IF,
-	"else":      TOKEN_ELSE,
-	"for":       TOKEN_FOR,
-	"in":        TOKEN_IN,
-	"from":      TOKEN_FROM,
-	"to":        TOKEN_TO,
-	"through":   TOKEN_THROUGH,
-	"switch":    TOKEN_SWITCH,
-	"case":      TOKEN_CASE,
-	"default":   TOKEN_DEFAULT,
-	"go":        TOKEN_GO,
-	"defer":     TOKEN_DEFER,
-	"make":      TOKEN_MAKE,
-	"list":      TOKEN_LIST,
-	"map":       TOKEN_MAP,
-	"channel":   TOKEN_CHANNEL,
-	"send":      TOKEN_SEND,
-	"receive":   TOKEN_RECEIVE,
-	"close":     TOKEN_CLOSE,
-	"panic":     TOKEN_PANIC,
-	"recover":   TOKEN_RECOVER,
-	"error":     TOKEN_ERROR,
-	"empty":     TOKEN_EMPTY,
-	"nil":       TOKEN_EMPTY, // nil is an alias for empty
-	"reference": TOKEN_REFERENCE,
+	"petiole":     TOKEN_PETIOLE,
+	"import":      TOKEN_IMPORT,
+	"type":        TOKEN_TYPE,
+	"interface":   TOKEN_INTERFACE,
+	"func":        TOKEN_FUNC,
+	"return":      TOKEN_RETURN,
+	"if":          TOKEN_IF,
+	"else":        TOKEN_ELSE,
+	"for":         TOKEN_FOR,
+	"continue":    TOKEN_CONTINUE,
+	"break":       TOKEN_BREAK,
+	"in":          TOKEN_IN,
+	"from":        TOKEN_FROM,
+	"to":          TOKEN_TO,
+	"through":     TOKEN_THROUGH,
+	"switch":      TOKEN_SWITCH,
+	"case":        TOKEN_CASE,
+	"default":     TOKEN_DEFAULT,
+	"go":          TOKEN_GO,
+	"defer":       TOKEN_DEFER,
+	"make":        TOKEN_MAKE,
+	"list":        TOKEN_LIST,
+	"map":         TOKEN_MAP,
+	"channel":     TOKEN_CHANNEL,
+	"send":        TOKEN_SEND,
+	"receive":     TOKEN_RECEIVE,
+	"close":       TOKEN_CLOSE,
+	"panic":       TOKEN_PANIC,
+	"recover":     TOKEN_RECOVER,
+	"error":       TOKEN_ERROR,
+	"empty":       TOKEN_EMPTY,
+	"nil":         TOKEN_EMPTY, // nil is an alias for empty
+	"reference":   TOKEN_REFERENCE,
 	"dereference": TOKEN_DEREFERENCE,
-	"on":        TOKEN_ON,
-	"discard":   TOKEN_DISCARD,
-	"at":        TOKEN_AT,
-	"of":        TOKEN_OF,
-	"as":        TOKEN_AS,
-	"many":      TOKEN_MANY,
-	"true":      TOKEN_TRUE,
-	"false":     TOKEN_FALSE,
-	"equals":    TOKEN_EQUALS,
-	"and":       TOKEN_AND,
-	"or":        TOKEN_OR,
-	"onerr":     TOKEN_ONERR,
-	"not":       TOKEN_NOT,
+	"on":          TOKEN_ON,
+	"discard":     TOKEN_DISCARD,
+	"at":          TOKEN_AT,
+	"of":          TOKEN_OF,
+	"as":          TOKEN_AS,
+	"many":        TOKEN_MANY,
+	"true":        TOKEN_TRUE,
+	"false":       TOKEN_FALSE,
+	"equals":      TOKEN_EQUALS,
+	"and":         TOKEN_AND,
+	"or":          TOKEN_OR,
+	"onerr":       TOKEN_ONERR,
+	"not":         TOKEN_NOT,
 }
 
 // LookupKeyword returns the token type for a keyword, or TOKEN_IDENTIFIER if not a keyword

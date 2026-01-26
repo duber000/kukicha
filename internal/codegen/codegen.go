@@ -641,6 +641,10 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 		channel := g.exprToString(s.Channel)
 		value := g.exprToString(s.Value)
 		g.writeLine(fmt.Sprintf("%s <- %s", channel, value))
+	case *ast.ContinueStmt:
+		g.writeLine("continue")
+	case *ast.BreakStmt:
+		g.writeLine("break")
 	case *ast.ExpressionStmt:
 		// Special handling for OnErrExpr at statement level
 		if onErr, ok := s.Expression.(*ast.OnErrExpr); ok {

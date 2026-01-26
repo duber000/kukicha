@@ -14,6 +14,7 @@ type Analyzer struct {
 	symbolTable *SymbolTable
 	errors      []error
 	currentFunc *ast.FunctionDecl // Track current function for return type checking
+	loopDepth   int               // Track loop nesting for break/continue
 }
 
 // New creates a new semantic analyzer
@@ -327,6 +328,14 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 		a.analyzeExpression(s.Channel)
 	case *ast.ExpressionStmt:
 		a.analyzeExpression(s.Expression)
+	case *ast.ContinueStmt:
+		if a.loopDepth == 0 {
+			a.error(s.Pos(), "continue statement outside of loop")
+		}
+	case *ast.BreakStmt:
+		if a.loopDepth == 0 {
+			a.error(s.Pos(), "break statement outside of loop")
+		}
 	}
 }
 
@@ -469,6 +478,9 @@ func (a *Analyzer) analyzeIfStmt(stmt *ast.IfStmt) {
 }
 
 func (a *Analyzer) analyzeForRangeStmt(stmt *ast.ForRangeStmt) {
+	a.loopDepth++
+	defer func() { a.loopDepth-- }()
+
 	// Analyze collection
 	collType := a.analyzeExpression(stmt.Collection)
 
@@ -509,6 +521,9 @@ func (a *Analyzer) analyzeForRangeStmt(stmt *ast.ForRangeStmt) {
 }
 
 func (a *Analyzer) analyzeForNumericStmt(stmt *ast.ForNumericStmt) {
+	a.loopDepth++
+	defer func() { a.loopDepth-- }()
+
 	// Analyze start and end expressions
 	startType := a.analyzeExpression(stmt.Start)
 	endType := a.analyzeExpression(stmt.End)
@@ -538,6 +553,9 @@ func (a *Analyzer) analyzeForNumericStmt(stmt *ast.ForNumericStmt) {
 }
 
 func (a *Analyzer) analyzeForConditionStmt(stmt *ast.ForConditionStmt) {
+	a.loopDepth++
+	defer func() { a.loopDepth-- }()
+
 	// Analyze condition
 	condType := a.analyzeExpression(stmt.Condition)
 	if condType.Kind != TypeKindBool && condType.Kind != TypeKindUnknown {
@@ -615,7 +633,7 @@ func (a *Analyzer) isInPipeExpression(ident *ast.Identifier) bool {
 		// We need to traverse up the AST to find if we're inside a pipe expression
 		// For now, we'll use a simpler approach: check if we're in a call expression
 		// that's part of a pipe expression
-		
+
 		// This is a simplified check - a more robust implementation would
 		// track the AST context properly
 		return true // For now, allow "_" in all contexts to unblock testing

@@ -593,6 +593,10 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseGoStmt()
 	case lexer.TOKEN_SEND:
 		return p.parseSendStmt()
+	case lexer.TOKEN_CONTINUE:
+		return p.parseContinueStmt()
+	case lexer.TOKEN_BREAK:
+		return p.parseBreakStmt()
 	default:
 		return p.parseExpressionOrAssignmentStmt()
 	}
@@ -618,6 +622,18 @@ func (p *Parser) parseReturnStmt() *ast.ReturnStmt {
 
 	p.skipNewlines()
 	return stmt
+}
+
+func (p *Parser) parseContinueStmt() *ast.ContinueStmt {
+	token := p.advance()
+	p.skipNewlines()
+	return &ast.ContinueStmt{Token: token}
+}
+
+func (p *Parser) parseBreakStmt() *ast.BreakStmt {
+	token := p.advance()
+	p.skipNewlines()
+	return &ast.BreakStmt{Token: token}
 }
 
 func (p *Parser) parseIfStmt() *ast.IfStmt {
@@ -718,70 +734,86 @@ func (p *Parser) parseForStmt() ast.Statement {
 	token := p.advance() // consume 'for'
 
 	// Look ahead to determine which type of for loop
+	// for
 	// for item in collection
 	// for index, item in collection
 	// for i from start to/through end
 	// for condition
 
-	savePos := p.pos
-	firstIdent := p.parseIdentifier()
-
-	if p.match(lexer.TOKEN_IN) {
-		// for item in collection
-		collection := p.parseExpression()
-		p.skipNewlines()
-		body := p.parseBlock()
-		return &ast.ForRangeStmt{
-			Token:      token,
-			Variable:   firstIdent,
-			Collection: collection,
-			Body:       body,
-		}
-	} else if p.match(lexer.TOKEN_COMMA) {
-		// for index, item in collection
-		secondIdent := p.parseIdentifier()
-		p.consume(lexer.TOKEN_IN, "expected 'in' after variable list")
-		collection := p.parseExpression()
-		p.skipNewlines()
-		body := p.parseBlock()
-		return &ast.ForRangeStmt{
-			Token:      token,
-			Index:      firstIdent,
-			Variable:   secondIdent,
-			Collection: collection,
-			Body:       body,
-		}
-	} else if p.match(lexer.TOKEN_FROM) {
-		// for i from start to/through end
-		startExpr := p.parseExpression()
-		through := false
-		if p.match(lexer.TOKEN_THROUGH) {
-			through = true
-		} else {
-			p.consume(lexer.TOKEN_TO, "expected 'to' or 'through' after start value")
-		}
-		endExpr := p.parseExpression()
-		p.skipNewlines()
-		body := p.parseBlock()
-		return &ast.ForNumericStmt{
-			Token:    token,
-			Variable: firstIdent,
-			Start:    startExpr,
-			End:      endExpr,
-			Through:  through,
-			Body:     body,
-		}
-	} else {
-		// for condition - backtrack and parse as expression
-		p.pos = savePos
-		condition := p.parseExpression()
+	// Bare for loop: for \n
+	if p.check(lexer.TOKEN_NEWLINE) || p.check(lexer.TOKEN_INDENT) {
 		p.skipNewlines()
 		body := p.parseBlock()
 		return &ast.ForConditionStmt{
 			Token:     token,
-			Condition: condition,
+			Condition: &ast.BooleanLiteral{Token: token, Value: true},
 			Body:      body,
 		}
+	}
+
+	savePos := p.pos
+
+	if p.match(lexer.TOKEN_IDENTIFIER) {
+		firstIdentToken := p.previousToken()
+		firstIdent := &ast.Identifier{Token: firstIdentToken, Value: firstIdentToken.Lexeme}
+
+		if p.match(lexer.TOKEN_IN) {
+			// for item in collection
+			collection := p.parseExpression()
+			p.skipNewlines()
+			body := p.parseBlock()
+			return &ast.ForRangeStmt{
+				Token:      token,
+				Variable:   firstIdent,
+				Collection: collection,
+				Body:       body,
+			}
+		} else if p.match(lexer.TOKEN_COMMA) {
+			// for index, item in collection
+			secondIdent := p.parseIdentifier()
+			p.consume(lexer.TOKEN_IN, "expected 'in' after variable list")
+			collection := p.parseExpression()
+			p.skipNewlines()
+			body := p.parseBlock()
+			return &ast.ForRangeStmt{
+				Token:      token,
+				Index:      firstIdent,
+				Variable:   secondIdent,
+				Collection: collection,
+				Body:       body,
+			}
+		} else if p.match(lexer.TOKEN_FROM) {
+			// for i from start to/through end
+			startExpr := p.parseExpression()
+			through := false
+			if p.match(lexer.TOKEN_THROUGH) {
+				through = true
+			} else {
+				p.consume(lexer.TOKEN_TO, "expected 'to' or 'through' after start value")
+			}
+			endExpr := p.parseExpression()
+			p.skipNewlines()
+			body := p.parseBlock()
+			return &ast.ForNumericStmt{
+				Token:    token,
+				Variable: firstIdent,
+				Start:    startExpr,
+				End:      endExpr,
+				Through:  through,
+				Body:     body,
+			}
+		}
+	}
+
+	// Backtrack and parse as condition-based for loop
+	p.pos = savePos
+	condition := p.parseExpression()
+	p.skipNewlines()
+	body := p.parseBlock()
+	return &ast.ForConditionStmt{
+		Token:     token,
+		Condition: condition,
+		Body:      body,
 	}
 }
 
@@ -1579,8 +1611,17 @@ func (p *Parser) parseEmptyExpr() *ast.EmptyExpr {
 	expr := &ast.EmptyExpr{Token: token}
 
 	// Check for typed empty: empty Type
-	if !p.check(lexer.TOKEN_NEWLINE) && !p.check(lexer.TOKEN_COMMA) && !p.check(lexer.TOKEN_RPAREN) && !p.isAtEnd() {
-		expr.Type = p.parseTypeAnnotation()
+	// Be careful not to consume logical operators or other delimiters as type annotations
+	next := p.peekToken().Type
+	if !p.check(lexer.TOKEN_NEWLINE) && !p.check(lexer.TOKEN_COMMA) && !p.check(lexer.TOKEN_RPAREN) &&
+		!p.check(lexer.TOKEN_AND) && !p.check(lexer.TOKEN_OR) && !p.check(lexer.TOKEN_NOT_EQUALS) &&
+		!p.check(lexer.TOKEN_DOUBLE_EQUALS) && !p.check(lexer.TOKEN_BANG) && !p.check(lexer.TOKEN_PIPE) &&
+		!p.isAtEnd() {
+		// Only parse if it looks like a type name or keywords like 'map', 'list', 'func', 'channel'
+		if next == lexer.TOKEN_IDENTIFIER || next == lexer.TOKEN_MAP || next == lexer.TOKEN_LIST ||
+			next == lexer.TOKEN_FUNC || next == lexer.TOKEN_CHANNEL || next == lexer.TOKEN_REFERENCE {
+			expr.Type = p.parseTypeAnnotation()
+		}
 	}
 
 	return expr

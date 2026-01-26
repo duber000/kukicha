@@ -6,6 +6,12 @@ import "testing"
 import "stdlib/files"
 import "os"
 import "path/filepath"
+import "time"
+
+type TestData
+    Name string
+    Value int
+
 
 # TestReadWrite verifies basic file read and write operations
 func TestReadWrite(t reference testing.T)
@@ -24,9 +30,9 @@ func TestReadWrite(t reference testing.T)
         t.Fatalf("files.WriteString failed: {err}")
 
     # Test Read
-    content, err := files.Read(testFile)
-    if err != empty
-        t.Fatalf("files.Read failed: {err}")
+    content, readErr := files.Read(testFile)
+    if readErr != empty
+        t.Fatalf("files.Read failed: {readErr}")
 
     if content != testContent
         t.Errorf("Expected content '{testContent}', got '{content}'")
@@ -41,11 +47,6 @@ func TestWriteJSON(t reference testing.T)
 
     testFile := filepath.Join(tmpDir, "data.json")
 
-    # Test data structure
-    type TestData struct
-        Name string
-        Value int
-
     testData := TestData{Name: "test", Value: 42}
 
     # Test Write with struct (should marshal to JSON)
@@ -58,9 +59,9 @@ func TestWriteJSON(t reference testing.T)
         t.Error("Expected file to exist after Write")
 
     # Read and verify content
-    content, err := files.Read(testFile)
-    if err != empty
-        t.Fatalf("files.Read failed: {err}")
+    content, readErr := files.Read(testFile)
+    if readErr != empty
+        t.Fatalf("files.Read failed: {readErr}")
 
     # Content should be JSON
     if len(content) == 0
@@ -132,9 +133,9 @@ func TestList(t reference testing.T)
     os.Mkdir(filepath.Join(tmpDir, "subdir"), 0755)
 
     # Test List
-    entries, err := files.List(tmpDir)
-    if err != empty
-        t.Fatalf("files.List failed: {err}")
+    entries, listErr := files.List(tmpDir)
+    if listErr != empty
+        t.Fatalf("files.List failed: {listErr}")
 
     # Should have 3 entries (2 files + 1 directory)
     if len(entries) != 3
@@ -168,9 +169,9 @@ func TestAppend(t reference testing.T)
         t.Fatalf("files.Append failed: {err}")
 
     # Read and verify
-    content, err := files.Read(testFile)
-    if err != empty
-        t.Fatalf("files.Read failed: {err}")
+    content, readErr := files.Read(testFile)
+    if readErr != empty
+        t.Fatalf("files.Read failed: {readErr}")
 
     expected := "Line 1\nLine 2\n"
     if content != expected
@@ -203,9 +204,9 @@ func TestCopy(t reference testing.T)
         t.Error("Expected destination file to exist")
 
     # Verify content matches
-    content, err := files.Read(dstFile)
-    if err != empty
-        t.Fatalf("files.Read failed: {err}")
+    content, readErr := files.Read(dstFile)
+    if readErr != empty
+        t.Fatalf("files.Read failed: {readErr}")
 
     if content != testContent
         t.Errorf("Expected content '{testContent}', got '{content}'")
@@ -273,3 +274,60 @@ func TestPathFunctions(t reference testing.T)
     ext := files.Extension(testPath)
     if ext != ".txt"
         t.Errorf("Expected extension '.txt', got '{ext}'")
+
+# TestUseWith verifies the useWith pattern
+func TestUseWith(t reference testing.T)
+    # Create temp directory
+    tmpDir, err := os.MkdirTemp("", "kukicha-files-test-")
+    if err != empty
+        t.Fatalf("Failed to create temp dir: {err}")
+    
+    testFile := filepath.Join(tmpDir, "temp.txt")
+    files.WriteString("content", testFile)
+    
+    existed := false
+    
+    files.UseWith(testFile, func(path string)
+        if files.Exists(path)
+            existed = true
+    )
+    
+    if not existed
+        t.Error("File should exist inside UseWith callback")
+        
+    if files.Exists(testFile)
+        t.Error("File should be deleted after UseWith returns")
+        
+    os.RemoveAll(tmpDir)
+
+# TestWatch verifies file watching
+func TestWatch(t reference testing.T)
+    # Create temp directory
+    tmpDir, err := os.MkdirTemp("", "kukicha-watch-test-")
+    if err != empty
+        t.Fatalf("Failed to create temp dir: {err}")
+    defer os.RemoveAll(tmpDir)
+    
+    testFile := filepath.Join(tmpDir, "watch.txt")
+    files.WriteString("initial", testFile)
+    
+    # Channel to communicate changes
+    ch := make(channel of string)
+    
+    # Start watcher in goroutine
+    go files.Watch(filepath.Join(tmpDir, "*.txt"), func(path string)
+        send path to ch
+    )
+    
+    # Wait a bit for watcher to initialize
+    time.Sleep(1 * time.Second)
+    
+    # Modify file
+    files.WriteString("modified", testFile)
+    
+    # Wait for event
+    receivedPath := receive from ch
+    
+    if receivedPath != testFile
+        t.Errorf("Expected change for {testFile}, got {receivedPath}")
+
