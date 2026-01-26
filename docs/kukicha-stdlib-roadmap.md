@@ -38,7 +38,6 @@ Kukicha combines two powerful ideas:
 **Partially Implemented:** ⚠️ retry (limited stub due to error handling design constraints)
 
 **Limitations:**
-- Builder patterns for `shell.New()`, `cli.New()` not yet supported - use direct function calls
 - Constants with types not supported
 - Retry package has limited functionality - see package documentation
 
@@ -54,8 +53,8 @@ Kukicha combines two powerful ideas:
 | **parse** | CSV/YAML parsing | ✅ Ready | JsonPretty, Csv, CsvWithHeader, YamlPretty |
 | **fetch** | HTTP client with json integration | ✅ Ready | Get, Post, New, Header, Timeout, Method, Body, Do, CheckStatus, Text, Bytes |
 | **concurrent** | Concurrency helpers | ✅ Ready | Parallel, ParallelWithLimit, Go |
-| **shell** | Safe command execution | ✅ Ready | Run, RunSimple, RunWithDir, RunWithOutput, RunWithTimeout, Which, Getenv, Setenv, Unsetenv, Environ |
-| **cli** | CLI argument parsing | ✅ Ready | Parse, String, Command, Flag, BoolFlag, IntFlag, PrintUsage |
+| **shell** | Safe command execution | ✅ Ready | Builder: New, Dir, SetTimeout, Env, Execute, Success, GetOutput, GetError, ExitCode. Direct: Run, RunSimple, RunWithDir, Which, Getenv, Setenv, Environ |
+| **cli** | CLI argument parsing | ✅ Ready | Builder: New, Arg, AddFlag, Action, RunApp, GetString, GetBool, GetInt. Direct: Parse, String, Command, Flag, BoolFlag, IntFlag, PrintUsage |
 | **http** | HTTP server helpers | ✅ Ready | WithCSRF, Serve |
 | **template** | Text templating | ✅ Ready | Render, Data, Execute, Parse, New, WithContent, RenderSimple, Must |
 | **result** | Optional/Result types | ✅ Ready | Some, None, Ok, Err, Map, UnwrapOr, AndThen, Match, ToOptional, FromOptional, Flatten, FlattenResult, All, Any |
@@ -72,9 +71,8 @@ Some roadmap examples use aspirational syntax not yet supported:
 
 | Feature | What's Not Supported | Workaround |
 |---------|---------------------|------------|
-| **shell** | Builder pattern (`shell.New().Dir()`) | Use `shell.RunWithDir()` instead |
-| **cli** | Builder pattern (`cli.New().Arg()`) | Use `cli.Parse()` with flag maps instead |
 | **retry** | Automatic retry with `retry.Do()` | Use manual retry loops (see stdlib/retry/retry.kuki) |
+| **shell** | Command piping with `shell.Pipe()` | Use shell pipes directly or multiple commands |
 
 ---
 
@@ -544,11 +542,9 @@ files.TempFile("test-") |> files.UseWith(func(path string) {
 })
 ```
 
-### Shell Package 
+### Shell Package
 
-Safe command execution without shell injection.
-
-⚠️ **Note:** Builder pattern examples below (`shell.New().Dir().Timeout().Run()`) and piping (`shell.Pipe()`) are aspirational - use `Run()`, `RunSimple()`, and `RunWithDir()` for now.
+Safe command execution without shell injection with builder pattern support.
 
 ```kukicha
 import "stdlib/shell"
@@ -557,23 +553,18 @@ import "stdlib/shell"
 output := shell.RunSimple("ls", "-la") onerr panic "ls failed"
 print output
 
-# Run with options
-result := shell.New("git", "status")
-    |> shell.Dir("./repo")
-    |> shell.Timeout(30 * time.Second)
-    |> shell.Run()
+# Builder pattern: Run with options
+cmd := shell.New("git", "status") |> shell.Dir("./repo") |> shell.SetTimeout(30)
+result := shell.Execute(cmd)
 
 if shell.Success(result)
-    print result.stdout
+    print(string(shell.GetOutput(result)))
 else
-    print "Error: {result.stderr}"
+    print("Error: {string(shell.GetError(result))}")
 
-# Pipeline commands
-count := shell.New("cat", "data.txt")
-    |> shell.Pipe(shell.New("grep", "ERROR"))
-    |> shell.Pipe(shell.New("wc", "-l"))
-    |> shell.Run()
-    |> shell.Output()
+# Direct execution (legacy)
+output := shell.RunSimple("pwd") onerr panic "command failed"
+print(string(output))
 
 # Check if command exists
 if shell.Which("docker")
@@ -582,20 +573,19 @@ else
     print "Docker not found"
 
 # Run with environment variables
-output := shell.New("npm", "install")
-    |> shell.Dir("./frontend")
-    |> shell.Env("NODE_ENV", "production")
-    |> shell.Run()
-    |> shell.Output()
+cmd := shell.New("npm", "install") |> shell.Dir("./frontend") |> shell.Env("NODE_ENV", "production")
+result := shell.Execute(cmd)
+if shell.Success(result)
+    print("npm install succeeded")
 ```
 
 **Key Features:**
-- Safe command execution with `shell.Run()` and `shell.RunSimple()`
-- Command piping with `shell.Pipe()`
-- Environment and directory control with `shell.Env()` and `shell.Dir()`
-- Timeout support with `shell.Timeout()`
-- Result inspection with `shell.Output()`, `shell.Error()`, `shell.ExitCode()`, `shell.Success()`
+- Builder pattern with `shell.New()`, `shell.Dir()`, `shell.SetTimeout()`, `shell.Env()`
+- Command execution with `shell.Execute()` returning `Result` type
+- Result inspection with `shell.Success()`, `shell.GetOutput()`, `shell.GetError()`, `shell.ExitCode()`
+- Legacy direct functions: `shell.Run()`, `shell.RunSimple()`, `shell.RunWithDir()`
 - Command existence checking with `shell.Which()`
+- Environment variable helpers: `shell.Getenv()`, `shell.Setenv()`
 
 ## Additional Scripting Packages
 
@@ -812,16 +802,12 @@ import "stdlib/files"
 import "stdlib/cli"
 
 func main()
-    app := cli.New("logparse")
-        |> cli.Arg("logfile", "Path to log file")
-        |> cli.Flag("level", "Filter by level (ERROR|WARN|INFO)", "ERROR")
-        |> cli.Action(analyzeLog)
-
-    app.Run() onerr panic "command failed"
+    app := cli.New("logparse") |> cli.Arg("logfile", "Path to log file") |> cli.AddFlag("level", "Filter by level (ERROR|WARN|INFO)", "ERROR") |> cli.Action(analyzeLog)
+    cli.RunApp(app) onerr panic "command failed"
 
 func analyzeLog(args cli.Args)
-    logPath := args.String("logfile")
-    level := args.String("level")
+    logPath := cli.GetString(args, "logfile")
+    level := cli.GetString(args, "level")
 
     errors := logPath
         |> files.Read()

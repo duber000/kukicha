@@ -1,5 +1,4 @@
 # Kukicha Standard Library - Shell (Command Execution)
-# Simplified version compatible with current Kukicha compiler limitations
 
 petiole shell
 
@@ -7,6 +6,122 @@ import "os/exec"
 import "os"
 import "context"
 import "time"
+import "bytes"
+
+# Command represents a command builder for shell execution
+type Command
+    name string
+    args list of string
+    dir string
+    timeout int  # seconds, 0 means no timeout
+    env map of string to string
+
+# Result represents the result of a shell command execution
+type Result
+    stdout list of byte
+    stderr list of byte
+    exitCode int
+    err error
+
+# Builder Pattern Functions
+
+# New creates a new Command builder
+# Example: cmd := shell.New("git", "status")
+func New(name string, many args string) Command
+    return Command{name: name, args: args, dir: "", timeout: 0, env: make(map of string to string)}
+
+# Dir sets the working directory for the command
+# Example: cmd |> shell.Dir("./myproject")
+func Dir(cmd Command, path string) Command
+    cmd.dir = path
+    return cmd
+
+# Timeout sets the timeout in seconds for the command
+# Example: cmd |> shell.Timeout(30)
+func SetTimeout(cmd Command, seconds int) Command
+    cmd.timeout = seconds
+    return cmd
+
+# Env adds an environment variable to the command
+# Example: cmd |> shell.Env("DEBUG", "true")
+func Env(cmd Command, key string, value string) Command
+    cmd.env[key] = value
+    return cmd
+
+# Execute runs the command and returns a Result
+# Example: result := cmd |> shell.Execute()
+func Execute(cmd Command) Result
+    # Build the exec.Cmd
+    execCmd := buildExecCmd(cmd)
+
+    # Set working directory if specified
+    if cmd.dir != ""
+        execCmd.Dir = cmd.dir
+
+    # Add environment variables
+    if len(cmd.env) > 0
+        env := os.Environ()
+        for key, value in cmd.env
+            env = append(env, "{key}={value}")
+        execCmd.Env = env
+
+    # Capture stdout and stderr
+    stdoutBuf := bytes.Buffer{}
+    stderrBuf := bytes.Buffer{}
+    execCmd.Stdout = reference of stdoutBuf
+    execCmd.Stderr = reference of stderrBuf
+
+    # Run the command
+    err := execCmd.Run()
+
+    # Get exit code
+    exitCode := getExitCode(err)
+
+    return Result{stdout: stdoutBuf.Bytes(), stderr: stderrBuf.Bytes(), exitCode: exitCode, err: err}
+
+# buildExecCmd creates an exec.Cmd with optional timeout
+func buildExecCmd(cmd Command) reference exec.Cmd
+    if cmd.timeout > 0
+        ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cmd.timeout) * time.Second)
+        defer cancel()
+        return exec.CommandContext(ctx, cmd.name, many cmd.args)
+
+    return exec.Command(cmd.name, many cmd.args)
+
+# getExitCode extracts the exit code from an error
+func getExitCode(err error) int
+    if err == empty
+        return 0
+
+    exitErr, ok := err as reference exec.ExitError
+    if ok
+        return exitErr.ExitCode()
+
+    return 1
+
+# Result Helper Functions
+
+# Success returns true if the command succeeded (exit code 0)
+# Example: if shell.Success(result) ...
+func Success(result Result) bool
+    return result.exitCode == 0 and result.err == empty
+
+# Output returns the stdout as bytes
+# Example: output := shell.Output(result)
+func GetOutput(result Result) list of byte
+    return result.stdout
+
+# Error returns the stderr as bytes
+# Example: errorOutput := shell.Error(result)
+func GetError(result Result) list of byte
+    return result.stderr
+
+# ExitCode returns the exit code
+# Example: code := shell.ExitCode(result)
+func ExitCode(result Result) int
+    return result.exitCode
+
+# Direct Execution Functions (legacy, use builder pattern instead)
 
 # Run executes a command with arguments and returns the output as bytes
 # Returns stdout and error
@@ -83,9 +198,10 @@ func CombinedOutput(name string, arg1 string) (list of byte, error)
     output, err := cmd.CombinedOutput()
     return output, err
 
-# Success runs a command and returns true if it succeeds
-# Example: if shell.Success("git", "status") ...
-func Success(name string, many args string) bool
+# IsSuccessful runs a command and returns true if it succeeds
+# Example: if shell.IsSuccessful("git", "status") ...
+# Note: Use builder pattern instead: shell.New("git", "status") |> shell.Execute() |> shell.Success()
+func IsSuccessful(name string, many args string) bool
     cmd := exec.Command(name, many args)
     err := cmd.Run()
     return err == empty

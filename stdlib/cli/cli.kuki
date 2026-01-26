@@ -7,6 +7,126 @@ import "fmt"
 import "strings"
 import "strconv"
 
+# ArgDef represents an argument definition
+type ArgDef
+    name string
+    description string
+
+# FlagDef represents a flag definition
+type FlagDef
+    name string
+    description string
+    defaultValue string
+
+# App represents a CLI application builder
+type App
+    name string
+    args list of ArgDef
+    flags list of FlagDef
+    action func(Args)
+
+# Args represents parsed command-line arguments
+type Args
+    values map of string to string
+
+# Builder Pattern Functions
+
+# New creates a new CLI application builder
+# Example: app := cli.New("myapp")
+func New(name string) App
+    return App{name: name, args: make(list of ArgDef), flags: make(list of FlagDef), action: empty}
+
+# Arg adds a positional argument to the app
+# Example: app |> cli.Arg("input", "Input file path")
+func Arg(app App, name string, description string) App
+    app.args = append(app.args, ArgDef{name: name, description: description})
+    return app
+
+# FlagDef adds a flag to the app
+# Example: app |> cli.FlagDef("verbose", "Enable verbose output", "false")
+func AddFlag(app App, name string, description string, defaultValue string) App
+    app.flags = append(app.flags, FlagDef{name: name, description: description, defaultValue: defaultValue})
+    return app
+
+# Action sets the action function to be called when the app runs
+# Example: app |> cli.Action(myHandler)
+func Action(app App, handler func(Args)) App
+    app.action = handler
+    return app
+
+# RunApp executes the CLI application
+# Example: app |> cli.RunApp() onerr panic
+func RunApp(app App) error
+    # Parse command-line arguments
+    values := make(map of string to string)
+
+    # Parse positional args
+    args := os.Args
+    argIndex := 1  # Skip program name
+    for i, argDef in app.args
+        if argIndex < len(args) and not strings.HasPrefix(args[argIndex], "--")
+            values[argDef.name] = args[argIndex]
+            argIndex = argIndex + 1
+
+    # Parse flags
+    i := argIndex
+    for i < len(args)
+        arg := args[i]
+        if strings.HasPrefix(arg, "--")
+            # Parse flag
+            parts := strings.SplitN(arg, "=", 2)
+            flagName := strings.TrimPrefix(parts[0], "--")
+            flagValue := ""
+            if len(parts) > 1
+                flagValue = parts[1]
+            else
+                i = i + 1
+                if i < len(args) and not strings.HasPrefix(args[i], "--")
+                    flagValue = args[i]
+                else
+                    i = i - 1
+
+            values[flagName] = flagValue
+        i = i + 1
+
+    # Set default values for flags not provided
+    for flagDef in app.flags
+        if values[flagDef.name] == ""
+            values[flagDef.name] = flagDef.defaultValue
+
+    # Call the action handler
+    if app.action != empty
+        parsedArgs := Args{values: values}
+        app.action(parsedArgs)
+        return empty
+
+    return error("no action defined")
+
+# Args helper methods
+
+# GetString returns the value of a named argument or flag
+# Example: input := args.GetString("input")
+func GetString(args Args, name string) string
+    return args.values[name]
+
+# GetBool returns the boolean value of a flag
+# Example: verbose := args.GetBool("verbose")
+func GetBool(args Args, name string) bool
+    val := args.values[name]
+    return val == "true" or val == "1" or val == "yes"
+
+# GetInt returns the integer value of an argument
+# Example: count := args.GetInt("count")
+func GetInt(args Args, name string) (int, error)
+    strVal := args.values[name]
+    if strVal == ""
+        return 0, error("argument {name} not found")
+
+    val, err := strconv.Atoi(strVal)
+    return val, err
+
+# Legacy Simple CLI Parser (use builder pattern instead)
+
 # Simple CLI argument parser
 # This is a simplified version that works with Kukicha's current syntax
 
