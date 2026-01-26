@@ -72,7 +72,6 @@ These packages make Kukicha perfect for scripts and automation:
 |---------|--------|-----------|--------------|
 | **shell** | Mostly works | `Run()`, `RunSimple()`, direct execution | Builder pattern (`shell.New().Dir()`) not implemented |
 | **cli** | Mostly works | Simple parsing | Builder pattern (`cli.New().Arg()`) not implemented |
-| **files** | ✅ Ready | Basic file operations | None (Watch and UseWith now implemented) |
 
 ---
 
@@ -255,30 +254,11 @@ func handleData(w http.ResponseWriter, r reference http.Request)
 # WithCSRF, Serve
 ```
 
----
-
-## Planned Scripting Packages 🚧
-
-These packages showcase the pipe operator and make scripting delightful:
-
-### Fetch Package ✅
+### Fetch Package 
 
 HTTP client with fluent builder pattern and response helpers. **Important**: JSON parsing uses Go 1.25+ jsonv2 directly for type safety.
 
-**Implemented Functions:**
-- ✅ `New(url)` - Create a request builder
-- ✅ `Header(req, name, value)` - Add HTTP header (chainable)
-- ✅ `Timeout(req, duration)` - Set timeout (chainable)
-- ✅ `Method(req, method)` - Set HTTP method (chainable)
-- ✅ `Body(req, data)` - Set request body (chainable)
-- ✅ `Do(req)` - Execute the request
-- ✅ `Get(url)` - Quick GET request
-- ✅ `Post(data, url)` - POST with auto-serialized JSON body using stdlib/json
-- ✅ `CheckStatus(resp)` - Verify HTTP status code (2xx)
-- ✅ `Text(resp)` - Read response body as string
-- ✅ `Bytes(resp)` - Read response body as bytes for use with stdlib/json
-
-**Working Examples (request building):**
+**request building:**
 ```kukicha
 import "stdlib/fetch"
 
@@ -303,7 +283,7 @@ resp, err := fetch.New("https://api.example.com/data")
     |> fetch.Do()
 ```
 
-**Working Examples with Response Parsing:**
+**response parsing:**
 ```kukicha
 import "stdlib/fetch"
 import "stdlib/json"
@@ -366,7 +346,7 @@ resp := fetch.Post(newUser, "https://api.example.com/users")
 - `fetch.Post()` auto-serializes request body using stdlib/json
 - No `fetch.Json()` helper - Go's type system requires knowing the target type at compile time, so we provide `Bytes()` for use with `stdlib/json` instead
 
-### JSON Package ✅
+### JSON Package 
 
 Pipe-friendly wrapper around Go 1.25+ jsonv2 for beautiful syntax with 2-10x performance.
 
@@ -415,20 +395,7 @@ prettyJson := json.MarshalPretty(config) onerr panic
 json.Unmarshal(jsonBytes, reference result) onerr panic
 ```
 
-**Available functions:**
-- `NewEncoder(writer)` - Create pipe-friendly encoder
-- `WithDeterministic(enc)` - Enable consistent field ordering (chainable)
-- `WithIndent(enc, indent)` - Pretty-print with indentation (chainable)
-- `Encode(enc, value)` - Write JSON to stream
-- `NewDecoder(reader)` - Create pipe-friendly decoder
-- `Decode(dec, target)` - Read JSON from stream
-- `Marshal(value)` - Convert to JSON bytes
-- `MarshalPretty(value)` - Convert to pretty JSON bytes
-- `Unmarshal(data, target)` - Parse JSON bytes
-- `MarshalWrite(writer, value)` - Write JSON directly to io.Writer (streaming)
-- `UnmarshalRead(reader, target)` - Read JSON directly from io.Reader (streaming)
-
-### Parse Package ✅
+### Parse Package 
 
 Universal parsing for CSV and YAML. **For JSON parsing, use `stdlib/json` directly** (see JSON package above).
 
@@ -488,16 +455,7 @@ type User
     Email string json:"email"
 ```
 
-**Available functions:**
-- `JsonPretty(value)` - Format value as indented JSON (uses jsonv1 for compatibility)
-- `Csv(data)` - Parse CSV string into list of records
-- `CsvWithHeader(data)` - Parse CSV with headers into list of maps
-- `YamlPretty(value)` - Format value as YAML
-
-**Deprecated:** `Json()`, `JsonLines()`, `Yaml()` - Use `stdlib/json` and Go's yaml library directly instead
-```
-
-### CLI Package ✅
+### CLI Package 
 
 Build command-line tools easily:
 
@@ -535,9 +493,7 @@ func main()
 - Positional argument access with `cli.String()`
 - Usage help with `cli.PrintUsage()`
 
-**Available functions:** Parse, Command, String, Flag, BoolFlag, IntFlag, PrintUsage
-
-### Files Package ✅
+### Files Package 
 
 File operations optimized for pipes.
 
@@ -585,7 +541,7 @@ files.TempFile("test-") |> files.UseWith(func(path string) {
 })
 ```
 
-### Shell Package ✅
+### Shell Package 
 
 Safe command execution without shell injection.
 
@@ -637,8 +593,6 @@ output := shell.New("npm", "install")
 - Timeout support with `shell.Timeout()`
 - Result inspection with `shell.Output()`, `shell.Error()`, `shell.ExitCode()`, `shell.Success()`
 - Command existence checking with `shell.Which()`
-
-**Available functions:** New, Dir, Env, Timeout, Run, RunSimple, Output, Error, ExitCode, Success, Which, Pipe
 
 ## Planned Scripting Packages 🚧
 
@@ -766,12 +720,6 @@ else
 ## Real-World Scripting Examples
 
 These examples show how Kukicha excels at practical automation.
-
-**Implementation Status:**
-- ✅ **Example 1** (API Data Processing) - **Works!** Uses fetch, json, slice, files - all implemented
-- ✅ **Example 2** (Log Analysis) - **Works!** Uses files, slice.GroupBy, string - all implemented
-- ✅ **Example 3** (File Processing) - **Works!** Uses files, slice, string - all implemented
-- ✅ **Example 4** (Deployment) - **Works!** Uses shell, files, basic command execution - all implemented
 
 ### Example 1: API Data Processing Script
 
