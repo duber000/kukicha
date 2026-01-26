@@ -215,7 +215,7 @@ func ShowAll on list TodoList
 
 ```kukicha
 # Complete marks a todo as done by its id
-func Complete on list reference TodoList, id int bool
+func Complete on list reference TodoList, id int
     for i, todo in list.items
         if todo.id equals id
             list.items[i].completed = true
@@ -615,7 +615,7 @@ Congratulations! You've built a real, working application. Let's review what you
 | **Lists** | Store multiple items with `list of Type` |
 | **Loops** | Process each item with `for item in list` |
 | **Error Handling** | Handle failures gracefully with `onerr` |
-| **File I/O** | Save and load data with `os.ReadFile` and `os.WriteFile` |
+| **File I/O** | Save and load data with `files.Read()` and `files.WriteString()` |
 
 ---
 
