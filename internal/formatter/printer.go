@@ -235,8 +235,15 @@ func (p *Printer) printStatement(stmt ast.Statement) {
 		value := p.exprToString(s.Value)
 		p.writeLine(fmt.Sprintf("send %s to %s", value, channel))
 	case *ast.ExpressionStmt:
-		p.writeLine(p.exprToString(s.Expression))
+		p.writeLine(p.exprToString(s.Expression) + p.onErrSuffix(s.OnErr))
 	}
+}
+
+func (p *Printer) onErrSuffix(clause *ast.OnErrClause) string {
+	if clause == nil {
+		return ""
+	}
+	return " onerr " + p.exprToString(clause.Handler)
 }
 
 func (p *Printer) printVarDeclStmt(stmt *ast.VarDeclStmt) {
@@ -248,7 +255,7 @@ func (p *Printer) printVarDeclStmt(stmt *ast.VarDeclStmt) {
 	for i, v := range stmt.Values {
 		values[i] = p.exprToString(v)
 	}
-	p.writeLine(fmt.Sprintf("%s := %s", strings.Join(names, ", "), strings.Join(values, ", ")))
+	p.writeLine(fmt.Sprintf("%s := %s%s", strings.Join(names, ", "), strings.Join(values, ", "), p.onErrSuffix(stmt.OnErr)))
 }
 
 func (p *Printer) printAssignStmt(stmt *ast.AssignStmt) {
@@ -260,7 +267,7 @@ func (p *Printer) printAssignStmt(stmt *ast.AssignStmt) {
 	for i, v := range stmt.Values {
 		values[i] = p.exprToString(v)
 	}
-	p.writeLine(fmt.Sprintf("%s = %s", strings.Join(targets, ", "), strings.Join(values, ", ")))
+	p.writeLine(fmt.Sprintf("%s = %s%s", strings.Join(targets, ", "), strings.Join(values, ", "), p.onErrSuffix(stmt.OnErr)))
 }
 
 func (p *Printer) printReturnStmt(stmt *ast.ReturnStmt) {
@@ -397,10 +404,7 @@ func (p *Printer) exprToString(expr ast.Expression) string {
 		left := p.exprToString(e.Left)
 		right := p.exprToString(e.Right)
 		return fmt.Sprintf("%s |> %s", left, right)
-	case *ast.OnErrExpr:
-		left := p.exprToString(e.Left)
-		handler := p.exprToString(e.Handler)
-		return fmt.Sprintf("%s onerr %s", left, handler)
+	// Note: OnErrExpr removed — onerr is now a clause on VarDeclStmt, AssignStmt, ExpressionStmt
 	case *ast.CallExpr:
 		return p.callExprToString(e)
 	case *ast.MethodCallExpr:

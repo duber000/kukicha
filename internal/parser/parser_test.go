@@ -339,9 +339,9 @@ func TestParsePipeExpression(t *testing.T) {
 	}
 }
 
-func TestParseOnErrExpression(t *testing.T) {
-	input := `func Test() int
-    return ReadFile("test.txt") onerr 0
+func TestParseOnErrStatement(t *testing.T) {
+	input := `func Test()
+    val := ReadFile("test.txt") onerr 0
 `
 
 	p, err := New(input, "test.kuki")
@@ -355,18 +355,26 @@ func TestParseOnErrExpression(t *testing.T) {
 	}
 
 	fn := program.Declarations[0].(*ast.FunctionDecl)
-	retStmt := fn.Body.Statements[0].(*ast.ReturnStmt)
-	onErrExpr, ok := retStmt.Values[0].(*ast.OnErrExpr)
+	varDecl, ok := fn.Body.Statements[0].(*ast.VarDeclStmt)
 	if !ok {
-		t.Fatalf("expected OnErrExpr, got %T", retStmt.Values[0])
+		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
 	}
 
-	if onErrExpr.Left == nil {
-		t.Error("expected left expression, got nil")
+	if varDecl.OnErr == nil {
+		t.Fatal("expected OnErr clause on VarDeclStmt, got nil")
 	}
 
-	if onErrExpr.Handler == nil {
-		t.Error("expected handler expression, got nil")
+	if varDecl.OnErr.Handler == nil {
+		t.Error("expected handler expression in OnErr clause, got nil")
+	}
+
+	if len(varDecl.Values) != 1 {
+		t.Fatalf("expected 1 value expression, got %d", len(varDecl.Values))
+	}
+
+	// The value should be the call expression (ReadFile("test.txt")), not an OnErrExpr
+	if _, ok := varDecl.Values[0].(*ast.CallExpr); !ok {
+		t.Errorf("expected CallExpr as value, got %T", varDecl.Values[0])
 	}
 }
 

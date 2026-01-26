@@ -907,12 +907,17 @@ func (p *Parser) parseExpressionOrAssignmentStmt() ast.Statement {
 	if p.match(lexer.TOKEN_ASSIGN) {
 		// Regular assignment: x = value
 		values := p.parseExpressionList()
-		p.skipNewlines()
-		return &ast.AssignStmt{
+		stmt := &ast.AssignStmt{
 			Targets: []ast.Expression{expr},
 			Values:  values,
 			Token:   p.previousToken(),
 		}
+		// Check for onerr clause
+		if p.check(lexer.TOKEN_ONERR) {
+			stmt.OnErr = p.parseOnErrClause()
+		}
+		p.skipNewlines()
+		return stmt
 	} else if p.match(lexer.TOKEN_WALRUS) {
 		// Variable declaration with inference: x := value
 		ident, ok := expr.(*ast.Identifier)
@@ -921,12 +926,24 @@ func (p *Parser) parseExpressionOrAssignmentStmt() ast.Statement {
 			return nil
 		}
 		values := p.parseExpressionList()
-		p.skipNewlines()
-		return &ast.VarDeclStmt{
+		stmt := &ast.VarDeclStmt{
 			Names:  []*ast.Identifier{ident},
 			Values: values,
 			Token:  p.previousToken(),
 		}
+		// Check for onerr clause
+		if p.check(lexer.TOKEN_ONERR) {
+			stmt.OnErr = p.parseOnErrClause()
+		}
+		p.skipNewlines()
+		return stmt
+	}
+
+	// ExpressionStmt — check for onerr clause
+	if p.check(lexer.TOKEN_ONERR) {
+		onErr := p.parseOnErrClause()
+		p.skipNewlines()
+		return &ast.ExpressionStmt{Expression: expr, OnErr: onErr}
 	}
 
 	p.skipNewlines()
@@ -1015,21 +1032,31 @@ func (p *Parser) parseMultiValueAssignmentStmt() ast.Statement {
 	if p.match(lexer.TOKEN_WALRUS) {
 		// Multi-value declaration: x, y := expr, expr
 		values := p.parseExpressionList()
-		p.skipNewlines()
-		return &ast.VarDeclStmt{
+		stmt := &ast.VarDeclStmt{
 			Names:  names,
 			Values: values,
 			Token:  p.previousToken(),
 		}
+		// Check for onerr clause
+		if p.check(lexer.TOKEN_ONERR) {
+			stmt.OnErr = p.parseOnErrClause()
+		}
+		p.skipNewlines()
+		return stmt
 	} else if p.match(lexer.TOKEN_ASSIGN) {
 		// Multi-value assignment: x, y = expr, expr
 		values := p.parseExpressionList()
-		p.skipNewlines()
-		return &ast.AssignStmt{
+		stmt := &ast.AssignStmt{
 			Targets: targets,
 			Values:  values,
 			Token:   p.previousToken(),
 		}
+		// Check for onerr clause
+		if p.check(lexer.TOKEN_ONERR) {
+			stmt.OnErr = p.parseOnErrClause()
+		}
+		p.skipNewlines()
+		return stmt
 	} else {
 		p.error(p.peekToken(), "expected assignment operator (= or :=) in multi-value assignment")
 		return nil
@@ -1071,6 +1098,9 @@ func (p *Parser) parseExpressionList() []ast.Expression {
 // 7. unary (not, -)
 // 8. postfix (call, index, slice, method call)
 // 9. primary
+//
+// Note: onerr is NOT an expression operator. It is a statement-level clause
+// attached to VarDeclStmt, AssignStmt, or ExpressionStmt.
 
 func (p *Parser) parseExpression() ast.Expression {
 	return p.parseOrExpr()
@@ -1094,11 +1124,11 @@ func (p *Parser) parseOrExpr() ast.Expression {
 }
 
 func (p *Parser) parsePipeExpr() ast.Expression {
-	left := p.parseOnErrExpr()
+	left := p.parseAndExpr()
 
 	for p.match(lexer.TOKEN_PIPE) {
 		operator := p.previousToken()
-		right := p.parseOnErrExpr()
+		right := p.parseAndExpr()
 		left = &ast.PipeExpr{
 			Token: operator,
 			Left:  left,
@@ -1109,20 +1139,12 @@ func (p *Parser) parsePipeExpr() ast.Expression {
 	return left
 }
 
-func (p *Parser) parseOnErrExpr() ast.Expression {
-	left := p.parseAndExpr()
-
-	if p.match(lexer.TOKEN_ONERR) {
-		operator := p.previousToken()
-		handler := p.parseAndExpr()
-		return &ast.OnErrExpr{
-			Token:   operator,
-			Left:    left,
-			Handler: handler,
-		}
-	}
-
-	return left
+// parseOnErrClause parses the onerr clause after a statement.
+// Called when TOKEN_ONERR has already been detected (but not consumed).
+func (p *Parser) parseOnErrClause() *ast.OnErrClause {
+	token := p.advance() // consume 'onerr'
+	handler := p.parseExpression()
+	return &ast.OnErrClause{Token: token, Handler: handler}
 }
 
 func (p *Parser) parseAndExpr() ast.Expression {

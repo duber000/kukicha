@@ -160,11 +160,11 @@ Statement ::=
     | ExpressionStatement
     | NEWLINE
 
-VariableDeclaration ::= IDENTIFIER ":=" Expression NEWLINE
+VariableDeclaration ::= IDENTIFIER ":=" Expression [ OnErrClause ] NEWLINE
 
-Assignment ::= 
-    | IDENTIFIER "=" Expression NEWLINE
-    | Expression "=" Expression NEWLINE
+Assignment ::=
+    | IDENTIFIER "=" Expression [ OnErrClause ] NEWLINE
+    | Expression "=" Expression [ OnErrClause ] NEWLINE
 
 ReturnStatement ::= "return" [ ExpressionList ] NEWLINE
 
@@ -211,7 +211,9 @@ GoStatement ::= "go" ( Expression | NEWLINE INDENT StatementList DEDENT ) NEWLIN
 
 SendStatement ::= "send" Expression "," Expression NEWLINE
 
-ExpressionStatement ::= Expression NEWLINE
+ExpressionStatement ::= Expression [ OnErrClause ] NEWLINE
+
+OnErrClause ::= "onerr" Expression
 ```
 
 ---
@@ -219,9 +221,7 @@ ExpressionStatement ::= Expression NEWLINE
 ## Expressions
 
 ```ebnf
-Expression ::= OrExpression [ OnErrOperator ]
-
-OnErrOperator ::= "onerr" ( Expression | NEWLINE INDENT StatementList DEDENT )
+Expression ::= OrExpression
 
 OrExpression ::= PipeExpression { ( "or" | "||" ) PipeExpression }
 
@@ -458,25 +458,26 @@ Parsed as:
 - Expression: `count`
 - Literal: " messages"
 
-### OnErr Operator Auto-Unwrap
+### OnErr Clause (Statement-Level Error Handling)
 
-The `onerr` operator provides ergonomic error handling for functions that return `(T, error)` tuples:
+The `onerr` clause provides ergonomic error handling for functions that return `(T, error)` tuples. It attaches to `VarDeclStmt`, `AssignStmt`, or `ExpressionStmt` — it is **not** an expression operator.
+
 1. Automatically unwrap to `T` if no error
-2. Execute the `onerr` clause if error is not empty
+2. Execute the `onerr` handler if error is not empty
 
-**Important:** The `onerr` operator is distinct from the boolean `or` operator. This separation makes code more readable - you can tell at a glance whether an expression handles errors or performs boolean logic.
+**Important:** The `onerr` keyword is distinct from the boolean `or` operator. This separation makes code more readable - you can tell at a glance whether a statement handles errors or an expression performs boolean logic.
 
 Example:
 ```kukicha
-# Error handling with onerr
+# Error handling with onerr (statement-level clause)
 data := file.read(path) onerr panic "failed"
 
-# Boolean logic with or
+# Boolean logic with or (expression-level operator)
 if active or pending
     process()
 ```
 
-The `onerr` operator desugars to:
+The `onerr` clause desugars to:
 ```kukicha
 data, err := file.read(path)
 if err != empty
@@ -615,14 +616,14 @@ filterActive(response.json())
 
 **Precedence:**
 - Pipe has lower precedence than arithmetic/comparison operators
-- Pipe has higher precedence than `onerr` operator
+- `onerr` is a statement-level clause, not an expression operator
 
 ```kukicha
-# Example
-a + b |> double() onerr "default"
+# Example: pipe with onerr clause on variable declaration
+result := a + b |> double() onerr "default"
 
-# Desugars to
-((double(a + b)) onerr "default")
+# The pipe resolves to: double(a + b)
+# The onerr clause attaches to the VarDeclStmt, not the expression
 ```
 
 ---
@@ -655,7 +656,7 @@ FunctionDeclaration
             └─ ""
 ```
 
-### Example 2: Method with OnErr Operator
+### Example 2: Method with OnErr Clause
 
 ```kukicha
 func Load on cfg Config, path string
@@ -680,17 +681,15 @@ MethodDeclaration
    ├─ VariableDeclaration
    │  ├─ content
    │  ├─ :=
-   │  └─ OnErrExpression
-   │     ├─ FunctionCall: file.read(path)
-   │     └─ onerr
-   │        └─ ReturnStatement: return error "cannot read"
+   │  ├─ FunctionCall: file.read(path)
+   │  └─ OnErrClause
+   │     └─ ReturnStatement: return error "cannot read"
    ├─ Assignment
-   │  ├─ this.data
+   │  ├─ cfg.data
    │  ├─ =
-   │  └─ OnErrExpression
-   │     ├─ FunctionCall: json.parse(content)
-   │     └─ onerr
-   │        └─ ReturnStatement: return error "invalid json"
+   │  ├─ FunctionCall: json.parse(content)
+   │  └─ OnErrClause
+   │     └─ ReturnStatement: return error "invalid json"
    └─ ReturnStatement
       └─ empty
 ```
@@ -767,21 +766,21 @@ Display(todo)
 
 **Resolution:** If expression before `()` contains `.`, it's a method call.
 
-### 2. OnErr vs Or Operators
+### 2. OnErr Clause vs Or Operator
 
 ```kukicha
-# OnErr for error handling
+# OnErr for error handling (statement-level clause)
 result := calculate() onerr return error "failed"
 
-# Or for boolean logic
+# Or for boolean logic (expression-level operator)
 if a or b
     print "at least one is true"
 ```
 
 **Resolution:**
-- `onerr` is used exclusively for error handling (functions returning `(T, error)`)
-- `or` is used exclusively for boolean logic
-- No ambiguity - the keywords are distinct and self-documenting
+- `onerr` is a statement-level clause on VarDeclStmt, AssignStmt, or ExpressionStmt
+- `or` is an expression-level boolean operator
+- No ambiguity - `onerr` cannot appear in expressions, only after statements
 
 ### 3. Type Annotation vs Expression
 
@@ -868,9 +867,9 @@ x := 5
 x := 10  # Error: Variable 'x' already declared. Use '=' to reassign.
 ```
 
-### Invalid OnErr Operator
+### Invalid OnErr Clause
 ```kukicha
-x := 5 onerr 10  # Error: 'onerr' operator requires function returning (T, error)
+x := 5 onerr 10  # Error: 'onerr' clause requires function returning (T, error)
 ```
 
 ### Missing Type Annotation
@@ -887,7 +886,7 @@ func Process(data)  # Warning: Type inference may fail. Consider explicit type.
 - [x] Function declarations (functions, methods)
 - [x] Function types (callbacks, higher-order functions)
 - [x] Control flow (if/else, for loops)
-- [x] Error handling (or operator)
+- [x] Error handling (onerr clause)
 - [x] Concurrency (go, channels, send/receive)
 - [x] Expressions (arithmetic, boolean, comparison)
 - [x] Pipe operator (|> for data pipelines)
@@ -965,7 +964,7 @@ The generic types `[T any, K comparable]` are inferred from:
 2. **Parser must handle:**
    - Operator precedence (use precedence climbing)
    - Type inference contexts
-   - OnErr operator desugaring
+   - OnErr clause parsing (statement-level only)
    - Explicit `this` receiver in method declarations
    - Dual syntax (Kukicha + Go forms)
 
@@ -973,12 +972,12 @@ The generic types `[T any, K comparable]` are inferred from:
    - Check type compatibility
    - Resolve identifiers to declarations
    - Verify interface implementations
-   - Check that `onerr` operator is used correctly (function returns `(T, error)`)
+   - Check that `onerr` clause is used correctly (function returns `(T, error)`)
    - Verify `this` is only referenced within method bodies
    - Validate method receivers
 
 4. **Code generator must:**
-   - Transform `onerr` operator to if/err checks
+   - Transform `onerr` clause to if/err checks
    - Convert methods to Go receiver syntax (`on this T` → `(this T)`)
    - Handle string interpolation (fmt.Sprintf)
    - Generate proper Go package structure
@@ -1014,7 +1013,8 @@ func UpdateName on user reference User, newName string
 # 3. Error Handling
 func LoadConfig(path string) Config
     content := file.read(path) onerr return empty
-    return json.parse(content) onerr return empty
+    config := json.parse(content) onerr return empty
+    return config
 
 # 4. Concurrency
 func Fetch(urls list of string)
@@ -1036,12 +1036,13 @@ func Run(p Processor)
 
 # 6. Pipe Operator with typed empty
 func GetRepoStats(username string) list of Repo
-    return "https://api.github.com/users/{username}/repos"
+    repos := "https://api.github.com/users/{username}/repos"
         |> http.get()
         |> .json() as list of Repo
         |> filterByStars(10)
         |> sortByUpdated()
         onerr empty list of Repo
+    return repos
 
 # 7. Empty literal variants
 func EmptyExamples()

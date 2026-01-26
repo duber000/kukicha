@@ -646,27 +646,8 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 	case *ast.BreakStmt:
 		g.writeLine("break")
 	case *ast.ExpressionStmt:
-		// Special handling for OnErrExpr at statement level
-		if onErr, ok := s.Expression.(*ast.OnErrExpr); ok {
-			g.generateOnErrStmt(onErr)
-		} else if pipe, ok := s.Expression.(*ast.PipeExpr); ok {
-			// Check if pipe has OnErrExpr on the right
-			if onErr, ok := pipe.Right.(*ast.OnErrExpr); ok {
-				// Transform: data |> (expr onerr handler) at statement level
-				newPipe := &ast.PipeExpr{
-					Token: pipe.Token,
-					Left:  pipe.Left,
-					Right: onErr.Left,
-				}
-				newOnErr := &ast.OnErrExpr{
-					Token:   onErr.Token,
-					Left:    newPipe,
-					Handler: onErr.Handler,
-				}
-				g.generateOnErrStmt(newOnErr)
-			} else {
-				g.writeLine(g.exprToString(s.Expression))
-			}
+		if s.OnErr != nil {
+			g.generateOnErrStmt(s.Expression, s.OnErr)
 		} else {
 			g.writeLine(g.exprToString(s.Expression))
 		}
@@ -674,32 +655,10 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 }
 
 func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
-	// Check if any value is an OnErrExpr - needs special handling
-	if len(stmt.Values) == 1 {
-		if onErr, ok := stmt.Values[0].(*ast.OnErrExpr); ok {
-			g.generateOnErrVarDecl(stmt.Names, onErr)
-			return
-		}
-		// Also check if it's a PipeExpr with OnErrExpr on the right
-		// e.g., result := data |> json.Marshal() onerr panic
-		if pipe, ok := stmt.Values[0].(*ast.PipeExpr); ok {
-			if onErr, ok := pipe.Right.(*ast.OnErrExpr); ok {
-				// Transform: data |> (expr onerr handler)
-				// Into: OnErr with Left being pipe(data, expr)
-				newPipe := &ast.PipeExpr{
-					Token: pipe.Token,
-					Left:  pipe.Left,
-					Right: onErr.Left,
-				}
-				newOnErr := &ast.OnErrExpr{
-					Token:   onErr.Token,
-					Left:    newPipe,
-					Handler: onErr.Handler,
-				}
-				g.generateOnErrVarDecl(stmt.Names, newOnErr)
-				return
-			}
-		}
+	// Check for onerr clause on the statement
+	if stmt.OnErr != nil {
+		g.generateOnErrVarDecl(stmt.Names, stmt.Values, stmt.OnErr)
+		return
 	}
 
 	// Build comma-separated list of names
@@ -729,16 +688,23 @@ func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
 // generateOnErrVarDecl handles variable declarations with onerr
 // e.g., val := foo() onerr panic "error" → val, err := foo(); if err != nil { panic("error") }
 // e.g., port := getPort() onerr "8080" → port, err := getPort(); if err != nil { port = "8080" }
-func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, onErr *ast.OnErrExpr) {
+func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.Expression, clause *ast.OnErrClause) {
+	// Build the value expression string (typically a single call expression)
+	valuesStr := make([]string, len(values))
+	for i, v := range values {
+		valuesStr[i] = g.exprToString(v)
+	}
+	valueExpr := strings.Join(valuesStr, ", ")
+
 	// Check for discard case first - we can skip error handling entirely
-	if _, isDiscard := onErr.Handler.(*ast.DiscardExpr); isDiscard {
+	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
 		// For discard, just ignore the error by using _
 		var lhsParts []string
 		for _, name := range names {
 			lhsParts = append(lhsParts, name.Value)
 		}
 		lhsParts = append(lhsParts, "_")
-		g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), g.exprToString(onErr.Left)))
+		g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), valueExpr))
 		return
 	}
 
@@ -753,12 +719,12 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, onErr *ast.OnE
 	lhsParts = append(lhsParts, errVar)
 
 	// Generate: names..., err := expression
-	g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), g.exprToString(onErr.Left)))
+	g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), valueExpr))
 
 	// Generate error check block
 	g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
 	g.indent++
-	g.generateOnErrHandler(names, onErr.Handler)
+	g.generateOnErrHandler(names, clause.Handler)
 	g.indent--
 	g.writeLine("}")
 }
@@ -791,14 +757,14 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 	}
 }
 
-// generateOnErrStmt handles statement-level OnErr expressions
+// generateOnErrStmt handles statement-level onerr
 // e.g., todo |> json.MarshalWrite(w, _) onerr panic("failed")
 // Generates: if err := json.MarshalWrite(w, todo); err != nil { panic("failed") }
-func (g *Generator) generateOnErrStmt(onErr *ast.OnErrExpr) {
+func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClause) {
 	// Check for discard case - just execute and ignore error
-	if _, isDiscard := onErr.Handler.(*ast.DiscardExpr); isDiscard {
+	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
 		// Generate: _, _ = expression (or just call it if it returns nothing)
-		g.writeLine(fmt.Sprintf("_, _ = %s", g.exprToString(onErr.Left)))
+		g.writeLine(fmt.Sprintf("_, _ = %s", g.exprToString(expr)))
 		return
 	}
 
@@ -806,17 +772,23 @@ func (g *Generator) generateOnErrStmt(onErr *ast.OnErrExpr) {
 	errVar := g.uniqueId("err")
 
 	// Generate: if err := expression; err != nil { handler }
-	g.writeLine(fmt.Sprintf("if %s := %s; %s != nil {", errVar, g.exprToString(onErr.Left), errVar))
+	g.writeLine(fmt.Sprintf("if %s := %s; %s != nil {", errVar, g.exprToString(expr), errVar))
 	g.indent++
 
 	// Generate the error handler (no variable names for statement-level)
-	g.generateOnErrHandler([]*ast.Identifier{}, onErr.Handler)
+	g.generateOnErrHandler([]*ast.Identifier{}, clause.Handler)
 
 	g.indent--
 	g.writeLine("}")
 }
 
 func (g *Generator) generateAssignStmt(stmt *ast.AssignStmt) {
+	// Check for onerr clause on assignment
+	if stmt.OnErr != nil {
+		g.generateOnErrAssign(stmt)
+		return
+	}
+
 	// Build comma-separated list of targets
 	targets := make([]string, len(stmt.Targets))
 	for i, t := range stmt.Targets {
@@ -832,6 +804,58 @@ func (g *Generator) generateAssignStmt(stmt *ast.AssignStmt) {
 	valuesStr := strings.Join(values, ", ")
 
 	g.writeLine(fmt.Sprintf("%s = %s", targetsStr, valuesStr))
+}
+
+// generateOnErrAssign handles assignment statements with onerr
+// e.g., x = foo() onerr panic "error" → x, err = foo(); if err != nil { panic("error") }
+func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
+	clause := stmt.OnErr
+
+	// Build value expression
+	valuesStr := make([]string, len(stmt.Values))
+	for i, v := range stmt.Values {
+		valuesStr[i] = g.exprToString(v)
+	}
+	valueExpr := strings.Join(valuesStr, ", ")
+
+	// Build target names for handler (convert targets to identifiers where possible)
+	var names []*ast.Identifier
+	for _, t := range stmt.Targets {
+		if ident, ok := t.(*ast.Identifier); ok {
+			names = append(names, ident)
+		}
+	}
+
+	// Check for discard case
+	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
+		var lhsParts []string
+		for _, t := range stmt.Targets {
+			lhsParts = append(lhsParts, g.exprToString(t))
+		}
+		lhsParts = append(lhsParts, "_")
+		g.writeLine(fmt.Sprintf("%s = %s", strings.Join(lhsParts, ", "), valueExpr))
+		return
+	}
+
+	// Generate unique error variable name
+	errVar := g.uniqueId("err")
+
+	// Build the LHS: targets + error variable
+	var lhsParts []string
+	for _, t := range stmt.Targets {
+		lhsParts = append(lhsParts, g.exprToString(t))
+	}
+	lhsParts = append(lhsParts, errVar)
+
+	// Generate: targets..., err = expression
+	g.writeLine(fmt.Sprintf("%s = %s", strings.Join(lhsParts, ", "), valueExpr))
+
+	// Generate error check block
+	g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
+	g.indent++
+	g.generateOnErrHandler(names, clause.Handler)
+	g.indent--
+	g.writeLine("}")
 }
 
 func (g *Generator) generateIncDecStmt(stmt *ast.IncDecStmt) {
@@ -957,7 +981,11 @@ func (g *Generator) generateForNumericStmt(stmt *ast.ForNumericStmt) {
 
 func (g *Generator) generateForConditionStmt(stmt *ast.ForConditionStmt) {
 	condition := g.exprToString(stmt.Condition)
-	g.writeLine(fmt.Sprintf("for %s {", condition))
+	if condition == "true" {
+		g.writeLine("for {")
+	} else {
+		g.writeLine(fmt.Sprintf("for %s {", condition))
+	}
 
 	g.indent++
 	g.generateBlock(stmt.Body)
@@ -993,8 +1021,6 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		return g.generateUnaryExpr(e)
 	case *ast.PipeExpr:
 		return g.generatePipeExpr(e)
-	case *ast.OnErrExpr:
-		return g.generateOnErrExpr(e)
 	case *ast.CallExpr:
 		return g.generateCallExpr(e)
 	case *ast.MethodCallExpr:
@@ -1255,16 +1281,6 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 }
 
-func (g *Generator) generateOnErrExpr(expr *ast.OnErrExpr) string {
-	// For now, generate a simple error check pattern
-	// This is simplified - a full implementation would need temporary variables
-	left := g.exprToString(expr.Left)
-	handler := g.exprToString(expr.Handler)
-
-	// Generate: (left if no error, handler if error)
-	// This is a simplification - proper implementation needs context
-	return fmt.Sprintf("func() interface{} { if err := %s; err != nil { return %s }; return %s }()", left, handler, left)
-}
 
 func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 	funcName := g.exprToString(expr.Function)
@@ -1456,12 +1472,18 @@ func (g *Generator) checkStmtForInterpolation(stmt ast.Statement) bool {
 				return true
 			}
 		}
+		if s.OnErr != nil && g.checkExprForInterpolation(s.OnErr.Handler) {
+			return true
+		}
 		return false
 	case *ast.AssignStmt:
 		for _, val := range s.Values {
 			if g.checkExprForInterpolation(val) {
 				return true
 			}
+		}
+		if s.OnErr != nil && g.checkExprForInterpolation(s.OnErr.Handler) {
+			return true
 		}
 		return false
 	case *ast.ReturnStmt:
@@ -1493,7 +1515,12 @@ func (g *Generator) checkStmtForInterpolation(stmt ast.Statement) bool {
 			return g.checkBlockForInterpolation(s.Body)
 		}
 	case *ast.ExpressionStmt:
-		return g.checkExprForInterpolation(s.Expression)
+		if g.checkExprForInterpolation(s.Expression) {
+			return true
+		}
+		if s.OnErr != nil && g.checkExprForInterpolation(s.OnErr.Handler) {
+			return true
+		}
 	}
 	return false
 }
@@ -1560,12 +1587,18 @@ func (g *Generator) checkStmtForPrint(stmt ast.Statement) bool {
 				return true
 			}
 		}
+		if s.OnErr != nil && g.checkExprForPrint(s.OnErr.Handler) {
+			return true
+		}
 		return false
 	case *ast.AssignStmt:
 		for _, val := range s.Values {
 			if g.checkExprForPrint(val) {
 				return true
 			}
+		}
+		if s.OnErr != nil && g.checkExprForPrint(s.OnErr.Handler) {
+			return true
 		}
 		return false
 	case *ast.ReturnStmt:
@@ -1597,7 +1630,12 @@ func (g *Generator) checkStmtForPrint(stmt ast.Statement) bool {
 			return g.checkBlockForPrint(s.Body)
 		}
 	case *ast.ExpressionStmt:
-		return g.checkExprForPrint(s.Expression)
+		if g.checkExprForPrint(s.Expression) {
+			return true
+		}
+		if s.OnErr != nil && g.checkExprForPrint(s.OnErr.Handler) {
+			return true
+		}
 	case *ast.DeferStmt:
 		if s.Call != nil {
 			return g.checkExprForPrint(s.Call)
@@ -1683,12 +1721,18 @@ func (g *Generator) checkStmtForErrors(stmt ast.Statement) bool {
 				return true
 			}
 		}
+		if s.OnErr != nil && g.checkExprForErrors(s.OnErr.Handler) {
+			return true
+		}
 		return false
 	case *ast.AssignStmt:
 		for _, val := range s.Values {
 			if g.checkExprForErrors(val) {
 				return true
 			}
+		}
+		if s.OnErr != nil && g.checkExprForErrors(s.OnErr.Handler) {
+			return true
 		}
 		return false
 	case *ast.ReturnStmt:
@@ -1720,7 +1764,12 @@ func (g *Generator) checkStmtForErrors(stmt ast.Statement) bool {
 			return g.checkBlockForErrors(s.Body)
 		}
 	case *ast.ExpressionStmt:
-		return g.checkExprForErrors(s.Expression)
+		if g.checkExprForErrors(s.Expression) {
+			return true
+		}
+		if s.OnErr != nil && g.checkExprForErrors(s.OnErr.Handler) {
+			return true
+		}
 	}
 	return false
 }

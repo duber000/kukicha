@@ -307,8 +307,10 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 	switch s := stmt.(type) {
 	case *ast.VarDeclStmt:
 		a.analyzeVarDeclStmt(s)
+		a.analyzeOnErrClause(s.OnErr)
 	case *ast.AssignStmt:
 		a.analyzeAssignStmt(s)
+		a.analyzeOnErrClause(s.OnErr)
 	case *ast.ReturnStmt:
 		a.analyzeReturnStmt(s)
 	case *ast.IfStmt:
@@ -328,6 +330,7 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 		a.analyzeExpression(s.Channel)
 	case *ast.ExpressionStmt:
 		a.analyzeExpression(s.Expression)
+		a.analyzeOnErrClause(s.OnErr)
 	case *ast.ContinueStmt:
 		if a.loopDepth == 0 {
 			a.error(s.Pos(), "continue statement outside of loop")
@@ -594,8 +597,6 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 		return a.analyzeUnaryExpr(e)
 	case *ast.PipeExpr:
 		return a.analyzePipeExpr(e)
-	case *ast.OnErrExpr:
-		return a.analyzeOnErrExpr(e)
 	case *ast.CallExpr:
 		return a.analyzeCallExpr(e)
 	case *ast.MethodCallExpr:
@@ -752,11 +753,11 @@ func (a *Analyzer) analyzePipeExpr(expr *ast.PipeExpr) *TypeInfo {
 	return a.analyzeExpression(expr.Right)
 }
 
-func (a *Analyzer) analyzeOnErrExpr(expr *ast.OnErrExpr) *TypeInfo {
-	leftType := a.analyzeExpression(expr.Left)
-	a.analyzeExpression(expr.Handler)
-	// Returns the same type as left expression (the success case)
-	return leftType
+// analyzeOnErrClause analyzes the onerr clause on a statement
+func (a *Analyzer) analyzeOnErrClause(clause *ast.OnErrClause) {
+	if clause != nil {
+		a.analyzeExpression(clause.Handler)
+	}
 }
 
 func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) *TypeInfo {

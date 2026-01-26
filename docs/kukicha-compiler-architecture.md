@@ -451,12 +451,14 @@ type BlockStmt struct {
 type VarDeclStmt struct {
     Name  string
     Value Expr
+    OnErr *OnErrClause // Optional onerr clause
     Pos   Position
 }
 
 type AssignStmt struct {
     Target Expr
     Value  Expr
+    OnErr  *OnErrClause // Optional onerr clause
     Pos    Position
 }
 
@@ -544,10 +546,10 @@ type PipeExpr struct {
     Pos   Position
 }
 
-type OnErrExpr struct {
-    Left    Expr
-    Handler Expr // Can be panic, return, or default value
-    Pos     Position
+// OnErrClause is not an AST node — it's a helper struct attached to statements
+type OnErrClause struct {
+    Token   Token      // The 'onerr' token
+    Handler Expression // Error handler (panic, error, empty, discard, or default value)
 }
 
 type CallExpr struct {
@@ -923,31 +925,22 @@ func (sa *SemanticAnalyzer) checkExpr(expr Expr) TypeInfo {
     switch e := expr.(type) {
     case *BinaryExpr:
         return sa.checkBinaryExpr(e)
-    case *OrExpr:
-        return sa.checkOrExpr(e)
     case *PipeExpr:
         return sa.checkPipeExpr(e)
     case *CallExpr:
         return sa.checkCallExpr(e)
     // ... more cases
     }
-    
+
     return nil
 }
 
-func (sa *SemanticAnalyzer) checkOnErrExpr(expr *OnErrExpr) TypeInfo {
-    leftType := sa.checkExpr(expr.Left)
-
-    // Check if left is a function returning (T, error)
-    if funcType, ok := leftType.(*FunctionTypeInfo); ok {
-        if len(funcType.Returns) == 2 {
-            // Valid onerr operator usage
-            return funcType.Returns[0]
-        }
+// analyzeOnErrClause analyzes the handler expression in an OnErr clause.
+// Called from statement analyzers (VarDeclStmt, AssignStmt, ExpressionStmt).
+func (sa *SemanticAnalyzer) analyzeOnErrClause(clause *OnErrClause) {
+    if clause != nil {
+        sa.checkExpr(clause.Handler)
     }
-
-    sa.error(expr.Pos, "'onerr' operator requires function returning (T, error)")
-    return nil
 }
 
 func (sa *SemanticAnalyzer) checkPipeExpr(expr *PipeExpr) TypeInfo {
@@ -1158,9 +1151,9 @@ encode(opts, data, format)
 
 ### Error Handling Code Generation (onerr)
 
-The `onerr` operator generates idiomatic Go error handling patterns:
+The `onerr` clause is a **statement-level** construct attached to `VarDeclStmt`, `AssignStmt`, or `ExpressionStmt`. It is not an expression operator — this makes nested onerr structurally unrepresentable in the AST.
 
-#### Pattern 1: Default Value
+#### Pattern 1: Default Value (VarDeclStmt)
 ```kukicha
 port := getPort() onerr "8080"
 ```
@@ -1172,7 +1165,7 @@ if err_1 != nil {
 }
 ```
 
-#### Pattern 2: Panic
+#### Pattern 2: Panic (VarDeclStmt)
 ```kukicha
 config := loadConfig() onerr panic "config missing"
 ```
@@ -1184,7 +1177,7 @@ if err_1 != nil {
 }
 ```
 
-#### Pattern 3: Discard
+#### Pattern 3: Discard (VarDeclStmt)
 ```kukicha
 result := riskyOp() onerr discard
 ```
@@ -1193,16 +1186,21 @@ Generates (optimized - no error check needed):
 result, _ := riskyOp()
 ```
 
-**Implementation Details:**
-- `generateVarDeclStmt()` detects `OnErrExpr` values and delegates to `generateOnErrVarDecl()`
-- `generateOnErrStmt()` handles statement-level onerr (e.g., `todo |> json.MarshalWrite(w, _) onerr panic("failed")`)
-- `uniqueId()` generates unique error variable names (`err_1`, `err_2`) to prevent shadowing
-- `generateOnErrHandler()` generates appropriate handler code based on handler type (PanicExpr, ErrorExpr, EmptyExpr, or default value)
-
-**Pipe + OnErr Integration:**
-When `PipeExpr` contains `OnErrExpr` on the right side (parser creates `PipeExpr{ Right: OnErrExpr{...} }`), the code generator restructures it to `OnErrExpr{ Left: PipeExpr{...} }` for proper code generation. This enables patterns like:
+#### Pattern 4: Assignment (AssignStmt)
 ```kukicha
-todo |> json.MarshalWrite(w, _) onerr panic("marshal failed")
+x = f() onerr panic "failed"
+```
+Generates:
+```go
+x, err_1 = f()
+if err_1 != nil {
+    panic("failed")
+}
+```
+
+#### Pattern 5: Expression Statement (ExpressionStmt)
+```kukicha
+todo |> json.MarshalWrite(w, _) onerr panic "marshal failed"
 ```
 Generates:
 ```go
@@ -1210,6 +1208,14 @@ if err_1 := json.MarshalWrite(w, todo); err_1 != nil {
     panic("marshal failed")
 }
 ```
+
+**Implementation Details:**
+- `generateVarDeclStmt()` checks `stmt.OnErr != nil` and delegates to `generateOnErrVarDecl()`
+- `generateAssignStmt()` checks `stmt.OnErr != nil` and delegates to `generateOnErrAssign()`
+- `generateStatement()` checks `ExpressionStmt.OnErr != nil` and delegates to `generateOnErrStmt()`
+- `uniqueId()` generates unique error variable names (`err_1`, `err_2`) to prevent shadowing
+- `generateOnErrHandler()` generates appropriate handler code based on handler type (PanicExpr, ErrorExpr, EmptyExpr, or default value)
+- Pipe expressions are fully resolved before the onerr clause — no restructuring needed
 
 
 ---

@@ -238,6 +238,17 @@ func (t *FunctionType) Pos() Position {
 func (t *FunctionType) typeNode() {}
 
 // ============================================================================
+// OnErr Clause (attached to statement nodes, not a standalone node)
+// ============================================================================
+
+// OnErrClause represents the error handling part of an onerr statement.
+// It is not an AST node itself — it is a field on VarDeclStmt, AssignStmt, and ExpressionStmt.
+type OnErrClause struct {
+	Token   lexer.Token // The 'onerr' token
+	Handler Expression  // Error handler (panic, error, empty, discard, or default value)
+}
+
+// ============================================================================
 // Statements
 // ============================================================================
 
@@ -262,6 +273,7 @@ type VarDeclStmt struct {
 	Type   TypeAnnotation // Optional (can be nil for inference)
 	Values []Expression   // Right-hand side values (can be single or multiple)
 	Token  lexer.Token    // The identifier token or walrus token
+	OnErr  *OnErrClause   // Optional onerr clause (e.g., x := f() onerr panic "msg")
 }
 
 func (s *VarDeclStmt) TokenLiteral() string { return s.Token.Lexeme }
@@ -274,6 +286,7 @@ type AssignStmt struct {
 	Targets []Expression // Can be single or multiple targets
 	Values  []Expression // Right-hand side values (can be single or multiple)
 	Token   lexer.Token  // The '=' token
+	OnErr   *OnErrClause // Optional onerr clause (e.g., x = f() onerr panic "msg")
 }
 
 func (s *AssignStmt) TokenLiteral() string { return s.Token.Lexeme }
@@ -430,6 +443,7 @@ func (s *SendStmt) stmtNode() {}
 
 type ExpressionStmt struct {
 	Expression Expression
+	OnErr      *OnErrClause // Optional onerr clause (e.g., f() onerr panic "msg")
 }
 
 func (s *ExpressionStmt) TokenLiteral() string { return s.Expression.TokenLiteral() }
@@ -556,17 +570,6 @@ func (e *PipeExpr) Pos() Position {
 }
 func (e *PipeExpr) exprNode() {}
 
-type OnErrExpr struct {
-	Token   lexer.Token // The 'onerr' token
-	Left    Expression  // Expression that might error
-	Handler Expression  // Error handler (can be discard or expression)
-}
-
-func (e *OnErrExpr) TokenLiteral() string { return e.Token.Lexeme }
-func (e *OnErrExpr) Pos() Position {
-	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
-}
-func (e *OnErrExpr) exprNode() {}
 
 type CallExpr struct {
 	Token     lexer.Token // The '(' token or identifier
