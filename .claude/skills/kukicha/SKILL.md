@@ -122,6 +122,11 @@ for i from 0 through 10      # 0 to 10 (inclusive)
 
 for count > 0                # While-style loop
     count--
+    
+ for                          # Infinite loop
+     if something
+         break
+     continue
 ```
 
 ### Types
@@ -210,6 +215,10 @@ if not done
 # Equality
 if x equals y      # Same as ==
 if x != y          # Not equals still uses !=
+
+# Complex Logic (Improved Parser)
+if err != empty or failed
+    handleError()
 ```
 
 ### Output (print Builtin)
@@ -264,6 +273,9 @@ evens := Filter(list of int{1, 2, 3, 4}, func(n int) bool
 | `a \|> f(b, _)` | `f(b, a)` (placeholder) |
 | `x := f() onerr "default"` | `x, err := f(); if err != nil { x = "default" }` |
 | `x := f() onerr discard` | `x, _ := f()` |
+| `break` | `break` |
+| `continue` | `continue` |
+| `for` (bare) | `for { ... }` |
 
 ## Standard Library
 

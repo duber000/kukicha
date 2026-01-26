@@ -292,6 +292,8 @@ Located in `stdlib/`:
 | `parse` | Data format parsing (CSV, YAML) - delegates JSON to stdlib/json |
 | `concurrent` | Concurrency helpers (Parallel, ParallelWithLimit, Go) |
 | `http` | HTTP server helpers (WithCSRF, Serve) |
+| `shell` | Command execution with builder pattern (New, Dir, SetTimeout, Env, Execute) |
+| `cli` | CLI argument parsing with builder pattern (New, Arg, AddFlag, Action, RunApp) |
 
 Example with stdlib:
 ```kukicha
