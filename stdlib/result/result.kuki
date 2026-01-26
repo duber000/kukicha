@@ -1,0 +1,229 @@
+# Kukicha Standard Library - Result and Optional Types
+
+petiole result
+
+# Optional represents a value that may or may not be present
+# This is useful for expressing "value or nothing" without using nil/empty
+type Optional
+    hasValue bool
+    value any
+
+# Result represents either a successful value or an error
+# This provides explicit error handling for educational purposes
+type Result
+    isOk bool
+    value any
+    err error
+
+# Optional Type Functions
+
+# Some creates an Optional containing a value
+func Some(value any) Optional
+    return Optional{
+        hasValue: true,
+        value: value,
+    }
+
+# None creates an Optional with no value
+func None() Optional
+    return Optional{
+        hasValue: false,
+        value: empty,
+    }
+
+# IsSome returns true if the Optional contains a value
+func IsSome(opt Optional) bool
+    return opt.hasValue
+
+# IsNone returns true if the Optional is empty
+func IsNone(opt Optional) bool
+    return not opt.hasValue
+
+# Unwrap returns the value if present, panics otherwise
+# Use with caution - prefer UnwrapOr for safer code
+func Unwrap(opt Optional) any
+    if not opt.hasValue
+        panic("attempted to unwrap None value")
+    return opt.value
+
+# UnwrapOr returns the value if present, otherwise returns the default
+func UnwrapOr(opt Optional, defaultValue any) any
+    if opt.hasValue
+        return opt.value
+    return defaultValue
+
+# Map transforms the value inside an Optional if present
+# If None, returns None
+func Map(opt Optional, transform func(any) any) Optional
+    if not opt.hasValue
+        return opt
+    return Some(transform(opt.value))
+
+# FlatMap applies a function that returns an Optional
+# Useful for chaining Optional-returning operations
+func FlatMap(opt Optional, transform func(any) Optional) Optional
+    if not opt.hasValue
+        return None()
+    return transform(opt.value)
+
+# Filter returns the Optional if it contains a value matching the predicate
+# Otherwise returns None
+func Filter(opt Optional, predicate func(any) bool) Optional
+    if not opt.hasValue
+        return opt
+    if predicate(opt.value)
+        return opt
+    return None()
+
+# Result Type Functions
+
+# Ok creates a successful Result containing a value
+func Ok(value any) Result
+    return Result{
+        isOk: true,
+        value: value,
+        err: empty,
+    }
+
+# Err creates a failed Result containing an error
+func Err(err error) Result
+    return Result{
+        isOk: false,
+        value: empty,
+        err: err,
+    }
+
+# IsOk returns true if the Result is successful
+func IsOk(res Result) bool
+    return res.isOk
+
+# IsErr returns true if the Result contains an error
+func IsErr(res Result) bool
+    return not res.isOk
+
+# UnwrapResult returns the value if Ok, panics if Err
+# Use with caution - prefer UnwrapOrElse for safer code
+func UnwrapResult(res Result) any
+    if not res.isOk
+        panic("attempted to unwrap Err result")
+    return res.value
+
+# UnwrapErr returns the error if Err, panics if Ok
+func UnwrapErr(res Result) error
+    if res.isOk
+        panic("attempted to unwrap error from Ok result")
+    return res.err
+
+# UnwrapOrResult returns the value if Ok, otherwise returns default
+func UnwrapOrResult(res Result, defaultValue any) any
+    if res.isOk
+        return res.value
+    return defaultValue
+
+# UnwrapOrElse returns the value if Ok, otherwise calls the function
+func UnwrapOrElse(res Result, fn func() any) any
+    if res.isOk
+        return res.value
+    return fn()
+
+# MapResult transforms the value inside a Result if Ok
+# If Err, returns the same Err
+func MapResult(res Result, transform func(any) any) Result
+    if not res.isOk
+        return res
+    return Ok(transform(res.value))
+
+# MapErr transforms the error inside a Result if Err
+# If Ok, returns the same Ok
+func MapErr(res Result, transform func(error) error) Result
+    if res.isOk
+        return res
+    return Err(transform(res.err))
+
+# AndThen chains Result-returning operations
+# If Ok, applies the function; if Err, returns the error
+func AndThen(res Result, fn func(any) Result) Result
+    if not res.isOk
+        return res
+    return fn(res.value)
+
+# OrElse calls the function if Err, otherwise returns Ok
+# Useful for providing fallback logic
+func OrElse(res Result, fn func(error) Result) Result
+    if res.isOk
+        return res
+    return fn(res.err)
+
+# Match executes onOk if Result is Ok, onErr if Result is Err
+# Returns the result of the executed function
+func Match(res Result, onOk func(any) any, onErr func(error) any) any
+    if res.isOk
+        return onOk(res.value)
+    return onErr(res.err)
+
+# Conversion Functions
+
+# ToOptional converts a Result to an Optional
+# Ok becomes Some, Err becomes None
+func ToOptional(res Result) Optional
+    if res.isOk
+        return Some(res.value)
+    return None()
+
+# FromOptional converts an Optional to a Result
+# Some becomes Ok, None becomes Err with the provided error
+func FromOptional(opt Optional, err error) Result
+    if opt.hasValue
+        return Ok(opt.value)
+    return Err(err)
+
+# Helper Functions
+
+# Flatten flattens a nested Optional (Optional[Optional[T]] -> Optional[T])
+func Flatten(opt Optional) Optional
+    if not opt.hasValue
+        return None()
+
+    # Check if the value is itself an Optional
+    inner, ok := opt.value.(Optional)
+    if ok
+        return inner
+
+    return opt
+
+# FlattenResult flattens a nested Result (Result[Result[T]] -> Result[T])
+func FlattenResult(res Result) Result
+    if not res.isOk
+        return res
+
+    # Check if the value is itself a Result
+    inner, ok := res.value.(Result)
+    if ok
+        return inner
+
+    return res
+
+# All checks if all Results in a list are Ok
+# Returns Ok with a list of values if all are Ok
+# Returns the first Err encountered otherwise
+func All(results list of Result) Result
+    values := make(list of any, 0)
+
+    for res in results
+        if not res.isOk
+            return res
+        values = append(values, res.value)
+
+    return Ok(values)
+
+# Any returns Ok with the first Ok value found
+# Returns Err with the last error if all are Err
+func Any(results list of Result) Result
+    lastErr := error("no results provided")
+
+    for res in results
+        if res.isOk
+            return res
+        lastErr = res.err
+
+    return Err(lastErr)
