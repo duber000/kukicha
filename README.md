@@ -79,6 +79,12 @@ func HandleUser(w http.ResponseWriter, r reference http.Request)
 
 ---
 
+## AI Disclosure
+
+Built with the assistance of AI. Review and test before production use.
+
+---
+
 ## The Green Tea Ecosystem
 
 Kukicha (茎茶) is Japanese green tea made from **stems and twigs** - the parts usually discarded. We take the "rough edges" of Go and brew something smooth.
@@ -117,7 +123,7 @@ func main()
 
 ---
 
-## Smart Pipe Logic 🧠
+## Smart Pipe Logic 
 
 Kukicha's pipe operator (`|>`) isn't just a simple transformation; it understands Go's common API patterns.
 
@@ -159,12 +165,6 @@ go build -o kukicha ./cmd/kukicha
 
 # Optional: install globally
 go install ./cmd/kukicha
-```
-
-**For maximum performance** (Go 1.25+):
-
-```bash
-GOEXPERIMENT=greenteagc go build -o kukicha ./cmd/kukicha
 ```
 
 ---
