@@ -14,15 +14,12 @@ type Repo
     URL string json:"html_url"
 
 func main()
-    # Fetch repos - simple version without advanced pipes
-    resp := fetch.Get("https://api.github.com/users/golang/repos") onerr panic("Failed to fetch")
+    # Fetch and parse repos using advanced pipes!
+    repos := empty list of Repo
+    
+    fetch.Get("https://api.github.com/users/golang/repos") |> fetch.CheckStatus() |> .Body |> json.NewDecoder() |> .Decode(reference of repos) onerr panic "Failed to fetch or parse repos: {error}"
 
-    resp2 := fetch.CheckStatus(resp) onerr panic("HTTP error")
-
-    bytes := fetch.Bytes(resp2) onerr panic("Failed to read bytes")
-
-    # Note: This simplified example doesn't unmarshal due to pointer syntax complexity
-    # In production, you would: json.Unmarshal(bytes, &repos)
-
-    print("Fetched {len(bytes)} bytes from GitHub API successfully!")
-    print("Example completed - JSON parsing would happen here in a full implementation")
+    print("Successfully fetched {len(repos)} repositories!")
+    
+    for repo in repos[:5]
+        print("- {repo.Name}: {repo.Stars} stars ({repo.Language})")

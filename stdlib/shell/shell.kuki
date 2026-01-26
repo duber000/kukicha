@@ -5,6 +5,8 @@ petiole shell
 
 import "os/exec"
 import "os"
+import "context"
+import "time"
 
 # Run executes a command with arguments and returns the output as bytes
 # Returns stdout and error
@@ -42,11 +44,19 @@ func RunWithDir(name string, dir string, many args string) (list of byte, error)
 func RunWithOutput(name string, arg1 string) (list of byte, list of byte, error)
     return empty, empty, error "use Go interop - buffer assignment requires pointers"
 
-# RunWithTimeout - simplified stub due to context limitations
-# Use Go interop for timeout functionality
-# Example: Use Go's context.WithTimeout directly
+# RunWithTimeout executes a command with a timeout
+# Example: shell.RunWithTimeout("sleep", 2, "10")
 func RunWithTimeout(name string, timeoutSeconds int, arg1 string) (list of byte, error)
-    return empty, error "use Go interop - context.WithTimeout requires tuple assignment"
+    # 1. Creation Phase: Standard tuple assignment (Kukicha supports this!)
+    # We must do this to capture 'cancel' for the defer
+    ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds) * time.Second)
+    defer cancel()
+
+    # 2. Execution Phase: Level 2 Smart Pipe
+    # The compiler injects 'ctx' into exec.CommandContext(ctx, ...) automatically
+    output := ctx |> exec.CommandContext(name, arg1) |> .Output() onerr return empty, error "command failed"
+    
+    return output, empty
 
 # Which checks if a command exists in the system PATH
 # Returns true if the command is found, false otherwise

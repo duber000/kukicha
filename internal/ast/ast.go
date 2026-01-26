@@ -570,7 +570,6 @@ func (e *PipeExpr) Pos() Position {
 }
 func (e *PipeExpr) exprNode() {}
 
-
 type CallExpr struct {
 	Token     lexer.Token // The '(' token or identifier
 	Function  Expression
@@ -586,7 +585,7 @@ func (e *CallExpr) exprNode() {}
 
 type MethodCallExpr struct {
 	Token     lexer.Token // The '.' token
-	Object    Expression
+	Object    Expression  // Can be nil for shorthand pipes: |> .Method()
 	Method    *Identifier
 	Arguments []Expression
 	Variadic  bool // true if 'many' used: obj.f(many args)
@@ -737,6 +736,17 @@ func (e *ErrorExpr) Pos() Position {
 	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
 }
 func (e *ErrorExpr) exprNode() {}
+
+type ReturnExpr struct {
+	Token  lexer.Token // The 'return' token
+	Values []Expression
+}
+
+func (e *ReturnExpr) TokenLiteral() string { return e.Token.Lexeme }
+func (e *ReturnExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *ReturnExpr) exprNode() {}
 
 type MakeExpr struct {
 	Token lexer.Token // The 'make' token

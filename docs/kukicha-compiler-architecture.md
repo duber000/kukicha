@@ -1147,7 +1147,30 @@ json.MarshalWrite(writer, todo)
 encode(opts, data, format)
 ```
 
-**Implementation:** `generatePipeExpr()` scans arguments for `_` (Identifier or DiscardExpr). If found, replaces that position with the piped value. Otherwise, prepends the piped value as the first argument.
+#### Strategy C: Context-First
+If the piped value is a context (variable named `ctx` or a `context.*` call), it is always prepended to the argument list, even without a placeholder. This allows fluent chaining of context-heavy operations:
+```kukicha
+ctx |> db.FetchUser(userID)
+context.WithTimeout(ctx, 5s) |> db.Save(data)
+```
+Generates:
+```go
+db.FetchUser(ctx, userID)
+ctx2, cancel := context.WithTimeout(ctx, 5*time.Second) 
+db.Save(ctx2, data) // (Pseudo-code: assuming ctx piping)
+```
+
+#### Strategy D: Shorthand Method Pipe
+Piping into a method starting with `.` (e.g., `|> .Output()`) automatically treats the left side as the receiver object:
+```kukicha
+ctx |> exec.CommandContext("ls") |> .Output()
+```
+Generates:
+```go
+exec.CommandContext(ctx, "ls").Output()
+```
+
+**Implementation:** `generatePipeExpr()` scans arguments for `_`. If found, Strategy B is used. If the right side is a shorthand method (starts with `.`), Strategy D is used. If the left side is detected as a context by `isContextExpr()`, Strategy C is used. Otherwise, Strategy A (Data First) is the fallback.
 
 ### Error Handling Code Generation (onerr)
 
@@ -1214,7 +1237,8 @@ if err_1 := json.MarshalWrite(w, todo); err_1 != nil {
 - `generateAssignStmt()` checks `stmt.OnErr != nil` and delegates to `generateOnErrAssign()`
 - `generateStatement()` checks `ExpressionStmt.OnErr != nil` and delegates to `generateOnErrStmt()`
 - `uniqueId()` generates unique error variable names (`err_1`, `err_2`) to prevent shadowing
-- `generateOnErrHandler()` generates appropriate handler code based on handler type (PanicExpr, ErrorExpr, EmptyExpr, or default value)
+- `generateOnErrHandler()` generates appropriate handler code based on handler type (PanicExpr, ErrorExpr, ReturnExpr, EmptyExpr, or default value)
+- `ReturnExpr` allows returning from the parent function directly from an `onerr` handler, supporting multiple return values: `onerr return empty, error "failed"`
 - Pipe expressions are fully resolved before the onerr clause — no restructuring needed
 
 

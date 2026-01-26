@@ -302,10 +302,8 @@ func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
 	g.placeholderMap = make(map[string]string)
 
 	// Inherit placeholders from parent scope
-	if oldPlaceholderMap != nil {
-		for k, v := range oldPlaceholderMap {
-			g.placeholderMap[k] = v
-		}
+	for k, v := range oldPlaceholderMap {
+		g.placeholderMap[k] = v
 	}
 
 	// Check if this is a stdlib/iter function literal that needs special transpilation
@@ -744,6 +742,9 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 		} else {
 			g.writeLine(fmt.Sprintf("return %s", g.exprToString(h)))
 		}
+	case *ast.ReturnExpr:
+		// onerr return empty, error
+		g.writeLine(g.exprToString(h))
 	case *ast.EmptyExpr:
 		// onerr return empty - generate bare return (for named return values)
 		g.writeLine("return")
@@ -1060,6 +1061,8 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 	case *ast.ErrorExpr:
 		message := g.exprToString(e.Message)
 		return fmt.Sprintf("errors.New(%s)", message)
+	case *ast.ReturnExpr:
+		return g.generateReturnExpr(e)
 	case *ast.MakeExpr:
 		return g.generateMakeExpr(e)
 	case *ast.CloseExpr:
@@ -1215,9 +1218,25 @@ func (g *Generator) generateDerefExpr(expr *ast.DerefExpr) string {
 	return fmt.Sprintf("*%s", operand)
 }
 
+func (g *Generator) isContextExpr(expr ast.Expression) bool {
+	// Simple type detection for Context
+	// 1. Literal 'ctx' identifier
+	if id, ok := expr.(*ast.Identifier); ok {
+		return id.Value == "ctx"
+	}
+	// 2. Call to context package (e.g., context.Background(), context.WithTimeout())
+	if call, ok := expr.(*ast.CallExpr); ok {
+		if id, ok := call.Function.(*ast.Identifier); ok {
+			return strings.HasPrefix(id.Value, "context.")
+		}
+	}
+	return false
+}
+
 func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 	// Transform a |> b() into b(a)
 	// Supports placeholder strategy: a |> b(x, _) becomes b(x, a)
+	// Supports context-first strategy: ctx |> b(x) becomes b(ctx, x)
 
 	// Right side can be a CallExpr or MethodCallExpr
 	var funcName string
@@ -1229,11 +1248,34 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 		arguments = call.Arguments
 		isVariadic = call.Variadic
 	} else if method, ok := expr.Right.(*ast.MethodCallExpr); ok {
-		if !method.IsCall {
-			// It's a field access, not a method call - can't pipe into it
-			return g.exprToString(expr.Left) + " |> " + g.exprToString(expr.Right)
-		}
 		funcName = g.exprToString(method.Object) + "." + method.Method.Value
+		if method.Object == nil {
+			// Shorthand: .Method() or .Field
+			// We will prepend expr.Left as the object
+			funcName = g.exprToString(expr.Left) + "." + method.Method.Value
+
+			if !method.IsCall {
+				// Field access: obj.Field
+				return funcName
+			}
+
+			// Method call: obj.Method(args)
+			arguments = method.Arguments
+			isVariadic = method.Variadic
+
+			args := make([]string, len(arguments))
+			for i, arg := range arguments {
+				args[i] = g.exprToString(arg)
+			}
+			if isVariadic {
+				return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", "))
+			}
+			return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
+		}
+		// Normal method call (already has object)
+		if !method.IsCall {
+			return funcName
+		}
 		arguments = method.Arguments
 		isVariadic = method.Variadic
 	} else {
@@ -1266,6 +1308,13 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 				args = append(args, g.exprToString(arg))
 			}
 		}
+	} else if g.isContextExpr(expr.Left) {
+		// STRATEGY C: Context-First Pipe
+		// If Left is a Context, it ALWAYS goes to the first argument position
+		args = append(args, g.exprToString(expr.Left))
+		for _, arg := range arguments {
+			args = append(args, g.exprToString(arg))
+		}
 	} else {
 		// STRATEGY B: No placeholder -> Default "Data First" pipe
 		// Inject piped expr as the VERY FIRST argument
@@ -1280,7 +1329,6 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 	}
 	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 }
-
 
 func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 	funcName := g.exprToString(expr.Function)
@@ -1807,4 +1855,11 @@ func (g *Generator) checkExprForErrors(expr ast.Expression) bool {
 	}
 
 	return false
+}
+func (g *Generator) generateReturnExpr(expr *ast.ReturnExpr) string {
+	values := make([]string, len(expr.Values))
+	for i, v := range expr.Values {
+		values[i] = g.exprToString(v)
+	}
+	return "return " + strings.Join(values, ", ")
 }

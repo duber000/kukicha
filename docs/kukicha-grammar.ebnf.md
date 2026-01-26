@@ -267,6 +267,8 @@ PrimaryExpression ::=
     | ReceiveExpression
     | RecoverExpression
     | TypeCast
+    | ReturnExpression
+    | ShorthandMethodCall
     | "this"
 
 ExpressionList ::= Expression { "," Expression }
@@ -342,6 +344,10 @@ RecoverExpression ::= "recover" "(" ")"
 TypeCast ::=
     | TypeAnnotation "(" Expression ")"
     | Expression "as" TypeAnnotation
+
+ReturnExpression ::= "return" [ ExpressionList ]
+
+ShorthandMethodCall ::= "." IDENTIFIER [ "(" [ ExpressionList ] ")" ]
 ```
 
 ---

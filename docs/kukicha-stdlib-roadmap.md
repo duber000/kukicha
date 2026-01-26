@@ -342,7 +342,7 @@ if err != empty
 defer resp.Body.Close()
 
 repos := list of Repo{}
-resp.Body |> json.NewDecoder() |> json.Decode(reference repos) onerr panic
+resp.Body |> json.NewDecoder() |> .Decode(reference repos) onerr panic
 
 # Now filter with slice helpers - beautiful pipes!
 active := repos
@@ -384,7 +384,7 @@ func sendTodo(w http.ResponseWriter, r reference http.Request)
     todo := Todo{ID: 1, Title: "Learn Kukicha", Completed: false}
 
     w.Header().Set("Content-Type", "application/json")
-    w |> json.NewEncoder() |> json.Encode(todo) onerr return
+    w |> json.NewEncoder() |> .Encode(todo) onerr return
 
 # Pretty-printed JSON with builder pattern
 func sendPretty(w http.ResponseWriter, r reference http.Request)
@@ -394,7 +394,7 @@ func sendPretty(w http.ResponseWriter, r reference http.Request)
         |> json.NewEncoder()
         |> json.WithDeterministic()
         |> json.WithIndent("  ")
-        |> json.Encode(data)
+        |> .Encode(data)
         onerr return
 
 # Decoding from request
@@ -403,10 +403,8 @@ func createTodo(w http.ResponseWriter, r reference http.Request)
 
     r.Body
         |> json.NewDecoder()
-        |> json.Decode(reference todo)
-        onerr
-            w.WriteHeader(400)
-            return
+        |> .Decode(reference todo)
+        onerr return w.WriteHeader(400)
 
     # Use the todo...
     print("Created: {todo.Title}")
@@ -456,7 +454,7 @@ config := Config{}
 file := files.Open("config.json") onerr panic
 defer file.Close()
 config := Config{}
-file |> json.NewDecoder() |> json.Decode(reference config) onerr panic
+file |> json.NewDecoder() |> .Decode(reference config) onerr panic
 
 # Format as pretty JSON (convenience function)
 output := config

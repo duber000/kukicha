@@ -1482,6 +1482,10 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 		return p.parseGroupedExpression()
 	case lexer.TOKEN_FUNC:
 		return p.parseFunctionLiteral()
+	case lexer.TOKEN_DOT:
+		return p.parseShorthandMethodCall()
+	case lexer.TOKEN_RETURN:
+		return p.parseReturnExpr()
 	default:
 		p.error(p.peekToken(), fmt.Sprintf("unexpected token in expression: %s", p.peekToken().Type))
 		p.advance()
@@ -1799,4 +1803,49 @@ func (p *Parser) parseStructTag() string {
 
 	// Return formatted tag: json:"name"
 	return tagKey + ":" + `"` + tagValue + `"`
+}
+func (p *Parser) parseReturnExpr() ast.Expression {
+	token := p.advance() // consume 'return'
+
+	expr := &ast.ReturnExpr{
+		Token:  token,
+		Values: []ast.Expression{},
+	}
+
+	// Check if there are return values
+	// Semicolon, newline, or dedent end the expression in onerr context
+	if !p.check(lexer.TOKEN_NEWLINE) && !p.check(lexer.TOKEN_DEDENT) && !p.check(lexer.TOKEN_SEMICOLON) && !p.isAtEnd() {
+		for {
+			expr.Values = append(expr.Values, p.parseExpression())
+			if !p.match(lexer.TOKEN_COMMA) {
+				break
+			}
+		}
+	}
+
+	return expr
+}
+
+func (p *Parser) parseShorthandMethodCall() ast.Expression {
+	token := p.advance() // consume '.'
+	methodName := p.parseIdentifier()
+
+	expr := &ast.MethodCallExpr{
+		Token:  token,
+		Object: nil, // shorthand
+		Method: methodName,
+		IsCall: false,
+	}
+
+	if p.match(lexer.TOKEN_LPAREN) {
+		expr.IsCall = true
+		if !p.check(lexer.TOKEN_RPAREN) {
+			expr.Arguments = p.parseExpressionList()
+		} else {
+			expr.Arguments = []ast.Expression{}
+		}
+		p.consume(lexer.TOKEN_RPAREN, "expected ')' after method arguments")
+	}
+
+	return expr
 }

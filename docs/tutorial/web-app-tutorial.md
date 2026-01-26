@@ -176,9 +176,7 @@ func createTodo(response http.ResponseWriter, request reference http.Request)
     # Parse the JSON from the request body using pipe
     # "reference of" gets a pointer so the decoder can fill in our todo
     request.Body |> json.NewDecoder() |> .Decode(reference of todo) onerr
-        response.WriteHeader(400)  # 400 = Bad Request
-        fmt.Fprintln(response, "Invalid JSON")
-        return
+        return response.WriteHeader(400) |> fmt.Fprintln(response, "Invalid JSON")
     
     # Now 'todo' contains the data the user sent!
     print("Received todo: {todo.title}")
@@ -186,7 +184,7 @@ func createTodo(response http.ResponseWriter, request reference http.Request)
     # Send back a success response
     response.Header().Set("Content-Type", "application/json")
     response.WriteHeader(201)  # 201 = Created
-    json.NewEncoder(response).Encode(todo) onerr return
+    json.NewEncoder(response) |> .Encode(todo) onerr return
 ```
 
 **What's `reference of`?**
@@ -254,6 +252,7 @@ func getIdFromPath(path string, prefix string) (int, bool)
     id := idStr |> strconv.Atoi() onerr return 0, false
     return id, true
 
+func sendJSON(response http.ResponseWriter, data any)
     response.Header().Set("Content-Type", "application/json")
     response |> json.NewEncoder() |> .Encode(data) onerr return
 
@@ -289,8 +288,7 @@ func handleCreateTodo(response http.ResponseWriter, request reference http.Reque
     # Parse the incoming JSON using pipe
     todo := Todo{}
     request.Body |> json.NewDecoder() |> .Decode(reference of todo) onerr
-        sendError(response, 400, "Invalid JSON")
-        return
+        return sendError(response, 400, "Invalid JSON")
     
     # Validate
     if todo.title equals ""
@@ -339,8 +337,7 @@ func handleUpdateTodo(response http.ResponseWriter, request reference http.Reque
     # Parse the update using pipe
     updated := Todo{}
     request.Body |> json.NewDecoder() |> .Decode(reference of updated) onerr
-        sendError(response, 400, "Invalid JSON")
-        return
+        return sendError(response, 400, "Invalid JSON")
     
     # Keep the original ID, update other fields
     updated.id = id

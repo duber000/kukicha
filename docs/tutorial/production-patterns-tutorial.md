@@ -297,8 +297,7 @@ func (s reference Server) handleCreateTodo(w http.ResponseWriter, r reference ht
     {}
     
     r.Body |> json.NewDecoder() |> .Decode(reference of input) onerr
-        s.sendError(w, 400, "Invalid JSON")
-        return
+        return s.sendError(w, 400, "Invalid JSON")
     
     if input.title equals ""
         s.sendError(w, 400, "Title is required")
@@ -317,8 +316,7 @@ func (s reference Server) handleGetTodo(w http.ResponseWriter, r reference http.
         return
     
     todo := s.db.GetTodo(id) onerr
-        s.sendError(w, 404, "Todo not found")
-        return
+        return s.sendError(w, 404, "Todo not found")
     
     s.sendJSON(w, 200, todo)
 
@@ -334,8 +332,7 @@ func (s reference Server) handleUpdateTodo(w http.ResponseWriter, r reference ht
     {}
     
     r.Body |> json.NewDecoder() |> .Decode(reference of input) onerr
-        s.sendError(w, 400, "Invalid JSON")
-        return
+        return s.sendError(w, 400, "Invalid JSON")
     
     s.db.UpdateTodo(id, input.title, input.completed) onerr
         log.Printf("Error updating todo: %v", error)
@@ -344,8 +341,7 @@ func (s reference Server) handleUpdateTodo(w http.ResponseWriter, r reference ht
     
     # Fetch the updated todo to return
     todo := s.db.GetTodo(id) onerr
-        s.sendError(w, 404, "Todo not found")
-        return
+        return s.sendError(w, 404, "Todo not found")
     
     s.sendJSON(w, 200, todo)
 
