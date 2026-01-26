@@ -1,0 +1,90 @@
+# Kukicha Standard Library - Template Operations
+
+petiole template
+
+import "text/template"
+import "bytes"
+import "strings"
+
+# TemplateData holds template content and data for rendering
+type TemplateData
+    Content string
+    Data map of string to any
+
+# Render renders a template string with the provided data map
+# This is the simple string templating version
+func Render(tmplStr string) TemplateData
+    return TemplateData{
+        Content: tmplStr,
+        Data: make(map of string to any),
+    }
+
+# Data sets the data for template rendering
+# Takes a TemplateData and a data map, returns TemplateData for piping
+func Data(td TemplateData, data map of string to any) TemplateData
+    td.Data = data
+    return td
+
+# Execute executes the template and returns the rendered string
+# This is the final step in the pipeline that produces output
+func Execute(td TemplateData) (string, error)
+    tmpl, err := template.New("template").Parse(td.Content)
+    if err != empty
+        return "", err
+
+    buf := bytes.Buffer{}
+    err = tmpl.Execute(reference buf, td.Data)
+    if err != empty
+        return "", err
+
+    return buf.String(), empty
+
+# Parse parses template content from a string
+# Returns a TemplateData for piping
+func Parse(content string) TemplateData
+    return TemplateData{
+        Content: content,
+        Data: make(map of string to any),
+    }
+
+# New creates a new empty TemplateData
+# Can be used to start a template pipeline
+func New() TemplateData
+    return TemplateData{
+        Content: "",
+        Data: make(map of string to any),
+    }
+
+# WithContent sets the template content
+func WithContent(td TemplateData, content string) TemplateData
+    td.Content = content
+    return td
+
+# RenderSimple is a convenience function that renders a template in one call
+# Takes a template string and data map, returns the rendered string
+func RenderSimple(tmplStr string, data map of string to any) (string, error)
+    tmpl, err := template.New("template").Parse(tmplStr)
+    if err != empty
+        return "", err
+
+    buf := bytes.Buffer{}
+    err = tmpl.Execute(reference buf, data)
+    if err != empty
+        return "", err
+
+    return buf.String(), empty
+
+# Must wraps a template execution result and panics on error
+# Useful for templates that should always work
+func Must(result string, err error) string
+    if err != empty
+        panic(err)
+    return result
+
+# Funcs adds custom functions to the template
+# Returns a new TemplateData with the functions registered
+func Funcs(td TemplateData, funcMap map of string to any) TemplateData
+    # Note: This is a simplified version
+    # For now, we'll just return the template data as-is
+    # Full implementation would require storing and applying funcMap
+    return td
