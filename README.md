@@ -229,7 +229,7 @@ See [Contributing Guide](docs/contributing.md) for full details.
 ### Learn Kukicha
 
 - [Beginner Tutorial](docs/beginner-tutorial.md) - Start here
-- [Language Features](docs/language-features.md) 
+- [FAQ](docs/faq.md) - Why?
 - [Quick Reference](docs/kukicha-quick-reference.md) - Cheat sheet
 
 ### Tutorials
@@ -240,7 +240,6 @@ See [Contributing Guide](docs/contributing.md) for full details.
 
 ### Technical
 
-- [Design Philosophy](docs/kukicha-design-philosophy.md) - Why Kukicha works this way
 - [Compiler Architecture](docs/kukicha-compiler-architecture.md) - How the transpiler works
 - [Grammar (EBNF)](docs/kukicha-grammar.ebnf.md) - Formal specification
 
