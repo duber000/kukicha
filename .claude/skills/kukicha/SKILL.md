@@ -280,6 +280,8 @@ Located in `stdlib/`:
 | `parse` | Data format parsing (CSV, YAML) - delegates JSON to stdlib/json |
 | `concurrent` | Concurrency helpers (Parallel, ParallelWithLimit, Go) |
 | `http` | HTTP server helpers (WithCSRF, Serve) |
+| `shell` | Command execution with builder pattern (New, Dir, SetTimeout, Env, Execute) |
+| `cli` | CLI argument parsing with builder pattern (New, Arg, AddFlag, Action, RunApp) |
 
 Example with stdlib:
 ```kukicha
@@ -335,6 +337,66 @@ handler := http.WithCSRF(myHandler)
 
 # Start server
 http.Serve(":8080", handler)
+```
+
+### Shell Package
+```kukicha
+import "stdlib/shell"
+
+# Simple command
+cmd := shell.New("ls", "-la")
+result := shell.Execute(cmd)
+if shell.Success(result)
+    print(string(shell.GetOutput(result)))
+
+# Command with options using builder pattern
+cmd := shell.New("git", "status")
+    |> shell.Dir("./repo")
+    |> shell.SetTimeout(30)
+result := shell.Execute(cmd)
+
+if shell.Success(result)
+    print(string(shell.GetOutput(result)))
+else
+    print("Error: {string(shell.GetError(result))}")
+
+# Check if command exists
+if shell.Which("docker")
+    print("Docker is installed")
+
+# Run with environment variables
+cmd := shell.New("npm", "install")
+    |> shell.Dir("./frontend")
+    |> shell.Env("NODE_ENV", "production")
+result := shell.Execute(cmd)
+if shell.Success(result)
+    print("npm install succeeded")
+```
+
+### CLI Package
+```kukicha
+import "stdlib/cli"
+
+func main()
+    app := cli.New("mytool")
+        |> cli.Arg("command", "Command to run (fetch|process)")
+        |> cli.Arg("input", "Input file or URL")
+        |> cli.AddFlag("verbose", "Enable verbose output", "false")
+        |> cli.AddFlag("format", "Output format", "json")
+        |> cli.Action(handleCommand)
+
+    cli.RunApp(app) onerr panic "command failed"
+
+func handleCommand(args cli.Args)
+    command := cli.GetString(args, "command")
+    input := cli.GetString(args, "input")
+    verbose := cli.GetBool(args, "verbose")
+    format := cli.GetString(args, "format")
+
+    if command == "fetch"
+        print("Fetching {input} with format {format}")
+    else if command == "process"
+        print("Processing {input}")
 ```
 
 ### Slice Package with Generics

@@ -63,7 +63,7 @@ func RunApp(app App) error
     # Parse positional args
     args := os.Args
     argIndex := 1  # Skip program name
-    for i, argDef in app.args
+    for _, argDef in app.args
         if argIndex < len(args) and not strings.HasPrefix(args[argIndex], "--")
             values[argDef.name] = args[argIndex]
             argIndex = argIndex + 1

@@ -106,13 +106,13 @@ func getExitCode(err error) int
 func Success(result Result) bool
     return result.exitCode == 0 and result.err == empty
 
-# Output returns the stdout as bytes
-# Example: output := shell.Output(result)
+# GetOutput returns the stdout as bytes
+# Example: output := shell.GetOutput(result)
 func GetOutput(result Result) list of byte
     return result.stdout
 
-# Error returns the stderr as bytes
-# Example: errorOutput := shell.Error(result)
+# GetError returns the stderr as bytes
+# Example: errorOutput := shell.GetError(result)
 func GetError(result Result) list of byte
     return result.stderr
 

@@ -3,69 +3,90 @@
 petiole shell_test
 
 import "stdlib/shell"
+import "stdlib/string"
 import "testing"
 import "os"
 
-# Test Run
-func TestRun(t reference testing.T)
-    output, err := shell.Run("echo", "hello world")
-    if err != empty
-        t.Errorf("shell.Run failed: {err}")
-    
-    expected := "hello world\n"
-    if (output as string) != expected
-        t.Errorf("Expected '{expected}', got '{output as string}'")
+# Test basic command execution
+func TestExecute(t reference testing.T)
+    cmd := shell.New("echo", "hello world")
+    result := shell.Execute(cmd)
 
-# Test RunSimple
-func TestRunSimple(t reference testing.T)
-    # We can use a command that is likely to exist and produce output
-    # 'whoami' or 'hostname' are generally safe
-    output, err := shell.RunSimple("echo")
-    if err != empty
-        t.Errorf("shell.RunSimple failed: {err}")
-    
-    if len(output) == 0
-        t.Error("Expected some output from echo")
+    if not shell.Success(result)
+        t.Errorf("shell.Execute failed: {shell.GetError(result) as string}")
+
+    output := shell.GetOutput(result) as string
+    expected := "hello world\n"
+    if output != expected
+        t.Errorf("Expected '{expected}', got '{output}'")
+
+# Test command with working directory
+func TestExecuteWithDir(t reference testing.T)
+    cmd := shell.New("pwd") |> shell.Dir("/tmp")
+    result := shell.Execute(cmd)
+
+    if not shell.Success(result)
+        t.Errorf("shell.Execute with Dir failed: {shell.GetError(result) as string}")
+
+    output := shell.GetOutput(result) as string
+    if not string.Contains(output, "tmp")
+        t.Errorf("Expected output to contain 'tmp', got '{output}'")
+
+# Test command with environment variable
+func TestExecuteWithEnv(t reference testing.T)
+    cmd := shell.New("sh", "-c", "echo $TEST_VAR") |> shell.Env("TEST_VAR", "hello")
+    result := shell.Execute(cmd)
+
+    if not shell.Success(result)
+        t.Errorf("shell.Execute with Env failed: {shell.GetError(result) as string}")
+
+    output := shell.GetOutput(result) as string
+    if not string.Contains(output, "hello")
+        t.Errorf("Expected output to contain 'hello', got '{output}'")
+
+# Test failed command
+func TestExecuteFailed(t reference testing.T)
+    cmd := shell.New("false")
+    result := shell.Execute(cmd)
+
+    if shell.Success(result)
+        t.Error("Expected 'false' command to fail")
+
+    exitCode := shell.ExitCode(result)
+    if exitCode == 0
+        t.Errorf("Expected non-zero exit code, got {exitCode}")
 
 # Test Which
 func TestWhich(t reference testing.T)
     if not shell.Which("ls")
         t.Error("Expected 'ls' to be found")
-    
+
     if shell.Which("nonexistent-command-xyz")
         t.Error("Did not expect to find nonexistent-command-xyz")
 
-# Test Success
-func TestSuccess(t reference testing.T)
-    if not shell.Success("true")
-        t.Error("Expected 'true' command to succeed")
-    
-    if shell.Success("false")
-        t.Error("Expected 'false' command to fail")
-
-# Test Environment 
+# Test Environment helpers
 func TestEnv(t reference testing.T)
     key := "KUKICHA_TEST_VAR"
     val := "test_value"
-    
+
     err := shell.Setenv(key, val)
     if err != empty
         t.Fatalf("Setenv failed: {err}")
-    
+
     got := shell.Getenv(key)
     if got != val
         t.Errorf("Expected {val}, got {got}")
-    
+
     found := false
     envs := shell.Environ()
     for e in envs
         if e == "{key}={val}"
             found = true
             break
-    
+
     if not found
         t.Error("Expected to find variable in Environ()")
-    
+
     shell.Unsetenv(key)
     if shell.Getenv(key) != ""
         t.Error("Expected variable to be unset")
