@@ -265,6 +265,12 @@ data := loadFile() onerr
 
 # Pattern 3: Panic (crash) with a message
 config := loadConfig() onerr panic "Missing config file!"
+
+# Pattern 4: Exit with an error (Advanced)
+# If your function returns an error, you can pass it along:
+func DoWork() error
+    data := loadFile() onerr return error
+    return empty
 ```
 
 ---

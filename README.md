@@ -74,7 +74,7 @@ func HandleUser(w http.ResponseWriter, r reference http.Request)
         http.Error(w, "invalid request", 400)
         return
 
-    json.MarshalWrite(w, user)
+    user |> json.MarshalWrite(w, _)
 ```
 
 ---
@@ -114,6 +114,17 @@ func main()
 
     for todo in todos
         print(todo.Display())
+
+---
+
+## Smart Pipe Logic 🧠
+
+Kukicha's pipe operator (`|>`) isn't just a simple transformation; it understands Go's common API patterns.
+
+- **Data-First**: `data |> process()` becomes `process(data)`
+- **Shorthand Methods**: `result |> .JSON()` becomes `result.JSON()`
+- **Context-Aware**: `ctx |> db.Fetch()` becomes `db.Fetch(ctx)`
+- **Placeholders**: `user |> json.MarshalWrite(w, _)` becomes `json.MarshalWrite(w, user)`
 ```
 
 **Transpiles to clean Go:**

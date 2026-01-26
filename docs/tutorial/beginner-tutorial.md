@@ -419,6 +419,15 @@ upper := text |> string.TrimSpace() |> string.ToUpper()
 
 It's called a "pipe" because it acts like a pipe at a construction site - data goes in one end and comes out the other end, transformed!
 
+**💡 Shorthand Pro-Tip:** If you are piping into a method that belongs to the data itself, you can just start with a dot!
+```kukicha
+# Instead of this:
+upper := text |> string.TrimSpace() |> string.ToUpper()
+
+# If 'result' was an object with its own .Display() method:
+message := result |> .Display()  # Much cleaner!
+```
+
 **Advanced tip:** By default, the piped value becomes the first argument. If you need it elsewhere, use `_` as a placeholder:
 ```kukicha
 # Put "text" as the second argument instead of first
@@ -689,8 +698,8 @@ Ready for the next step? Follow this learning path:
 
 | # | Tutorial | What You'll Learn |
 |---|----------|-------------------|
-| 1 | ✅ *You are here* | Variables, functions, strings, pipes |
-| 2 | **[Console Todo](console-todo-tutorial.md)** ← Next! | Types, methods, lists, file I/O, more pipes |
+| 1 | ✅ *You are here* | Variables, functions, strings, pipes, shorthands |
+| 2 | **[Console Todo](console-todo-tutorial.md)** ← Next! | Types, methods, lists, file I/O, more pipes, error handling |
 | 3 | **[Web Todo](web-app-tutorial.md)** | HTTP servers, JSON, REST APIs, expert piping |
 | 4 | **[Production Patterns](production-patterns-tutorial.md)** | Databases, Go conventions |
 
