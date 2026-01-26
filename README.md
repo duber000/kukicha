@@ -87,7 +87,7 @@ Built with the assistance of AI. Review and test before production use.
 
 ## The Green Tea Ecosystem
 
-Kukicha (茎茶) is Japanese green tea made from **stems and twigs** - the parts usually discarded. We take the "rough edges" of Go and brew something smooth.
+Kukicha (茎茶) is Japanese green tea made from **stems and leaf veins** - the parts usually discarded. We take the "rough edges" of Go and brew something smooth.
 
 | Term | Meaning | Go Equivalent |
 |------|---------|---------------|
@@ -213,8 +213,6 @@ kukicha/
 └── examples/        # Example programs
 ```
 
-See [Project Structure](docs/project-structure.md) for details.
-
 ### Adding Features
 
 1. Update docs and grammar specification
@@ -231,7 +229,7 @@ See [Contributing Guide](docs/contributing.md) for full details.
 ### Learn Kukicha
 
 - [Beginner Tutorial](docs/beginner-tutorial.md) - Start here
-- [Language Features](docs/language-features.md) - Complete syntax reference
+- [Language Features](docs/language-features.md) 
 - [Quick Reference](docs/kukicha-quick-reference.md) - Cheat sheet
 
 ### Tutorials
