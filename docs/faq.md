@@ -12,9 +12,9 @@ It’s a common question! While Kukicha looks like Python, the underlying "soul"
 
     Type Safety: Kukicha catches errors at compile-time that Python only finds at runtime.
 
-2. Doesn’t GoPlus (Go+) already do this?
+2. Doesn’t XGo (formerly Go+) already do this?
 
-Go+ is an excellent project, but it serves a different niche. Go+ is primarily marketed as Go for Data Science, while Kukicha is designed as Go for Humans.
+XGo is an excellent project, but it serves a different niche. 
 
     Semantic Keywords: Kukicha replaces symbols with English words (e.g., reference of user instead of &user, or and/or instead of &&/||). Go+ stays closer to standard Go syntax.
 
