@@ -705,7 +705,7 @@ Ready for the next step? Follow this learning path:
 
 - **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** - Complete language grammar reference
 - **[Stdlib Reference](../kukicha-stdlib-reference.md)** - Standard library documentation
-- **examples/** directory - More example programs
+- **[Examples](../../examples/)** directory - More example programs
 
 ### Practice Exercises
 
