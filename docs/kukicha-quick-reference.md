@@ -42,8 +42,17 @@ user |> json.MarshalWrite(w, discard)
 Chain functions and methods in a data-flow style.
 
 ```kukicha
-# Basic pipe: data is passed as the first argument
-users |> slice.Filter(u -> u.active) |> slice.Map(u -> u.name)
+# Define readable named functions
+func isActive(u User) bool
+    return u.active
+
+func getName(u User) string
+    return u.name
+
+# Pipe reads like English: "users, filter by isActive, map to getName"
+active := users
+    |> slice.Filter(isActive)
+    |> slice.Map(getName)
 
 # Method shorthand: pipe into a method of the object
 response |> .JSON()

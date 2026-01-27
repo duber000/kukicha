@@ -167,7 +167,7 @@ func MkDirAll(path string) error
 # TempFile creates a temporary file and returns its path
 # The file will have the specified prefix in its name
 # Returns the file path and any error that occurred
-# Example: files.TempFile("upload-") |> useWith(path -> processFile(path))
+# Example: files.TempFile("upload-") |> processFile()
 func TempFile(prefix string) (string, error)
     file, err := os.CreateTemp("", prefix)
     if err != empty
@@ -180,7 +180,7 @@ func TempFile(prefix string) (string, error)
 # TempDir creates a temporary directory and returns its path
 # The directory will have the specified prefix in its name
 # Returns the directory path and any error that occurred
-# Example: files.TempDir("build-") |> useWith(dir -> runBuild(dir))
+# Example: files.TempDir("build-") |> runBuild()
 func TempDir(prefix string) (string, error)
     path, err := os.MkdirTemp("", prefix)
     return path, err
