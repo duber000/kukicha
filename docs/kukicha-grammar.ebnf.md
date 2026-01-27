@@ -26,22 +26,10 @@ UPPER   Non-terminal
 ```ebnf
 Program ::= [ PetioleDeclaration ] { ImportDeclaration } { TopLevelDeclaration }
 
-PetioleDeclaration ::= "petiole" PackagePath NEWLINE
+PetioleDeclaration ::= "petiole" IDENTIFIER NEWLINE
     # Optional: if absent, package name is calculated from file path relative to stem.toml
 
-PackagePath ::= IDENTIFIER { "." IDENTIFIER }
-
-ImportDeclaration ::= "import" ImportSpec NEWLINE
-
-ImportSpec ::= 
-    | PackagePath
-    | PackagePath "as" IDENTIFIER
-    | URL
-    | URL "as" IDENTIFIER
-    | URL "@" VERSION
-
-URL ::= DOMAIN "/" PATH
-VERSION ::= "v" NUMBER "." NUMBER "." NUMBER
+ImportDeclaration ::= "import" STRING [ "as" IDENTIFIER ] NEWLINE
 ```
 
 ---
@@ -59,7 +47,10 @@ TypeDeclaration ::= "type" IDENTIFIER NEWLINE INDENT FieldList DEDENT
 
 FieldList ::= Field { Field }
 
-Field ::= IDENTIFIER TypeAnnotation NEWLINE
+Field ::= IDENTIFIER TypeAnnotation { StructTag } NEWLINE
+
+StructTag ::= IDENTIFIER ":" StringLiteral
+    # e.g., json:"id" or db:"user_name"
 
 InterfaceDeclaration ::= "interface" IDENTIFIER NEWLINE INDENT MethodSignatureList DEDENT
 
@@ -68,20 +59,23 @@ MethodSignatureList ::= MethodSignature { MethodSignature }
 MethodSignature ::= IDENTIFIER "(" [ ParameterList ] ")" [ TypeAnnotation ] NEWLINE
 
 FunctionDeclaration ::=
-    "func" IDENTIFIER "(" [ ParameterList ] ")" TypeAnnotation NEWLINE
+    "func" IDENTIFIER [ "(" [ ParameterList ] ")" ] [ ReturnTypeList ] NEWLINE
     INDENT StatementList DEDENT
-    # Return type TypeAnnotation is REQUIRED for functions that return values
+    # Return types are optional, but required for functions that return values
 
 MethodDeclaration ::=
-    # Kukicha syntax - readable, uses explicit 'this' receiver
-    | "func" IDENTIFIER "on" "this" [ "reference" ] TypeAnnotation [ "," ParameterList ] [ TypeAnnotation ] NEWLINE INDENT StatementList DEDENT
-    # Go-compatible syntax - for copy-paste from Go code
-    | "func" "(" IDENTIFIER TypeAnnotation ")" IDENTIFIER "(" [ ParameterList ] ")" [ TypeAnnotation ] NEWLINE INDENT StatementList DEDENT
+    # Kukicha syntax - explicit receiver name
+    "func" IDENTIFIER "on" IDENTIFIER TypeAnnotation [ "," ParameterList | "(" [ ParameterList ] ")" ] [ ReturnTypeList ] NEWLINE
+    INDENT StatementList DEDENT
+    # Additional params may be comma-separated after receiver type (no parens needed):
+    #   func Load on cfg Config, path string
 
 ParameterList ::= Parameter { "," Parameter }
 
-Parameter ::= IDENTIFIER TypeAnnotation
-    # Type annotation is REQUIRED for all function/method parameters (signature-first inference)
+Parameter ::= [ "many" ] IDENTIFIER [ TypeAnnotation ]
+    # Type annotation is required except for untyped variadic ("many x")
+
+ReturnTypeList ::= TypeAnnotation | "(" TypeAnnotation { "," TypeAnnotation } ")"
 ```
 
 ---
@@ -108,13 +102,12 @@ TypeAnnotation ::=
     | ChannelType
     | FunctionType
     | QualifiedType
-    | GoStyleType
 
 PrimitiveType ::=
-    | "int" | "int32" | "int64"
-    | "uint" | "uint32" | "uint64"
+    | "int" | "int8" | "int16" | "int32" | "int64"
+    | "uint" | "uint8" | "uint16" | "uint32" | "uint64"
     | "float32" | "float64"
-    | "string" | "bool"
+    | "string" | "bool" | "byte" | "rune" | "error"
 
 ReferenceType ::= "reference" ( TypeAnnotation | "to" TypeAnnotation )
 
@@ -125,12 +118,6 @@ MapType ::= "map" "of" TypeAnnotation "to" TypeAnnotation
 ChannelType ::= "channel" "of" TypeAnnotation
 
 QualifiedType ::= IDENTIFIER "." IDENTIFIER
-
-GoStyleType ::=
-    | "*" TypeAnnotation
-    | "[" "]" TypeAnnotation
-    | "map" "[" TypeAnnotation "]" TypeAnnotation
-    | "chan" TypeAnnotation
 
 FunctionType ::= "func" "(" [ FunctionTypeParameterList ] ")" [ TypeAnnotation ]
 
@@ -149,22 +136,29 @@ StatementList ::= Statement { Statement }
 Statement ::=
     | VariableDeclaration
     | Assignment
+    | IncDecStatement
     | ReturnStatement
     | IfStatement
     | ForStatement
     | DeferStatement
     | GoStatement
     | SendStatement
+    | PrintStatement
     | ContinueStatement
     | BreakStatement
     | ExpressionStatement
     | NEWLINE
 
-VariableDeclaration ::= IDENTIFIER ":=" Expression [ OnErrClause ] NEWLINE
+PrintStatement ::= "print" ExpressionList NEWLINE
+    # 'print' is a built-in keyword that transpiles to fmt.Println()
+
+VariableDeclaration ::= IdentifierList ":=" ExpressionList [ OnErrClause ] StatementTerminator
 
 Assignment ::=
-    | IDENTIFIER "=" Expression [ OnErrClause ] NEWLINE
-    | Expression "=" Expression [ OnErrClause ] NEWLINE
+    | IdentifierList "=" ExpressionList [ OnErrClause ] StatementTerminator
+    | Expression "=" ExpressionList [ OnErrClause ] StatementTerminator
+
+IncDecStatement ::= Expression ("++" | "--") StatementTerminator
 
 ReturnStatement ::= "return" [ ExpressionList ] NEWLINE
 
@@ -173,7 +167,7 @@ ContinueStatement ::= "continue" NEWLINE
 BreakStatement ::= "break" NEWLINE
 
 IfStatement ::=
-    "if" Expression NEWLINE
+    "if" [ SimpleStatement ";" ] Expression NEWLINE
     INDENT StatementList DEDENT
     [ ElseClause ]
 
@@ -185,7 +179,8 @@ ForStatement ::=
     | ForBareLoop
     | ForRangeLoop
     | ForCollectionLoop
-    | ForGoStyleLoop
+    | ForNumericLoop
+    | ForConditionLoop
 
 ForBareLoop ::=
     "for" NEWLINE
@@ -199,8 +194,12 @@ ForCollectionLoop ::=
     "for" [ IDENTIFIER "," ] IDENTIFIER "in" Expression NEWLINE
     INDENT StatementList DEDENT
 
-ForGoStyleLoop ::=
-    "for" [ IDENTIFIER ":=" Expression ";" ] Expression [ ";" Expression ] NEWLINE
+ForNumericLoop ::=
+    "for" IDENTIFIER "from" Expression ( "to" | "through" ) Expression NEWLINE
+    INDENT StatementList DEDENT
+
+ForConditionLoop ::=
+    "for" Expression NEWLINE
     INDENT StatementList DEDENT
 
 DeferStatement ::=
@@ -211,9 +210,24 @@ GoStatement ::= "go" ( Expression | NEWLINE INDENT StatementList DEDENT ) NEWLIN
 
 SendStatement ::= "send" Expression "," Expression NEWLINE
 
-ExpressionStatement ::= Expression [ OnErrClause ] NEWLINE
+ExpressionStatement ::= Expression [ OnErrClause ] StatementTerminator
 
-OnErrClause ::= "onerr" Expression
+OnErrClause ::= "onerr" ( Expression | NEWLINE INDENT StatementList DEDENT )
+    # Single expression: onerr panic "failed"
+    # Block form:
+    #   onerr
+    #       log.Printf("Error: {err}")
+    #       return
+
+SimpleStatement ::=
+    | IdentifierList ":=" ExpressionList [ OnErrClause ]
+    | IdentifierList "=" ExpressionList [ OnErrClause ]
+    | Expression "=" ExpressionList [ OnErrClause ]
+    | Expression [ OnErrClause ]
+
+StatementTerminator ::= NEWLINE | ";"
+
+IdentifierList ::= IDENTIFIER { "," IDENTIFIER }
 ```
 
 ---
@@ -223,33 +237,34 @@ OnErrClause ::= "onerr" Expression
 ```ebnf
 Expression ::= OrExpression
 
-OrExpression ::= PipeExpression { ( "or" | "||" ) PipeExpression }
+OrExpression ::= PipeExpression { "or" PipeExpression }
 
 PipeExpression ::= AndExpression { "|>" AndExpression }
 
-AndExpression ::= ComparisonExpression { ( "and" | "&&" ) ComparisonExpression }
+AndExpression ::= BitwiseOrExpression { "and" BitwiseOrExpression }
 
-ComparisonExpression ::= AdditiveExpression [ ComparisonOp AdditiveExpression ]
+BitwiseOrExpression ::= ComparisonExpression { "|" ComparisonExpression }
+
+ComparisonExpression ::= AdditiveExpression [ ComparisonOp AdditiveExpression | "in" AdditiveExpression | "not" "in" AdditiveExpression ]
 
 ComparisonOp ::=
-    | "equals" | "=="
-    | "not" "equals" | "!="
+    | "==" | "!=" | "equals" | "not" "equals"
     | ">" | "<" | ">=" | "<="
-    | "in"
-    | "not" "in"
 
 AdditiveExpression ::= MultiplicativeExpression { ( "+" | "-" ) MultiplicativeExpression }
 
 MultiplicativeExpression ::= UnaryExpression { ( "*" | "/" | "%" ) UnaryExpression }
 
-UnaryExpression ::= 
+UnaryExpression ::=
     | ( "not" | "!" | "-" ) UnaryExpression
+    | "reference" "of" UnaryExpression
+    | "dereference" UnaryExpression
     | PostfixExpression
 
 PostfixExpression ::=
     PrimaryExpression {
         | "." IDENTIFIER
-        | "(" [ ExpressionList ] ")"
+        | "(" [ ArgumentList ] ")"
         | "at" Expression
         | "[" Expression "]"
         | "[" [ Expression ] ":" [ Expression ] "]"
@@ -260,18 +275,24 @@ PrimaryExpression ::=
     | Literal
     | "(" Expression ")"
     | StructLiteral
+    | ListLiteral
     | EmptyLiteral       # 'empty' with optional type (uses 1-token lookahead)
-    | ListLiteral        # 'list of Type' with initial values
-    | MapLiteral         # 'map of K to V' with initial entries
-    | ChannelCreation
-    | ReceiveExpression
+    | MakeExpression
+    | CloseExpression
+    | PanicExpression
     | RecoverExpression
+    | ReceiveExpression
+    | ErrorExpression
+    | DiscardExpression
     | TypeCast
+    | FunctionLiteral
     | ReturnExpression
     | ShorthandMethodCall
-    | "this"
 
 ExpressionList ::= Expression { "," Expression }
+
+ArgumentList ::= Argument { "," Argument }
+Argument ::= [ "many" ] Expression
 ```
 
 ---
@@ -283,29 +304,39 @@ Literal ::=
     | IntegerLiteral
     | FloatLiteral
     | StringLiteral
+    | RuneLiteral
     | BooleanLiteral
 
 IntegerLiteral ::= DIGIT { DIGIT }
 
 FloatLiteral ::= DIGIT { DIGIT } "." DIGIT { DIGIT }
 
-StringLiteral ::= 
-    | '"' { StringChar | Interpolation } '"'
-    | "'" { StringChar } "'"
+StringLiteral ::= '"' { StringChar | Interpolation } '"'
 
-StringChar ::= /* any character except ", ', newline, or { */
+StringChar ::= /* any character except ", newline, or { */
+
+RuneChar ::= /* any character except ', newline, or escape */
 
 Interpolation ::= "{" Expression "}"
 
 BooleanLiteral ::= "true" | "false"
 
 StructLiteral ::=
-    TypeAnnotation NEWLINE
-    INDENT FieldInitList DEDENT
+    | TypeAnnotation "{" [ FieldInitList ] "}"
+    | TypeAnnotation NEWLINE INDENT FieldInitBlock DEDENT
 
-FieldInitList ::= FieldInit { FieldInit }
+FieldInitList ::= FieldInit { "," FieldInit }
 
-FieldInit ::= IDENTIFIER ":" Expression NEWLINE
+FieldInit ::= IDENTIFIER ":" Expression
+
+FieldInitBlock ::= FieldInitLine { FieldInitLine }
+
+FieldInitLine ::= IDENTIFIER ":" Expression NEWLINE
+    # Indentation-based struct literal:
+    #   todo := Todo
+    #       id: 1
+    #       title: "Learn Kukicha"
+    #       completed: false
 
 # EmptyLiteral uses 1-token lookahead after 'empty' to determine the type.
 # If 'empty' is followed by 'list', 'map', 'channel', or 'reference', parse as typed empty.
@@ -318,36 +349,29 @@ EmptyLiteral ::=
     | "empty"                                      # standalone nil/zero-value
 
 # Non-empty list literal (list with initial values)
-ListLiteral ::=
-    | "list" "of" TypeAnnotation NEWLINE INDENT ExpressionList DEDENT
-    | "[" "]" TypeAnnotation "{" "}"
-    | "[" "]" TypeAnnotation "{" ExpressionList "}"
+ListLiteral ::= "[" [ ExpressionList ] "]"
 
-# Non-empty map literal (map with initial entries)
-MapLiteral ::=
-    | "map" "of" TypeAnnotation "to" TypeAnnotation NEWLINE INDENT MapEntryList DEDENT
-    | "map" "[" TypeAnnotation "]" TypeAnnotation "{" "}"
-    | "map" "[" TypeAnnotation "]" TypeAnnotation "{" MapEntryList "}"
+MakeExpression ::=
+    | "make" "(" TypeAnnotation [ "," ExpressionList ] ")"
+    | "make" TypeAnnotation [ "," ExpressionList ]
+    # Both forms valid: make(channel of string) or make channel of string, 100
 
-MapEntryList ::= MapEntry { MapEntry }
-
-MapEntry ::= IDENTIFIER ":" Expression NEWLINE
-
-ChannelCreation ::= "make" ( ChannelType | "(" "chan" TypeAnnotation [ "," Expression ] ")" )
-
-ReceiveExpression ::= 
-    | "receive" Expression
-    | "<-" Expression
+ReceiveExpression ::= "receive" "from" Expression
 
 RecoverExpression ::= "recover" "(" ")"
 
-TypeCast ::=
-    | TypeAnnotation "(" Expression ")"
-    | Expression "as" TypeAnnotation
+TypeCast ::= Expression "as" TypeAnnotation
 
 ReturnExpression ::= "return" [ ExpressionList ]
 
-ShorthandMethodCall ::= "." IDENTIFIER [ "(" [ ExpressionList ] ")" ]
+ShorthandMethodCall ::= "." IDENTIFIER [ "(" [ ArgumentList ] ")" ]
+
+FunctionLiteral ::= "func" "(" [ ParameterList ] ")" [ ReturnTypeList ] NEWLINE INDENT StatementList DEDENT
+ErrorExpression ::= "error" Expression
+DiscardExpression ::= "discard"
+CloseExpression ::= "close" Expression
+PanicExpression ::= "panic" Expression
+RuneLiteral ::= "'" RuneChar "'"
 ```
 
 ---
@@ -387,9 +411,10 @@ to          through     at          of          and
 or          onerr       not         return      go
 defer       make        list        map         channel
 send        receive     close       panic       recover
-error       empty       reference   on          this
-discard     true        false       equals      as
-continue    break
+error       empty       nil         reference   dereference
+on          discard     true        false       equals
+as          many        continue    break
+switch      case        default
 ```
 
 **Note:** The keywords `list`, `map`, and `channel` are context-sensitive and may also be used as identifiers in certain contexts.
@@ -400,11 +425,11 @@ continue    break
 
 ```
 +     -     *     /     %
-==    !=    <     <=    >     >=    equals    in
-&&    ||    !     and   or    not
-:=    =     :     .     ,
+==    !=    <     <=    >     >=
+!     and   or    not
+|     |>    ++    --
+:=    =     :     .     ,     ;
 (     )     [     ]     {     }
-<-    ->    |>
 ```
 
 ---
@@ -495,66 +520,6 @@ if err != empty
 The `discard` keyword is syntactic sugar for Go's `_` (blank identifier):
 - Can appear in tuple unpacking
 - Cannot be referenced as a variable
-
-### Membership Operators
-
-The `in` and `not in` operators test for membership in collections.
-
-**Disambiguation:**
-- In `for` loops: `for x in items` — iteration syntax
-- In expressions: `x in items` — membership test operator
-
-**Code Generation:**
-
-For lists/slices:
-```kukicha
-# Source
-if item in items
-    print "found"
-
-# Generates Go
-import "slices"
-if slices.Contains(items, item) {
-    fmt.Println("found")
-}
-```
-
-For maps:
-```kukicha
-# Source
-if key in config
-    print "exists"
-
-# Generates Go
-if _, exists := config[key]; exists {
-    fmt.Println("exists")
-}
-```
-
-For strings:
-```kukicha
-# Source
-if "hello" in text
-    print "found"
-
-# Generates Go
-import "strings"
-if strings.Contains(text, "hello") {
-    fmt.Println("found")
-}
-```
-
-The `not in` operator negates the result:
-```kukicha
-# Source
-if item not in blacklist
-    process(item)
-
-# Generates Go
-if !slices.Contains(blacklist, item) {
-    process(item)
-}
-```
 
 ### Negative Indexing
 
@@ -677,7 +642,7 @@ MethodDeclaration
 ├─ func
 ├─ Load
 ├─ on
-├─ this         # explicit receiver name
+├─ cfg          # explicit receiver name
 ├─ Config       # receiver type
 ├─ ParameterList
 │  └─ Parameter
@@ -712,7 +677,7 @@ func ProcessAll(items list of Item)
             send results, result
     
     for i from 0 to len(items)
-        result := receive results
+        result := receive from results
         print result
 ```
 
@@ -730,7 +695,7 @@ FunctionDeclaration
    ├─ VariableDeclaration
    │  ├─ results
    │  ├─ :=
-   │  └─ ChannelCreation
+   │  └─ MakeExpression
    │     ├─ make
    │     ├─ ChannelType: channel of Result
    │     └─ len(items)
@@ -752,7 +717,7 @@ FunctionDeclaration
       ├─ to
       ├─ len(items)
       └─ StatementList
-         ├─ VariableDeclaration: result := receive results
+         ├─ VariableDeclaration: result := receive from results
          └─ ExpressionStatement: print result
 ```
 
@@ -915,9 +880,9 @@ func Process(data)  # Warning: Type inference may fail. Consider explicit type.
 
 When you write:
 ```kukicha
-errors := logs |> slice.GroupBy(func(e LogEntry) string {
+errors := logs |> slice.GroupBy(func(e LogEntry) string
     return e.Level
-})
+)
 ```
 
 The transpiler generates:
@@ -971,7 +936,7 @@ The generic types `[T any, K comparable]` are inferred from:
    - Operator precedence (use precedence climbing)
    - Type inference contexts
    - OnErr clause parsing (statement-level only)
-   - Explicit `this` receiver in method declarations
+   - Explicit receiver names in method declarations
    - Dual syntax (Kukicha + Go forms)
 
 3. **Semantic analyzer must:**
@@ -979,12 +944,12 @@ The generic types `[T any, K comparable]` are inferred from:
    - Resolve identifiers to declarations
    - Verify interface implementations
    - Check that `onerr` clause is used correctly (function returns `(T, error)`)
-   - Verify `this` is only referenced within method bodies
+   - Verify receiver names are only referenced within method bodies
    - Validate method receivers
 
 4. **Code generator must:**
    - Transform `onerr` clause to if/err checks
-   - Convert methods to Go receiver syntax (`on this T` → `(this T)`)
+   - Convert methods to Go receiver syntax (`on r T` → `(r T)`)
    - Handle string interpolation (fmt.Sprintf)
    - Generate proper Go package structure
    - **Generate generic type parameters for stdlib functions** (Go 1.25+ syntax)
@@ -1024,14 +989,14 @@ func LoadConfig(path string) Config
 
 # 4. Concurrency
 func Fetch(urls list of string)
-    ch := make channel of string
+    ch := make(channel of string)
     for discard, url in urls
         go
             result := http.get(url) onerr return
             send ch, result
 
     for i from 0 to len(urls)
-        print receive ch
+        print receive from ch
 
 # 5. Interface
 interface Processor
@@ -1059,7 +1024,7 @@ func EmptyExamples()
 
 # 8. Function types (callbacks and higher-order functions)
 func Filter(items list of int, predicate func(int) bool) list of int
-    result := list of int{}
+    result := empty list of int
     for item in items
         if predicate(item)
             result = append(result, item)
@@ -1070,7 +1035,7 @@ func ForEach(items list of string, action func(string))
         action(item)
 
 func main()
-    numbers := list of int{1, 2, 3, 4, 5}
+    numbers := [1, 2, 3, 4, 5]
 
     # Pass a function literal as callback
     evens := Filter(numbers, func(n int) bool
@@ -1078,7 +1043,7 @@ func main()
     )
 
     # Pass another callback
-    ForEach(list of string{"a", "b", "c"}, func(s string)
+    ForEach(["a", "b", "c"], func(s string)
         print s
     )
 ```

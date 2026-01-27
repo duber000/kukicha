@@ -195,7 +195,7 @@ go fetchData(url)
 # Channels
 ch := make channel of string
 send ch, "message"
-msg := receive ch
+msg := receive from ch
 close(ch)
 ```
 

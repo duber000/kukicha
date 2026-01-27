@@ -238,7 +238,7 @@ func main()
 
     # Collect results
     for a from 1 through 5
-        result := receive results
+        result := receive from results
         print("Result: {result}")
 ```
 
