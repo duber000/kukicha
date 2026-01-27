@@ -30,6 +30,15 @@ func New(source string, filename string) (*Parser, error) {
 	}, nil
 }
 
+// NewFromTokens creates a new parser from a slice of tokens
+func NewFromTokens(tokens []lexer.Token) *Parser {
+	return &Parser{
+		tokens: tokens,
+		pos:    0,
+		errors: []error{},
+	}
+}
+
 // Parse parses the tokens into a Program AST
 func (p *Parser) Parse() (*ast.Program, []error) {
 	program := &ast.Program{
