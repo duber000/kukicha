@@ -210,7 +210,12 @@ kukicha version
 
 ### Run Tests
 
+Kukicha uses Go 1.25+ experimental features (`jsonv2`, `greenteagc`). Use `make` to set the environment automatically, or export `GOEXPERIMENT` yourself:
+
 ```bash
+make test                        # Sets GOEXPERIMENT automatically
+# or manually:
+export GOEXPERIMENT=jsonv2,greenteagc
 go test ./...                    # All tests
 go test ./internal/parser/... -v # Specific package
 go test ./... -cover             # With coverage
