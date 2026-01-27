@@ -276,6 +276,7 @@ PrimaryExpression ::=
     | "(" Expression ")"
     | StructLiteral
     | ListLiteral
+    | TypedListLiteral
     | EmptyLiteral       # 'empty' with optional type (uses 1-token lookahead)
     | MakeExpression
     | CloseExpression
@@ -350,6 +351,10 @@ EmptyLiteral ::=
 
 # Non-empty list literal (list with initial values)
 ListLiteral ::= "[" [ ExpressionList ] "]"
+
+# Typed list literal with explicit element type
+TypedListLiteral ::= "list" "of" TypeAnnotation "{" [ ExpressionList ] "}"
+    # e.g., list of int{1, 2, 3} or list of Todo{}
 
 MakeExpression ::=
     | "make" "(" TypeAnnotation [ "," ExpressionList ] ")"

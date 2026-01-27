@@ -282,6 +282,13 @@ type Server
 type ErrorResponse
     error string json:"error"
 
+type CreateTodoInput
+    title string
+
+type UpdateTodoInput
+    title string
+    completed bool
+
 # --- Server Constructor ---
 
 func NewServer(dbPath string) (reference Server, error)
@@ -322,13 +329,11 @@ func (s reference Server) handleListTodos(w http.ResponseWriter, r reference htt
 
 func (s reference Server) handleCreateTodo(w http.ResponseWriter, r reference http.Request)
     # Parse request body using pipe
-    input := struct
-        title string
-    {}
-    
+    input := CreateTodoInput{}
+
     r.Body |> json.NewDecoder() |> .Decode(reference of input) onerr
         return s.sendError(w, 400, "Invalid JSON")
-    
+
     if input.title equals ""
         s.sendError(w, 400, "Title is required")
         return
@@ -357,10 +362,7 @@ func (s reference Server) handleUpdateTodo(w http.ResponseWriter, r reference ht
     
     # Parse request body using pipe
     # Note: This is a full update (PUT). For partial updates, use PATCH with optional fields
-    input := struct
-        title string
-        completed bool
-    {}
+    input := UpdateTodoInput{}
     
     r.Body |> json.NewDecoder() |> .Decode(reference of input) onerr
         return s.sendError(w, 400, "Invalid JSON")

@@ -28,7 +28,9 @@ repos := fetch.Get("https://api.github.com/users/golang/repos")
     |> fetch.CheckStatus()                    # Verify HTTP 200
     |> fetch.Bytes()                          # Get response bytes
     |> json.Unmarshal(_, reference repos)     # Parse JSON into repos
-    |> slice.Filter(r -> r.Stars > 100)      # Filter popular repos
+    |> slice.Filter(func(r Repo) bool         # Filter popular repos
+        return r.Stars > 100
+    )
     |> files.Write("repos.json")              # Save to file
     onerr panic "failed"                      # Handle errors
 ```
