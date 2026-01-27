@@ -4,7 +4,6 @@ petiole template
 
 import "text/template"
 import "bytes"
-import "strings"
 
 # TemplateData holds template content and data for rendering
 type TemplateData

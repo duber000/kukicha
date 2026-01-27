@@ -879,6 +879,7 @@ func (a *Analyzer) validateTypeAnnotation(typeAnn ast.TypeAnnotation) {
 		builtInTypes := map[string]bool{
 			"interface{}": true,
 			"any":         true,
+			"any2":        true, // Placeholder for second generic type parameter
 			"error":       true,
 			"byte":        true,
 			"rune":        true,

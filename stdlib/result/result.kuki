@@ -2,6 +2,8 @@
 
 petiole result
 
+import "errors"
+
 # Optional represents a value that may or may not be present
 # This is useful for expressing "value or nothing" without using nil/empty
 type Optional

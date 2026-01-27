@@ -73,16 +73,17 @@ func Do(req Request) (any, error)
     client := http.Client{}
     client.Timeout = time.Duration(req.timeoutNs)
 
-    # Create body if data is provided
-    bodyReader := empty
+    # Create HTTP request with optional body
+    # Use a conditional approach to handle nil vs non-nil io.Reader
+    bodyData := empty
     if req.body != empty
         # Marshal body to JSON (stdlib/json uses jsonv2 for performance)
         jsonBytes, marshalErr := json.Marshal(req.body)
         if marshalErr != empty
             return empty, marshalErr
-        bodyReader = bytes.NewReader(jsonBytes)
-    
-    httpReq, reqErr := http.NewRequest(req.method, req.url, bodyReader)
+        bodyData = jsonBytes
+
+    httpReq, reqErr := createHTTPRequest(req.method, req.url, bodyData)
     if reqErr != empty
         return empty, reqErr
 
@@ -98,6 +99,15 @@ func Do(req Request) (any, error)
 
     resp, doErr := client.Do(httpReq)
     return resp, doErr
+
+# createHTTPRequest wraps http.NewRequest with conditional body reader
+func createHTTPRequest(method string, url string, bodyData any) (reference http.Request, error)
+    if bodyData != empty
+        bodyBytes := bodyData as list of byte
+        req, err := http.NewRequest(method, url, bytes.NewReader(bodyBytes))
+        return req, err
+    req, err := http.NewRequest(method, url, empty)
+    return req, err
 
 # Get performs an HTTP GET request to the specified URL (quick function)
 # Returns the HTTP response and any error that occurred
