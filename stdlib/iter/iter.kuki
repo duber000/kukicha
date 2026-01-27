@@ -15,7 +15,7 @@ func Filter(seq iter.Seq, keep func(any) bool) iter.Seq
 
 # Map transforms each item in the iterator
 func Map(seq iter.Seq, transform func(any) any2) iter.SeqU
-    return func(yield func(any) bool) bool
+    return func(yield func(any2) bool) bool
         for item in seq
             if !yield(transform(item))
                 return false

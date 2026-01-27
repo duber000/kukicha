@@ -22,7 +22,7 @@ func Filter[T any](seq iter.Seq[T], keep func(T) bool) iter.Seq[T] {
 }
 
 func Map[T any, U any](seq iter.Seq[T], transform func(T) U) iter.Seq[U] {
-	return func(yield func(T) bool) bool {
+	return func(yield func(U) bool) bool {
 		for _, item := range seq {
 			if !yield(transform(item)) {
 				return false
@@ -32,7 +32,7 @@ func Map[T any, U any](seq iter.Seq[T], transform func(T) U) iter.Seq[U] {
 	}
 }
 
-func FlatMap[T any, U any](seq iter.Seq[T], transform func(T) iter.Seq[T]) iter.Seq[U] {
+func FlatMap[T any](seq iter.Seq[T], transform func(T) iter.Seq[T]) iter.Seq[T] {
 	return func(yield func(T) bool) bool {
 		for _, item := range seq {
 			for _, subItem := range transform(item) {
@@ -108,7 +108,7 @@ func Chunk[T any](seq iter.Seq[T], n int) iter.Seq[[]T] {
 	}
 }
 
-func Zip[T any](seq1 iter.Seq[T], seq2 iter.Seq[T]) iter.Seq2[T, U] {
+func Zip[T any](seq1 iter.Seq[T], seq2 iter.Seq[T]) iter.Seq2[T, T] {
 	return func(yield func(T, T) bool) bool {
 		done := false
 		for _, v1 := range seq1 {
@@ -116,7 +116,7 @@ func Zip[T any](seq1 iter.Seq[T], seq2 iter.Seq[T]) iter.Seq2[T, U] {
 				return true
 			}
 			v2Exists := false
-			v2 := nil
+			v2 := *new(T)
 			for _, v2Candidate := range seq2 {
 				v2 = v2Candidate
 				v2Exists = true
@@ -172,5 +172,5 @@ func Find[T any](seq iter.Seq[T], predicate func(T) bool) (T, bool) {
 			return item, true
 		}
 	}
-	return nil, false
+	return *new(T), false
 }

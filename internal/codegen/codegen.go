@@ -370,24 +370,23 @@ func (g *Generator) inferStdlibTypeParameters(decl *ast.FunctionDecl) []*TypePar
 	usesIterSeq := false
 	needsTwoTypes := false
 
-	// Check if function uses iter.Seq
+	// Check if function uses iter.Seq and scan for any2 placeholder
 	for _, param := range decl.Parameters {
 		if g.isIterSeqType(param.Type) {
 			usesIterSeq = true
-			break
+		}
+		if g.typeContainsPlaceholder(param.Type, "any2") {
+			needsTwoTypes = true
 		}
 	}
 
 	for _, ret := range decl.Returns {
 		if g.isIterSeqType(ret) {
 			usesIterSeq = true
-			break
 		}
-	}
-
-	// Check if function transforms types (like Map: T → U)
-	if decl.Name.Value == "Map" || decl.Name.Value == "FlatMap" {
-		needsTwoTypes = true
+		if g.typeContainsPlaceholder(ret, "any2") {
+			needsTwoTypes = true
+		}
 	}
 
 	// Generate type parameters
@@ -447,6 +446,85 @@ func (g *Generator) isIterSeqType(typeAnn ast.TypeAnnotation) bool {
 			(g.isStdlibIter && namedType.Name == "Seq")
 	}
 	return false
+}
+
+// typeContainsPlaceholder recursively checks if a type annotation tree
+// contains the given placeholder name (e.g., "any2")
+func (g *Generator) typeContainsPlaceholder(typeAnn ast.TypeAnnotation, placeholder string) bool {
+	if typeAnn == nil {
+		return false
+	}
+	switch t := typeAnn.(type) {
+	case *ast.PrimitiveType:
+		return t.Name == placeholder
+	case *ast.NamedType:
+		return t.Name == placeholder
+	case *ast.ListType:
+		return g.typeContainsPlaceholder(t.ElementType, placeholder)
+	case *ast.MapType:
+		return g.typeContainsPlaceholder(t.KeyType, placeholder) || g.typeContainsPlaceholder(t.ValueType, placeholder)
+	case *ast.ChannelType:
+		return g.typeContainsPlaceholder(t.ElementType, placeholder)
+	case *ast.ReferenceType:
+		return g.typeContainsPlaceholder(t.ElementType, placeholder)
+	case *ast.FunctionType:
+		for _, param := range t.Parameters {
+			if g.typeContainsPlaceholder(param, placeholder) {
+				return true
+			}
+		}
+		for _, ret := range t.Returns {
+			if g.typeContainsPlaceholder(ret, placeholder) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isLikelyInterfaceType checks if a Go type name is likely an interface type.
+// Used to determine whether empty Type should generate nil (interface) vs Type{} (struct).
+func (g *Generator) isLikelyInterfaceType(typeName string) bool {
+	// "error" is always an interface
+	if typeName == "error" {
+		return true
+	}
+
+	// Check current program's declarations for interface types
+	for _, decl := range g.program.Declarations {
+		if iface, ok := decl.(*ast.InterfaceDecl); ok {
+			if iface.Name.Value == typeName {
+				return true
+			}
+		}
+	}
+
+	// Common standard library interfaces
+	knownInterfaces := map[string]bool{
+		"io.Reader":           true,
+		"io.Writer":           true,
+		"io.Closer":           true,
+		"io.ReadCloser":       true,
+		"io.WriteCloser":      true,
+		"io.ReadWriter":       true,
+		"io.ReadWriteCloser":  true,
+		"io.ReaderFrom":       true,
+		"io.WriterTo":         true,
+		"io.Seeker":           true,
+		"io.ReadSeeker":       true,
+		"io.ReadWriteSeeker":  true,
+		"fmt.Stringer":        true,
+		"fmt.Scanner":         true,
+		"http.Handler":        true,
+		"http.ResponseWriter": true,
+		"context.Context":     true,
+		"sort.Interface":      true,
+		"net.Conn":            true,
+		"net.Listener":        true,
+		"net.Error":           true,
+	}
+
+	return knownInterfaces[typeName]
 }
 
 // generateTypeParameters generates Go generic type parameter list
@@ -533,8 +611,8 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 				// Transform iter.Seq → iter.Seq[T]
 				if _, ok := g.placeholderMap["any"]; ok {
 					typeParam := "T"
-					// If this is a return type for a transforming function, use U
-					if g.processingReturnType && (g.currentFuncName == "Map" || g.currentFuncName == "FlatMap") {
+					// If this is a return type and U is declared, use U
+					if g.processingReturnType {
 						if _, hasU := g.placeholderMap["any2"]; hasU {
 							typeParam = "U"
 						}
@@ -548,12 +626,16 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 				return "iter.Seq[U]"
 			}
 
-			// iter.Seq2 → iter.Seq2[T, U] or iter.Seq2[int, T] (for Enumerate)
+			// iter.Seq2 → iter.Seq2[T, U] or iter.Seq2[int, T] (for Enumerate) or iter.Seq2[T, T]
 			if t.Name == "iter.Seq2" {
 				if g.currentFuncName == "Enumerate" {
 					return "iter.Seq2[int, T]"
 				}
-				return "iter.Seq2[T, U]"
+				// Only use U if it's actually declared as a type parameter
+				if _, hasU := g.placeholderMap["any2"]; hasU {
+					return "iter.Seq2[T, U]"
+				}
+				return "iter.Seq2[T, T]"
 			}
 
 			// iter.SeqSlice → iter.Seq[[]T] (for Chunk)
@@ -648,6 +730,18 @@ func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
 	if stmt.OnErr != nil {
 		g.generateOnErrVarDecl(stmt.Names, stmt.Values, stmt.OnErr)
 		return
+	}
+
+	// Special case: typed empty with interface type needs var declaration
+	// e.g., x := empty io.Reader → var x io.Reader (nil by default)
+	if len(stmt.Names) == 1 && len(stmt.Values) == 1 {
+		if emptyExpr, ok := stmt.Values[0].(*ast.EmptyExpr); ok && emptyExpr.Type != nil {
+			targetType := g.generateTypeAnnotation(emptyExpr.Type)
+			if g.isLikelyInterfaceType(targetType) {
+				g.writeLine(fmt.Sprintf("var %s %s", stmt.Names[0].Value, targetType))
+				return
+			}
+		}
 	}
 
 	// Build comma-separated list of names
@@ -1064,7 +1158,16 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 	case *ast.EmptyExpr:
 		if e.Type != nil {
 			targetType := g.generateTypeAnnotation(e.Type)
+			if g.isLikelyInterfaceType(targetType) {
+				return "nil"
+			}
 			return fmt.Sprintf("%s{}", targetType)
+		}
+		// In generic stdlib/iter context, use *new(T) for zero value instead of nil
+		if g.isStdlibIter && g.placeholderMap != nil {
+			if _, hasT := g.placeholderMap["any"]; hasT {
+				return "*new(T)"
+			}
 		}
 		return "nil"
 	case *ast.DiscardExpr:
