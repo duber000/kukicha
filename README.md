@@ -5,16 +5,18 @@
 Kukicha is a beginner-friendly programming language that transpiles to idiomatic Go code. No runtime overhead. No magic. Just cleaner syntax that becomes real Go.
 
 ```kukicha
+func isActive(u User) bool
+    return u.active
+
+func getName(u User) string
+    return u.name
+
 func main()
     users := fetchUsers() onerr panic "failed to fetch"
 
     active := users
-        |> slice.Filter(func(u User) bool
-            return u.active
-        )
-        |> slice.Map(func(u User) string
-            return u.name
-        )
+        |> slice.Filter(isActive)
+        |> slice.Map(getName)
 
     for name in active
         print("Hello {name}!")
@@ -47,15 +49,17 @@ Kukicha fixes this:
 
 ```kukicha
 # Fetch pod status, filter failures, alert
+func notRunning(p Pod) bool
+    return p.status != "Running"
+
+func formatStatus(p Pod) string
+    return "{p.name}: {p.status}"
+
 pods := k8s.ListPods(namespace) onerr panic "k8s unavailable"
 
 failing := pods
-    |> slice.Filter(func(p Pod) bool
-        return p.status != "Running"
-    )
-    |> slice.Map(func(p Pod) string
-        return "{p.name}: {p.status}"
-    )
+    |> slice.Filter(notRunning)
+    |> slice.Map(formatStatus)
 
 if len(failing) > 0
     slack.Alert(channel, "Pods failing:\n" + strings.Join(failing, "\n"))

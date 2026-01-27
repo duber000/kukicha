@@ -1476,6 +1476,8 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 		return &ast.RecoverExpr{Token: token}
 	case lexer.TOKEN_RECEIVE:
 		return p.parseReceiveExpr()
+	case lexer.TOKEN_LIST:
+		return p.parseTypedListLiteral()
 	case lexer.TOKEN_LBRACKET:
 		return p.parseListLiteral()
 	case lexer.TOKEN_LPAREN:
@@ -1733,6 +1735,33 @@ func (p *Parser) parseListLiteral() *ast.ListLiteralExpr {
 
 	return &ast.ListLiteralExpr{
 		Token:    token,
+		Elements: elements,
+	}
+}
+
+func (p *Parser) parseTypedListLiteral() *ast.ListLiteralExpr {
+	token := p.advance() // consume 'list'
+	p.consume(lexer.TOKEN_OF, "expected 'of' after 'list'")
+
+	elementType := p.parseTypeAnnotation()
+
+	p.consume(lexer.TOKEN_LBRACE, "expected '{' after list type")
+
+	elements := []ast.Expression{}
+	if !p.check(lexer.TOKEN_RBRACE) {
+		for {
+			elements = append(elements, p.parseExpression())
+			if !p.match(lexer.TOKEN_COMMA) {
+				break
+			}
+		}
+	}
+
+	p.consume(lexer.TOKEN_RBRACE, "expected '}' after list elements")
+
+	return &ast.ListLiteralExpr{
+		Token:    token,
+		Type:     elementType,
 		Elements: elements,
 	}
 }
