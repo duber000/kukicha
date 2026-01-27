@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/duber000/kukicha/internal/ast"
 	"github.com/duber000/kukicha/internal/codegen"
 	"github.com/duber000/kukicha/internal/parser"
 	"github.com/duber000/kukicha/internal/semantic"
@@ -43,9 +44,11 @@ func main() {
 		}
 		checkCommand(os.Args[2])
 	case "fmt":
-		// TODO: Implement fmtCommand
-		fmt.Println("Error: fmt command not yet implemented")
-		os.Exit(1)
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: kukicha fmt [options] <files>")
+			os.Exit(1)
+		}
+		fmtCommand(os.Args[2:])
 	case "version":
 		fmt.Printf("kukicha version %s\n", version)
 	case "help", "-h", "--help":
@@ -71,38 +74,43 @@ func printUsage() {
 	fmt.Println("  kukicha help                Show this help message")
 }
 
-func buildCommand(filename string) {
-	// Read source file
+func loadAndAnalyze(filename string) (*ast.Program, error) {
 	source, err := os.ReadFile(filename)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
-		os.Exit(1)
+		return nil, err
 	}
 
-	// Parse
 	p, err := parser.New(string(source), filename)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Lexer error: %v\n", err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	program, parseErrors := p.Parse()
 	if len(parseErrors) > 0 {
-		fmt.Fprintf(os.Stderr, "Parse errors:\n")
+		var msgs []string
 		for _, err := range parseErrors {
-			fmt.Fprintf(os.Stderr, "  %v\n", err)
+			msgs = append(msgs, fmt.Sprintf("  %v", err))
 		}
-		os.Exit(1)
+		return nil, fmt.Errorf("parse errors:\n%s", strings.Join(msgs, "\n"))
 	}
 
-	// Semantic analysis
 	analyzer := semantic.New(program)
 	semanticErrors := analyzer.Analyze()
 	if len(semanticErrors) > 0 {
-		fmt.Fprintf(os.Stderr, "Semantic errors:\n")
+		var msgs []string
 		for _, err := range semanticErrors {
-			fmt.Fprintf(os.Stderr, "  %v\n", err)
+			msgs = append(msgs, fmt.Sprintf("  %v", err))
 		}
+		return nil, fmt.Errorf("semantic errors:\n%s", strings.Join(msgs, "\n"))
+	}
+
+	return program, nil
+}
+
+func buildCommand(filename string) {
+	program, err := loadAndAnalyze(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -150,37 +158,9 @@ func buildCommand(filename string) {
 }
 
 func runCommand(filename string) {
-	// Read source file
-	source, err := os.ReadFile(filename)
+	program, err := loadAndAnalyze(filename)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Parse
-	p, err := parser.New(string(source), filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Lexer error: %v\n", err)
-		os.Exit(1)
-	}
-
-	program, parseErrors := p.Parse()
-	if len(parseErrors) > 0 {
-		fmt.Fprintf(os.Stderr, "Parse errors:\n")
-		for _, err := range parseErrors {
-			fmt.Fprintf(os.Stderr, "  %v\n", err)
-		}
-		os.Exit(1)
-	}
-
-	// Semantic analysis
-	analyzer := semantic.New(program)
-	semanticErrors := analyzer.Analyze()
-	if len(semanticErrors) > 0 {
-		fmt.Fprintf(os.Stderr, "Semantic errors:\n")
-		for _, err := range semanticErrors {
-			fmt.Fprintf(os.Stderr, "  %v\n", err)
-		}
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -219,37 +199,9 @@ func runCommand(filename string) {
 }
 
 func checkCommand(filename string) {
-	// Read source file
-	source, err := os.ReadFile(filename)
+	_, err := loadAndAnalyze(filename)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Parse
-	p, err := parser.New(string(source), filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Lexer error: %v\n", err)
-		os.Exit(1)
-	}
-
-	program, parseErrors := p.Parse()
-	if len(parseErrors) > 0 {
-		fmt.Fprintf(os.Stderr, "Parse errors:\n")
-		for _, err := range parseErrors {
-			fmt.Fprintf(os.Stderr, "  %v\n", err)
-		}
-		os.Exit(1)
-	}
-
-	// Semantic analysis
-	analyzer := semantic.New(program)
-	semanticErrors := analyzer.Analyze()
-	if len(semanticErrors) > 0 {
-		fmt.Fprintf(os.Stderr, "Type errors:\n")
-		for _, err := range semanticErrors {
-			fmt.Fprintf(os.Stderr, "  %v\n", err)
-		}
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 

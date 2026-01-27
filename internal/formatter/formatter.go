@@ -41,10 +41,7 @@ func Format(source string, filename string, opts FormatOptions) (string, error) 
 	comments := ExtractComments(tokens)
 
 	// Parse to get AST
-	p, err := parser.New(processedSource, filename)
-	if err != nil {
-		return "", fmt.Errorf("parser init error: %w", err)
-	}
+	p := parser.NewFromTokens(tokens)
 
 	program, parseErrors := p.Parse()
 	if len(parseErrors) > 0 {
