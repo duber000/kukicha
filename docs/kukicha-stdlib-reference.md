@@ -14,7 +14,8 @@ Kukicha combines two powerful ideas:
 2. **"Scripting Superpowers"** - Add high-level helpers for common scripting tasks
 
 **Key Principles:**
-- Go stdlib is first-class in Kukicha (no wrappers!)
+- Kukicha can call any Go stdlib directly without wrappers
+- We also provide convenient wrapper packages for common scripting patterns
 - Pipe operator `|>` makes data transformations readable
 - Kukicha stdlib provides scripting conveniences Go lacks
 - Perfect for one-off tools, automation scripts, and learning
@@ -41,7 +42,7 @@ Kukicha combines two powerful ideas:
 - Constants with types not supported
 - Retry package has limited functionality - see package documentation
 
-### ✅ Completed Packages
+### Completed Packages
 
 | Package | Purpose | Status | Functions |
 |---------|---------|--------|-----------|
@@ -59,13 +60,13 @@ Kukicha combines two powerful ideas:
 | **template** | Text templating | ✅ Ready | Render, Data, Execute, Parse, New, WithContent, RenderSimple, Must |
 | **result** | Optional/Result types | ✅ Ready | Some, None, Ok, Err, Map, UnwrapOr, AndThen, Match, ToOptional, FromOptional, Flatten, FlattenResult, All, Any |
 
-### 🚧 Future Enhancements
+### Partially Implemented
 
 | Package | Purpose | Status | Notes |
 |---------|---------|--------|-------|
-| **retry** | Full retry logic with automatic error handling | ⚠️ Limited | Currently a stub with helper functions. Full implementation requires language support for passing functions that return errors. See stdlib/retry/retry.kuki for manual retry patterns. |
+| **retry** | Full retry logic with automatic error handling | ⚠️ Partial | Manual retry helpers available (recommended approach). Automatic retry.Do() not available yet due to language design constraints. See stdlib/retry/retry.kuki for examples. |
 
-### ⚠️ Known Limitations in Examples
+### Known Limitations
 
 Some roadmap examples use aspirational syntax not yet supported:
 
@@ -73,6 +74,32 @@ Some roadmap examples use aspirational syntax not yet supported:
 |---------|---------------------|------------|
 | **retry** | Automatic retry with `retry.Do()` | Use manual retry loops (see stdlib/retry/retry.kuki) |
 | **shell** | Command piping with `shell.Pipe()` | Use shell pipes directly or multiple commands |
+
+### Error Handling Best Practices
+
+When using `onerr`, follow these guidelines:
+
+```kukicha
+# ✅ Use panic only for unrecoverable startup errors
+config := loadConfig() onerr panic "missing config file"
+
+# ✅ Return errors from library functions
+func ProcessFile(path string) (data any, error)
+    return path |> files.Read() onerr return empty, error
+
+# ✅ Log and continue for recoverable errors in scripts
+data := fetch.Get(url) onerr
+    log.Printf("Warning: failed to fetch {url}")
+    return empty  # or provide a default
+
+# ❌ Don't use panic in production handlers
+result := operation() onerr panic "should not happen"  # BAD!
+```
+
+**Rule of Thumb:**
+- Use `panic` for **startup errors** (missing config, bad flags)
+- Use `return error` for **library functions**
+- Use `onerr log.Printf()` for **recoverable script errors**
 
 ---
 
@@ -85,33 +112,28 @@ import "stdlib/iter"
 import "stdlib/slice"
 
 # Pipeline: filter positive numbers, double them, sum
+# Note: iter provides functional composition; slice provides eager operations
 total := numbers
     |> slice.Filter(func(n int) bool {
-        return n > 0
+        return n > 0  # Keep only positive numbers
     })
     |> slice.Map(func(n int) int {
-        return n * 2
+        return n * 2  # Double each number
     })
     |> iter.Reduce(0, func(acc int, n int) int {
-        return acc + n
+        return acc + n  # Sum all numbers
     })
 
-# Find first matching item
-user := users
-    |> slice.Filter(func(u User) bool {
-        return u.Email equals "admin@example.com"
-    })
-    |> slice.First(1)
+# Available slice operations:
+# Filter, Map, Drop, DropLast, First, Last
+# Unique, Chunk, Reverse, Contains, GroupBy
 
-# Take first 10, skip first 2
-page := items
-    |> slice.Drop(2)
-    |> slice.First(10)
-
-# Available functions:
+# Available iter operations (functional composition):
 # Filter, Map, FlatMap, Take, Skip, Enumerate, Zip
 # Chunk, Reduce, Collect, Any, All, Find
 ```
+
+**Note:** `slice` operations work on entire collections eagerly, while `iter` provides lazy functional composition. Use `slice` for direct transformations and `iter` for complex composed workflows.
 
 ### Slice Package
 
@@ -219,11 +241,12 @@ for url in urls
 concurrent.ParallelWithLimit(4, tasks...)
 
 # Track a goroutine with WaitGroup
+# concurrent.Go spawns a goroutine and returns a *sync.WaitGroup
 wg := concurrent.Go(func() {
     processLargeFile()
 })
 # Do other work...
-wg.Wait()
+wg.Wait()  # Wait for the goroutine to complete
 
 # Available functions:
 # Parallel, ParallelWithLimit, Go
@@ -542,7 +565,9 @@ files.TempFile("test-") |> files.UseWith(func(path string) {
 
 ### Shell Package
 
-Safe command execution without shell injection with builder pattern support.
+Safe command execution without shell injection (commands bypass shell parsing).
+
+⚠️ **Security Note:** `shell.New` executes the command directly without shell parsing. While this prevents shell injection, always validate and sanitize user input before passing it as command arguments. Do not pass unsanitized user input as arguments.
 
 ```kukicha
 import "stdlib/shell"
@@ -573,6 +598,13 @@ cmd := shell.New("npm", "install") |> shell.Dir("./frontend") |> shell.Env("NODE
 result := shell.Execute(cmd)
 if shell.Success(result)
     print("npm install succeeded")
+
+# ⚠️ SAFE: Build args programmatically
+cmd := shell.New("grep", searchTerm, filename)  # Direct args, no shell parsing
+
+# ⚠️ UNSAFE: Don't pass unsanitized user input
+userQuery := getUserInput()  # Could be malicious
+cmd := shell.New("grep", userQuery, file)  # DANGEROUS if userQuery isn't validated
 ```
 
 **Key Features:**
@@ -584,7 +616,7 @@ if shell.Success(result)
 
 ## Additional Scripting Packages
 
-### Template Package ✅
+### Template Package
 
 Text templating for code generation and reports:
 
@@ -615,9 +647,9 @@ code := template.New()
     |> files.Write("generated.go")
 ```
 
-### Retry Package ⚠️
+### Retry Package
 
-⚠️ **Status: Limited Implementation** - The retry package provides helper functions for manual retry patterns. Automatic retry with `retry.Do()` requires language features not yet supported. See stdlib/retry/retry.kuki for working examples.
+**Status: Partial Implementation** - The retry package provides helper functions for manual retry patterns. Automatic retry with `retry.Do()` requires language features not yet supported. See stdlib/retry/retry.kuki for working examples.
 
 Manual retry pattern with helper functions:
 
@@ -673,9 +705,9 @@ func processWithRetry() bool
 
 **Note:** The automatic `retry.Do()` pattern shown in many retry libraries requires passing functions that return `(value, error)` tuples, which conflicts with Kukicha's `onerr` operator. The manual pattern above is the recommended approach.
 
-### Result Package ✅
+### Result Package
 
-✅ **Status: Implemented** - Optional and Result types for educational purposes and explicit error handling patterns.
+**Status: Implemented** - Optional and Result types for educational purposes and explicit error handling patterns.
 
 Optional and Result types:
 
@@ -927,34 +959,36 @@ func readLines(file reference os.File) list of string
 
 ### Why Scripting Packages?
 
-1. **Real Pain Point**: Go is verbose for one-off scripts
-2. **Pipe-First Design**: Every function works naturally in pipelines
-3. **Beginner-Friendly**: Hide common patterns (JSON parsing, HTTP, etc.)
-4. **Still Just Go**: All packages use Go stdlib underneath
-5. **Educational**: Great for learning programming concepts
+We provide scripting packages because:
+
+- **Real Pain Point** - Go is verbose for one-off scripts
+- **Pipe-First Design** - Every function works naturally in pipelines
+- **Beginner-Friendly** - Hide common patterns (JSON parsing, HTTP, etc.)
+- **Still Just Go** - All packages use Go stdlib underneath
+- **Educational** - Great for learning programming concepts
 
 ### Why Not Wrap Everything?
 
 We provide high-level helpers for common patterns, but:
 
-- ✅ Provide: Helpers Go lacks (fetch.CheckStatus/Bytes/Text, files.Read piping)
-- ✅ Provide: Ergonomic patterns (retry, CLI parsing)
-- ❌ Don't wrap: Every Go stdlib function (maintenance hell)
-- ❌ Don't duplicate: Functionality Go already does well
+- **Do provide:** Helpers Go lacks (fetch.CheckStatus/Bytes/Text, files.Read piping)
+- **Do provide:** Ergonomic patterns (retry, CLI parsing)
+- **Don't wrap:** Every Go stdlib function (maintenance nightmare)
+- **Don't duplicate:** Functionality Go already does well
 
 ### Comparison to Other Languages
 
-**vs Python:**
-- ✅ Kukicha: Compiled binary, Go speed, type safety
-- ✅ Python: Larger ecosystem, no compilation step
+**Kukicha vs Python:**
+- Kukicha: Compiled binary, Go speed, type safety
+- Python: Larger ecosystem, no compilation step
 
-**vs Bash:**
-- ✅ Kukicha: Type safe, readable, maintainable
-- ✅ Bash: Installed everywhere, ultimate compatibility
+**Kukicha vs Bash:**
+- Kukicha: Type safe, readable, maintainable
+- Bash: Installed everywhere, ultimate compatibility
 
-**vs Go:**
-- ✅ Kukicha: Less verbose for scripts, pipes, better error handling
-- ✅ Go: More explicit, larger community, job market
+**Kukicha vs Go:**
+- Kukicha: Less verbose for scripts, pipes, better error handling
+- Go: More explicit, larger community, job market
 
 ---
 
