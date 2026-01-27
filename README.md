@@ -228,15 +228,15 @@ See [Contributing Guide](docs/contributing.md) for full details.
 
 ### Learn Kukicha
 
-- [Beginner Tutorial](docs/beginner-tutorial.md) - Start here
+- [Beginner Tutorial](docs/tutorial/beginner-tutorial.md) - Start here
 - [FAQ](docs/faq.md) - Why?
 - [Quick Reference](docs/kukicha-quick-reference.md) - Cheat sheet
 
 ### Tutorials
 
-- [Console Todo App](docs/console-todo-tutorial.md) - Build a CLI app
-- [Web App Tutorial](docs/web-app-tutorial.md) - Build a REST API
-- [Production Patterns](docs/production-patterns-tutorial.md) - Best practices
+- [Console Todo App](docs/tutorial/console-todo-tutorial.md) - Build a CLI app
+- [Web App Tutorial](docs/tutorial/web-app-tutorial.md) - Build a REST API
+- [Production Patterns](docs/tutorial/production-patterns-tutorial.md) - Best practices
 
 ### Technical
 
