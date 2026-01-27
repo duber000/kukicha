@@ -197,11 +197,11 @@ func (d Database) CreateTodo(title string) (Todo, error)
     # Always explicitly handle or propagate the error to avoid confusion.
     id := result.LastInsertId() onerr return Todo{}, error
     
-    return Todo
+    todo := Todo
         id: int(id)
         title: title
         completed: false
-    , empty
+    return todo, empty
 
 # Get all todos
 func (d Database) GetAllTodos() (list of Todo, error)
@@ -280,7 +280,7 @@ type Server
     db Database
 
 type ErrorResponse
-    error string `json:"error"`
+    error string json:"error"
 
 # --- Server Constructor ---
 
@@ -519,8 +519,8 @@ You've completed the full Kukicha tutorial series!
 
 ### Explore More
 
-- **[Kukicha Syntax Reference](kukicha-syntax-v1.0.md)** - Complete language guide
-- **[Standard Library](kukicha-stdlib-reference.md)** - iter, slice, and more
+- **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** - Complete language grammar
+- **[Standard Library](../kukicha-stdlib-reference.md)** - iter, slice, and more
 
 ### Build Projects
 

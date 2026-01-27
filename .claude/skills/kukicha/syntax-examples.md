@@ -118,16 +118,21 @@ type User
     active bool
 
 func getActiveAdultNames(url string) list of string
-    users := url
+    users := list of User{}
+    url
         |> fetch.Get()
         |> fetch.CheckStatus()
         |> fetch.Bytes()
-        |> json.Unmarshal(_, reference users) as list of User
-        onerr empty list of User
+        |> json.Unmarshal(reference of users)
+        onerr return empty list of User
     
     return users
-        |> slice.Filter(u -> u.active and u.age >= 18)
-        |> slice.Map(u -> u.name)
+        |> slice.Filter(func(u User) bool
+            return u.active and u.age >= 18
+        )
+        |> slice.Map(func(u User) string
+            return u.name
+        )
         |> slice.Sort()
 ```
 
@@ -172,8 +177,12 @@ func processLogFile(path string) list of string
     return path
         |> files.Read()
         |> strings.Split("\n")
-        |> slice.Filter(line -> strings.Contains(line, "ERROR"))
-        |> slice.Map(line -> strings.TrimSpace(line))
+        |> slice.Filter(func(line string) bool
+            return strings.Contains(line, "ERROR")
+        )
+        |> slice.Map(func(line string) string
+            return strings.TrimSpace(line)
+        )
 ```
 
 ## Interface Implementation
@@ -272,8 +281,12 @@ func main()
     # Filter and transform
     result := numbers
         |> iter.FromSlice()
-        |> iter.Filter(n -> n % 2 equals 0)
-        |> iter.Map(n -> n * n)
+        |> iter.Filter(func(n int) bool
+            return n % 2 equals 0
+        )
+        |> iter.Map(func(n int) int
+            return n * n
+        )
         |> iter.Take(3)
         |> slice.Collect()
 
@@ -298,9 +311,9 @@ func analyzeLog(entries list of LogEntry) map of string to list of LogEntry
     # GroupBy automatically generates: GroupBy[LogEntry, string](items, keyFunc)
     # The key type (string) must be comparable - the transpiler ensures this!
     return entries
-        |> slice.GroupBy(func(e LogEntry) string {
+        |> slice.GroupBy(func(e LogEntry) string
             return e.level
-        })
+        )
 
 func main()
     logs := list of LogEntry{
@@ -375,9 +388,9 @@ func main()
 import "encoding/json"
 
 type APIResponse
-    status string `json:"status"`
-    data list of User `json:"data"`
-    count int `json:"count"`
+    status string json:"status"
+    data list of User json:"data"
+    count int json:"count"
 
 func parseResponse(jsonData list of byte) APIResponse, error
     response := APIResponse{}
@@ -513,10 +526,10 @@ func main()
     DoAsync(
         func() string
             return "Success!"
-
+        ,
         func(msg string)
             print("Result: {msg}")
-
+        ,
         func(err error)
             print("Error: {err}")
     )

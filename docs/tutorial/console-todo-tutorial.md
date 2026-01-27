@@ -313,27 +313,26 @@ func Save on list TodoList, filename string error
         lines = append(lines, line)
 
     # Join all lines and write to file using pipe operator
-    content := lines
-        |> string.Join("\n")
-        |> files.WriteString(filename)
-        onerr return error
+    lines |> string.Join("\n") |> files.WriteString(filename) onerr return error
 
     print("Saved {len(list.items)} todos to {filename}")
     return empty
+```
 
-**Pipe Operator Shorthand:** Notice we use `|> files.WriteString(filename)` instead of `|> .WriteString(filename)`. Both work, but the full form is clearer when calling functions from imported packages. Use the dot shorthand (`.Display()`) when calling methods directly on the value itself.
+**Pipe Operator:** Notice the clean pipeline: `lines |> string.Join("\n") |> files.WriteString(filename)`. The data flows left-to-right: join the lines, then write to file. Use the dot shorthand (`.Display()`) when calling methods directly on the value itself.
 
+```kukicha
 # Load reads todos from a file
 func Load(filename string) (TodoList, error)
     list := TodoList
         items: empty list of Todo
         nextId: 1
 
-    # Read the file and split into lines in one pipeline
-    lines := filename
-        |> files.Read()
-        onerr return list, error
-        |> string.Split("\n")
+    # Read the file content as bytes, convert to string, and split into lines
+    data, err := files.Read(filename)
+    if err != empty
+        return list, err
+    lines := string.Split(data as string, "\n")
     
     # Skip if file is empty
     if len(lines) equals 0 or (len(lines) equals 1 and lines[0] equals "")
@@ -444,8 +443,7 @@ func Save on list TodoList, filename string
             completed = "true"
         lines = append(lines, "{todo.id}|{todo.title}|{completed}")
 
-    content := lines |> string.Join("\n")
-    content |> files.WriteString(filename) onerr
+    lines |> string.Join("\n") |> files.WriteString(filename) onerr
         print("Error saving: could not write file")
         return
 
@@ -458,10 +456,10 @@ func LoadTodos(filename string) TodoList
         items: empty list of Todo
         nextId: 1
 
-    lines := filename
-        |> files.Read()
-        onerr return list
-        |> string.Split("\n")
+    data, err := files.Read(filename)
+    if err != empty
+        return list
+    lines := string.Split(data as string, "\n")
     
     maxId := 0
     for line in lines
@@ -668,9 +666,8 @@ You now have solid programming skills with Kukicha! Continue with the tutorial s
 
 ### Reference Docs
 
-- **[Kukicha Syntax Reference](kukicha-syntax-v1.0.md)** - Complete language guide
-- **[Quick Reference](kukicha-quick-reference.md)** - Cheat sheet
-- **[Standard Library](kukicha-stdlib-reference.md)** - iter, slice, and more
+- **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** - Complete language grammar
+- **[Standard Library](../kukicha-stdlib-reference.md)** - iter, slice, and more
 
 ---
 

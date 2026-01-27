@@ -238,7 +238,9 @@ var nextId int = 1
 
 func findTodoIndex(id int) int
     # Use standard slices.IndexFunc to find the item
-    return todos |> slices.IndexFunc(func(t Todo) bool: return t.id equals id)
+    return todos |> slices.IndexFunc(func(t Todo) bool
+        return t.id equals id
+    )
 
 func getIdFromPath(path string, prefix string) (int, bool)
     # Extract "1" from "/todos/1"

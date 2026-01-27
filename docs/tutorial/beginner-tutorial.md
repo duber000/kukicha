@@ -495,7 +495,7 @@ Combine a list of strings into one string:
 import "stdlib/string"
 
 func main()
-    words := ["Hello", "World", "from", "Kukicha"]
+    words := list of string{"Hello", "World", "from", "Kukicha"}
 
     # Join with spaces
     sentence := string.Join(words, " ")
@@ -703,8 +703,8 @@ Ready for the next step? Follow this learning path:
 
 ### Additional Resources
 
-- **[Kukicha Syntax Reference](../kukicha-syntax-v1.0.md)** - Complete language reference
-- **[Quick Reference](../kukicha-quick-reference.md)** - Cheat sheet for quick lookups
+- **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** - Complete language grammar reference
+- **[Stdlib Reference](../kukicha-stdlib-reference.md)** - Standard library documentation
 - **examples/** directory - More example programs
 
 ### Practice Exercises

@@ -114,15 +114,15 @@ import "stdlib/slice"
 # Pipeline: filter positive numbers, double them, sum
 # Note: iter provides functional composition; slice provides eager operations
 total := numbers
-    |> slice.Filter(func(n int) bool {
+    |> slice.Filter(func(n int) bool
         return n > 0  # Keep only positive numbers
-    })
-    |> slice.Map(func(n int) int {
+    )
+    |> slice.Map(func(n int) int
         return n * 2  # Double each number
-    })
-    |> iter.Reduce(0, func(acc int, n int) int {
+    )
+    |> iter.Reduce(0, func(acc int, n int) int
         return acc + n  # Sum all numbers
-    })
+    )
 
 # Available slice operations:
 # Filter, Map, Drop, DropLast, First, Last
@@ -152,9 +152,9 @@ cleaned := rawData
 
 # Extract and transform
 ids := users
-    |> slice.Map(func(u User) int {
+    |> slice.Map(func(u User) int
         return u.ID
-    })
+    )
     |> slice.First(10)
 
 # Batch processing
@@ -168,9 +168,9 @@ type LogEntry
     Message string
 
 entries := logs
-    |> slice.GroupBy(func(e LogEntry) string {
+    |> slice.GroupBy(func(e LogEntry) string
         return e.Level
-    })
+    )
 # Result: map[string][]LogEntry with keys like "ERROR", "WARN", "INFO"
 
 # Available functions:
@@ -195,9 +195,9 @@ result := rawText
     |> string.ToLower()
     |> string.ReplaceAll("_", "-")
     |> string.Split("\n")
-    |> slice.Filter(func(line string) bool {
+    |> slice.Filter(func(line string) bool
         return not string.IsEmpty(line)
-    })
+    )
 
 # URL cleanup
 cleanUrl := url
@@ -220,33 +220,29 @@ import "stdlib/concurrent"
 
 # Run multiple tasks concurrently
 concurrent.Parallel(
-    func() {
+    func()
         fetchUsers()
-    },
-    func() {
+    ,
+    func()
         fetchOrders()
-    },
-    func() {
+    ,
+    func()
         fetchProducts()
-    }
 )
 
 # Run with concurrency limit (max 4 at a time)
 tasks := list of func(){}
 for url in urls
-    tasks = append(tasks, func() {
+    tasks = append(tasks, func()
         processUrl(url)
-    })
+    )
 
 concurrent.ParallelWithLimit(4, tasks...)
 
-# Track a goroutine with WaitGroup
-# concurrent.Go spawns a goroutine and returns a *sync.WaitGroup
-wg := concurrent.Go(func() {
+# Run a function in a goroutine
+concurrent.Go(func()
     processLargeFile()
-})
-# Do other work...
-wg.Wait()  # Wait for the goroutine to complete
+)
 
 # Available functions:
 # Parallel, ParallelWithLimit, Go
@@ -350,9 +346,9 @@ resp.Body |> json.NewDecoder() |> .Decode(reference repos) onerr panic
 
 # Now filter with slice helpers - beautiful pipes!
 active := repos
-    |> slice.Filter(func(r Repo) bool {
+    |> slice.Filter(func(r Repo) bool
         return not r.Archived and r.Stars > 100
-    })
+    )
 
 print("Found {len(active)} active repos")
 
@@ -458,9 +454,9 @@ users := "data.csv"
     |> parse.Csv()
     |> slice.Drop(1)              # Skip header
     |> slice.Map(csvRowToUser)
-    |> slice.Filter(func(u User) bool {
+    |> slice.Filter(func(u User) bool
         return u.Active
-    })
+    )
 
 # YAML config parsing (requires Go interop)
 # Note: Use gopkg.in/yaml.v3 directly for YAML parsing
@@ -526,9 +522,9 @@ import "stdlib/files"
 output := "input.txt"
     |> files.Read()
     |> string.Split("\n")
-    |> slice.Filter(func(line string) bool {
+    |> slice.Filter(func(line string) bool
         return not string.IsEmpty(line)
-    })
+    )
     |> slice.Map(string.TrimSpace)
     |> slice.Map(processLine)
     |> string.Join("\n")
@@ -543,24 +539,24 @@ else
 
 # List files with filtering
 logs := files.List("/var/log")
-    |> slice.Filter(func(f string) bool {
+    |> slice.Filter(func(f string) bool
         return string.HasSuffix(f, ".log")
-    })
-    |> slice.Map(func(f string) string {
+    )
+    |> slice.Map(func(f string) string
         return f
-    })
+    )
 
 # Watch for changes (useful for dev tools)
-files.Watch("./src/**/*.kuki", func(path string) {
+files.Watch("./src/**/*.kuki", func(path string)
     print("Changed: {path}")
     rebuildProject()
-})
+)
 
 # Temp file handling with automatic cleanup
-files.TempFile("test-") |> files.UseWith(func(path string) {
+files.TempFile("test-") |> files.UseWith(func(path string)
     files.Write(path, data) onerr panic "write failed"
     processFile(path)
-})
+)
 ```
 
 ### Shell Package
@@ -724,18 +720,18 @@ else
 
 # Or use pipeline
 message := findUserById(123)
-    |> result.Map(func(u User) string {
+    |> result.Map(func(u User) string
         return "Hello, {u.Name}"
-    })
+    )
     |> result.UnwrapOr("User not found")
 
 # Result type (explicit error handling)
 data := parseConfig("config.yaml")  # Returns Result[Config, Error]
 
 configResult := data
-    |> result.MapErr(func(e error) error {
+    |> result.MapErr(func(e error) error
         return error("Config error: {e}")
-    })
+    )
 
 config := configResult
     |> result.Unwrap()
@@ -799,16 +795,15 @@ func main()
 
     # Filter and transform using slice helpers
     summaries := repos
-        |> slice.Filter(func(r Repo) bool {
+        |> slice.Filter(func(r Repo) bool
             return not r.Archived and r.Stars > 100
-        })
-        |> slice.Map(func(r Repo) RepoSummary {
-            return RepoSummary{
-                Name: r.Name,
-                Stars: r.Stars,
-                Url: r.HtmlUrl,
-            }
-        })
+        )
+        |> slice.Map(func(r Repo) RepoSummary
+            return RepoSummary
+                Name: r.Name
+                Stars: r.Stars
+                Url: r.HtmlUrl
+        )
 
     # Save to file using json.MarshalPretty
     output := summaries
@@ -839,13 +834,13 @@ func analyzeLog(args cli.Args)
     errors := logPath
         |> files.Read()
         |> string.Split("\n")
-        |> slice.Filter(func(line string) bool {
+        |> slice.Filter(func(line string) bool
             return string.Contains(line, level)
-        })
+        )
         |> slice.Map(parseLine)
-        |> slice.GroupBy(func(e LogEntry) string {
+        |> slice.GroupBy(func(e LogEntry) string
             return e.ErrorCode
-        })
+        )
         |> summarize()
 
     print "Found {len(errors)} {level} entries"

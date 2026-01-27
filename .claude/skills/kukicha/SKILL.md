@@ -88,8 +88,12 @@ result := data
 
 # With arguments (piped value becomes first argument)
 users := fetchUsers()
-    |> slice.Filter(u -> u.active)
-    |> slice.Map(u -> u.name)
+    |> slice.Filter(func(u User) bool
+        return u.active
+    )
+    |> slice.Map(func(u User) string
+        return u.name
+    )
 
 # Placeholder strategy: use _ to specify where piped value goes
 # Useful when piped value isn't the first argument
@@ -300,14 +304,18 @@ Example with stdlib:
 import "stdlib/fetch"
 import "stdlib/slice"
 import "stdlib/json"
-import "stdlib/fetch"
 
-repos := "https://api.github.com/users/golang/repos"
-    |> fetch.Get()
-    |> fetch.CheckStatus()
-    |> fetch.Bytes()
-    |> json.Unmarshal(_, reference repos) as list of Repo
-    |> slice.Filter(r -> r.Stars > 100)
+# Fetch data with pipes (each step can fail, handled at end)
+repos := list of Repo{}
+resp := fetch.Get("https://api.github.com/users/golang/repos") onerr panic "fetch failed"
+resp = resp |> fetch.CheckStatus() onerr panic "bad status"
+data := resp |> fetch.Bytes() onerr panic "read failed"
+json.Unmarshal(data, reference of repos) onerr panic "parse failed"
+
+# Filter with pipes
+activeRepos := repos |> slice.Filter(func(r Repo) bool
+    return r.Stars > 100
+)
 ```
 
 ### Parse Package (jsonv2 powered)
@@ -335,9 +343,8 @@ concurrent.Parallel(task1, task2, task3)
 # Limit concurrent execution (at most 4 tasks at once)
 concurrent.ParallelWithLimit(4, tasks...)
 
-# Run with WaitGroup tracking
-wg := concurrent.Go(myFunc)
-wg.Wait()
+# Run a function in a goroutine
+concurrent.Go(myFunc)
 ```
 
 ### HTTP Package
@@ -420,10 +427,9 @@ type LogEntry
     message string
 
 # Group log entries by level (automatically generates [T any, K comparable])
-entries := logs
-    |> slice.GroupBy(func(e LogEntry) string {
-        return e.level
-    })
+entries := logs |> slice.GroupBy(func(e LogEntry) string
+    return e.level
+)
 # Result: map[string][]LogEntry with keys "ERROR", "WARN", "INFO", etc.
 
 # GroupBy is Go 1.25+ generic - you write simple Kukicha code, transpiler handles the generics
@@ -477,8 +483,7 @@ func ProcessFile(path string)
 
 Kukicha leverages modern Go features:
 
-- **encoding/json/v2**: 2-10x faster JSON parsing in `stdlib/parse` and `stdlib/fetch`
-- **WaitGroup.Go()**: Automatic Add(1) and Done() tracking (used in `stdlib/concurrent`)
+- **encoding/json/v2**: 2-10x faster JSON parsing in `stdlib/json` and `stdlib/fetch`
 - **testing/synctest**: Deterministic concurrency testing in compiler tests
 - **Green Tea GC**: Improved garbage collection (no code changes needed)
 
