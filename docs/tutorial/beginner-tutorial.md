@@ -367,7 +367,7 @@ func main()
 
 ## The String Petiole - Text Superpowers
 
-Now comes the exciting part! Kukicha includes a **string petiole** (package) with 28 powerful functions for working with text.
+Now comes the exciting part! Kukicha includes a **string petiole** (package) with powerful functions for working with text.
 
 A **petiole** is just a collection of related functions. The string petiole contains functions specifically for manipulating text.
 
@@ -379,11 +379,11 @@ To use the string package, you need to import it:
 import "stdlib/string"
 ```
 
-Now you have access to all 28 string functions!
+Now you have access to the essential string functions covered in this tutorial!
 
 ### Converting Case
 
-Change text to UPPERCASE, lowercase, or Title Case:
+Change text to lowercase or Title Case:
 
 ```kukicha
 import "stdlib/string"
@@ -391,11 +391,9 @@ import "stdlib/string"
 func main()
     text := "hello world"
 
-    upper := string.ToUpper(text)
     lower := string.ToLower(text)
     title := string.Title(text)
 
-    print(upper)  # Prints: HELLO WORLD
     print(lower)  # Prints: hello world
     print(title)  # Prints: Hello World
 ```
@@ -409,12 +407,12 @@ Sometimes you want to perform multiple operations on the same piece of text. Kuk
 Instead of this:
 ```kukicha
 cleaned := string.TrimSpace(text)
-upper := string.ToUpper(cleaned)
+lower := string.ToLower(cleaned)
 ```
 
 You can do this:
 ```kukicha
-upper := text |> string.TrimSpace() |> string.ToUpper()
+lower := text |> string.TrimSpace() |> string.ToLower()
 ```
 
 It's called a "pipe" because it acts like a pipe at a construction site - data goes in one end and comes out the other end, transformed!
@@ -422,7 +420,7 @@ It's called a "pipe" because it acts like a pipe at a construction site - data g
 **💡 Shorthand Pro-Tip:** If you are piping into a method that belongs to the data itself, you can just start with a dot!
 ```kukicha
 # Instead of this:
-upper := text |> string.TrimSpace() |> string.ToUpper()
+lower := text |> string.TrimSpace() |> string.ToLower()
 
 # If 'result' was an object with its own .Display() method:
 message := result |> .Display()  # Much cleaner!

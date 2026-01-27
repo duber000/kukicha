@@ -30,6 +30,8 @@ Our web app will be a **REST API** - a way for other programs (like websites or 
 | Update a todo | `PUT` | `/todos/1` | Update todo with id 1 |
 | Delete a todo | `DELETE` | `/todos/1` | Delete todo with id 1 |
 
+**Why a web API?** A web API lets any device—browser, mobile app, or script—talk to the same todo data, which is a natural next step after a local CLI. Your todo list becomes accessible anywhere, not just from the terminal.
+
 Don't worry if this looks complicated - we'll build it step by step!
 
 ---
@@ -201,14 +203,9 @@ Let's create a simple way to store our todos. We'll use a **global variable** fo
 # Our todo storage - a list of todos and the next available ID
 var todos list of Todo
 var nextId int = 1
-
-# Helper to find a todo by ID
-func findTodoById(id int) (Todo, int, bool)
-    for index, todo in todos
-        if todo.id equals id
-            return todo, index, true
-    return Todo{}, -1, false
 ```
+
+For finding todos by ID, we'll use a helper function that returns just the index (we can get the todo from the index if needed). This is more efficient than returning multiple values when we only need the index for updates and deletes.
 
 ---
 
@@ -253,10 +250,13 @@ func getIdFromPath(path string, prefix string) (int, bool)
     return id, true
 
 func sendJSON(response http.ResponseWriter, data any)
+    # Helper to send any data as JSON with correct content-type header
     response.Header().Set("Content-Type", "application/json")
     response |> json.NewEncoder() |> .Encode(data) onerr return
 
 func sendError(response http.ResponseWriter, status int, message string)
+    # Helper to send error responses as JSON
+    # The client will receive a JSON object like {"error":"message"} with the given status code
     response.Header().Set("Content-Type", "application/json")
     response.WriteHeader(status)
     
@@ -268,12 +268,16 @@ func sendError(response http.ResponseWriter, status int, message string)
 
 # GET /todos - List all todos (with optional search)
 func handleListTodos(response http.ResponseWriter, request reference http.Request)
+    # Note: In production, you'd add limit/offset query parameters for pagination
+    # to handle large datasets efficiently
     search := request.URL.Query().Get("search")
     if search equals ""
         sendJSON(response, todos)
         return
     
     # Supercharge the data flow with iterators!
+    # Note: This is a simple case-insensitive substring match
+    # For production, regex or full-text search would be better for larger datasets
     filtered := todos
         |> slices.Values()
         |> iter.Filter(func(t Todo) bool
@@ -287,13 +291,13 @@ func handleListTodos(response http.ResponseWriter, request reference http.Reques
 func handleCreateTodo(response http.ResponseWriter, request reference http.Request)
     # Parse the incoming JSON using pipe
     todo := Todo{}
+    # reference of todo gives the decoder a pointer so it can fill in the struct
     request.Body |> json.NewDecoder() |> .Decode(reference of todo) onerr
         return sendError(response, 400, "Invalid JSON")
     
     # Validate
     if todo.title equals ""
-        sendError(response, 400, "Title is required")
-        return
+        return sendError(response, 400, "Title is required")
     
     # Assign an ID and add to the list
     todo.id = nextId
@@ -393,16 +397,19 @@ func handleTodos(response http.ResponseWriter, request reference http.Request)
 func main()
     # Set up routes
     http.HandleFunc("/todos", handleTodos)
-    http.HandleFunc("/todos/", handleTodos)
+    http.HandleFunc("/todos/", handleTodos)  # Trailing slash catches /todos/1
     
     print("=== Kukicha Todo API ===")
     print("Server running on http://localhost:8080")
+    print("API endpoint: http://localhost:8080/todos")
     print("")
     print("Try these commands in another terminal:")
     print("  curl http://localhost:8080/todos")
     print("  curl -X POST -d '{\"title\":\"Learn Kukicha\"}' http://localhost:8080/todos")
     print("")
     
+    # Note: In production, capture SIGINT and call http.Server.Shutdown()
+    # for graceful shutdown instead of relying on panic
     http.ListenAndServe(":8080", empty) onerr panic "server failed to start"
 ```
 
@@ -419,10 +426,12 @@ Now test it with `curl` (open another terminal):
 
 ### Create todos:
 ```bash
-curl -X POST -d '{"title":"Buy groceries"}' http://localhost:8080/todos
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"title":"Buy groceries"}' http://localhost:8080/todos
 # Response: {"id":1,"title":"Buy groceries","completed":false}
 
-curl -X POST -d '{"title":"Learn Kukicha"}' http://localhost:8080/todos
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"title":"Learn Kukicha"}' http://localhost:8080/todos
 # Response: {"id":2,"title":"Learn Kukicha","completed":false}
 ```
 
@@ -446,7 +455,8 @@ curl http://localhost:8080/todos/1
 
 ### Update a todo:
 ```bash
-curl -X PUT -d '{"title":"Buy groceries","completed":true}' http://localhost:8080/todos/1
+curl -X PUT -H "Content-Type: application/json" \
+     -d '{"title":"Buy groceries","completed":true}' http://localhost:8080/todos/1
 # Response: {"id":1,"title":"Buy groceries","completed":true}
 ```
 
@@ -497,10 +507,12 @@ Congratulations! You've built a real web API. Let's review:
 Our todo API works, but it has some limitations:
 
 1. **Data disappears when you restart** - We're storing in memory, not a database
-2. **Not safe for multiple users** - If two people use it at once, data could get corrupted
+2. **Not safe for multiple users** - Concurrent writes to the global `todos` slice could race and corrupt data. In production, you'd use a mutex (sync lock) to protect access
 3. **No authentication** - Anyone can access it
+4. **No input validation** - We only check that title isn't empty. In production, you'd validate title length, sanitize input, and enforce business rules
+5. **Simple search only** - The substring search is slow on large datasets. You'd use regex or full-text search in production
 
-We'll fix all of these in the next tutorial!
+We'll fix the first two limitations in the next tutorial!
 
 ---
 

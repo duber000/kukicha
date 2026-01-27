@@ -45,6 +45,15 @@ Commands: add, done, list, save, quit
 
 ## Step 1: Creating a Todo Type
 
+> **📝 Reminder:** This tutorial builds on the beginner tutorial. Here are the key concepts you'll need:
+> - **`:=`** creates a new variable, **`=`** updates an existing one
+> - **String interpolation:** Use `{variable}` inside strings to insert values
+> - **`print()`** outputs to the console
+> - **Functions** take parameters and can return values
+> - **Comments** start with `#`
+>
+> If you need a refresher, [revisit the beginner tutorial](beginner-tutorial.md)!
+
 In the beginner tutorial, you learned about basic types like `string`, `int`, and `bool`. Now let's create our own type to represent a todo item.
 
 Create a file called `todo.kuki`:
@@ -101,7 +110,7 @@ func Display on todo Todo string
 
 **Reading this method:**
 - `func Display` - We're creating a method called "Display"
-- `on todo Todo` - This method works on a `Todo`, and we'll call it `todo` inside the function
+- `on todo Todo` - This method works on a `Todo` (syntax: receiver name first, then the type). Inside the method, we call it `todo`
 - `string` - The method returns a string
 
 The method checks if the todo is completed. If so, it shows a checkmark. Otherwise, it shows empty brackets.
@@ -193,12 +202,15 @@ Now let's add methods to this type:
 
 ```kukicha
 # Add creates a new todo and adds it to the list
+# 'list' is the receiver (the TodoList instance we're working on)
 func Add on list reference TodoList, title string
     todo := CreateTodo(list.nextId, title)
     list.items = append(list.items, todo)
     list.nextId = list.nextId + 1
     print("Added: {title}")
 ```
+
+**Note on receiver naming:** We use `list` as the receiver variable name (referring to the `TodoList` instance), which is clearer than a generic name. Some codebases use `tl` or `self` - pick whatever makes your code most readable!
 
 ```kukicha
 # ShowAll displays all todos in the list
@@ -292,6 +304,8 @@ func Save on list TodoList, filename string error
 
     for todo in list.items
         # Format: id|title|completed
+        # We use pipe (|) as a delimiter because titles can contain commas or spaces
+        # The format is simple: id|title|completed
         completed := "false"
         if todo.completed
             completed = "true"
@@ -306,6 +320,8 @@ func Save on list TodoList, filename string error
 
     print("Saved {len(list.items)} todos to {filename}")
     return empty
+
+**Pipe Operator Shorthand:** Notice we use `|> files.WriteString(filename)` instead of `|> .WriteString(filename)`. Both work, but the full form is clearer when calling functions from imported packages. Use the dot shorthand (`.Display()`) when calling methods directly on the value itself.
 
 # Load reads todos from a file
 func Load(filename string) (TodoList, error)
@@ -485,6 +501,8 @@ func PrintHelp()
 
 func main()
     filename := "todos.txt"
+    # Note: This file will be created in the current working directory
+    # This works the same on Windows, macOS, and Linux
     
     # Try to load existing todos
     list := LoadTodos(filename)
@@ -516,6 +534,8 @@ func main()
             continue
         
         # Parse the command using pipe
+        # SplitN(" ", 2) splits into at most 2 parts, so "add Buy milk" becomes ["add", "Buy milk"]
+        # This protects against titles containing spaces
         parts := input |> string.SplitN(" ", 2)
         command := parts[0] |> string.ToLower()
         

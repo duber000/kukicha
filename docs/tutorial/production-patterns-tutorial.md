@@ -58,6 +58,14 @@ Both compile to the same Go code! The Go style puts the receiver in parentheses 
 
 For this tutorial, we'll use **Go-style receivers** since that's what you'll encounter in real Go projects.
 
+### Understanding `reference` vs `reference of`
+
+As you read through the code, you'll see two pointer-related keywords:
+- **`reference Type`** - Declares a pointer type (e.g., `reference Server` means "pointer to Server")
+- **`reference of value`** - Takes the address of an existing value (e.g., `reference of server` converts `server` into a pointer)
+
+Both are correct Kukicha syntax; they're just used in different contexts (declarations vs. operations).
+
 ---
 
 ## Part 2: Creating a Server Type
@@ -83,6 +91,14 @@ It's a "read-write lock" that prevents data corruption:
 Think of it like a library book:
 - Many people can read the same book at once
 - But if someone is writing in it, everyone else has to wait
+
+### Why We Wrap State in a Struct
+
+Instead of using global variables (like we did in the web tutorial), we encapsulate all server state in the `Server` type. This design choice enables:
+- **Testability** - You can create multiple test instances with different states
+- **Dependency injection** - Pass the server instance where needed instead of relying on globals
+- **Concurrency safety** - The mutex lives with the data it protects
+- **Composability** - Future features can be added as new fields without touching global state
 
 ---
 
@@ -147,7 +163,7 @@ type Database
 func OpenDatabase(filename string) (Database, error)
     db, err := sql.Open("sqlite3", filename)
     if err not equals empty
-        return Database{}, err
+        return empty, err
     
     # Create the todos table
     createTable := `
@@ -157,12 +173,13 @@ func OpenDatabase(filename string) (Database, error)
             completed BOOLEAN DEFAULT FALSE
         )
     `
-    db.Exec(createTable) onerr return Database{}, error
+    db.Exec(createTable) onerr return empty, error
     
     return Database{db: db}, empty
 
 # Close the database
 func (d Database) Close()
+    # empty is equivalent to nil in Go
     if d.db not equals empty
         d.db.Close()
 ```
@@ -175,6 +192,9 @@ func (d Database) CreateTodo(title string) (Todo, error)
     result := d.db.Exec("INSERT INTO todos (title, completed) VALUES (?, FALSE)", title) 
         onerr return Todo{}, error
     
+    # Note: 'onerr' creates an implicit 'error' variable. If we used it again here,
+    # it would "shadow" (hide) the outer error from the function signature.
+    # Always explicitly handle or propagate the error to avoid confusion.
     id := result.LastInsertId() onerr return Todo{}, error
     
     return Todo
@@ -185,6 +205,8 @@ func (d Database) CreateTodo(title string) (Todo, error)
 
 # Get all todos
 func (d Database) GetAllTodos() (list of Todo, error)
+    # Returns a cloned slice to prevent external mutations
+    # Note: This is a shallow copy; deep copy needed if fields become reference types
     rows := d.db.Query("SELECT id, title, completed FROM todos") onerr
         return empty, error
     defer rows.Close()
@@ -229,15 +251,23 @@ func (d Database) DeleteTodo(id int) error
 Now let's put it all together into a production-ready server:
 
 ```kukicha
+# Standard library - core functionality
 import "fmt"
-import "net/http"
-import "encoding/json/v2"
-import "strconv"
-import "stdlib/string"
-import "database/sql"
 import "log"
+import "net/http"
+import "strconv"
+import "sync"
+
+# Standard library - data structures and encoding
 import "slices"
-import _ "github.com/mattn/go-sqlite3"
+import "database/sql"
+import "encoding/json/v2"
+
+# Kukicha stdlib
+import "stdlib/string"
+
+# Third-party packages
+import _ "github.com/mattn/go-sqlite3"   # SQLite driver (requires CGO)
 
 # --- Types ---
 
@@ -250,7 +280,7 @@ type Server
     db Database
 
 type ErrorResponse
-    error string
+    error string `json:"error"`
 
 # --- Server Constructor ---
 
@@ -283,8 +313,8 @@ func (s reference Server) HandleTodos(w http.ResponseWriter, r reference http.Re
             s.sendError(w, 405, "Method not allowed")
 
 func (s reference Server) handleListTodos(w http.ResponseWriter, r reference http.Request)
-    todos := s.db.GetAllTodos() onerr
-        log.Printf("Error fetching todos: %v", error)
+    todos, err := s.db.GetAllTodos() onerr
+        log.Printf("Error fetching todos: %v", err)
         s.sendError(w, 500, "Failed to fetch todos")
         return
     
@@ -326,6 +356,7 @@ func (s reference Server) handleUpdateTodo(w http.ResponseWriter, r reference ht
         return
     
     # Parse request body using pipe
+    # Note: This is a full update (PUT). For partial updates, use PATCH with optional fields
     input := struct
         title string
         completed bool
@@ -350,6 +381,8 @@ func (s reference Server) handleDeleteTodo(w http.ResponseWriter, r reference ht
         s.sendError(w, 400, "Invalid ID")
         return
     
+    # In a production API, you might check if the todo was actually deleted (rows affected)
+    # and return 404 if not found for better idempotency semantics
     s.db.DeleteTodo(id) onerr
         log.Printf("Error deleting todo: %v", error)
         s.sendError(w, 500, "Failed to delete todo")
@@ -360,12 +393,16 @@ func (s reference Server) handleDeleteTodo(w http.ResponseWriter, r reference ht
 # --- Helper Methods ---
 
 func (s reference Server) getIdFromPath(path string, prefix string) (int, error)
+    # When called with onerr, any error returned triggers the error handler block
+    # E.g., id := s.getIdFromPath(...) onerr { ... } executes the block if path is invalid
     idStr := path |> string.TrimPrefix(prefix)
     if idStr equals "" or idStr equals path
         return 0, fmt.Errorf("invalid path")
     return idStr |> strconv.Atoi()
 
 func (s reference Server) sendJSON(w http.ResponseWriter, status int, data any)
+    # Set header before WriteHeader; after WriteHeader, header changes are ignored
+    # The Encode call writes the response body; any error after WriteHeader can't change status
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(status)
     w |> json.NewEncoder() |> .Encode(data) onerr return
@@ -383,16 +420,24 @@ func main()
     port := ":8080"
     
     # Create the server
+    # Using panic for unrecoverable startup errors is acceptable here.
+    # For more graceful error handling, use: log.Fatalf("Failed to open database: %v", error)
     server := NewServer(dbPath) onerr panic "Failed to open database: {error}"
+    
+    # Ensures the SQLite file is closed when the program exits
     defer server.db.Close()
     
     # Register routes
+    # Trailing slash catches /todos/1 and other ID-based routes
     http.HandleFunc("/todos", server.HandleTodos)
     http.HandleFunc("/todos/", server.HandleTodos)
     
     # Start server
     log.Printf("Server starting on http://localhost%s", port)
     log.Printf("Database: %s", dbPath)
+    
+    # Note: In production, capture SIGINT (Ctrl+C) and call http.Server.Shutdown()
+    # for graceful shutdown instead of relying on panic
     http.ListenAndServe(port, empty) onerr panic "Server failed: {error}"
 ```
 
@@ -463,10 +508,10 @@ You've completed the full Kukicha tutorial series!
 
 | Tutorial | What You Learned |
 |----------|-----------------|
-| **1. Beginner** | Variables, functions, strings, string petiole |
-| **2. Console Todo** | Types, methods (`on`), lists, `onerr`, file I/O |
-| **3. Web Todo** | HTTP servers, JSON, REST APIs |
-| **4. Production** | Databases, Go conventions, proper architecture |
+| ✅ **1. Beginner** | Variables, functions, strings, string petiole |
+| ✅ **2. Console Todo** | Types, methods (`on`), lists, `onerr`, file I/O |
+| ✅ **3. Web Todo** | HTTP servers, JSON, REST APIs |
+| ✅ **4. Production** | Databases, Go conventions, proper architecture |
 
 ---
 
