@@ -520,8 +520,7 @@ You've completed the full Kukicha tutorial series!
 ### Explore More
 
 - **[Kukicha Syntax Reference](kukicha-syntax-v1.0.md)** - Complete language guide
-- **[Standard Library](kukicha-stdlib-roadmap.md)** - iter, slice, and more
-- **[Design Philosophy](kukicha-design-philosophy.md)** - Why Kukicha is "just Go"
+- **[Standard Library](kukicha-stdlib-reference.md)** - iter, slice, and more
 
 ### Build Projects
 

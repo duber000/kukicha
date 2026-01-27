@@ -245,7 +245,7 @@ See [Contributing Guide](docs/contributing.md) for full details.
 
 ### Standard Library
 
-- [stdlib Roadmap](docs/kukicha-stdlib-roadmap.md) - Current and planned packages
+- [stdlib Roadmap](docs/kukicha-stdlib-reference.md) - Current packages
 
 ---
 

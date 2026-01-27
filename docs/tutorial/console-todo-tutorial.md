@@ -670,7 +670,7 @@ You now have solid programming skills with Kukicha! Continue with the tutorial s
 
 - **[Kukicha Syntax Reference](kukicha-syntax-v1.0.md)** - Complete language guide
 - **[Quick Reference](kukicha-quick-reference.md)** - Cheat sheet
-- **[Standard Library](kukicha-stdlib-roadmap.md)** - iter, slice, and more
+- **[Standard Library](kukicha-stdlib-reference.md)** - iter, slice, and more
 
 ---
 
