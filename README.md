@@ -227,6 +227,17 @@ kukicha/
 └── examples/        # Example programs
 ```
 
+### Generated Files
+
+The `stdlib/` `.go` files are **generated** from `.kuki` sources by the transpiler. Always edit the `.kuki` file, then regenerate:
+
+```bash
+make generate        # Rebuild kukicha, then regenerate all stdlib .go files
+make check-generate  # CI: verify .go files match .kuki sources
+```
+
+Do not edit `stdlib/*/*.go` by hand — your changes will be overwritten on the next `make generate`.
+
 ### Adding Features
 
 1. Update docs and grammar specification
