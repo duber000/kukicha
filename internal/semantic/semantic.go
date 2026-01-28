@@ -1166,6 +1166,10 @@ func (a *Analyzer) extractPackageName(imp *ast.ImportDecl) string {
 
 	// Rewrite stdlib imports to full module path before extracting package name
 	if strings.HasPrefix(path, "stdlib/") {
+		// Remap stdlib/iter to stdlib/iterator
+		if path == "stdlib/iter" {
+			path = "stdlib/iterator"
+		}
 		path = "github.com/duber000/kukicha/" + path
 	}
 

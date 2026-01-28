@@ -42,8 +42,8 @@ func New(program *ast.Program) *Generator {
 // SetSourceFile sets the source file path and detects if special transpilation is needed
 func (g *Generator) SetSourceFile(path string) {
 	g.sourceFile = path
-	// Enable special transpilation for stdlib/iter files
-	g.isStdlibIter = strings.Contains(path, "stdlib/iter/") || strings.Contains(path, "stdlib\\iter\\")
+	// Enable special transpilation for stdlib/iterator files
+	g.isStdlibIter = strings.Contains(path, "stdlib/iterator/") || strings.Contains(path, "stdlib\\iterator\\")
 	// Note: stdlib/slice uses a different approach - type parameters are detected per-function
 }
 
@@ -300,7 +300,7 @@ func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
 		g.placeholderMap[k] = v
 	}
 
-	// Check if this is a stdlib/iter function literal that needs special transpilation
+	// Check if this is a stdlib/iterator function literal that needs special transpilation
 	var typeParams []*TypeParameter
 	if g.isStdlibIter {
 		// Create a temporary function decl to reuse the inference logic
@@ -366,7 +366,7 @@ func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
 	return result
 }
 
-// inferStdlibTypeParameters infers type parameters for stdlib/iter functions
+// inferStdlibTypeParameters infers type parameters for stdlib/iterator functions
 // This enables special transpilation where iter.Seq → iter.Seq[T]
 func (g *Generator) inferStdlibTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
 	var typeParams []*TypeParameter

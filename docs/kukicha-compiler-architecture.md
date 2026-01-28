@@ -979,7 +979,7 @@ Kukicha transparently generates Go 1.25+ generic type parameters for stdlib func
 
 #### How It Works
 
-1. **Automatic Detection**: When generating code in `stdlib/iter/` or `stdlib/slice/`, the codegen detects functions that need type parameters
+1. **Automatic Detection**: When generating code in `stdlib/iterator/` or `stdlib/slice/`, the codegen detects functions that need type parameters
 2. **Type Inference**: Uses placeholder names in function signatures (`"any"` → `"T"`, `"any2"` → `"K"`) to infer generic structure
 3. **Constraint Application**: Functions like `GroupBy` get proper constraints (`comparable` for map keys)
 4. **Transparent to Users**: End-users write normal Kukicha code with explicit parameter types; generics are added automatically
@@ -1016,7 +1016,7 @@ func GroupBy[T any, K comparable](items []T, keyFunc func(T) K) map[K][]T {
 ```
 Stdlib Function AST
     ↓
-Detect stdlib/slice or stdlib/iter context
+Detect stdlib/slice or stdlib/iterator context
     ↓
 inferSliceTypeParameters() or inferStdlibTypeParameters()
     ↓
@@ -1070,8 +1070,8 @@ func New(program *ast.Program) *Generator {
 // SetSourceFile sets the source file path and detects if special transpilation is needed
 func (g *Generator) SetSourceFile(path string) {
     g.sourceFile = path
-    // Enable special transpilation for stdlib/iter files
-    g.isStdlibIter = strings.Contains(path, "stdlib/iter/")
+    // Enable special transpilation for stdlib/iterator files
+    g.isStdlibIter = strings.Contains(path, "stdlib/iterator/")
     // Note: stdlib/slice uses a different approach - type parameters are detected per-function
 }
 
@@ -1119,14 +1119,14 @@ For detailed code generator implementation, see `internal/codegen/codegen.go`. K
 **Generic Type Parameter Generation:**
 
 When processing function declarations in stdlib packages, the code generator:
-1. Detects the source file context (stdlib/iter or stdlib/slice)
+1. Detects the source file context (stdlib/iterator or stdlib/slice)
 2. Calls the appropriate type inference function
 3. Builds a placeholder mapping for type substitution
 4. Recursively applies the mapping through all type annotations
 5. Generates proper Go generic syntax in the output
 
 **Typed Empty Handling for Generics:**
-For expressions like `empty T` where `T` is a generic type parameter, the generator produces `*new(T)` instead of invalid `T{}` syntax, ensuring zero values work correctly with generics.
+For expressions like `empty T` where `T` is a generic type parameter, the generator produces `*new(T)` instead of invalid `T{}` syntax, ensuring zero values work correctly with generics. This is primarily used in `stdlib/iterator` context.
 
 This ensures that stdlib functions automatically receive proper Go 1.25+ generic type parameters without users needing to write generic syntax in their Kukicha code.
 
