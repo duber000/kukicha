@@ -655,6 +655,12 @@ type TypeCastExpr struct {
     Pos   Position
 }
 
+type TypeAssertionExpr struct {
+    Expression Expr
+    TargetType TypeExpr
+    Pos        Position
+}
+
 type ThisExpr struct {
     Pos Position
 }
@@ -1072,7 +1078,7 @@ func (g *Generator) SetSourceFile(path string) {
 func (g *Generator) Generate() (string, error) {
     g.output.Reset()
 
-    // Pre-scan declarations to collect auto-imports
+    // Pre-scan declarations to collect auto-imports (e.g. net/http for fetch wrappers)
     g.scanForAutoImports()
 
     // Generate header comment
@@ -1119,6 +1125,9 @@ When processing function declarations in stdlib packages, the code generator:
 4. Recursively applies the mapping through all type annotations
 5. Generates proper Go generic syntax in the output
 
+**Typed Empty Handling for Generics:**
+For expressions like `empty T` where `T` is a generic type parameter, the generator produces `*new(T)` instead of invalid `T{}` syntax, ensuring zero values work correctly with generics.
+
 This ensures that stdlib functions automatically receive proper Go 1.25+ generic type parameters without users needing to write generic syntax in their Kukicha code.
 
 ### Pipe Operator with Placeholder Strategy
@@ -1133,6 +1142,16 @@ data |> transform(opts)
 Generates:
 ```go
 transform(data, opts)
+```
+
+**Special Case: Multi-Return Functions**
+If the left side is a function call that returns multiple values (e.g., `fetch.Get()`), the generator automatically wraps it in an IIFE (Immediately Invoked Function Expression) to extract just the first return value for the pipe:
+```kukicha
+fetch.Get(url) |> fetch.CheckStatus()
+```
+Generates:
+```go
+fetch.CheckStatus(func() *http.Response { val, _ := fetch.Get(url); return val }())
 ```
 
 #### Strategy B: Explicit Placeholder

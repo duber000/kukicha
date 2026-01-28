@@ -286,6 +286,7 @@ PrimaryExpression ::=
     | ErrorExpression
     | DiscardExpression
     | TypeCast
+    | TypeAssertionExpression
     | FunctionLiteral
     | ReturnExpression
     | ShorthandMethodCall
@@ -366,6 +367,9 @@ ReceiveExpression ::= "receive" "from" Expression
 RecoverExpression ::= "recover" "(" ")"
 
 TypeCast ::= Expression "as" TypeAnnotation
+
+TypeAssertionExpression ::= "." "(" TypeAnnotation ")"
+    # Postfix usage: value.(Type)
 
 ReturnExpression ::= "return" [ ExpressionList ]
 
