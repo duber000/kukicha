@@ -131,3 +131,13 @@ func Bytes(resp *http.Response) ([]byte, error) {
 	}
 	return bodyBytes, nil
 }
+
+func Json(resp *http.Response) (any, error) {
+	defer resp.Body.Close()
+	data := make(map[string]any)
+	err := json.UnmarshalRead(resp.Body, &data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}

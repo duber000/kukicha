@@ -8,7 +8,7 @@ package json
 
 import (
 	jsonv1 "encoding/json"
-	"encoding/json/v2"
+	json "encoding/json/v2"
 	"io"
 )
 

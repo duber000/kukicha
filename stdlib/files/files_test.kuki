@@ -34,8 +34,9 @@ func TestReadWrite(t reference testing.T)
     if readErr != empty
         t.Fatalf("files.Read failed: {readErr}")
 
-    if content != testContent
-        t.Errorf("Expected content '{testContent}', got '{content}'")
+    contentStr := content as string
+    if contentStr != testContent
+        t.Error("Content does not match expected")
 
 # TestWriteJSON verifies JSON serialization in Write
 func TestWriteJSON(t reference testing.T)
@@ -141,12 +142,10 @@ func TestList(t reference testing.T)
     if len(entries) != 3
         t.Errorf("Expected 3 entries, got {len(entries)}")
 
-    # Verify entries have correct fields
+    # Verify entries are non-empty paths
     for entry in entries
-        if entry.Name == ""
-            t.Error("Expected non-empty Name field")
-        if entry.Path == ""
-            t.Error("Expected non-empty Path field")
+        if entry == ""
+            t.Error("Expected non-empty path")
 
 # TestAppend verifies file append operation
 func TestAppend(t reference testing.T)
@@ -174,8 +173,9 @@ func TestAppend(t reference testing.T)
         t.Fatalf("files.Read failed: {readErr}")
 
     expected := "Line 1\nLine 2\n"
-    if content != expected
-        t.Errorf("Expected content '{expected}', got '{content}'")
+    contentStr := content as string
+    if contentStr != expected
+        t.Error("Content does not match expected")
 
 # TestCopy verifies file copying
 func TestCopy(t reference testing.T)
@@ -208,8 +208,9 @@ func TestCopy(t reference testing.T)
     if readErr != empty
         t.Fatalf("files.Read failed: {readErr}")
 
-    if content != testContent
-        t.Errorf("Expected content '{testContent}', got '{content}'")
+    contentStr := content as string
+    if contentStr != testContent
+        t.Error("Content does not match expected")
 
 # TestDelete verifies file deletion
 func TestDelete(t reference testing.T)

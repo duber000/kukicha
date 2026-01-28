@@ -303,6 +303,49 @@ func TestStringInterpolation(t *testing.T) {
 	}
 }
 
+func TestPrintfStyleMethodInterpolation(t *testing.T) {
+	// Test that t.Errorf with interpolation generates inline format args (not fmt.Sprintf)
+	input := `import "testing"
+
+func TestExample(t reference testing.T)
+    name := "world"
+    t.Errorf("hello {name}")
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	t.Logf("Generated output:\n%s", output)
+
+	// Should generate: t.Errorf("hello %v", name)
+	if !strings.Contains(output, `t.Errorf("hello %v", name)`) {
+		t.Errorf("expected inline format args for t.Errorf, got: %s", output)
+	}
+
+	// Should NOT use fmt.Sprintf for the error message
+	if strings.Contains(output, "fmt.Sprintf") {
+		t.Errorf("should not use fmt.Sprintf for printf-style methods, got: %s", output)
+	}
+
+	// Should NOT import fmt (no other interpolation uses it)
+	if strings.Contains(output, `"fmt"`) {
+		t.Errorf("should not import fmt when only printf-style interpolation is used, got: %s", output)
+	}
+}
+
 func TestReferenceType(t *testing.T) {
 	input := `type Person
     Name string
@@ -769,6 +812,20 @@ func main()
     json.Marshal(d)
 `,
 			expectedImport: `"encoding/json"`,
+			shouldContain:  "json.Marshal",
+		},
+		{
+			name: "version suffix import gets alias",
+			source: `import "encoding/json/v2"
+
+type Data
+    Value string
+
+func main()
+    d := Data{}
+    json.Marshal(d)
+`,
+			expectedImport: `json "encoding/json/v2"`,
 			shouldContain:  "json.Marshal",
 		},
 	}

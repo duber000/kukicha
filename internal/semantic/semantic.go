@@ -1002,7 +1002,6 @@ func (a *Analyzer) validateTypeAnnotation(typeAnn ast.TypeAnnotation) {
 			}
 
 			pkgName := parts[0]
-			// typeName := parts[1] // Not needed - we trust the package
 
 			// Verify the package is imported
 			pkgSymbol := a.symbolTable.Resolve(pkgName)

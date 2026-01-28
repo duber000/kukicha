@@ -5,41 +5,43 @@ petiole cli_test
 import "stdlib/cli"
 import "testing"
 
+# Helper to create Args with values
+func makeArgs(values map of string to string) cli.Args
+    return cli.NewArgs(values)
+
 # Test GetString helper
 func TestGetString(t reference testing.T)
-    args := cli.Args{
-        Positional: list of string{"build", "main.kuki"},
-        Flags: map of string to string{
-            "format": "json",
-            "output": "result.txt",
-        },
-    }
+    values := make(map of string to string)
+    values["format"] = "json"
+    values["output"] = "result.txt"
+    values["input"] = "main.kuki"
 
-    # Test getting flag value
+    args := makeArgs(values)
+
+    # Test getting value
     format := cli.GetString(args, "format")
     if format != "json"
-        t.Errorf("Expected format to be 'json', got '{format}'")
+        t.Error("Expected format to be 'json'")
 
-    # Test getting another flag
+    # Test getting another value
     output := cli.GetString(args, "output")
     if output != "result.txt"
-        t.Errorf("Expected output to be 'result.txt', got '{output}'")
+        t.Error("Expected output to be 'result.txt'")
 
-    # Test missing flag returns empty string
+    # Test missing value returns empty string
     missing := cli.GetString(args, "missing")
     if missing != ""
-        t.Errorf("Expected missing flag to return empty string, got '{missing}'")
+        t.Error("Expected missing value to return empty string")
 
 # Test GetBool helper
 func TestGetBool(t reference testing.T)
-    args := cli.Args{
-        Positional: list of string{},
-        Flags: map of string to string{
-            "verbose": "true",
-            "quiet": "false",
-            "debug": "yes",
-        },
-    }
+    values := make(map of string to string)
+    values["verbose"] = "true"
+    values["quiet"] = "false"
+    values["debug"] = "yes"
+    values["enabled"] = "1"
+
+    args := makeArgs(values)
 
     # Test true value
     verbose := cli.GetBool(args, "verbose")
@@ -51,10 +53,15 @@ func TestGetBool(t reference testing.T)
     if quiet
         t.Error("Expected quiet to be false")
 
-    # Test non-standard true value
+    # Test non-standard true value "yes"
     debug := cli.GetBool(args, "debug")
     if not debug
         t.Error("Expected debug to be true")
+
+    # Test non-standard true value "1"
+    enabled := cli.GetBool(args, "enabled")
+    if not enabled
+        t.Error("Expected enabled to be true")
 
     # Test missing flag returns false
     missing := cli.GetBool(args, "missing")
@@ -63,48 +70,37 @@ func TestGetBool(t reference testing.T)
 
 # Test GetInt helper
 func TestGetInt(t reference testing.T)
-    args := cli.Args{
-        Positional: list of string{},
-        Flags: map of string to string{
-            "count": "42",
-            "port": "8080",
-            "invalid": "not-a-number",
-        },
-    }
+    values := make(map of string to string)
+    values["count"] = "42"
+    values["port"] = "8080"
+    values["invalid"] = "not-a-number"
+
+    args := makeArgs(values)
 
     # Test valid int
-    count := cli.GetInt(args, "count")
+    count, countErr := cli.GetInt(args, "count")
+    if countErr != empty
+        t.Error("Expected no error for count")
     if count != 42
-        t.Errorf("Expected count to be 42, got {count}")
+        t.Error("Expected count to be 42")
 
     # Test another valid int
-    port := cli.GetInt(args, "port")
+    port, portErr := cli.GetInt(args, "port")
+    if portErr != empty
+        t.Error("Expected no error for port")
     if port != 8080
-        t.Errorf("Expected port to be 8080, got {port}")
+        t.Error("Expected port to be 8080")
 
-    # Test invalid int returns 0
-    invalid := cli.GetInt(args, "invalid")
+    # Test invalid int returns error
+    invalid, invalidErr := cli.GetInt(args, "invalid")
+    if invalidErr == empty
+        t.Error("Expected error for invalid int")
     if invalid != 0
-        t.Errorf("Expected invalid int to return 0, got {invalid}")
+        t.Error("Expected invalid int to return 0")
 
-    # Test missing flag returns 0
-    missing := cli.GetInt(args, "missing")
+    # Test missing returns error
+    missing, missingErr := cli.GetInt(args, "missing")
+    if missingErr == empty
+        t.Error("Expected error for missing value")
     if missing != 0
-        t.Errorf("Expected missing flag to return 0, got {missing}")
-
-# Test positional arguments
-func TestPositionalArgs(t reference testing.T)
-    args := cli.Args{
-        Positional: list of string{"command", "arg1", "arg2", "arg3"},
-        Flags: map of string to string{},
-    }
-
-    # Test accessing positional arguments
-    if len(args.Positional) != 4
-        t.Errorf("Expected 4 positional args, got {len(args.Positional)}")
-
-    if args.Positional[0] != "command"
-        t.Errorf("Expected first arg to be 'command', got '{args.Positional[0]}'")
-
-    if args.Positional[1] != "arg1"
-        t.Errorf("Expected second arg to be 'arg1', got '{args.Positional[1]}'")
+        t.Error("Expected missing value to return 0")

@@ -29,6 +29,11 @@ type App
 type Args
     values map of string to string
 
+# NewArgs creates an Args from a map of values (useful for testing)
+# Example: args := cli.NewArgs(myValues)
+func NewArgs(values map of string to string) Args
+    return Args{values: values}
+
 # Builder Pattern Functions
 
 # New creates a new CLI application builder

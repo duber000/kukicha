@@ -32,17 +32,17 @@ func Write(data any, path string) error {
 	if err != nil {
 		return err
 	}
-	writeErr := os.WriteFile(path, jsonData, 644)
+	writeErr := os.WriteFile(path, jsonData, 0644)
 	return writeErr
 }
 
 func WriteString(data string, path string) error {
 	bytesData := []byte(data)
-	return os.WriteFile(path, bytesData, 644)
+	return os.WriteFile(path, bytesData, 0644)
 }
 
 func Append(data any, path string) error {
-	file, err := os.OpenFile(path, ((os.O_APPEND | os.O_CREATE) | os.O_WRONLY), 644)
+	file, err := os.OpenFile(path, ((os.O_APPEND | os.O_CREATE) | os.O_WRONLY), 0644)
 	if err != nil {
 		return err
 	}
@@ -53,6 +53,17 @@ func Append(data any, path string) error {
 	}
 	jsonData = append(jsonData, '\n')
 	_, writeErr := file.Write(jsonData)
+	return writeErr
+}
+
+func AppendString(data string, path string) error {
+	file, err := os.OpenFile(path, ((os.O_APPEND | os.O_CREATE) | os.O_WRONLY), 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	bytesData := []byte(data)
+	_, writeErr := file.Write(bytesData)
 	return writeErr
 }
 
@@ -131,11 +142,11 @@ func Move(src string, dst string) error {
 }
 
 func MkDir(path string) error {
-	return os.Mkdir(path, 755)
+	return os.Mkdir(path, 0755)
 }
 
 func MkDirAll(path string) error {
-	return os.MkdirAll(path, 755)
+	return os.MkdirAll(path, 0755)
 }
 
 func TempFile(prefix string) (string, error) {

@@ -156,3 +156,14 @@ func Bytes(resp reference http.Response) (list of byte, error)
     if err != empty
         return empty, err
     return bodyBytes, empty
+
+# Json reads the response body and unmarshals it as JSON
+# Returns the parsed data as any type (typically map of string to any)
+# Example: data, err := resp |> fetch.Json()
+func Json(resp reference http.Response) (any, error)
+    defer resp.Body.Close()
+    data := make(map of string to any)
+    err := json.UnmarshalRead(resp.Body, reference of data)
+    if err != empty
+        return empty, err
+    return data, empty

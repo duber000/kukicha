@@ -1524,7 +1524,8 @@ func (p *Parser) parseIdentifier() *ast.Identifier {
 
 func (p *Parser) parseIntegerLiteral() *ast.IntegerLiteral {
 	token := p.advance()
-	value, err := strconv.ParseInt(token.Lexeme, 10, 64)
+	// Use base 0 to auto-detect: 0x=hex, 0o/0=octal, 0b=binary, otherwise decimal
+	value, err := strconv.ParseInt(token.Lexeme, 0, 64)
 	if err != nil {
 		p.error(token, fmt.Sprintf("could not parse integer: %s", err))
 		return nil

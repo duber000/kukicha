@@ -158,6 +158,50 @@ func (g *Generator) generateImports() {
 		}
 	}
 
+	// Auto-alias imports that collide with Go built-in types or keywords.
+	// e.g., stdlib/string -> kukistring (because "string" is a Go built-in type)
+	goBuiltins := map[string]bool{
+		"string": true, "int": true, "int8": true, "int16": true, "int32": true, "int64": true,
+		"uint": true, "uint8": true, "uint16": true, "uint32": true, "uint64": true,
+		"float32": true, "float64": true, "complex64": true, "complex128": true,
+		"bool": true, "byte": true, "rune": true, "error": true, "any": true,
+	}
+	for path, alias := range imports {
+		if alias != "" {
+			continue // Already aliased
+		}
+		pkgName := extractPkgName(path)
+		if goBuiltins[pkgName] {
+			aliased := "kuki" + pkgName
+			imports[path] = aliased
+			g.pkgAliases[pkgName] = aliased
+		}
+	}
+
+	// Auto-alias imports ending with version suffixes like /v2, /v3.
+	// Go uses the last path segment as the package name, so "encoding/json/v2"
+	// would be imported as "v2" without an alias. We need to alias it to "json".
+	for path, alias := range imports {
+		if alias != "" {
+			continue // Already has an explicit alias
+		}
+		parts := strings.Split(path, "/")
+		if len(parts) < 2 {
+			continue
+		}
+		lastSegment := parts[len(parts)-1]
+		// Check if last segment is a version like v2, v3, etc.
+		if len(lastSegment) >= 2 && lastSegment[0] == 'v' && lastSegment[1] >= '0' && lastSegment[1] <= '9' {
+			// Use the second-to-last segment as the alias
+			pkgName := parts[len(parts)-2]
+			// Handle .v suffix in the package name (e.g., yaml.v3)
+			if idx := strings.Index(pkgName, ".v"); idx != -1 {
+				pkgName = pkgName[:idx]
+			}
+			imports[path] = pkgName
+		}
+	}
+
 	// Generate import block
 	if len(imports) == 1 {
 		for path, alias := range imports {
@@ -1202,6 +1246,11 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 	case *ast.Identifier:
 		return e.Value
 	case *ast.IntegerLiteral:
+		// Preserve original representation for octal (0...), hex (0x...), binary (0b...)
+		lexeme := e.Token.Lexeme
+		if len(lexeme) > 1 && lexeme[0] == '0' {
+			return lexeme // Keep original format
+		}
 		return fmt.Sprintf("%d", e.Value)
 	case *ast.FloatLiteral:
 		return fmt.Sprintf("%f", e.Value)
@@ -1358,12 +1407,24 @@ func (g *Generator) generateStringLiteral(lit *ast.StringLiteral) string {
 }
 
 func (g *Generator) generateStringInterpolation(str string) string {
+	format, args := g.parseStringInterpolation(str)
+	if len(args) == 0 {
+		return fmt.Sprintf("\"%s\"", format)
+	}
+	argsStr := strings.Join(args, ", ")
+	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", format, argsStr)
+}
+
+// parseStringInterpolation extracts the format string and arguments from
+// a Kukicha string with {expr} interpolation patterns.
+// Returns the format string (with %v placeholders) and the list of argument expressions.
+func (g *Generator) parseStringInterpolation(str string) (string, []string) {
 	// Find all {expr} patterns
 	re := regexp.MustCompile(`\{([^}]+)\}`)
 	matches := re.FindAllStringSubmatchIndex(str, -1)
 
 	if len(matches) == 0 {
-		return fmt.Sprintf("\"%s\"", g.escapeString(str))
+		return g.escapeString(str), nil
 	}
 
 	// Build format string and args
@@ -1392,9 +1453,7 @@ func (g *Generator) generateStringInterpolation(str string) string {
 		format.WriteString(g.escapeString(str[lastIndex:]))
 	}
 
-	// Generate fmt.Sprintf call
-	argsStr := strings.Join(args, ", ")
-	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", format.String(), argsStr)
+	return format.String(), args
 }
 
 func (g *Generator) generateBinaryExpr(expr *ast.BinaryExpr) string {
@@ -1641,6 +1700,27 @@ func (g *Generator) generateMethodCallExpr(expr *ast.MethodCallExpr) string {
 		return fmt.Sprintf("%s.%s", object, method)
 	}
 
+	// Check if this is a printf-style method (Errorf, Fatalf, Logf, Skipf, Printf, etc.)
+	// These methods require a constant format string in Go 1.25+
+	if g.isPrintfStyleMethod(method) && len(expr.Arguments) > 0 {
+		if strLit, ok := expr.Arguments[0].(*ast.StringLiteral); ok {
+			format, formatArgs := g.parseStringInterpolation(strLit.Value)
+			if len(formatArgs) > 0 {
+				// Generate: t.Errorf("format %v", args...) instead of t.Errorf(fmt.Sprintf(...))
+				allArgs := make([]string, 0, len(formatArgs)+len(expr.Arguments)-1)
+				allArgs = append(allArgs, formatArgs...)
+				// Add remaining arguments after the format string
+				for i := 1; i < len(expr.Arguments); i++ {
+					allArgs = append(allArgs, g.exprToString(expr.Arguments[i]))
+				}
+				if expr.Variadic {
+					return fmt.Sprintf("%s.%s(\"%s\", %s...)", object, method, format, strings.Join(allArgs, ", "))
+				}
+				return fmt.Sprintf("%s.%s(\"%s\", %s)", object, method, format, strings.Join(allArgs, ", "))
+			}
+		}
+	}
+
 	// Method call with explicit parentheses
 	args := make([]string, len(expr.Arguments))
 	for i, arg := range expr.Arguments {
@@ -1651,6 +1731,26 @@ func (g *Generator) generateMethodCallExpr(expr *ast.MethodCallExpr) string {
 		return fmt.Sprintf("%s.%s(%s...)", object, method, strings.Join(args, ", "))
 	}
 	return fmt.Sprintf("%s.%s(%s)", object, method, strings.Join(args, ", "))
+}
+
+// isPrintfStyleMethod returns true if the method name is a printf-style method
+// that expects a format string as its first argument.
+func (g *Generator) isPrintfStyleMethod(method string) bool {
+	// Common printf-style methods from testing, fmt, and log packages
+	printfMethods := map[string]bool{
+		"Errorf":  true,
+		"Fatalf":  true,
+		"Logf":    true,
+		"Skipf":   true,
+		"Printf":  true,
+		"Sprintf": true,
+		"Fprintf": true,
+		"Panicf":  true,
+		"Warnf":   true,
+		"Infof":   true,
+		"Debugf":  true,
+	}
+	return printfMethods[method]
 }
 
 func (g *Generator) generateSliceExpr(expr *ast.SliceExpr) string {
@@ -1873,8 +1973,14 @@ func (g *Generator) checkExprForInterpolation(expr ast.Expression) bool {
 			}
 		}
 	case *ast.MethodCallExpr:
-		for _, arg := range e.Arguments {
-			if g.checkExprForInterpolation(arg) {
+		// For printf-style methods, skip the first argument (format string)
+		// since it's handled inline without fmt.Sprintf
+		startIdx := 0
+		if g.isPrintfStyleMethod(e.Method.Value) && len(e.Arguments) > 0 {
+			startIdx = 1
+		}
+		for i := startIdx; i < len(e.Arguments); i++ {
+			if g.checkExprForInterpolation(e.Arguments[i]) {
 				return true
 			}
 		}
@@ -2254,13 +2360,10 @@ func (g *Generator) checkExprForErrors(expr ast.Expression) bool {
 
 	switch e := expr.(type) {
 	case *ast.ErrorExpr:
-        fmt.Printf("DEBUG: Found ErrorExpr: %v\n", e)
+		_ = e // Silence unused variable warning
 		return true
 	case *ast.Identifier:
-        if e.Value == "error" {
-            fmt.Printf("DEBUG: Found identifier 'error'\n")
-        }
-        return false
+		return false
 	case *ast.BinaryExpr:
 		return g.checkExprForErrors(e.Left) || g.checkExprForErrors(e.Right)
 	case *ast.UnaryExpr:

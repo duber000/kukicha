@@ -5,7 +5,6 @@ petiole shell_test
 import "stdlib/shell"
 import "stdlib/string"
 import "testing"
-import "os"
 
 # Test basic command execution
 func TestExecute(t reference testing.T)
@@ -13,12 +12,13 @@ func TestExecute(t reference testing.T)
     result := shell.Execute(cmd)
 
     if not shell.Success(result)
-        t.Errorf("shell.Execute failed: {shell.GetError(result) as string}")
+        errStr := shell.GetError(result) as string
+        t.Errorf("shell.Execute failed: {errStr}")
 
     output := shell.GetOutput(result) as string
     expected := "hello world\n"
     if output != expected
-        t.Errorf("Expected '{expected}', got '{output}'")
+        t.Error("Expected 'hello world\\n', got different output")
 
 # Test command with working directory
 func TestExecuteWithDir(t reference testing.T)
@@ -26,11 +26,12 @@ func TestExecuteWithDir(t reference testing.T)
     result := shell.Execute(cmd)
 
     if not shell.Success(result)
-        t.Errorf("shell.Execute with Dir failed: {shell.GetError(result) as string}")
+        errStr := shell.GetError(result) as string
+        t.Errorf("shell.Execute with Dir failed: {errStr}")
 
     output := shell.GetOutput(result) as string
     if not string.Contains(output, "tmp")
-        t.Errorf("Expected output to contain 'tmp', got '{output}'")
+        t.Error("Expected output to contain 'tmp'")
 
 # Test command with environment variable
 func TestExecuteWithEnv(t reference testing.T)
@@ -38,11 +39,12 @@ func TestExecuteWithEnv(t reference testing.T)
     result := shell.Execute(cmd)
 
     if not shell.Success(result)
-        t.Errorf("shell.Execute with Env failed: {shell.GetError(result) as string}")
+        errStr := shell.GetError(result) as string
+        t.Errorf("shell.Execute with Env failed: {errStr}")
 
     output := shell.GetOutput(result) as string
     if not string.Contains(output, "hello")
-        t.Errorf("Expected output to contain 'hello', got '{output}'")
+        t.Error("Expected output to contain 'hello'")
 
 # Test failed command
 func TestExecuteFailed(t reference testing.T)

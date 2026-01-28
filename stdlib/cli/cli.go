@@ -36,6 +36,10 @@ type Args struct {
 	values map[string]string
 }
 
+func NewArgs(values map[string]string) Args {
+	return Args{values: values}
+}
+
 func New(name string) App {
 	return App{name: name, args: make([]ArgDef, 0), flags: make([]FlagDef, 0), action: nil}
 }
