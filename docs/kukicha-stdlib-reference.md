@@ -46,7 +46,7 @@ Kukicha combines two powerful ideas:
 
 | Package | Purpose | Status | Functions |
 |---------|---------|--------|-----------|
-| **iter** | Functional iteration (Filter, Map, Reduce) | ✅ Ready | Filter, Map, FlatMap, Take, Skip, Reduce, Collect, Find, Any, All, Enumerate, Zip, Chunk |
+| **iterator** | Functional iteration (Filter, Map, Reduce) | ✅ Ready | Filter, Map, FlatMap, Take, Skip, Reduce, Collect, Find, Any, All, Enumerate, Zip, Chunk |
 | **slice** | Slice operations with generics | ✅ Ready | First, Last, Drop, DropLast, Reverse, Unique, Chunk, Filter, Map, Contains, IndexOf, Concat, GroupBy |
 | **string** | String utilities | ✅ Ready | ToUpper, ToLower, Title, Trim, TrimSpace, TrimPrefix, TrimSuffix, Split, Join, Contains, HasPrefix, HasSuffix, Index, Count, Replace, ReplaceAll, and more |
 | **files** | File operations with pipes | ✅ Ready | Read, Write, Append, Exists, IsDir, IsFile, List, Delete, Copy, Move, MkDir, TempFile, TempDir, Size, ModTime, Extension, Join, Abs, Watch, UseWith |
@@ -103,7 +103,7 @@ result := operation() onerr panic "should not happen"  # BAD!
 
 ---
 
-### Iter Package
+### Iterator Package
 
 Functional iteration with lazy evaluation and pipes:
 
@@ -112,7 +112,7 @@ import "stdlib/iterator"
 import "stdlib/slice"
 
 # Pipeline: filter positive numbers, double them, sum
-# Note: iter provides functional composition; slice provides eager operations
+# Note: iterator provides functional composition; slice provides eager operations
 total := numbers
     |> slice.Filter(func(n int) bool
         return n > 0  # Keep only positive numbers
@@ -120,7 +120,7 @@ total := numbers
     |> slice.Map(func(n int) int
         return n * 2  # Double each number
     )
-    |> iter.Reduce(0, func(acc int, n int) int
+    |> iterator.Reduce(0, func(acc int, n int) int
         return acc + n  # Sum all numbers
     )
 
@@ -133,7 +133,7 @@ total := numbers
 # Chunk, Reduce, Collect, Any, All, Find
 ```
 
-**Note:** `slice` operations work on entire collections eagerly, while `iter` provides lazy functional composition. Use `slice` for direct transformations and `iter` for complex composed workflows.
+**Note:** `slice` operations work on entire collections eagerly, while `iterator` provides lazy functional composition. Use `slice` for direct transformations and `iterator` for complex composed workflows.
 
 ### Slice Package
 
@@ -997,7 +997,7 @@ We welcome contributions! Focus areas:
 - **Tutorial content** for beginners learning programming
 
 ### Good Contributions:
-- Improving existing packages (iter, slice, string)
+- Improving existing packages (iterator, slice, string)
 - Documentation with real-world examples
 - Performance optimizations
 - Bug fixes

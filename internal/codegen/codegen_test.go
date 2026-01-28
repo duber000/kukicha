@@ -553,7 +553,7 @@ func TestAddressOfWithFieldAccess(t *testing.T) {
 
 // REMOVED: Old generics tests - generics syntax has been removed from Kukicha
 // Generic functionality is now provided by the stdlib (written in Go) with special transpilation
-// See stdlib/iter/ for examples of special transpilation
+// See stdlib/iterator/ for examples of special transpilation
 
 // TestConcurrentCodeGeneration tests that multiple code generators can run
 // concurrently without data races or interference using synctest

@@ -522,7 +522,7 @@ You've completed the full Kukicha tutorial series!
 ### Explore More
 
 - **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** - Complete language grammar
-- **[Standard Library](../kukicha-stdlib-reference.md)** - iter, slice, and more
+- **[Standard Library](../kukicha-stdlib-reference.md)** - iterator, slice, and more
 
 ### Build Projects
 

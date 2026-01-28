@@ -1113,7 +1113,7 @@ For detailed code generator implementation, see `internal/codegen/codegen.go`. K
 - `generateFunctionDecl()` - Function generation with generic type parameter support
 - `generateTypeAnnotation()` - Type annotation transpilation with placeholder substitution
 - `generateTypeParameters()` - Generate Go type parameter list `[T any, K comparable]`
-- `inferStdlibTypeParameters()` - Infer generics for stdlib/iter functions
+- `inferStdlibTypeParameters()` - Infer generics for stdlib/iterator functions
 - `inferSliceTypeParameters()` - Infer generics for stdlib/slice functions like GroupBy
 
 **Generic Type Parameter Generation:**

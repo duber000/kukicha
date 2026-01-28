@@ -112,7 +112,7 @@ func Concat(slices list of list of any) list of any
     return result
 
 # Filter returns a new slice containing only elements that satisfy the predicate
-# This is a slice-based version complementing iter.Filter
+# This is a slice-based version complementing iterator.Filter
 func Filter(items list of any, predicate func(any) bool) list of any
     result := make(list of any, 0)
     for item in items

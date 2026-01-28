@@ -282,10 +282,10 @@ func handleListTodos(response http.ResponseWriter, request reference http.Reques
     # For production, regex or full-text search would be better for larger datasets
     filtered := todos
         |> slices.Values()
-        |> iter.Filter(func(t Todo) bool
+        |> iterator.Filter(func(t Todo) bool
             return string.Contains(string.ToLower(t.title), string.ToLower(search))
         )
-        |> iter.Collect()
+        |> iterator.Collect()
     
     sendJSON(response, filtered)
 
