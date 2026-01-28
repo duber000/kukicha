@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/duber000/kukicha/stdlib/fetch"
 	"github.com/duber000/kukicha/stdlib/json"
+	"net/http"
 )
 
 type Repo struct {
@@ -24,8 +25,11 @@ type Repo struct {
 
 func main() {
 	repos := []Repo{}
-	if err_1 := json.NewDecoder(fetch.CheckStatus(fetch.Get("https://api.github.com/users/golang/repos")).Body).Decode(&repos); err_1 != nil {
-		panic(fmt.Sprintf("Failed to fetch or parse repos: %v", error))
+	if err_1 := json.Decode(json.NewDecoder(func() *http.Response {
+		val, _ := fetch.CheckStatus(func() *http.Response { val, _ := fetch.Get("https://api.github.com/users/golang/repos"); return val }())
+		return val
+	}().Body), &repos); err_1 != nil {
+		panic(fmt.Sprintf("Failed to fetch or parse repos: %v", err_1))
 	}
 	fmt.Println(fmt.Sprintf("Successfully fetched %v repositories!", len(repos)))
 	for _, repo := range repos[:5] {

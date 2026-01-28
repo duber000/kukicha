@@ -1308,8 +1308,22 @@ func (p *Parser) parsePostfixExpr() ast.Expression {
 			}
 
 		case p.match(lexer.TOKEN_DOT):
-			// Method call or field access
 			dotToken := p.previousToken()
+
+			// Check for type assertion: .(Type)
+			if p.check(lexer.TOKEN_LPAREN) {
+				p.advance() // consume '('
+				targetType := p.parseTypeAnnotation()
+				p.consume(lexer.TOKEN_RPAREN, "expected ')' after type assertion")
+				expr = &ast.TypeAssertionExpr{
+					Token:      dotToken,
+					Expression: expr,
+					TargetType: targetType,
+				}
+				continue
+			}
+
+			// Method call or field access
 			method := p.parseIdentifier()
 
 			if p.check(lexer.TOKEN_LPAREN) {
@@ -1337,14 +1351,6 @@ func (p *Parser) parsePostfixExpr() ast.Expression {
 					Variadic:  variadic,
 					IsCall:    true,
 				}
-			} else if p.check(lexer.TOKEN_LPAREN) {
-				// Type assertion: val.(Type)
-				// Wait, the previous block handles calls.
-				// For type assertion, we expect dot then LPAREN then Type then RPAREN.
-				// expr is the value. method is irrelevant here or used as Type?
-				// Actually, it should be postfixExpr -> expr '.' '(' Type ')'
-				// Let's refine this.
-				_ = 0
 			} else if p.check(lexer.TOKEN_LBRACE) {
 				// Qualified struct literal: pkg.Type{}
 				// expr should be the package identifier

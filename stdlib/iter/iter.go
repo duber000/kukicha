@@ -4,120 +4,120 @@
 //   GOEXPERIMENT=greenteagc  - Green Tea GC (10-40% faster, default in Go 1.26)
 //   GOEXPERIMENT=jsonv2      - Faster JSON parsing (2-10x improvement)
 
-package iter
+package iterator
 
 import "iter"
 
 func Filter[T any](seq iter.Seq[T], keep func(T) bool) iter.Seq[T] {
-	return func(yield func(T) bool) bool {
-		for _, item := range seq {
+	return func(yield func(T) bool) {
+		for item := range seq {
 			if keep(item) {
 				if !yield(item) {
-					return false
+					return
 				}
 			}
 		}
-		return true
+		return
 	}
 }
 
 func Map[T any, U any](seq iter.Seq[T], transform func(T) U) iter.Seq[U] {
-	return func(yield func(U) bool) bool {
-		for _, item := range seq {
+	return func(yield func(U) bool) {
+		for item := range seq {
 			if !yield(transform(item)) {
-				return false
+				return
 			}
 		}
-		return true
+		return
 	}
 }
 
 func FlatMap[T any](seq iter.Seq[T], transform func(T) iter.Seq[T]) iter.Seq[T] {
-	return func(yield func(T) bool) bool {
-		for _, item := range seq {
-			for _, subItem := range transform(item) {
+	return func(yield func(T) bool) {
+		for item := range seq {
+			for subItem := range transform(item) {
 				if !yield(subItem) {
-					return false
+					return
 				}
 			}
 		}
-		return true
+		return
 	}
 }
 
 func Take[T any](seq iter.Seq[T], n int) iter.Seq[T] {
-	return func(yield func(T) bool) bool {
+	return func(yield func(T) bool) {
 		count := 0
-		for _, item := range seq {
+		for item := range seq {
 			if count >= n {
-				return true
+				return
 			}
 			if !yield(item) {
-				return false
+				return
 			}
 			count++
 		}
-		return true
+		return
 	}
 }
 
 func Skip[T any](seq iter.Seq[T], n int) iter.Seq[T] {
-	return func(yield func(T) bool) bool {
+	return func(yield func(T) bool) {
 		count := 0
-		for _, item := range seq {
+		for item := range seq {
 			if count >= n {
 				if !yield(item) {
-					return false
+					return
 				}
 			}
 			count++
 		}
-		return true
+		return
 	}
 }
 
 func Enumerate[T any](seq iter.Seq[T]) iter.Seq2[int, T] {
-	return func(yield func(int, T) bool) bool {
+	return func(yield func(int, T) bool) {
 		i := 0
-		for _, item := range seq {
+		for item := range seq {
 			if !yield(i, item) {
-				return false
+				return
 			}
 			i++
 		}
-		return true
+		return
 	}
 }
 
 func Chunk[T any](seq iter.Seq[T], n int) iter.Seq[[]T] {
-	return func(yield func([]T) bool) bool {
+	return func(yield func([]T) bool) {
 		chunk := make([]T, 0)
-		for _, item := range seq {
+		for item := range seq {
 			chunk = append(chunk, item)
 			if len(chunk) == n {
 				if !yield(chunk) {
-					return false
+					return
 				}
 				chunk = make([]T, 0)
 			}
 		}
 		if len(chunk) > 0 {
-			return yield(chunk)
+			yield(chunk)
 		}
-		return true
+		return
 	}
 }
 
 func Zip[T any](seq1 iter.Seq[T], seq2 iter.Seq[T]) iter.Seq2[T, T] {
-	return func(yield func(T, T) bool) bool {
+	return func(yield func(T, T) bool) {
 		done := false
-		for _, v1 := range seq1 {
+		for v1 := range seq1 {
 			if done {
-				return true
+				return
 			}
 			v2Exists := false
 			v2 := *new(T)
-			for _, v2Candidate := range seq2 {
+			for v2Candidate := range seq2 {
 				v2 = v2Candidate
 				v2Exists = true
 				break
@@ -125,16 +125,16 @@ func Zip[T any](seq1 iter.Seq[T], seq2 iter.Seq[T]) iter.Seq2[T, T] {
 			if !v2Exists {
 				done = true
 			} else if !yield(v1, v2) {
-				return false
+				return
 			}
 		}
-		return true
+		return
 	}
 }
 
 func Reduce[T any](seq iter.Seq[T], initial T, reducer func(T, T) T) T {
 	acc := initial
-	for _, item := range seq {
+	for item := range seq {
 		acc = reducer(acc, item)
 	}
 	return acc
@@ -142,14 +142,14 @@ func Reduce[T any](seq iter.Seq[T], initial T, reducer func(T, T) T) T {
 
 func Collect[T any](seq iter.Seq[T]) []T {
 	result := make([]T, 0)
-	for _, item := range seq {
+	for item := range seq {
 		result = append(result, item)
 	}
 	return result
 }
 
 func Any[T any](seq iter.Seq[T], predicate func(T) bool) bool {
-	for _, item := range seq {
+	for item := range seq {
 		if predicate(item) {
 			return true
 		}
@@ -158,7 +158,7 @@ func Any[T any](seq iter.Seq[T], predicate func(T) bool) bool {
 }
 
 func All[T any](seq iter.Seq[T], predicate func(T) bool) bool {
-	for _, item := range seq {
+	for item := range seq {
 		if !predicate(item) {
 			return false
 		}
@@ -167,7 +167,7 @@ func All[T any](seq iter.Seq[T], predicate func(T) bool) bool {
 }
 
 func Find[T any](seq iter.Seq[T], predicate func(T) bool) (T, bool) {
-	for _, item := range seq {
+	for item := range seq {
 		if predicate(item) {
 			return item, true
 		}

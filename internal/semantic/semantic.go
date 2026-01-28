@@ -315,10 +315,24 @@ func (a *Analyzer) analyzeVarDeclStmt(stmt *ast.VarDeclStmt) {
 		valueTypes[i] = a.analyzeExpression(val)
 	}
 
-	// Check that number of values matches number of names
-	// For single function call that returns multiple values, we allow len(stmt.Values) == 1
-	if len(stmt.Values) != len(stmt.Names) && len(stmt.Values) != 1 {
-		a.error(stmt.Pos(), fmt.Sprintf("assignment mismatch: %d variables but %d values", len(stmt.Names), len(stmt.Values)))
+	// Special handling for multi-value return from single function call
+	var multiValueTypes []*TypeInfo
+	if len(stmt.Values) == 1 && len(stmt.Names) > 1 {
+		multiValueTypes = a.analyzeExpressionMulti(stmt.Values[0])
+		
+		if len(multiValueTypes) != len(stmt.Names) {
+			// If we can't match exact count, check if it's dynamic/unknown
+			if len(multiValueTypes) == 1 && multiValueTypes[0].Kind == TypeKindUnknown {
+				// Allow assignment of Unknown to multiple variables
+			} else {
+				a.error(stmt.Pos(), fmt.Sprintf("assignment mismatch: %d variables but %d values", len(stmt.Names), len(multiValueTypes)))
+			}
+		}
+	} else {
+		// Check that number of values matches number of names
+		if len(stmt.Values) != len(stmt.Names) {
+			a.error(stmt.Pos(), fmt.Sprintf("assignment mismatch: %d variables but %d values", len(stmt.Names), len(stmt.Values)))
+		}
 	}
 
 	// Type inference and validation
@@ -339,8 +353,18 @@ func (a *Analyzer) analyzeVarDeclStmt(stmt *ast.VarDeclStmt) {
 			varType = valueTypes[i]
 		} else if len(stmt.Values) == 1 {
 			// Single expression (likely multi-value function call)
-			// For now, we use the first value type as a fallback
-			varType = valueTypes[0]
+			if multiValueTypes != nil {
+				if i < len(multiValueTypes) {
+					varType = multiValueTypes[i]
+				} else if len(multiValueTypes) == 1 && multiValueTypes[0].Kind == TypeKindUnknown {
+					varType = multiValueTypes[0]
+				} else {
+					varType = &TypeInfo{Kind: TypeKindUnknown}
+				}
+			} else {
+				// Fallback (shouldn't happen with correct logic above)
+				varType = valueTypes[0]
+			}
 		} else {
 			varType = &TypeInfo{Kind: TypeKindUnknown}
 		}
@@ -378,9 +402,39 @@ func (a *Analyzer) analyzeAssignStmt(stmt *ast.AssignStmt) {
 		valueTypes[i] = a.analyzeExpression(val)
 	}
 
+	// Special handling for multi-value return from single function call
+	var multiValueTypes []*TypeInfo
+	if len(stmt.Values) == 1 && len(stmt.Targets) > 1 {
+		multiValueTypes = a.analyzeExpressionMulti(stmt.Values[0])
+		
+		if len(multiValueTypes) != len(stmt.Targets) {
+			// If we can't match exact count, check if it's dynamic/unknown
+			if len(multiValueTypes) == 1 && multiValueTypes[0].Kind == TypeKindUnknown {
+				// Allow assignment of Unknown to multiple variables
+			} else {
+				a.error(stmt.Pos(), fmt.Sprintf("assignment mismatch: %d variables but %d values", len(stmt.Targets), len(multiValueTypes)))
+				return
+			}
+		}
+
+		// Check types for multi-value assignment
+		for i := range stmt.Targets {
+			var valType *TypeInfo
+			if i < len(multiValueTypes) {
+				valType = multiValueTypes[i]
+			} else {
+				valType = multiValueTypes[0] // Fallback for Unknown
+			}
+
+			if !a.typesCompatible(targetTypes[i], valType) {
+				a.error(stmt.Pos(), fmt.Sprintf("cannot assign %s to %s", valType, targetTypes[i]))
+			}
+		}
+		return
+	}
+
 	// Check that number of values matches number of targets
-	// For single function call that returns multiple values, we allow len(stmt.Values) == 1
-	if len(stmt.Values) != len(stmt.Targets) && len(stmt.Values) != 1 {
+	if len(stmt.Values) != len(stmt.Targets) {
 		a.error(stmt.Pos(), fmt.Sprintf("assignment mismatch: %d variables but %d values", len(stmt.Targets), len(stmt.Values)))
 		return
 	}
@@ -394,8 +448,6 @@ func (a *Analyzer) analyzeAssignStmt(stmt *ast.AssignStmt) {
 			}
 		}
 	}
-	// If len(stmt.Values) == 1, it's likely a multi-value function call
-	// We skip detailed checking for now as it requires tracking function return types
 }
 
 func (a *Analyzer) analyzeReturnStmt(stmt *ast.ReturnStmt) {
@@ -564,9 +616,17 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 	case *ast.PipeExpr:
 		return a.analyzePipeExpr(e)
 	case *ast.CallExpr:
-		return a.analyzeCallExpr(e)
+		types := a.analyzeCallExpr(e)
+		if len(types) > 0 {
+			return types[0]
+		}
+		return &TypeInfo{Kind: TypeKindUnknown}
 	case *ast.MethodCallExpr:
-		return a.analyzeMethodCallExpr(e)
+		types := a.analyzeMethodCallExpr(e)
+		if len(types) > 0 {
+			return types[0]
+		}
+		return &TypeInfo{Kind: TypeKindUnknown}
 	case *ast.IndexExpr:
 		return a.analyzeIndexExpr(e)
 	case *ast.SliceExpr:
@@ -588,6 +648,23 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 		return &TypeInfo{Kind: TypeKindUnknown}
 	default:
 		return &TypeInfo{Kind: TypeKindUnknown}
+	}
+}
+
+// analyzeExpressionMulti analyzes an expression and returns all its values
+// This is used for multi-value assignments (e.g., x, y := f())
+func (a *Analyzer) analyzeExpressionMulti(expr ast.Expression) []*TypeInfo {
+	if expr == nil {
+		return []*TypeInfo{{Kind: TypeKindUnknown}}
+	}
+
+	switch e := expr.(type) {
+	case *ast.CallExpr:
+		return a.analyzeCallExpr(e)
+	case *ast.MethodCallExpr:
+		return a.analyzeMethodCallExpr(e)
+	default:
+		return []*TypeInfo{a.analyzeExpression(expr)}
 	}
 }
 
@@ -726,7 +803,7 @@ func (a *Analyzer) analyzeOnErrClause(clause *ast.OnErrClause) {
 	}
 }
 
-func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) *TypeInfo {
+func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) []*TypeInfo {
 	funcType := a.analyzeExpression(expr.Function)
 
 	// If it's a known function, validate arguments
@@ -760,16 +837,16 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) *TypeInfo {
 			}
 		}
 
-		// Return first return type (if any)
+		// Return all return types
 		if len(funcType.Returns) > 0 {
-			return funcType.Returns[0]
+			return funcType.Returns
 		}
 	}
 
-	return &TypeInfo{Kind: TypeKindUnknown}
+	return []*TypeInfo{{Kind: TypeKindUnknown}}
 }
 
-func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr) *TypeInfo {
+func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr) []*TypeInfo {
 	// Analyze object
 	a.analyzeExpression(expr.Object)
 
@@ -779,7 +856,7 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr) *TypeInfo {
 	}
 
 	// For now, return unknown - full method resolution requires more complex type system
-	return &TypeInfo{Kind: TypeKindUnknown}
+	return []*TypeInfo{{Kind: TypeKindUnknown}}
 }
 
 func (a *Analyzer) analyzeIndexExpr(expr *ast.IndexExpr) *TypeInfo {

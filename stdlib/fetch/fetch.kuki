@@ -69,7 +69,7 @@ func Body(req Request, data any) Request
 # Do executes the configured HTTP request
 # Returns the HTTP response and any error that occurred
 # Example: resp, err := fetch.New(url) |> fetch.Header(...) |> fetch.Do()
-func Do(req Request) (any, error)
+func Do(req Request) (reference http.Response, error)
     client := http.Client{}
     client.Timeout = time.Duration(req.timeoutNs)
 
@@ -103,7 +103,7 @@ func Do(req Request) (any, error)
 # createHTTPRequest wraps http.NewRequest with conditional body reader
 func createHTTPRequest(method string, url string, bodyData any) (reference http.Request, error)
     if bodyData != empty
-        bodyBytes := bodyData as list of byte
+        bodyBytes := bodyData.(list of byte)
         req, err := http.NewRequest(method, url, bytes.NewReader(bodyBytes))
         return req, err
     req, err := http.NewRequest(method, url, empty)
@@ -112,7 +112,7 @@ func createHTTPRequest(method string, url string, bodyData any) (reference http.
 # Get performs an HTTP GET request to the specified URL (quick function)
 # Returns the HTTP response and any error that occurred
 # Example: resp, err := fetch.Get("https://api.example.com/data")
-func Get(url string) (any, error)
+func Get(url string) (reference http.Response, error)
     req := New(url)
     resp, err := Do(req)
     return resp, err
@@ -121,7 +121,7 @@ func Get(url string) (any, error)
 # Automatically serializes data to JSON using stdlib/json
 # Returns the HTTP response and any error that occurred
 # Example: resp, err := fetch.Post(userData, "https://api.example.com/users")
-func Post(data any, url string) (any, error)
+func Post(data any, url string) (reference http.Response, error)
     req := New(url)
     req = Method(req, "POST")
     req.body = data  # Set the body data for automatic JSON serialization
@@ -131,18 +131,16 @@ func Post(data any, url string) (any, error)
 # CheckStatus checks if response status is successful (2xx)
 # Returns the response if successful, error otherwise
 # Example: resp |> fetch.CheckStatus() |> fetch.Text()
-func CheckStatus(resp any) (any, error)
-    httpResp := resp as reference http.Response
-    if httpResp.StatusCode >= 400
-        return empty, error "request failed: {httpResp.Status}"
+func CheckStatus(resp reference http.Response) (reference http.Response, error)
+    if resp.StatusCode >= 400
+        return empty, error "request failed: {resp.Status}"
     return resp, empty
 
 # Text reads the response body as text
 # Example: resp |> fetch.Text()
-func Text(resp any) (string, error)
-    httpResp := resp as reference http.Response
-    defer httpResp.Body.Close()
-    bodyBytes, err := io.ReadAll(httpResp.Body)
+func Text(resp reference http.Response) (string, error)
+    defer resp.Body.Close()
+    bodyBytes, err := io.ReadAll(resp.Body)
     if err != empty
         return "", err
     # Convert bytes to string using Go's built-in conversion
@@ -152,10 +150,9 @@ func Text(resp any) (string, error)
 # Bytes reads the response body as bytes
 # Perfect for JSON parsing: resp |> fetch.Bytes() |> json.Unmarshal(_, reference data)
 # Example: resp |> fetch.Bytes()
-func Bytes(resp any) (list of byte, error)
-    httpResp := resp as reference http.Response
-    defer httpResp.Body.Close()
-    bodyBytes, err := io.ReadAll(httpResp.Body)
+func Bytes(resp reference http.Response) (list of byte, error)
+    defer resp.Body.Close()
+    bodyBytes, err := io.ReadAll(resp.Body)
     if err != empty
         return empty, err
     return bodyBytes, empty

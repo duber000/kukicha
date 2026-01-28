@@ -68,6 +68,9 @@ func (g *Generator) Generate() (string, error) {
 	// Generate package declaration
 	g.generatePackage()
 
+	// Pre-scan for auto-imports (e.g. net/http for fetch wrappers)
+	g.scanForAutoImports()
+
 	// Generate imports (including auto-imports like fmt for string interpolation and print builtin)
 	needsFmt := g.needsStringInterpolation() || g.needsPrintBuiltin()
 	if len(g.program.Imports) > 0 || needsFmt || len(g.autoImports) > 0 {
@@ -735,10 +738,16 @@ func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
 	// Special case: typed empty with interface type needs var declaration
 	// e.g., x := empty io.Reader → var x io.Reader (nil by default)
 	if len(stmt.Names) == 1 && len(stmt.Values) == 1 {
-		if emptyExpr, ok := stmt.Values[0].(*ast.EmptyExpr); ok && emptyExpr.Type != nil {
-			targetType := g.generateTypeAnnotation(emptyExpr.Type)
-			if g.isLikelyInterfaceType(targetType) {
-				g.writeLine(fmt.Sprintf("var %s %s", stmt.Names[0].Value, targetType))
+		if emptyExpr, ok := stmt.Values[0].(*ast.EmptyExpr); ok {
+			if emptyExpr.Type != nil {
+				targetType := g.generateTypeAnnotation(emptyExpr.Type)
+				if g.isLikelyInterfaceType(targetType) {
+					g.writeLine(fmt.Sprintf("var %s %s", stmt.Names[0].Value, targetType))
+					return
+				}
+			} else {
+				// Untyped empty → var x interface{}
+				g.writeLine(fmt.Sprintf("var %s interface{}", stmt.Names[0].Value))
 				return
 			}
 		}
@@ -817,29 +826,49 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 	// Generate error check block
 	g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
 	g.indent++
-	g.generateOnErrHandler(names, clause.Handler)
+	g.generateOnErrHandler(names, clause.Handler, errVar)
 	g.indent--
 	g.writeLine("}")
 }
 
 // generateOnErrHandler generates code for the onerr handler expression
-func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Expression) {
+func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Expression, errVar string) {
 	switch h := handler.(type) {
 	case *ast.PanicExpr:
 		// onerr panic "message"
-		g.writeLine(g.exprToString(h))
+		// If message contains {error}, replace it with the actual error variable
+		msg := ""
+		if strLit, ok := h.Message.(*ast.StringLiteral); ok {
+			msg = strLit.Value
+		} else {
+			msg = g.exprToString(h.Message)
+		}
+
+		if strings.Contains(msg, "{error}") {
+			msg = strings.ReplaceAll(msg, "{error}", fmt.Sprintf("{%s}", errVar))
+		}
+		g.writeLine(fmt.Sprintf("panic(%s)", g.generateStringInterpolation(msg)))
 	case *ast.ErrorExpr:
 		// onerr return empty, error - generate return with error
 		// This assumes the function returns (T, error)
 		if len(names) > 0 {
 			// Return zero value for first var and the error
-			g.writeLine(fmt.Sprintf("return %s, %s", names[0].Value, g.exprToString(h)))
+			g.writeLine(fmt.Sprintf("return %s, %s", names[0].Value, errVar))
 		} else {
-			g.writeLine(fmt.Sprintf("return %s", g.exprToString(h)))
+			g.writeLine(fmt.Sprintf("return %s", errVar))
 		}
 	case *ast.ReturnExpr:
 		// onerr return empty, error
-		g.writeLine(g.exprToString(h))
+		// If any value is identifier "error", replace with errVar
+		values := make([]string, len(h.Values))
+		for i, v := range h.Values {
+			if id, ok := v.(*ast.Identifier); ok && id.Value == "error" {
+				values[i] = errVar
+			} else {
+				values[i] = g.exprToString(v)
+			}
+		}
+		g.writeLine(fmt.Sprintf("return %s", strings.Join(values, ", ")))
 	case *ast.EmptyExpr:
 		// onerr return empty - generate bare return (for named return values)
 		g.writeLine("return")
@@ -872,7 +901,7 @@ func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClau
 	g.indent++
 
 	// Generate the error handler (no variable names for statement-level)
-	g.generateOnErrHandler([]*ast.Identifier{}, clause.Handler)
+	g.generateOnErrHandler([]*ast.Identifier{}, clause.Handler, errVar)
 
 	g.indent--
 	g.writeLine("}")
@@ -959,7 +988,7 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 	// Generate error check block
 	g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
 	g.indent++
-	g.generateOnErrHandler(names, clause.Handler)
+	g.generateOnErrHandler(names, clause.Handler, errVar)
 	g.indent--
 	g.writeLine("}")
 }
@@ -1054,7 +1083,12 @@ func (g *Generator) generateForRangeStmt(stmt *ast.ForRangeStmt) {
 	if stmt.Index != nil {
 		g.writeLine(fmt.Sprintf("for %s, %s := range %s {", stmt.Index.Value, stmt.Variable.Value, collection))
 	} else {
-		g.writeLine(fmt.Sprintf("for _, %s := range %s {", stmt.Variable.Value, collection))
+		// In stdlib/iter, all range loops are over iter.Seq which yields one value
+		if g.isStdlibIter {
+			g.writeLine(fmt.Sprintf("for %s := range %s {", stmt.Variable.Value, collection))
+		} else {
+			g.writeLine(fmt.Sprintf("for _, %s := range %s {", stmt.Variable.Value, collection))
+		}
 	}
 
 	g.indent++
@@ -1151,7 +1185,8 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		expr := g.exprToString(e.Expression)
 		// Use type assertion syntax for interface types (contains a dot like http.Handler)
 		// or when likely asserting from any/interface
-		if strings.Contains(targetType, ".") {
+		// Exception: iter.Seq types are functions, so use conversion
+		if strings.Contains(targetType, ".") && !strings.Contains(targetType, "iter.Seq") {
 			return fmt.Sprintf("%s.(%s)", expr, targetType)
 		}
 		return fmt.Sprintf("%s(%s)", targetType, expr)
@@ -1160,6 +1195,14 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 			targetType := g.generateTypeAnnotation(e.Type)
 			if g.isLikelyInterfaceType(targetType) {
 				return "nil"
+			}
+			// Check if targetType is a generic type parameter (T, U, K)
+			if g.isStdlibIter && g.placeholderMap != nil {
+				for _, typeParam := range g.placeholderMap {
+					if targetType == typeParam {
+						return fmt.Sprintf("*new(%s)", targetType)
+					}
+				}
 			}
 			return fmt.Sprintf("%s{}", targetType)
 		}
@@ -1347,10 +1390,56 @@ func (g *Generator) isContextExpr(expr ast.Expression) bool {
 	return false
 }
 
+func (g *Generator) getMultiReturnType(expr ast.Expression) (string, bool) {
+	// List of known stdlib/fetch functions that return multiple values
+	// Maps function name to its primary return type
+	multiReturnFuncs := map[string]string{
+		"fetch.Get":         "*http.Response",
+		"fetch.Post":        "*http.Response",
+		"fetch.Do":          "*http.Response",
+		"fetch.CheckStatus": "*http.Response",
+		"fetch.Text":        "string",
+		"fetch.Bytes":       "[]byte",
+	}
+
+	var funcName string
+	if call, ok := expr.(*ast.CallExpr); ok {
+		if id, ok := call.Function.(*ast.Identifier); ok {
+			funcName = id.Value
+		}
+	} else if methodCall, ok := expr.(*ast.MethodCallExpr); ok {
+		// Handle package.Function() calls which are parsed as MethodCallExpr
+		if obj, ok := methodCall.Object.(*ast.Identifier); ok {
+			funcName = obj.Value + "." + methodCall.Method.Value
+		}
+	} else if pipe, ok := expr.(*ast.PipeExpr); ok {
+		// For pipe expression, check the right-most function
+		return g.getMultiReturnType(pipe.Right)
+	}
+
+	if typeName, ok := multiReturnFuncs[funcName]; ok {
+		// Add auto-import if needed
+		if strings.Contains(typeName, "http.") {
+			g.addImport("net/http")
+		}
+		return typeName, true
+	}
+
+	return "", false
+}
+
 func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 	// Transform a |> b() into b(a)
 	// Supports placeholder strategy: a |> b(x, _) becomes b(x, a)
 	// Supports context-first strategy: ctx |> b(x) becomes b(ctx, x)
+
+	// Calculate Left expression first, handling multi-return values if needed
+	leftExpr := g.exprToString(expr.Left)
+	if retType, isMulti := g.getMultiReturnType(expr.Left); isMulti {
+		// Wrap in a function call to only take the first return value
+		// e.g., func() *http.Response { val, _ := fetch.Get(...); return val }()
+		leftExpr = fmt.Sprintf("func() %s { val, _ := %s; return val }()", retType, leftExpr)
+	}
 
 	// Right side can be a CallExpr or MethodCallExpr
 	var funcName string
@@ -1366,7 +1455,7 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 		if method.Object == nil {
 			// Shorthand: .Method() or .Field
 			// We will prepend expr.Left as the object
-			funcName = g.exprToString(expr.Left) + "." + method.Method.Value
+			funcName = leftExpr + "." + method.Method.Value
 
 			if !method.IsCall {
 				// Field access: obj.Field
@@ -1394,7 +1483,7 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 		isVariadic = method.Variadic
 	} else {
 		// Fallback: If piping into something that isn't a call
-		return g.exprToString(expr.Left) + " |> " + g.exprToString(expr.Right)
+		return leftExpr + " |> " + g.exprToString(expr.Right)
 	}
 
 	// Scan arguments for the placeholder "_" (either Identifier or DiscardExpr)
@@ -1412,12 +1501,13 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 
 	// Build the argument list
 	var args []string
+	
 	if placeholderIndex != -1 {
 		// STRATEGY A: Explicit placeholder found (e.g., json.MarshalWrite(w, _))
 		// Replace "_" with the piped expression
 		for i, arg := range arguments {
 			if i == placeholderIndex {
-				args = append(args, g.exprToString(expr.Left))
+				args = append(args, leftExpr)
 			} else {
 				args = append(args, g.exprToString(arg))
 			}
@@ -1425,14 +1515,14 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 	} else if g.isContextExpr(expr.Left) {
 		// STRATEGY C: Context-First Pipe
 		// If Left is a Context, it ALWAYS goes to the first argument position
-		args = append(args, g.exprToString(expr.Left))
+		args = append(args, leftExpr)
 		for _, arg := range arguments {
 			args = append(args, g.exprToString(arg))
 		}
 	} else {
 		// STRATEGY B: No placeholder -> Default "Data First" pipe
 		// Inject piped expr as the VERY FIRST argument
-		args = append(args, g.exprToString(expr.Left))
+		args = append(args, leftExpr)
 		for _, arg := range arguments {
 			args = append(args, g.exprToString(arg))
 		}
@@ -1441,6 +1531,15 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 	if isVariadic {
 		return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", "))
 	}
+
+	// If the piped expression (Left) is a call that returns multiple values,
+	// we only want the first one for the next call in the chain.
+	// We use a temporary variable if it's a multi-value return.
+	// Since we are in exprToString which returns a string, we can't easily
+	// inject statements here.
+	// However, we can use a helper function or a more complex expression.
+	// For now, let's keep it simple - this is a known limitation of the current expr-based codegen.
+
 	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 }
 
@@ -1850,6 +1949,150 @@ func (g *Generator) checkExprForPrint(expr ast.Expression) bool {
 	return false
 }
 
+func (g *Generator) scanForAutoImports() {
+	for _, decl := range g.program.Declarations {
+		if fn, ok := decl.(*ast.FunctionDecl); ok {
+			if fn.Body != nil {
+				g.scanBlockForAutoImports(fn.Body)
+			}
+		}
+	}
+}
+
+func (g *Generator) scanBlockForAutoImports(block *ast.BlockStmt) {
+	for _, stmt := range block.Statements {
+		g.scanStmtForAutoImports(stmt)
+	}
+}
+
+func (g *Generator) scanStmtForAutoImports(stmt ast.Statement) {
+	switch s := stmt.(type) {
+	case *ast.VarDeclStmt:
+		for _, val := range s.Values {
+			g.scanExprForAutoImports(val)
+		}
+		if s.OnErr != nil {
+			g.scanExprForAutoImports(s.OnErr.Handler)
+		}
+	case *ast.AssignStmt:
+		for _, val := range s.Values {
+			g.scanExprForAutoImports(val)
+		}
+		if s.OnErr != nil {
+			g.scanExprForAutoImports(s.OnErr.Handler)
+		}
+	case *ast.ReturnStmt:
+		for _, val := range s.Values {
+			g.scanExprForAutoImports(val)
+		}
+	case *ast.IfStmt:
+		if s.Init != nil {
+			g.scanStmtForAutoImports(s.Init)
+		}
+		g.scanExprForAutoImports(s.Condition)
+		if s.Consequence != nil {
+			g.scanBlockForAutoImports(s.Consequence)
+		}
+		if s.Alternative != nil {
+			g.scanStmtForAutoImports(s.Alternative)
+		}
+	case *ast.ForRangeStmt:
+		g.scanExprForAutoImports(s.Collection)
+		if s.Body != nil {
+			g.scanBlockForAutoImports(s.Body)
+		}
+	case *ast.ForNumericStmt:
+		g.scanExprForAutoImports(s.Start)
+		g.scanExprForAutoImports(s.End)
+		if s.Body != nil {
+			g.scanBlockForAutoImports(s.Body)
+		}
+	case *ast.ForConditionStmt:
+		g.scanExprForAutoImports(s.Condition)
+		if s.Body != nil {
+			g.scanBlockForAutoImports(s.Body)
+		}
+	case *ast.ExpressionStmt:
+		g.scanExprForAutoImports(s.Expression)
+		if s.OnErr != nil {
+			g.scanExprForAutoImports(s.OnErr.Handler)
+		}
+	case *ast.DeferStmt:
+		g.scanExprForAutoImports(s.Call)
+	case *ast.GoStmt:
+		g.scanExprForAutoImports(s.Call)
+	case *ast.SendStmt:
+		g.scanExprForAutoImports(s.Value)
+		g.scanExprForAutoImports(s.Channel)
+	case *ast.ElseStmt:
+		if s.Body != nil {
+			g.scanBlockForAutoImports(s.Body)
+		}
+	}
+}
+
+func (g *Generator) scanExprForAutoImports(expr ast.Expression) {
+	if expr == nil {
+		return
+	}
+
+	// Check for multi-return function usage that triggers wrapper generation
+	if typeName, isMulti := g.getMultiReturnType(expr); isMulti {
+		if strings.Contains(typeName, "http.") {
+			g.addImport("net/http")
+		}
+	}
+
+	switch e := expr.(type) {
+	case *ast.BinaryExpr:
+		g.scanExprForAutoImports(e.Left)
+		g.scanExprForAutoImports(e.Right)
+	case *ast.UnaryExpr:
+		g.scanExprForAutoImports(e.Right)
+	case *ast.PipeExpr:
+		g.scanExprForAutoImports(e.Left)
+		g.scanExprForAutoImports(e.Right)
+	case *ast.CallExpr:
+		g.scanExprForAutoImports(e.Function)
+		for _, arg := range e.Arguments {
+			g.scanExprForAutoImports(arg)
+		}
+	case *ast.MethodCallExpr:
+		g.scanExprForAutoImports(e.Object)
+		for _, arg := range e.Arguments {
+			g.scanExprForAutoImports(arg)
+		}
+	case *ast.IndexExpr:
+		g.scanExprForAutoImports(e.Left)
+		g.scanExprForAutoImports(e.Index)
+	case *ast.SliceExpr:
+		g.scanExprForAutoImports(e.Left)
+		if e.Start != nil {
+			g.scanExprForAutoImports(e.Start)
+		}
+		if e.End != nil {
+			g.scanExprForAutoImports(e.End)
+		}
+	case *ast.FunctionLiteral:
+		if e.Body != nil {
+			g.scanBlockForAutoImports(e.Body)
+		}
+	case *ast.StructLiteralExpr:
+		for _, f := range e.Fields {
+			g.scanExprForAutoImports(f.Value)
+		}
+	case *ast.ListLiteralExpr:
+		for _, el := range e.Elements {
+			g.scanExprForAutoImports(el)
+		}
+	case *ast.MapLiteralExpr:
+		for _, p := range e.Pairs {
+			g.scanExprForAutoImports(p.Key)
+			g.scanExprForAutoImports(p.Value)
+		}
+	}
+}
+
 func (g *Generator) needsErrorsPackage() bool {
 	// Check if any error expressions are used
 	return g.checkProgramForErrors(g.program)
@@ -1943,7 +2186,13 @@ func (g *Generator) checkExprForErrors(expr ast.Expression) bool {
 
 	switch e := expr.(type) {
 	case *ast.ErrorExpr:
+        fmt.Printf("DEBUG: Found ErrorExpr: %v\n", e)
 		return true
+	case *ast.Identifier:
+        if e.Value == "error" {
+            fmt.Printf("DEBUG: Found identifier 'error'\n")
+        }
+        return false
 	case *ast.BinaryExpr:
 		return g.checkExprForErrors(e.Left) || g.checkExprForErrors(e.Right)
 	case *ast.UnaryExpr:

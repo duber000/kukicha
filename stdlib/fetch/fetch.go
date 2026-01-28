@@ -54,18 +54,18 @@ func Body(req Request, data any) Request {
 	return req
 }
 
-func Do(req Request) (any, error) {
+func Do(req Request) (*http.Response, error) {
 	client := http.Client{}
 	client.Timeout = time.Duration(req.timeoutNs)
-	bodyReader := nil.(io.Reader)
+	var bodyData interface{}
 	if req.body != nil {
 		jsonBytes, marshalErr := json.Marshal(req.body)
 		if marshalErr != nil {
 			return nil, marshalErr
 		}
-		bodyReader = bytes.NewReader(jsonBytes)
+		bodyData = jsonBytes
 	}
-	httpReq, reqErr := http.NewRequest(req.method, req.url, bodyReader)
+	httpReq, reqErr := createHTTPRequest(req.method, req.url, bodyData)
 	if reqErr != nil {
 		return nil, reqErr
 	}
@@ -82,13 +82,23 @@ func Do(req Request) (any, error) {
 	return resp, doErr
 }
 
-func Get(url string) (any, error) {
+func createHTTPRequest(method string, url string, bodyData any) (*http.Request, error) {
+	if bodyData != nil {
+		bodyBytes := bodyData.([]byte)
+		req, err := http.NewRequest(method, url, bytes.NewReader(bodyBytes))
+		return req, err
+	}
+	req, err := http.NewRequest(method, url, nil)
+	return req, err
+}
+
+func Get(url string) (*http.Response, error) {
 	req := New(url)
 	resp, err := Do(req)
 	return resp, err
 }
 
-func Post(data any, url string) (any, error) {
+func Post(data any, url string) (*http.Response, error) {
 	req := New(url)
 	req = Method(req, "POST")
 	req.body = data
@@ -96,18 +106,16 @@ func Post(data any, url string) (any, error) {
 	return resp, err
 }
 
-func CheckStatus(resp any) (any, error) {
-	httpResp := resp.(*http.Response)
-	if httpResp.StatusCode >= 400 {
-		return nil, errors.New(fmt.Sprintf("request failed: %v", httpResp.Status))
+func CheckStatus(resp *http.Response) (*http.Response, error) {
+	if resp.StatusCode >= 400 {
+		return nil, errors.New(fmt.Sprintf("request failed: %v", resp.Status))
 	}
 	return resp, nil
 }
 
-func Text(resp any) (string, error) {
-	httpResp := resp.(*http.Response)
-	defer httpResp.Body.Close()
-	bodyBytes, err := io.ReadAll(httpResp.Body)
+func Text(resp *http.Response) (string, error) {
+	defer resp.Body.Close()
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -115,10 +123,9 @@ func Text(resp any) (string, error) {
 	return text, nil
 }
 
-func Bytes(resp any) ([]byte, error) {
-	httpResp := resp.(*http.Response)
-	defer httpResp.Body.Close()
-	bodyBytes, err := io.ReadAll(httpResp.Body)
+func Bytes(resp *http.Response) ([]byte, error) {
+	defer resp.Body.Close()
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

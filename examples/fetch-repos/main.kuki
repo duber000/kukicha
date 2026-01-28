@@ -17,7 +17,7 @@ func main()
     # Fetch and parse repos using advanced pipes!
     repos := empty list of Repo
     
-    fetch.Get("https://api.github.com/users/golang/repos") |> fetch.CheckStatus() |> .Body |> json.NewDecoder() |> .Decode(reference of repos) onerr panic "Failed to fetch or parse repos: {error}"
+    fetch.Get("https://api.github.com/users/golang/repos") |> fetch.CheckStatus() |> .Body |> json.NewDecoder() |> json.Decode(_, reference of repos) onerr panic "Failed to fetch or parse repos: {error}"
 
     print("Successfully fetched {len(repos)} repositories!")
     
