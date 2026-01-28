@@ -34,7 +34,7 @@ Kukicha combines two powerful ideas:
 
 ### Quick Summary
 
-**Ready to Use:** ✅ iter, slice, string, files, json, parse (CSV/YAML), fetch, concurrent, shell, cli, http (basic), template, result
+**Ready to Use:** ✅ iterator, slice, string, files, json, parse (CSV/YAML), fetch, concurrent, shell, cli, http (basic), template, result
 
 **Partially Implemented:** ⚠️ retry (limited stub due to error handling design constraints)
 
@@ -108,7 +108,7 @@ result := operation() onerr panic "should not happen"  # BAD!
 Functional iteration with lazy evaluation and pipes:
 
 ```kukicha
-import "stdlib/iter"
+import "stdlib/iterator"
 import "stdlib/slice"
 
 # Pipeline: filter positive numbers, double them, sum
@@ -128,7 +128,7 @@ total := numbers
 # Filter, Map, Drop, DropLast, First, Last
 # Unique, Chunk, Reverse, Contains, GroupBy
 
-# Available iter operations (functional composition):
+# Available iterator operations (functional composition):
 # Filter, Map, FlatMap, Take, Skip, Enumerate, Zip
 # Chunk, Reduce, Collect, Any, All, Find
 ```

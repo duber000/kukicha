@@ -1033,10 +1033,10 @@ Generate final Go signature with generics
 
 | Package | Function | Type Parameters | Constraint |
 |---------|----------|-----------------|------------|
-| **iter** | Map | `[T any, U any]` | None |
-| **iter** | FlatMap | `[T any, U any]` | None |
-| **iter** | Filter | `[T any]` | None |
-| **iter** | Enumerate | `[T any]` (returns `Seq2[int, T]`) | None |
+| **iteatorr** | Map | `[T any, U any]` | None |
+| **iterator** | FlatMap | `[T any, U any]` | None |
+| **iterator** | Filter | `[T any]` | None |
+| **iterator** | Enumerate | `[T any]` (returns `Seq2[int, T]`) | None |
 | **slice** | GroupBy | `[T any, K comparable]` | K must be comparable for map keys |
 
 #### Future Extension
@@ -1052,7 +1052,7 @@ type Generator struct {
     indent               int
     placeholderMap       map[string]string // Maps placeholder names to type param names (e.g., "element" → "T")
     autoImports          map[string]bool   // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
-    isStdlibIter         bool              // True if generating stdlib/iter code (enables special transpilation)
+    isStdlibIter         bool              // True if generating stdlib/iterator code (enables special transpilation)
     sourceFile           string            // Source file path for detecting stdlib
     currentFuncName      string            // Current function being generated (for context-aware decisions)
     processingReturnType bool              // Whether we are currently generating return types

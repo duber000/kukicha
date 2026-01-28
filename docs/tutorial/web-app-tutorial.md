@@ -219,7 +219,7 @@ import "encoding/json/v2"  # Go 1.25+ for better performance
 import "strconv"
 import "slices"
 import "stdlib/string"
-import "stdlib/iter"
+import "stdlib/iterator"
 
 # --- Data Types ---
 
