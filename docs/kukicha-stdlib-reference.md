@@ -342,7 +342,7 @@ if err != empty
 defer resp.Body.Close()
 
 repos := list of Repo{}
-resp.Body |> json.NewDecoder() |> .Decode(reference repos) onerr panic
+resp.Body |> json.NewDecoder() |> json.Decode(_, reference repos) onerr panic
 
 # Now filter with slice helpers - beautiful pipes!
 active := repos
@@ -403,7 +403,7 @@ func createTodo(w http.ResponseWriter, r reference http.Request)
 
     r.Body
         |> json.NewDecoder()
-        |> .Decode(reference todo)
+        |> json.Decode(_, reference todo)
         onerr return w.WriteHeader(400)
 
     # Use the todo...
@@ -441,7 +441,7 @@ config := Config{}
 file := files.Open("config.json") onerr panic
 defer file.Close()
 config := Config{}
-file |> json.NewDecoder() |> .Decode(reference config) onerr panic
+file |> json.NewDecoder() |> json.Decode(_, reference config) onerr panic
 
 # Format as pretty JSON (convenience function)
 output := config

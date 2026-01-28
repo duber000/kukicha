@@ -331,7 +331,7 @@ func (s reference Server) handleCreateTodo(w http.ResponseWriter, r reference ht
     # Parse request body using pipe
     input := CreateTodoInput{}
 
-    r.Body |> json.NewDecoder() |> .Decode(reference of input) onerr
+    r.Body |> json.NewDecoder() |> json.Decode(_, reference of input) onerr
         return s.sendError(w, 400, "Invalid JSON")
 
     if input.title equals ""
@@ -364,7 +364,7 @@ func (s reference Server) handleUpdateTodo(w http.ResponseWriter, r reference ht
     # Note: This is a full update (PUT). For partial updates, use PATCH with optional fields
     input := UpdateTodoInput{}
     
-    r.Body |> json.NewDecoder() |> .Decode(reference of input) onerr
+    r.Body |> json.NewDecoder() |> json.Decode(_, reference of input) onerr
         return s.sendError(w, 400, "Invalid JSON")
     
     s.db.UpdateTodo(id, input.title, input.completed) onerr

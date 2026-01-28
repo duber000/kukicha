@@ -177,7 +177,7 @@ func createTodo(response http.ResponseWriter, request reference http.Request)
     
     # Parse the JSON from the request body using pipe
     # "reference of" gets a pointer so the decoder can fill in our todo
-    request.Body |> json.NewDecoder() |> .Decode(reference of todo) onerr
+    request.Body |> json.NewDecoder() |> json.Decode(_, reference of todo) onerr
         return response.WriteHeader(400) |> fmt.Fprintln(response, "Invalid JSON")
     
     # Now 'todo' contains the data the user sent!
@@ -294,7 +294,7 @@ func handleCreateTodo(response http.ResponseWriter, request reference http.Reque
     # Parse the incoming JSON using pipe
     todo := Todo{}
     # reference of todo gives the decoder a pointer so it can fill in the struct
-    request.Body |> json.NewDecoder() |> .Decode(reference of todo) onerr
+    request.Body |> json.NewDecoder() |> json.Decode(_, reference of todo) onerr
         return sendError(response, 400, "Invalid JSON")
     
     # Validate
@@ -342,7 +342,7 @@ func handleUpdateTodo(response http.ResponseWriter, request reference http.Reque
     
     # Parse the update using pipe
     updated := Todo{}
-    request.Body |> json.NewDecoder() |> .Decode(reference of updated) onerr
+    request.Body |> json.NewDecoder() |> json.Decode(_, reference of updated) onerr
         return sendError(response, 400, "Invalid JSON")
     
     # Keep the original ID, update other fields
