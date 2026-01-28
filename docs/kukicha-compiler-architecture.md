@@ -1441,3 +1441,73 @@ fi
 - ✅ Consistent newlines and spacing
 - ✅ Trailing whitespace removed
 - ✅ Tabs converted to spaces
+
+---
+
+## Phase 6: Stdlib Distribution via Embed
+
+### Purpose
+Distribute the Kukicha standard library embedded within the compiler binary, eliminating the need for users to clone the repository or fetch dependencies from the network.
+
+### Architecture
+
+```
+kukicha binary (contains embedded stdlib/)
+    │
+    ├── kukicha init
+    │       └── Extracts to .kukicha/stdlib/
+    │       └── Updates go.mod with replace directive
+    │
+    └── kukicha build <file.kuki>
+            └── If code imports stdlib/*, auto-extracts if needed
+            └── Generates .go file
+            └── Runs go build (resolves stdlib locally)
+```
+
+### How It Works
+
+1. **Embedding**: The `//go:embed stdlib/*/*.go` directive in `embedded.go` at the repo root embeds all transpiled stdlib `.go` files into the compiler binary.
+
+2. **Extraction**: On `kukicha init` or first `kukicha build` that uses stdlib imports, the embedded files are extracted to `.kukicha/stdlib/` in the project directory.
+
+3. **Module Generation**: A `go.mod` is generated for the extracted stdlib:
+   ```
+   module github.com/duber000/kukicha/stdlib
+   go 1.25
+   require gopkg.in/yaml.v3 v3.0.1
+   ```
+
+4. **Replace Directive**: The user's `go.mod` is updated with:
+   ```
+   require github.com/duber000/kukicha/stdlib v0.0.0
+   replace github.com/duber000/kukicha/stdlib => ./.kukicha/stdlib
+   ```
+
+### Import Resolution
+
+When codegen rewrites `import "stdlib/json"` to `import "github.com/duber000/kukicha/stdlib/json"`:
+- Go resolves this via the `replace` directive
+- Points to `.kukicha/stdlib/json/` in the local project
+- No network access required
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `embedded.go` | Root-level `//go:embed` directive exposing `StdlibFS` |
+| `cmd/kukicha/stdlib.go` | Extraction logic (`ensureStdlib`, `ensureGoMod`) |
+| `cmd/kukicha/init.go` | `kukicha init` command implementation |
+
+### User Experience
+
+```bash
+# Download kukicha binary (stdlib embedded inside)
+# Create a new project
+go mod init myproject
+kukicha init
+
+# Build - stdlib resolves locally via replace directive
+kukicha build main.kuki
+```
+
+The `.kukicha/` directory should be added to `.gitignore` since it contains extracted files that can be regenerated from the binary

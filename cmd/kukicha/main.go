@@ -49,6 +49,8 @@ func main() {
 			os.Exit(1)
 		}
 		fmtCommand(os.Args[2:])
+	case "init":
+		initCommand()
 	case "version":
 		fmt.Printf("kukicha version %s\n", version)
 	case "help", "-h", "--help":
@@ -70,6 +72,7 @@ func printUsage() {
 	fmt.Println("  kukicha fmt [options] <files>  Fix indentation and normalize style")
 	fmt.Println("    -w          Write result to file instead of stdout")
 	fmt.Println("    --check     Check if files are formatted (exit 1 if not)")
+	fmt.Println("  kukicha init                Extract stdlib and configure go.mod")
 	fmt.Println("  kukicha version             Show version information")
 	fmt.Println("  kukicha help                Show this help message")
 }
@@ -140,7 +143,21 @@ func buildCommand(filename string) {
 
 	fmt.Printf("Successfully compiled %s to %s\n", filename, outputFile)
 
-	// Optionally run go build on the generated file
+	// If the generated code imports Kukicha stdlib, extract it and configure go.mod
+	if needsStdlib(goCode) {
+		projectDir := findProjectDir(filename)
+		stdlibPath, stdlibErr := ensureStdlib(projectDir)
+		if stdlibErr != nil {
+			fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", stdlibErr)
+			os.Exit(1)
+		}
+		if modErr := ensureGoMod(projectDir, stdlibPath); modErr != nil {
+			fmt.Fprintf(os.Stderr, "Error updating go.mod: %v\n", modErr)
+			os.Exit(1)
+		}
+	}
+
+	// Run go build on the generated file
 	cmd := exec.Command("go", "build", outputFile)
 	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2,greenteagc")
 	cmd.Stdout = os.Stdout
@@ -173,8 +190,25 @@ func runCommand(filename string) {
 		os.Exit(1)
 	}
 
-	// Write temporary Go file
-	tmpFile := filepath.Join(os.TempDir(), "kukicha_temp.go")
+	// If stdlib is needed, extract it and ensure go.mod is configured
+	var tmpFile string
+	if needsStdlib(goCode) {
+		projectDir := findProjectDir(filename)
+		stdlibPath, stdlibErr := ensureStdlib(projectDir)
+		if stdlibErr != nil {
+			fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", stdlibErr)
+			os.Exit(1)
+		}
+		if modErr := ensureGoMod(projectDir, stdlibPath); modErr != nil {
+			fmt.Fprintf(os.Stderr, "Error updating go.mod: %v\n", modErr)
+			os.Exit(1)
+		}
+		// Write temp file in project dir so go.mod resolves correctly
+		tmpFile = filepath.Join(projectDir, ".kukicha_temp.go")
+	} else {
+		tmpFile = filepath.Join(os.TempDir(), "kukicha_temp.go")
+	}
+
 	err = os.WriteFile(tmpFile, []byte(goCode), 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing temporary file: %v\n", err)

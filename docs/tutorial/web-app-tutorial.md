@@ -36,6 +36,18 @@ Don't worry if this looks complicated - we'll build it step by step!
 
 ---
 
+## Step 0: Project Setup
+
+If you haven't already, set up your project:
+
+```bash
+mkdir web-todo && cd web-todo
+go mod init web-todo
+kukicha init    # Extracts stdlib for JSON, fetch, etc.
+```
+
+---
+
 ## Step 1: Your First Web Server
 
 Let's start with the simplest possible web server:

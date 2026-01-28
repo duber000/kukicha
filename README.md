@@ -186,6 +186,9 @@ go install ./cmd/kukicha
 ## Usage
 
 ```bash
+# Initialize a project (extracts stdlib, configures go.mod)
+kukicha init
+
 # Compile to binary
 kukicha build myapp.kuki
 

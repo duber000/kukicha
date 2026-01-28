@@ -57,6 +57,21 @@ Don't worry if this seems confusing now - it'll make sense as we go!
 
 Let's start with the traditional "Hello, World!" program. This is usually the first program anyone writes in a new language.
 
+### Setting Up Your Project
+
+Before writing code, let's set up a project folder:
+
+```bash
+mkdir my-kukicha-project
+cd my-kukicha-project
+go mod init my-project    # Create a Go module
+kukicha init              # Extract Kukicha stdlib and configure go.mod
+```
+
+The `kukicha init` command sets up the Kukicha standard library in your project. This is needed when using `import "stdlib/..."` packages. For simple programs that don't use stdlib, you can skip this step.
+
+### Writing Your First Program
+
 Create a file called `hello.kuki` with this content:
 
 ```kukicha

@@ -23,6 +23,7 @@ type Generator struct {
 	indent               int
 	placeholderMap       map[string]string // Maps placeholder names to type param names (e.g., "element" -> "T")
 	autoImports          map[string]bool   // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
+	pkgAliases           map[string]string // Maps original package name -> alias when collision detected (e.g., "json" -> "kukijson")
 	isStdlibIter         bool              // True if generating stdlib/iter code (enables special transpilation)
 	sourceFile           string            // Source file path for detecting stdlib
 	currentFuncName      string            // Current function being generated (for context-aware decisions)
@@ -36,6 +37,7 @@ func New(program *ast.Program) *Generator {
 		program:     program,
 		indent:      0,
 		autoImports: make(map[string]bool),
+		pkgAliases:  make(map[string]string),
 	}
 }
 
@@ -131,6 +133,31 @@ func (g *Generator) generateImports() {
 		}
 	}
 
+	// Detect package name collisions between Kukicha stdlib imports and Go imports.
+	// If two imports resolve to the same Go package name (e.g., stdlib/json and encoding/json
+	// both resolve to "json"), auto-alias the Kukicha stdlib import to prevent Go compile errors.
+	pkgNameToPath := make(map[string][]string)
+	for path, alias := range imports {
+		effectiveName := alias
+		if effectiveName == "" {
+			effectiveName = extractPkgName(path)
+		}
+		pkgNameToPath[effectiveName] = append(pkgNameToPath[effectiveName], path)
+	}
+	kukichaStdlibPrefix := "github.com/duber000/kukicha/stdlib/"
+	for pkgName, paths := range pkgNameToPath {
+		if len(paths) <= 1 {
+			continue
+		}
+		for _, path := range paths {
+			if strings.HasPrefix(path, kukichaStdlibPrefix) && imports[path] == "" {
+				aliased := "kuki" + pkgName
+				imports[path] = aliased
+				g.pkgAliases[pkgName] = aliased
+			}
+		}
+	}
+
 	// Generate import block
 	if len(imports) == 1 {
 		for path, alias := range imports {
@@ -153,6 +180,30 @@ func (g *Generator) generateImports() {
 		g.indent--
 		g.writeLine(")")
 	}
+}
+
+// extractPkgName returns the Go package name from an import path.
+// e.g., "encoding/json" -> "json", "net/http" -> "http",
+// "github.com/duber000/kukicha/stdlib/json" -> "json",
+// "gopkg.in/yaml.v3" -> "yaml"
+func extractPkgName(importPath string) string {
+	parts := strings.Split(importPath, "/")
+	name := parts[len(parts)-1]
+
+	// Handle version suffixes: gopkg.in/yaml.v3 -> yaml
+	if idx := strings.Index(name, ".v"); idx != -1 {
+		name = name[:idx]
+	}
+
+	// Handle Go module major version directories: encoding/json/v2 -> json
+	if len(parts) >= 2 && len(name) >= 2 && name[0] == 'v' && name[1] >= '0' && name[1] <= '9' {
+		name = parts[len(parts)-2]
+		if idx := strings.Index(name, ".v"); idx != -1 {
+			name = name[:idx]
+		}
+	}
+
+	return name
 }
 
 // rewriteStdlibImport rewrites stdlib/ import paths to full module paths
@@ -606,6 +657,14 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 		if g.placeholderMap != nil {
 			if typeParam, ok := g.placeholderMap[t.Name]; ok {
 				return typeParam
+			}
+		}
+		// Rewrite package-qualified type names if the package was auto-aliased
+		if dotIdx := strings.Index(t.Name, "."); dotIdx > 0 {
+			pkgPart := t.Name[:dotIdx]
+			typePart := t.Name[dotIdx:]
+			if alias, ok := g.pkgAliases[pkgPart]; ok {
+				return alias + typePart
 			}
 		}
 		// Special handling for iter.Seq in stdlib mode
@@ -1451,7 +1510,11 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 		arguments = call.Arguments
 		isVariadic = call.Variadic
 	} else if method, ok := expr.Right.(*ast.MethodCallExpr); ok {
-		funcName = g.exprToString(method.Object) + "." + method.Method.Value
+		objStr := g.exprToString(method.Object)
+		if alias, ok := g.pkgAliases[objStr]; ok {
+			objStr = alias
+		}
+		funcName = objStr + "." + method.Method.Value
 		if method.Object == nil {
 			// Shorthand: .Method() or .Field
 			// We will prepend expr.Left as the object
@@ -1567,6 +1630,11 @@ func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 func (g *Generator) generateMethodCallExpr(expr *ast.MethodCallExpr) string {
 	object := g.exprToString(expr.Object)
 	method := expr.Method.Value
+
+	// Rewrite package name if it was auto-aliased due to collision
+	if alias, ok := g.pkgAliases[object]; ok {
+		object = alias
+	}
 
 	// If no parentheses were used, it's field access
 	if !expr.IsCall {

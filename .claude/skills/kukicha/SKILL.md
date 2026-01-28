@@ -15,12 +15,15 @@ You are helping with **Kukicha** (茎 = "stem"), a beginner-friendly programming
 
 ### CLI Commands
 ```bash
+kukicha init                   # Extract stdlib, configure go.mod (run once per project)
 kukicha build <file.kuki>      # Compile to Go binary
 kukicha run <file.kuki>        # Compile and run
 kukicha check <file.kuki>      # Type-check only
 kukicha fmt [options] <path>   # Format code
 kukicha version                # Show version
 ```
+
+**Note:** `kukicha init` extracts the embedded stdlib to `.kukicha/stdlib/` and adds a `replace` directive to your `go.mod`. This is required when using `import "stdlib/..."` packages. The `build` and `run` commands auto-extract if needed, but running `init` explicitly is recommended for new projects.
 
 ## Syntax Essentials
 

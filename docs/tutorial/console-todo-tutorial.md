@@ -43,6 +43,18 @@ Commands: add, done, list, save, quit
 
 ---
 
+## Step 0: Project Setup
+
+If you haven't already, set up your project:
+
+```bash
+mkdir todo-app && cd todo-app
+go mod init todo-app
+kukicha init    # Extracts stdlib for imports like "stdlib/json"
+```
+
+---
+
 ## Step 1: Creating a Todo Type
 
 > **📝 Reminder:** This tutorial builds on the beginner tutorial. Here are the key concepts you'll need:
