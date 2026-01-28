@@ -28,6 +28,9 @@ func New(program *ast.Program) *Analyzer {
 
 // Analyze performs semantic analysis on the program
 func (a *Analyzer) Analyze() []error {
+	// Check package name for collisions with Go stdlib
+	a.checkPackageName()
+
 	// First pass: Collect all type and interface declarations
 	a.collectDeclarations()
 
@@ -35,6 +38,31 @@ func (a *Analyzer) Analyze() []error {
 	a.analyzeDeclarations()
 
 	return a.errors
+}
+
+func (a *Analyzer) checkPackageName() {
+	if a.program.PetioleDecl == nil {
+		return
+	}
+
+	name := a.program.PetioleDecl.Name.Value
+	
+	// List of reserved Go standard library packages
+	reservedPackages := map[string]bool{
+		"bufio": true, "bytes": true, "context": true, "crypto": true,
+		"database": true, "encoding": true, "errors": true, "flag": true,
+		"fmt": true, "html": true, "image": true, "io": true,
+		"iter": true, "log": true, "math": true, "mime": true,
+		"net": true, "os": true, "path": true, "plugin": true,
+		"reflect": true, "regexp": true, "runtime": true, "slices": true,
+		"sort": true, "strconv": true, "strings": true, "sync": true,
+		"syscall": true, "testing": true, "text": true, "time": true,
+		"unicode": true, "unsafe": true,
+	}
+
+	if reservedPackages[name] {
+		a.error(a.program.PetioleDecl.Pos(), fmt.Sprintf("package name '%s' conflicts with Go standard library package", name))
+	}
 }
 
 // collectDeclarations collects all top-level declarations
