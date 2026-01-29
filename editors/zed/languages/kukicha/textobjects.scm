@@ -20,29 +20,6 @@
 (interface_declaration
   body: (interface_body) @class.inside)
 
-; Parameters
-(parameter) @parameter.around
-(parameter
-  name: (identifier) @parameter.inside)
-
 ; Comments
 (comment) @comment.around
 (comment) @comment.inside
-
-; Conditionals
-(if_statement) @conditional.around
-(if_statement
-  consequence: (block) @conditional.inside)
-
-; Loops
-(for_range_statement) @loop.around
-(for_range_statement
-  body: (block) @loop.inside)
-
-(for_numeric_statement) @loop.around
-(for_numeric_statement
-  body: (block) @loop.inside)
-
-(for_condition_statement) @loop.around
-(for_condition_statement
-  body: (block) @loop.inside)
