@@ -14,9 +14,9 @@ KUKI_SOURCES := $(wildcard stdlib/*/*.kuki)
 # Exclude test files from generation
 KUKI_MAIN := $(filter-out %_test.kuki,$(KUKI_SOURCES))
 
-.PHONY: all build generate test check-generate clean
+.PHONY: all build lsp generate test check-generate clean install-lsp
 
-all: build
+all: build lsp
 
 # Build the kukicha compiler
 build:
@@ -46,4 +46,12 @@ check-generate: generate
 	@echo "Generated files are up to date."
 
 clean:
-	rm -f $(KUKICHA)
+	rm -f $(KUKICHA) ./kukicha-lsp
+
+# Build the kukicha-lsp language server
+lsp:
+	go build -o ./kukicha-lsp ./cmd/kukicha-lsp
+
+# Install the LSP server to GOPATH/bin (or ~/go/bin if GOPATH not set)
+install-lsp: lsp
+	cp ./kukicha-lsp $(shell go env GOPATH)/bin/

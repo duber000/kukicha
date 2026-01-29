@@ -1,11 +1,15 @@
 id = "kukicha"
 name = "Kukicha"
-version = "0.1.0"
+version = "0.2.0"
 schema_version = 1
 authors = ["Kukicha Contributors"]
-description = "Kukicha language support - a beginner-friendly language that compiles to Go"
+description = "Kukicha language support with LSP - a beginner-friendly language that compiles to Go"
 repository = "https://github.com/duber000/kukicha"
 
 [grammars.kukicha]
 repository = "file:///var/home/tluker/repos/go/kukicha/editors/zed/grammars/kukicha"
 rev = "HEAD"
+
+[language_servers.kukicha-lsp]
+name = "Kukicha Language Server"
+languages = ["Kukicha"]

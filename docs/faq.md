@@ -43,3 +43,30 @@ No. Kukicha has zero runtime overhead. The compiler transpiles your code into st
 5. Can I use existing Go libraries?
 
 Yes. You can import any Go package (standard library or third-party) and use it directly in Kukicha. If the compiler hasn't seen the type before, it "trusts" the external package, allowing you to leverage the entire Go ecosystem immediately.
+
+6. What editor support is available?
+
+**Zed** is currently supported with full language support:
+
+- **Syntax Highlighting**: Tree-sitter grammar for accurate highlighting of Kukicha syntax
+- **Diagnostics**: Real-time error reporting from the parser and semantic analyzer
+- **Hover Information**: Type info for functions, types, interfaces, and builtins
+- **Go-to-Definition**: Jump to function, type, interface, and field definitions
+- **Code Completions**: Keywords, builtins, types, and declarations
+- **Document Symbols**: Outline view of your code structure
+
+**Installation:**
+
+```bash
+# 1. Build and install the LSP server
+make install-lsp
+
+# 2. Ensure GOPATH/bin is in your PATH
+export PATH="$PATH:$(go env GOPATH)/bin"
+
+# 3. Install the Zed extension (from the kukicha repo)
+# In Zed, run: "zed: install dev extension"
+# Select the editors/zed directory
+```
+
+The extension includes both the Tree-sitter grammar for syntax highlighting and integration with the `kukicha-lsp` language server for IDE features.
