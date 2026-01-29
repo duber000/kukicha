@@ -4,8 +4,8 @@
  */
 
 #include "tree_sitter/parser.h"
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_INDENT_DEPTH 100
 
@@ -30,10 +30,15 @@ static void skip(TSLexer *lexer) {
 }
 
 void *tree_sitter_kukicha_external_scanner_create(void) {
-    Scanner *scanner = calloc(1, sizeof(Scanner));
-    scanner->indent_depth = 1;
-    scanner->indent_stack[0] = 0;
-    scanner->pending_dedents = 0;
+    Scanner *scanner = malloc(sizeof(Scanner));
+    if (scanner) {
+        scanner->indent_depth = 1;
+        scanner->indent_stack[0] = 0;
+        scanner->pending_dedents = 0;
+        for (int i = 1; i < MAX_INDENT_DEPTH; i++) {
+            scanner->indent_stack[i] = 0;
+        }
+    }
     return scanner;
 }
 
