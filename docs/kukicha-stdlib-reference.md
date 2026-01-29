@@ -971,20 +971,6 @@ We provide high-level helpers for common patterns, but:
 - **Don't wrap:** Every Go stdlib function (maintenance nightmare)
 - **Don't duplicate:** Functionality Go already does well
 
-### Comparison to Other Languages
-
-**Kukicha vs Python:**
-- Kukicha: Compiled binary, Go speed, type safety
-- Python: Larger ecosystem, no compilation step
-
-**Kukicha vs Bash:**
-- Kukicha: Type safe, readable, maintainable
-- Bash: Installed everywhere, ultimate compatibility
-
-**Kukicha vs Go:**
-- Kukicha: Less verbose for scripts, pipes, better error handling
-- Go: More explicit, larger community, job market
-
 ---
 
 ## Contributing

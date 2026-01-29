@@ -16,15 +16,28 @@ type TypeParameter struct {
 	Constraint  string // "any", "comparable", "cmp.Ordered"
 }
 
-// Generator generates Go code from an AST
+// Generator generates Go code from an AST.
+//
+// ARCHITECTURE NOTE: Kukicha uses placeholders like "any" and "any2" in stdlib
+// function signatures to represent generic type parameters. When generating Go code,
+// we detect these placeholders and emit proper Go generics (e.g., [T any, K comparable]).
+// This allows Kukicha users to write simple code while getting type-safe Go generics.
+//
+// The isStdlibIter and placeholderMap fields work together:
+//   - isStdlibIter is true when generating stdlib/iterator or stdlib/slice code
+//   - placeholderMap maps Kukicha placeholders ("any", "any2") to Go type params ("T", "K")
+//   - During type annotation generation, we substitute placeholders with type params
+//
+// This design keeps Kukicha's "beginner-friendly" goal: users don't write generic syntax,
+// but the generated Go code is fully type-safe with proper generic constraints.
 type Generator struct {
 	program              *ast.Program
 	output               strings.Builder
 	indent               int
-	placeholderMap       map[string]string // Maps placeholder names to type param names (e.g., "element" -> "T")
+	placeholderMap       map[string]string // Maps placeholder names to type param names (e.g., "any" -> "T", "any2" -> "K")
 	autoImports          map[string]bool   // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
 	pkgAliases           map[string]string // Maps original package name -> alias when collision detected (e.g., "json" -> "kukijson")
-	isStdlibIter         bool              // True if generating stdlib/iter code (enables special transpilation)
+	isStdlibIter         bool              // True if generating stdlib/iterator or stdlib/slice code (enables generic transpilation)
 	sourceFile           string            // Source file path for detecting stdlib
 	currentFuncName      string            // Current function being generated (for context-aware decisions)
 	processingReturnType bool              // Whether we are currently generating return types
@@ -315,6 +328,21 @@ func (g *Generator) generateInterfaceDecl(decl *ast.InterfaceDecl) {
 	g.writeLine("}")
 }
 
+// generateFunctionDecl generates a Go function from a Kukicha function declaration.
+//
+// ARCHITECTURE NOTE: For stdlib/iterator and stdlib/slice packages, this function
+// performs "generic inference" - it scans the function's parameter and return types
+// for placeholder types ("any", "any2") and generates proper Go type parameters.
+//
+// Example: A Kukicha function like:
+//   func Filter(items list of any, predicate func(any) bool) list of any
+//
+// Becomes Go code like:
+//   func Filter[T any](items []T, predicate func(T) bool) []T
+//
+// This happens automatically for stdlib packages. User code doesn't need this
+// because users import the stdlib and call its generic functions; the Go compiler
+// handles type inference for callers.
 func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	// Set up placeholder mapping for this function
 	g.placeholderMap = make(map[string]string)
@@ -322,6 +350,7 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	g.currentFuncName = decl.Name.Value
 
 	// Check if this is a stdlib function that needs special transpilation
+	// (generic type parameter inference from placeholder types)
 	var typeParams []*TypeParameter
 	if g.isStdlibIter {
 		// Generate type parameters from function signature for iter
@@ -1546,6 +1575,23 @@ func (g *Generator) getMultiReturnType(expr ast.Expression) (string, bool) {
 	return "", false
 }
 
+// generatePipeExpr transforms pipe expressions into function calls.
+//
+// ARCHITECTURE NOTE: Kukicha's pipe operator (|>) supports three strategies
+// to determine where the piped value is inserted:
+//
+//   Strategy A (Placeholder): User explicitly marks position with "_"
+//     data |> json.MarshalWrite(w, _)  →  json.MarshalWrite(w, data)
+//
+//   Strategy B (Data-First): Default - piped value becomes first argument
+//     users |> slice.Filter(fn)  →  slice.Filter(users, fn)
+//
+//   Strategy C (Context-First): If piped value is a context.Context, special handling
+//     ctx |> db.Query(sql)  →  db.Query(ctx, sql)
+//
+// The placeholder strategy (A) takes precedence. This design lets users handle
+// APIs where the "data" isn't the first parameter, without requiring Kukicha
+// to know every function signature in the ecosystem.
 func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 	// Transform a |> b() into b(a)
 	// Supports placeholder strategy: a |> b(x, _) becomes b(x, a)

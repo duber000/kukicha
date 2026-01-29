@@ -6,7 +6,20 @@ import (
 	"unicode"
 )
 
-// Lexer tokenizes Kukicha source code
+// Lexer tokenizes Kukicha source code.
+//
+// ARCHITECTURE NOTE: Kukicha uses Python-style indentation-based blocks.
+// The lexer converts 4-space indentation changes into INDENT and DEDENT tokens,
+// which the parser then uses to determine block structure.
+//
+// The indentStack tracks nesting levels. When indentation increases by 4 spaces,
+// an INDENT token is emitted and the level is pushed. When it decreases, DEDENT
+// tokens are emitted (possibly multiple) until the stack matches the new level.
+//
+// Why 4 spaces only (no tabs)?
+//   - Consistency: Eliminates "tabs vs spaces" debates
+//   - Beginner-friendly: One clear rule, no configuration needed
+//   - Error prevention: Mixed tabs/spaces is a common Python mistake
 type Lexer struct {
 	source             []rune
 	start              int
@@ -15,7 +28,7 @@ type Lexer struct {
 	column             int
 	file               string
 	tokens             []Token
-	indentStack        []int // Track indentation levels
+	indentStack        []int // Stack of indentation levels (in spaces). Always starts with [0].
 	pendingDedents     int   // Dedents to emit
 	atLineStart        bool  // Whether we're at the start of a line
 	indentationHandled bool  // Whether indentation has been handled for the current line
@@ -207,7 +220,19 @@ func (l *Lexer) scanToken() {
 	}
 }
 
-// handleIndentation handles indentation at the start of a line
+// handleIndentation handles indentation at the start of a line.
+//
+// ARCHITECTURE NOTE: The algorithm works as follows:
+//  1. Count leading spaces (tabs are rejected with error)
+//  2. Skip blank lines and comment-only lines (no tokens emitted)
+//  3. Validate spacing is a multiple of 4
+//  4. Compare to current indent level:
+//     - If greater: push level, emit INDENT
+//     - If smaller: pop levels, emit DEDENT for each
+//     - If equal: no token (same level continues)
+//
+// The indentStack ensures dedents always return to a valid prior level.
+// For example, going from 8 spaces directly to 0 emits two DEDENT tokens.
 func (l *Lexer) handleIndentation() {
 	spaces := 0
 	tabs := 0

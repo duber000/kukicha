@@ -49,7 +49,7 @@ func (s *Server) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.
 
 	result, err := s.handleRequest(ctx, req)
 	if err != nil {
-		if req.ID != (jsonrpc2.ID{}) {
+		if !req.Notif {
 			if respErr := conn.ReplyWithError(ctx, req.ID, &jsonrpc2.Error{
 				Code:    jsonrpc2.CodeInternalError,
 				Message: err.Error(),
@@ -60,7 +60,7 @@ func (s *Server) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.
 		return
 	}
 
-	if req.ID != (jsonrpc2.ID{}) {
+	if !req.Notif {
 		if err := conn.Reply(ctx, req.ID, result); err != nil {
 			log.Printf("Error sending response: %v", err)
 		}

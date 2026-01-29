@@ -9,11 +9,19 @@ import (
 	"github.com/duber000/kukicha/internal/lexer"
 )
 
-// Parser parses tokens into an AST
+// Parser parses tokens into an AST using recursive descent.
+//
+// ARCHITECTURE NOTE: The parser uses error collection (not fail-fast).
+// When an error is encountered, it's appended to p.errors and parsing continues.
+// This allows reporting multiple errors in a single parse, improving UX.
+//
+// The parser handles Kukicha's "context-sensitive keywords" - words like
+// `list`, `map`, and `channel` are keywords only when followed by `of` in a
+// type context. This lets users use these as variable names in expressions.
 type Parser struct {
 	tokens []lexer.Token
 	pos    int
-	errors []error
+	errors []error // Collected errors - parsing continues after errors for better diagnostics
 }
 
 // New creates a new parser from a source string
@@ -445,6 +453,22 @@ func (p *Parser) parseReturnTypes() []ast.TypeAnnotation {
 // Type Annotation Parsing
 // ============================================================================
 
+// parseTypeAnnotation parses Kukicha type syntax into AST TypeAnnotation nodes.
+//
+// ARCHITECTURE NOTE: This is where Kukicha's beginner-friendly type syntax
+// is parsed. The English-like syntax maps to Go types:
+//
+//   Kukicha                   Go
+//   -------                   --
+//   list of string            []string
+//   map of string to int      map[string]int
+//   reference User            *User
+//   channel of int            chan int
+//   func(int) bool            func(int) bool
+//
+// Keywords `list`, `map`, `channel` are context-sensitive: they're only
+// treated as type keywords when followed by `of`. This allows using them
+// as variable names elsewhere (e.g., `list := getData()`).
 func (p *Parser) parseTypeAnnotation() ast.TypeAnnotation {
 	switch p.peekToken().Type {
 	case lexer.TOKEN_REFERENCE:
