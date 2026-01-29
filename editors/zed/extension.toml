@@ -1,0 +1,12 @@
+id = "kukicha"
+name = "Kukicha"
+version = "0.1.0"
+schema_version = 1
+authors = ["Kukicha Contributors"]
+description = "Kukicha language support - a beginner-friendly language that compiles to Go"
+repository = "https://github.com/duber000/kukicha"
+
+[grammars.kukicha]
+repository = "https://github.com/duber000/kukicha"
+path = "editors/zed/grammars/tree-sitter-kukicha"
+rev = "main"

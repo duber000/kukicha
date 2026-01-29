@@ -1,0 +1,31 @@
+{
+  "grammars": [
+    {
+      "name": "kukicha",
+      "camelcase": "Kukicha",
+      "scope": "source.kukicha",
+      "path": ".",
+      "file-types": [
+        "kuki"
+      ],
+      "highlights": "queries/highlights.scm",
+      "injection-regex": "^kukicha$"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "Apache-2.0",
+    "description": "Tree-sitter grammar for Kukicha",
+    "links": {
+      "repository": "https://github.com/duber000/kukicha"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true
+  }
+}
