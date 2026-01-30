@@ -1,6 +1,6 @@
 # Kukicha Language Grammar (EBNF)
 
-**Version:** 1.0.0
+**Version:** 0.0.1
 **Notation:** Extended Backus-Naur Form (EBNF)
 
 ---
@@ -1059,7 +1059,7 @@ func main()
 
 ---
 
-**Grammar Version:** 1.0.0
+**Grammar Version:** 0.0.1
 **Last Updated:** 2026-01-20
 **Status:** ✅ Implemented and Production Ready
 

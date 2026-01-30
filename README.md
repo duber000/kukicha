@@ -284,7 +284,7 @@ See [Contributing Guide](docs/contributing.md) for full details.
 
 ## Status
 
-**Version:** 1.0.0
+**Version:** 0.0.1
 **Status:** Ready for testing
 **Go:** 1.25+ required
 
