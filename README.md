@@ -246,6 +246,13 @@ make check-generate  # CI: verify .go files match .kuki sources
 
 Do not edit `stdlib/*/*.go` by hand — your changes will be overwritten on the next `make generate`.
 
+### Versioning
+
+The version is defined in a single source of truth: `internal/version/version.go`. To update the version:
+
+1. Edit `internal/version/version.go`
+2. Run `make generate` to update all generated file headers
+
 ### Adding Features
 
 1. Update docs and grammar specification

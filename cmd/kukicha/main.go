@@ -12,9 +12,8 @@ import (
 	"github.com/duber000/kukicha/internal/codegen"
 	"github.com/duber000/kukicha/internal/parser"
 	"github.com/duber000/kukicha/internal/semantic"
+	"github.com/duber000/kukicha/internal/version"
 )
-
-const version = "1.0.0"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -52,7 +51,7 @@ func main() {
 	case "init":
 		initCommand()
 	case "version":
-		fmt.Printf("kukicha version %s\n", version)
+		fmt.Printf("kukicha version %s\n", version.Version)
 	case "help", "-h", "--help":
 		printUsage()
 	default:
