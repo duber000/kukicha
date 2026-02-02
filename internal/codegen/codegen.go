@@ -3,6 +3,7 @@ package codegen
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
@@ -217,27 +218,44 @@ func (g *Generator) generateImports() {
 	}
 
 	// Generate import block
-	if len(imports) == 1 {
-		for path, alias := range imports {
-			if alias != "" {
-				g.writeLine(fmt.Sprintf("import %s \"%s\"", alias, path))
-			} else {
-				g.writeLine(fmt.Sprintf("import \"%s\"", path))
-			}
-		}
-	} else {
-		g.writeLine("import (")
-		g.indent++
-		for path, alias := range imports {
-			if alias != "" {
-				g.writeLine(fmt.Sprintf("%s \"%s\"", alias, path))
-			} else {
-				g.writeLine(fmt.Sprintf("\"%s\"", path))
-			}
-		}
-		g.indent--
-		g.writeLine(")")
+	specs := make([]importSpec, 0, len(imports))
+	for path, alias := range imports {
+		specs = append(specs, importSpec{path: path, alias: alias})
 	}
+
+	sort.Slice(specs, func(i, j int) bool {
+		if specs[i].path == specs[j].path {
+			return specs[i].alias < specs[j].alias
+		}
+		return specs[i].path < specs[j].path
+	})
+
+	if len(specs) == 1 {
+		spec := specs[0]
+		if spec.alias != "" {
+			g.writeLine(fmt.Sprintf("import %s \"%s\"", spec.alias, spec.path))
+		} else {
+			g.writeLine(fmt.Sprintf("import \"%s\"", spec.path))
+		}
+		return
+	}
+
+	g.writeLine("import (")
+	g.indent++
+	for _, spec := range specs {
+		if spec.alias != "" {
+			g.writeLine(fmt.Sprintf("%s \"%s\"", spec.alias, spec.path))
+		} else {
+			g.writeLine(fmt.Sprintf("\"%s\"", spec.path))
+		}
+	}
+	g.indent--
+	g.writeLine(")")
+}
+
+type importSpec struct {
+	path  string
+	alias string
 }
 
 // extractPkgName returns the Go package name from an import path.
@@ -336,10 +354,12 @@ func (g *Generator) generateInterfaceDecl(decl *ast.InterfaceDecl) {
 // for placeholder types ("any", "any2") and generates proper Go type parameters.
 //
 // Example: A Kukicha function like:
-//   func Filter(items list of any, predicate func(any) bool) list of any
+//
+//	func Filter(items list of any, predicate func(any) bool) list of any
 //
 // Becomes Go code like:
-//   func Filter[T any](items []T, predicate func(T) bool) []T
+//
+//	func Filter[T any](items []T, predicate func(T) bool) []T
 //
 // This happens automatically for stdlib packages. User code doesn't need this
 // because users import the stdlib and call its generic functions; the Go compiler
@@ -1581,14 +1601,14 @@ func (g *Generator) getMultiReturnType(expr ast.Expression) (string, bool) {
 // ARCHITECTURE NOTE: Kukicha's pipe operator (|>) supports three strategies
 // to determine where the piped value is inserted:
 //
-//   Strategy A (Placeholder): User explicitly marks position with "_"
-//     data |> json.MarshalWrite(w, _)  →  json.MarshalWrite(w, data)
+//	Strategy A (Placeholder): User explicitly marks position with "_"
+//	  data |> json.MarshalWrite(w, _)  →  json.MarshalWrite(w, data)
 //
-//   Strategy B (Data-First): Default - piped value becomes first argument
-//     users |> slice.Filter(fn)  →  slice.Filter(users, fn)
+//	Strategy B (Data-First): Default - piped value becomes first argument
+//	  users |> slice.Filter(fn)  →  slice.Filter(users, fn)
 //
-//   Strategy C (Context-First): If piped value is a context.Context, special handling
-//     ctx |> db.Query(sql)  →  db.Query(ctx, sql)
+//	Strategy C (Context-First): If piped value is a context.Context, special handling
+//	  ctx |> db.Query(sql)  →  db.Query(ctx, sql)
 //
 // The placeholder strategy (A) takes precedence. This design lets users handle
 // APIs where the "data" isn't the first parameter, without requiring Kukicha
@@ -1670,7 +1690,7 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 
 	// Build the argument list
 	var args []string
-	
+
 	if placeholderIndex != -1 {
 		// STRATEGY A: Explicit placeholder found (e.g., json.MarshalWrite(w, _))
 		// Replace "_" with the piped expression

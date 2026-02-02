@@ -110,7 +110,13 @@ func loadAndAnalyze(filename string) (*ast.Program, error) {
 }
 
 func buildCommand(filename string) {
-	program, err := loadAndAnalyze(filename)
+	absFile, err := filepath.Abs(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
+		os.Exit(1)
+	}
+
+	program, err := loadAndAnalyze(absFile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -118,7 +124,7 @@ func buildCommand(filename string) {
 
 	// Generate Go code
 	gen := codegen.New(program)
-	gen.SetSourceFile(filename) // Enable special transpilation detection
+	gen.SetSourceFile(absFile) // Enable special transpilation detection
 	goCode, err := gen.Generate()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Code generation error: %v\n", err)
@@ -133,18 +139,18 @@ func buildCommand(filename string) {
 	}
 
 	// Write Go file
-	outputFile := strings.TrimSuffix(filename, ".kuki") + ".go"
+	outputFile := strings.TrimSuffix(absFile, ".kuki") + ".go"
 	err = os.WriteFile(outputFile, formatted, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing output file: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Successfully compiled %s to %s\n", filename, outputFile)
+	fmt.Printf("Successfully compiled %s to %s\n", absFile, outputFile)
 
 	// If the generated code imports Kukicha stdlib, extract it and configure go.mod
 	if needsStdlib(goCode) {
-		projectDir := findProjectDir(filename)
+		projectDir := findProjectDir(absFile)
 		stdlibPath, stdlibErr := ensureStdlib(projectDir)
 		if stdlibErr != nil {
 			fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", stdlibErr)
@@ -157,7 +163,9 @@ func buildCommand(filename string) {
 	}
 
 	// Run go build on the generated file
+	projectDir := findProjectDir(absFile)
 	cmd := exec.Command("go", "build", outputFile)
+	cmd.Dir = projectDir
 	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2,greenteagc")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -169,12 +177,18 @@ func buildCommand(filename string) {
 	}
 
 	// Get the binary name
-	binaryName := strings.TrimSuffix(filepath.Base(filename), ".kuki")
+	binaryName := strings.TrimSuffix(filepath.Base(absFile), ".kuki")
 	fmt.Printf("Successfully built binary: %s\n", binaryName)
 }
 
 func runCommand(filename string) {
-	program, err := loadAndAnalyze(filename)
+	absFile, err := filepath.Abs(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
+		os.Exit(1)
+	}
+
+	program, err := loadAndAnalyze(absFile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -182,7 +196,7 @@ func runCommand(filename string) {
 
 	// Generate Go code
 	gen := codegen.New(program)
-	gen.SetSourceFile(filename) // Enable special transpilation detection
+	gen.SetSourceFile(absFile) // Enable special transpilation detection
 	goCode, err := gen.Generate()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Code generation error: %v\n", err)
@@ -192,7 +206,7 @@ func runCommand(filename string) {
 	// If stdlib is needed, extract it and ensure go.mod is configured
 	var tmpFile string
 	if needsStdlib(goCode) {
-		projectDir := findProjectDir(filename)
+		projectDir := findProjectDir(absFile)
 		stdlibPath, stdlibErr := ensureStdlib(projectDir)
 		if stdlibErr != nil {
 			fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", stdlibErr)
@@ -208,7 +222,12 @@ func runCommand(filename string) {
 		tmpFile = filepath.Join(os.TempDir(), "kukicha_temp.go")
 	}
 
-	err = os.WriteFile(tmpFile, []byte(goCode), 0644)
+	formatted, fmtErr := format.Source([]byte(goCode))
+	if fmtErr != nil {
+		formatted = []byte(goCode)
+	}
+
+	err = os.WriteFile(tmpFile, formatted, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing temporary file: %v\n", err)
 		os.Exit(1)
@@ -217,6 +236,7 @@ func runCommand(filename string) {
 
 	// Run with go run
 	cmd := exec.Command("go", "run", tmpFile)
+	cmd.Dir = findProjectDir(absFile)
 	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2,greenteagc")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

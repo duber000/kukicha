@@ -1,6 +1,8 @@
 package lsp
 
 import (
+	"net/url"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -95,7 +97,7 @@ func (ds *DocumentStore) Get(uri lsp.DocumentURI) *Document {
 // analyze parses and performs semantic analysis on the document
 func (doc *Document) analyze() {
 	// Extract filename from URI
-	filename := strings.TrimPrefix(string(doc.URI), "file://")
+	filename := uriToFilename(doc.URI)
 
 	// Parse the content (parser handles lexing internally)
 	p, err := parser.New(doc.Content, filename)
@@ -131,7 +133,9 @@ func (doc *Document) PositionToOffset(pos lsp.Position) int {
 	for i := 0; i < int(pos.Line) && i < len(doc.Lines); i++ {
 		offset += len(doc.Lines[i]) + 1 // +1 for newline
 	}
-	offset += int(pos.Character)
+	if int(pos.Line) < len(doc.Lines) {
+		offset += utf16PosToByteOffset(doc.Lines[int(pos.Line)], int(pos.Character))
+	}
 	return offset
 }
 
@@ -141,9 +145,16 @@ func (doc *Document) OffsetToPosition(offset int) lsp.Position {
 	for line, content := range doc.Lines {
 		lineEnd := currentOffset + len(content) + 1 // +1 for newline
 		if offset < lineEnd {
+			byteInLine := offset - currentOffset
+			if byteInLine < 0 {
+				byteInLine = 0
+			}
+			if byteInLine > len(content) {
+				byteInLine = len(content)
+			}
 			return lsp.Position{
 				Line:      line,
-				Character: offset - currentOffset,
+				Character: byteOffsetToUTF16Pos(content, byteInLine),
 			}
 		}
 		currentOffset = lineEnd
@@ -151,7 +162,7 @@ func (doc *Document) OffsetToPosition(offset int) lsp.Position {
 	// Return end of document
 	return lsp.Position{
 		Line:      len(doc.Lines) - 1,
-		Character: len(doc.Lines[len(doc.Lines)-1]),
+		Character: byteOffsetToUTF16Pos(doc.Lines[len(doc.Lines)-1], len(doc.Lines[len(doc.Lines)-1])),
 	}
 }
 
@@ -162,7 +173,7 @@ func (doc *Document) GetWordAtPosition(pos lsp.Position) string {
 		return ""
 	}
 
-	col := int(pos.Character)
+	col := utf16PosToByteOffset(line, int(pos.Character))
 	if col >= len(line) {
 		col = len(line) - 1
 	}
@@ -190,4 +201,55 @@ func isIdentifierChar(c byte) bool {
 		(c >= 'A' && c <= 'Z') ||
 		(c >= '0' && c <= '9') ||
 		c == '_'
+}
+
+func uriToFilename(uri lsp.DocumentURI) string {
+	raw := string(uri)
+	parsed, err := url.Parse(raw)
+	if err == nil && parsed.Scheme == "file" {
+		path := parsed.Path
+		if parsed.Host != "" {
+			path = "//" + parsed.Host + path
+		}
+		return filepath.FromSlash(path)
+	}
+	return strings.TrimPrefix(raw, "file://")
+}
+
+func utf16PosToByteOffset(line string, utf16Pos int) int {
+	if utf16Pos <= 0 {
+		return 0
+	}
+	utf16Count := 0
+	for idx, r := range line {
+		utf16Count += utf16RuneLen(r)
+		if utf16Count > utf16Pos {
+			return idx
+		}
+	}
+	return len(line)
+}
+
+func byteOffsetToUTF16Pos(line string, byteOffset int) int {
+	if byteOffset <= 0 {
+		return 0
+	}
+	if byteOffset > len(line) {
+		byteOffset = len(line)
+	}
+	utf16Count := 0
+	for idx, r := range line {
+		if idx >= byteOffset {
+			break
+		}
+		utf16Count += utf16RuneLen(r)
+	}
+	return utf16Count
+}
+
+func utf16RuneLen(r rune) int {
+	if r <= 0xFFFF {
+		return 1
+	}
+	return 2
 }

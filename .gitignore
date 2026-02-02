@@ -16,6 +16,12 @@ go.work
 
 # Compiled binaries
 /kukicha
+/hello
+/kukicha-lsp
+
+# Zed extension build artifacts
+/editors/zed/target/
+/editors/zed/extension.wasm
 
 # Extracted stdlib (created by kukicha init)
 .kukicha/

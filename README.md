@@ -135,6 +135,8 @@ func main()
     for todo in todos
         print(todo.Display())
 
+```
+
 ---
 
 ## Smart Pipe Logic 
@@ -145,7 +147,6 @@ Kukicha's pipe operator (`|>`) isn't just a simple transformation; it understand
 - **Shorthand Methods**: `result |> .JSON()` becomes `result.JSON()`
 - **Context-Aware**: `ctx |> db.Fetch()` becomes `db.Fetch(ctx)`
 - **Placeholders**: `user |> json.MarshalWrite(w, _)` becomes `json.MarshalWrite(w, user)`
-```
 
 **Transpiles to clean Go:**
 

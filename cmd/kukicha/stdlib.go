@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"go/parser"
+	"go/token"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
 	kukicha "github.com/duber000/kukicha"
+	"golang.org/x/mod/modfile"
 )
 
 const stdlibDirName = ".kukicha/stdlib"
@@ -101,11 +104,9 @@ func ensureGoMod(projectDir, stdlibPath string) error {
 		return err
 	}
 
-	content := string(data)
-
-	// Check if the stdlib replace directive already exists
-	if strings.Contains(content, "github.com/duber000/kukicha/stdlib") {
-		return nil
+	mod, err := modfile.Parse(goModPath, data, nil)
+	if err != nil {
+		return fmt.Errorf("parsing go.mod: %w", err)
 	}
 
 	// Calculate relative path from project dir to stdlib
@@ -114,11 +115,28 @@ func ensureGoMod(projectDir, stdlibPath string) error {
 		relStdlib = stdlibPath
 	}
 
-	// Append require and replace directives
-	content += "\nrequire github.com/duber000/kukicha/stdlib v0.0.0\n"
-	content += fmt.Sprintf("replace github.com/duber000/kukicha/stdlib => ./%s\n", filepath.ToSlash(relStdlib))
+	const stdlibModule = "github.com/duber000/kukicha/stdlib"
+	const stdlibVersion = "v0.0.0"
 
-	return os.WriteFile(goModPath, []byte(content), 0644)
+	// Add require if missing
+	if !hasRequire(mod, stdlibModule) {
+		if err := mod.AddRequire(stdlibModule, stdlibVersion); err != nil {
+			return fmt.Errorf("adding require: %w", err)
+		}
+	}
+
+	// Add or update replace
+	relPath := "./" + filepath.ToSlash(relStdlib)
+	if err := mod.AddReplace(stdlibModule, "", relPath, ""); err != nil {
+		return fmt.Errorf("adding replace: %w", err)
+	}
+
+	formatted, err := mod.Format()
+	if err != nil {
+		return fmt.Errorf("formatting go.mod: %w", err)
+	}
+
+	return os.WriteFile(goModPath, formatted, 0644)
 }
 
 // needsStdlib checks if the generated Go code imports any Kukicha stdlib packages.
@@ -128,7 +146,33 @@ func needsStdlib(goCode string) bool {
 		return false
 	}
 	// Don't extract stdlib if we're inside the kukicha repo itself
-	return !isKukichaRepo()
+	if isKukichaRepo() {
+		return false
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "", goCode, parser.ImportsOnly)
+	if err != nil {
+		// Fallback to substring check if parsing fails
+		return true
+	}
+
+	for _, imp := range file.Imports {
+		path := strings.Trim(imp.Path.Value, "\"")
+		if strings.HasPrefix(path, "github.com/duber000/kukicha/stdlib/") {
+			return true
+		}
+	}
+	return false
+}
+
+func hasRequire(mod *modfile.File, path string) bool {
+	for _, req := range mod.Require {
+		if req.Mod.Path == path {
+			return true
+		}
+	}
+	return false
 }
 
 // isKukichaRepo checks if the current working directory is inside the kukicha repo.
