@@ -423,12 +423,12 @@ func (p *Parser) parseParameters() []*ast.Parameter {
 			hasDefaultValue = true
 		} else if hasDefaultValue {
 			// Parameters with defaults must come after those without
-			p.addError("parameter '%s' must have a default value (parameters with defaults must be contiguous at the end)", paramName.Value)
+			p.error(paramName.Token, fmt.Sprintf("parameter '%s' must have a default value (parameters with defaults must be contiguous at the end)", paramName.Value))
 		}
 
 		// Variadic parameters cannot have default values
 		if variadic && defaultValue != nil {
-			p.addError("variadic parameter '%s' cannot have a default value", paramName.Value)
+			p.error(paramName.Token, fmt.Sprintf("variadic parameter '%s' cannot have a default value", paramName.Value))
 		}
 
 		params = append(params, &ast.Parameter{
@@ -501,7 +501,7 @@ func (p *Parser) parseCallArguments() ([]ast.Expression, []*ast.NamedArgument, b
 		} else {
 			// Positional argument
 			if hasNamedArg {
-				p.addError("positional argument cannot follow named argument")
+				p.error(p.peekToken(), "positional argument cannot follow named argument")
 			}
 			args = append(args, p.parseExpression())
 		}
