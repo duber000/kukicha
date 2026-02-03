@@ -137,9 +137,10 @@ func (d *FunctionDecl) Pos() Position {
 func (d *FunctionDecl) declNode() {}
 
 type Parameter struct {
-	Name     *Identifier
-	Type     TypeAnnotation
-	Variadic bool // true if "many" keyword used
+	Name         *Identifier
+	Type         TypeAnnotation
+	Variadic     bool       // true if "many" keyword used
+	DefaultValue Expression // Optional default value (e.g., count int = 10)
 }
 
 type Receiver struct {
@@ -570,11 +571,26 @@ func (e *PipeExpr) Pos() Position {
 }
 func (e *PipeExpr) exprNode() {}
 
+// NamedArgument represents a named argument in a function call
+// e.g., foo(name: "value", count: 5)
+type NamedArgument struct {
+	Token lexer.Token // The identifier token for the name
+	Name  *Identifier
+	Value Expression
+}
+
+func (e *NamedArgument) TokenLiteral() string { return e.Token.Lexeme }
+func (e *NamedArgument) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *NamedArgument) exprNode() {}
+
 type CallExpr struct {
-	Token     lexer.Token // The '(' token or identifier
-	Function  Expression
-	Arguments []Expression
-	Variadic  bool // true if 'many' used: f(many args)
+	Token          lexer.Token // The '(' token or identifier
+	Function       Expression
+	Arguments      []Expression     // Positional arguments
+	NamedArguments []*NamedArgument // Named arguments (e.g., name: value)
+	Variadic       bool             // true if 'many' used: f(many args)
 }
 
 func (e *CallExpr) TokenLiteral() string { return e.Token.Lexeme }
@@ -584,12 +600,13 @@ func (e *CallExpr) Pos() Position {
 func (e *CallExpr) exprNode() {}
 
 type MethodCallExpr struct {
-	Token     lexer.Token // The '.' token
-	Object    Expression  // Can be nil for shorthand pipes: |> .Method()
-	Method    *Identifier
-	Arguments []Expression
-	Variadic  bool // true if 'many' used: obj.f(many args)
-	IsCall    bool // true if explicit parentheses were used: obj.method() vs obj.field
+	Token          lexer.Token // The '.' token
+	Object         Expression  // Can be nil for shorthand pipes: |> .Method()
+	Method         *Identifier
+	Arguments      []Expression     // Positional arguments
+	NamedArguments []*NamedArgument // Named arguments (e.g., name: value)
+	Variadic       bool             // true if 'many' used: obj.f(many args)
+	IsCall         bool             // true if explicit parentheses were used: obj.method() vs obj.field
 }
 
 func (e *MethodCallExpr) TokenLiteral() string { return e.Token.Lexeme }

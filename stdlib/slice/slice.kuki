@@ -137,3 +137,141 @@ func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of a
         key := keyFunc(item)
         result[key] = append(result[key], item)
     return result
+
+# Safe Access Functions
+# These functions provide safe ways to access slice elements without panicking
+
+# Get returns the element at index, or an error if out of bounds
+# Supports negative indexing: -1 is last element, -2 is second to last, etc.
+# Example: item := slice.Get(items, 5) onerr return error
+func Get(items list of any, index int) (any, error)
+    length := len(items)
+    if length == 0
+        return empty, error("slice is empty")
+
+    # Handle negative indexing
+    actualIndex := index
+    if index < 0
+        actualIndex = length + index
+
+    if actualIndex < 0 or actualIndex >= length
+        return empty, error("index {index} out of bounds for slice of length {length}")
+
+    return items[actualIndex], empty
+
+# GetOr returns the element at index, or defaultValue if out of bounds
+# Supports negative indexing: -1 is last element, -2 is second to last, etc.
+# Never fails - always returns a valid value
+# Example: item := slice.GetOr(items, 5, defaultItem)
+func GetOr(items list of any, index int, defaultValue any) any
+    length := len(items)
+    if length == 0
+        return defaultValue
+
+    # Handle negative indexing
+    actualIndex := index
+    if index < 0
+        actualIndex = length + index
+
+    if actualIndex < 0 or actualIndex >= length
+        return defaultValue
+
+    return items[actualIndex]
+
+# FirstOne returns the first element, or an error if empty
+# Example: first := slice.FirstOne(items) onerr return error
+func FirstOne(items list of any) (any, error)
+    if len(items) == 0
+        return empty, error("slice is empty")
+    return items[0], empty
+
+# FirstOr returns the first element, or defaultValue if empty
+# Never fails - always returns a valid value
+# Example: first := slice.FirstOr(items, defaultItem)
+func FirstOr(items list of any, defaultValue any) any
+    if len(items) == 0
+        return defaultValue
+    return items[0]
+
+# LastOne returns the last element, or an error if empty
+# Example: last := slice.LastOne(items) onerr return error
+func LastOne(items list of any) (any, error)
+    if len(items) == 0
+        return empty, error("slice is empty")
+    return items[len(items) - 1], empty
+
+# LastOr returns the last element, or defaultValue if empty
+# Never fails - always returns a valid value
+# Example: last := slice.LastOr(items, defaultItem)
+func LastOr(items list of any, defaultValue any) any
+    if len(items) == 0
+        return defaultValue
+    return items[len(items) - 1]
+
+# Find returns the first element matching the predicate, or error if not found
+# Example: user := slice.Find(users, func(u) { return u.Active }) onerr return error
+func Find(items list of any, predicate func(any) bool) (any, error)
+    for item in items
+        if predicate(item)
+            return item, empty
+    return empty, error("no matching element found")
+
+# FindOr returns the first element matching the predicate, or defaultValue if not found
+# Never fails - always returns a valid value
+# Example: user := slice.FindOr(users, func(u) { return u.Active }, defaultUser)
+func FindOr(items list of any, predicate func(any) bool, defaultValue any) any
+    for item in items
+        if predicate(item)
+            return item
+    return defaultValue
+
+# FindIndex returns the index of the first element matching the predicate
+# Returns -1 if no element matches
+# Example: idx := slice.FindIndex(items, func(i) { return i > 5 })
+func FindIndex(items list of any, predicate func(any) bool) int
+    for i, item in items
+        if predicate(item)
+            return i
+    return -1
+
+# FindLast returns the last element matching the predicate, or error if not found
+# Example: user := slice.FindLast(users, func(u) { return u.Active }) onerr return error
+func FindLast(items list of any, predicate func(any) bool) (any, error)
+    for i from len(items) - 1 through 0
+        if predicate(items[i])
+            return items[i], empty
+    return empty, error("no matching element found")
+
+# FindLastOr returns the last element matching the predicate, or defaultValue if not found
+# Example: user := slice.FindLastOr(users, func(u) { return u.Active }, defaultUser)
+func FindLastOr(items list of any, predicate func(any) bool, defaultValue any) any
+    for i from len(items) - 1 through 0
+        if predicate(items[i])
+            return items[i]
+    return defaultValue
+
+# IsEmpty returns true if the slice is empty
+# Example: if slice.IsEmpty(items) ...
+func IsEmpty(items list of any) bool
+    return len(items) == 0
+
+# IsNotEmpty returns true if the slice is not empty
+# Example: if slice.IsNotEmpty(items) ...
+func IsNotEmpty(items list of any) bool
+    return len(items) > 0
+
+# Pop returns the last element and the remaining slice, or error if empty
+# Does not modify the original slice
+# Example: last, rest := slice.Pop(items) onerr return error
+func Pop(items list of any) (any, list of any, error)
+    if len(items) == 0
+        return empty, items, error("cannot pop from empty slice")
+    return items[len(items) - 1], items[:len(items) - 1], empty
+
+# Shift returns the first element and the remaining slice, or error if empty
+# Does not modify the original slice
+# Example: first, rest := slice.Shift(items) onerr return error
+func Shift(items list of any) (any, list of any, error)
+    if len(items) == 0
+        return empty, items, error("cannot shift from empty slice")
+    return items[0], items[1:], empty

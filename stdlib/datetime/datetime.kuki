@@ -1,0 +1,327 @@
+# Kukicha Standard Library - DateTime (Time Helpers)
+# Provides human-friendly time formatting and duration helpers
+# Wraps Go's time package with easier-to-remember named formats
+
+petiole datetime
+
+import "time"
+import "errors"
+
+# Named Format Constants
+# These are the Go reference time layouts for common formats
+# Go uses the reference time: Mon Jan 2 15:04:05 MST 2006
+
+# Common format names mapped to Go layouts
+# Use with Format(t, "iso8601") instead of remembering "2006-01-02T15:04:05Z07:00"
+
+# Format formats a time using a named format or custom layout
+# Named formats: "iso8601", "rfc3339", "date", "time", "datetime", "unix", "kitchen"
+# Example: datetime.Format(t, "iso8601")
+# Example: datetime.Format(t, "date")
+# Example: datetime.Format(t, "2006-01-02") for custom layout
+func Format(t time.Time, format string) string
+    layout := getLayout(format)
+    return t.Format(layout)
+
+# Parse parses a string using a named format or custom layout
+# Named formats: "iso8601", "rfc3339", "date", "time", "datetime"
+# Example: t := datetime.Parse("2024-01-15", "date") onerr return error
+func Parse(value string, format string) (time.Time, error)
+    layout := getLayout(format)
+    return time.Parse(layout, value)
+
+# ParseInLocation parses a string in a specific timezone
+# Example: t := datetime.ParseInLocation("2024-01-15 14:30", "datetime", "America/New_York") onerr return error
+func ParseInLocation(value string, format string, location string) (time.Time, error)
+    layout := getLayout(format)
+    loc, err := time.LoadLocation(location)
+    if err != empty
+        return time.Time{}, err
+    return time.ParseInLocation(layout, value, loc)
+
+# Now returns the current time
+# Example: now := datetime.Now()
+func Now() time.Time
+    return time.Now()
+
+# Today returns the current date at midnight (00:00:00)
+# Example: today := datetime.Today()
+func Today() time.Time
+    now := time.Now()
+    return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+# Tomorrow returns tomorrow's date at midnight
+# Example: tomorrow := datetime.Tomorrow()
+func Tomorrow() time.Time
+    return Today().AddDate(0, 0, 1)
+
+# Yesterday returns yesterday's date at midnight
+# Example: yesterday := datetime.Yesterday()
+func Yesterday() time.Time
+    return Today().AddDate(0, 0, -1)
+
+# Duration Helpers
+# Create durations with explicit units instead of multiplying
+
+# Nanoseconds creates a duration from nanoseconds
+# Example: d := datetime.Nanoseconds(500)
+func Nanoseconds(n int64) time.Duration
+    return time.Duration(n) * time.Nanosecond
+
+# Microseconds creates a duration from microseconds
+# Example: d := datetime.Microseconds(500)
+func Microseconds(n int64) time.Duration
+    return time.Duration(n) * time.Microsecond
+
+# Milliseconds creates a duration from milliseconds
+# Example: d := datetime.Milliseconds(500)
+func Milliseconds(n int64) time.Duration
+    return time.Duration(n) * time.Millisecond
+
+# Seconds creates a duration from seconds
+# Example: d := datetime.Seconds(30)
+func Seconds(n int64) time.Duration
+    return time.Duration(n) * time.Second
+
+# Minutes creates a duration from minutes
+# Example: d := datetime.Minutes(5)
+func Minutes(n int64) time.Duration
+    return time.Duration(n) * time.Minute
+
+# Hours creates a duration from hours
+# Example: d := datetime.Hours(2)
+func Hours(n int64) time.Duration
+    return time.Duration(n) * time.Hour
+
+# Days creates a duration from days (24 hours)
+# Example: d := datetime.Days(7)
+func Days(n int64) time.Duration
+    return time.Duration(n) * 24 * time.Hour
+
+# Weeks creates a duration from weeks (7 days)
+# Example: d := datetime.Weeks(2)
+func Weeks(n int64) time.Duration
+    return time.Duration(n) * 7 * 24 * time.Hour
+
+# Time Arithmetic Helpers
+
+# AddDays adds days to a time
+# Example: next := datetime.AddDays(t, 7)
+func AddDays(t time.Time, days int) time.Time
+    return t.AddDate(0, 0, days)
+
+# AddWeeks adds weeks to a time
+# Example: next := datetime.AddWeeks(t, 2)
+func AddWeeks(t time.Time, weeks int) time.Time
+    return t.AddDate(0, 0, weeks * 7)
+
+# AddMonths adds months to a time
+# Example: next := datetime.AddMonths(t, 1)
+func AddMonths(t time.Time, months int) time.Time
+    return t.AddDate(0, months, 0)
+
+# AddYears adds years to a time
+# Example: next := datetime.AddYears(t, 1)
+func AddYears(t time.Time, years int) time.Time
+    return t.AddDate(years, 0, 0)
+
+# SubDays subtracts days from a time
+# Example: prev := datetime.SubDays(t, 7)
+func SubDays(t time.Time, days int) time.Time
+    return t.AddDate(0, 0, -days)
+
+# SubWeeks subtracts weeks from a time
+# Example: prev := datetime.SubWeeks(t, 2)
+func SubWeeks(t time.Time, weeks int) time.Time
+    return t.AddDate(0, 0, -weeks * 7)
+
+# SubMonths subtracts months from a time
+# Example: prev := datetime.SubMonths(t, 1)
+func SubMonths(t time.Time, months int) time.Time
+    return t.AddDate(0, -months, 0)
+
+# SubYears subtracts years from a time
+# Example: prev := datetime.SubYears(t, 1)
+func SubYears(t time.Time, years int) time.Time
+    return t.AddDate(-years, 0, 0)
+
+# Comparison Helpers
+
+# IsBefore returns true if t1 is before t2
+# Example: if datetime.IsBefore(created, deadline) ...
+func IsBefore(t1 time.Time, t2 time.Time) bool
+    return t1.Before(t2)
+
+# IsAfter returns true if t1 is after t2
+# Example: if datetime.IsAfter(now, deadline) ...
+func IsAfter(t1 time.Time, t2 time.Time) bool
+    return t1.After(t2)
+
+# IsBetween returns true if t is between start and end (inclusive)
+# Example: if datetime.IsBetween(event, startDate, endDate) ...
+func IsBetween(t time.Time, start time.Time, end time.Time) bool
+    return (t.Equal(start) or t.After(start)) and (t.Equal(end) or t.Before(end))
+
+# IsSameDay returns true if two times are on the same day
+# Example: if datetime.IsSameDay(t1, t2) ...
+func IsSameDay(t1 time.Time, t2 time.Time) bool
+    y1, m1, d1 := t1.Date()
+    y2, m2, d2 := t2.Date()
+    return y1 == y2 and m1 == m2 and d1 == d2
+
+# IsToday returns true if the time is today
+# Example: if datetime.IsToday(event) ...
+func IsToday(t time.Time) bool
+    return IsSameDay(t, time.Now())
+
+# IsYesterday returns true if the time is yesterday
+# Example: if datetime.IsYesterday(event) ...
+func IsYesterday(t time.Time) bool
+    return IsSameDay(t, Yesterday())
+
+# IsTomorrow returns true if the time is tomorrow
+# Example: if datetime.IsTomorrow(event) ...
+func IsTomorrow(t time.Time) bool
+    return IsSameDay(t, Tomorrow())
+
+# IsPast returns true if the time is in the past
+# Example: if datetime.IsPast(deadline) ...
+func IsPast(t time.Time) bool
+    return t.Before(time.Now())
+
+# IsFuture returns true if the time is in the future
+# Example: if datetime.IsFuture(deadline) ...
+func IsFuture(t time.Time) bool
+    return t.After(time.Now())
+
+# Component Extraction
+
+# Year returns the year
+# Example: year := datetime.Year(t)
+func Year(t time.Time) int
+    return t.Year()
+
+# Month returns the month (1-12)
+# Example: month := datetime.Month(t)
+func Month(t time.Time) int
+    return int(t.Month())
+
+# Day returns the day of month (1-31)
+# Example: day := datetime.Day(t)
+func Day(t time.Time) int
+    return t.Day()
+
+# Hour returns the hour (0-23)
+# Example: hour := datetime.Hour(t)
+func Hour(t time.Time) int
+    return t.Hour()
+
+# Minute returns the minute (0-59)
+# Example: minute := datetime.Minute(t)
+func Minute(t time.Time) int
+    return t.Minute()
+
+# Second returns the second (0-59)
+# Example: second := datetime.Second(t)
+func Second(t time.Time) int
+    return t.Second()
+
+# Weekday returns the day of week (0=Sunday, 6=Saturday)
+# Example: weekday := datetime.Weekday(t)
+func Weekday(t time.Time) int
+    return int(t.Weekday())
+
+# WeekdayName returns the name of the weekday
+# Example: name := datetime.WeekdayName(t)  # "Monday"
+func WeekdayName(t time.Time) string
+    return t.Weekday().String()
+
+# Unix Timestamps
+
+# Unix returns the Unix timestamp (seconds since epoch)
+# Example: ts := datetime.Unix(t)
+func Unix(t time.Time) int64
+    return t.Unix()
+
+# UnixMilli returns the Unix timestamp in milliseconds
+# Example: ts := datetime.UnixMilli(t)
+func UnixMilli(t time.Time) int64
+    return t.UnixMilli()
+
+# FromUnix creates a time from a Unix timestamp (seconds)
+# Example: t := datetime.FromUnix(1704067200)
+func FromUnix(sec int64) time.Time
+    return time.Unix(sec, 0)
+
+# FromUnixMilli creates a time from a Unix timestamp (milliseconds)
+# Example: t := datetime.FromUnixMilli(1704067200000)
+func FromUnixMilli(msec int64) time.Time
+    return time.UnixMilli(msec)
+
+# Sleep helpers
+
+# Sleep pauses for the specified duration
+# Example: datetime.Sleep(datetime.Seconds(5))
+func Sleep(d time.Duration)
+    time.Sleep(d)
+
+# SleepSeconds pauses for the specified number of seconds
+# Example: datetime.SleepSeconds(5)
+func SleepSeconds(n int64)
+    time.Sleep(time.Duration(n) * time.Second)
+
+# SleepMilliseconds pauses for the specified number of milliseconds
+# Example: datetime.SleepMilliseconds(500)
+func SleepMilliseconds(n int64)
+    time.Sleep(time.Duration(n) * time.Millisecond)
+
+# Timezone Helpers
+
+# InUTC converts a time to UTC
+# Example: utc := datetime.InUTC(t)
+func InUTC(t time.Time) time.Time
+    return t.UTC()
+
+# InLocal converts a time to local timezone
+# Example: local := datetime.InLocal(t)
+func InLocal(t time.Time) time.Time
+    return t.Local()
+
+# InLocation converts a time to a specific timezone
+# Example: ny := datetime.InLocation(t, "America/New_York") onerr return error
+func InLocation(t time.Time, location string) (time.Time, error)
+    loc, err := time.LoadLocation(location)
+    if err != empty
+        return t, err
+    return t.In(loc), empty
+
+# Internal helper to convert format names to Go layouts
+func getLayout(format string) string
+    if format == "iso8601" or format == "ISO8601"
+        return "2006-01-02T15:04:05Z07:00"
+    if format == "rfc3339" or format == "RFC3339"
+        return time.RFC3339
+    if format == "rfc3339nano" or format == "RFC3339Nano"
+        return time.RFC3339Nano
+    if format == "date"
+        return "2006-01-02"
+    if format == "time"
+        return "15:04:05"
+    if format == "datetime"
+        return "2006-01-02 15:04:05"
+    if format == "dateTimeT"
+        return "2006-01-02T15:04:05"
+    if format == "kitchen"
+        return time.Kitchen
+    if format == "stamp"
+        return time.Stamp
+    if format == "rfc822"
+        return time.RFC822
+    if format == "rfc1123"
+        return time.RFC1123
+    if format == "ansic"
+        return time.ANSIC
+    if format == "unixdate"
+        return time.UnixDate
+    # If not a named format, assume it's a custom layout
+    return format

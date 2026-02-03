@@ -1,0 +1,167 @@
+# Kukicha Standard Library - Must (Initialization Helpers)
+# Provides helpers that panic on error, useful for initialization code
+# where errors indicate misconfiguration and should fail fast
+#
+# IMPORTANT: Only use these for startup/initialization code!
+# For runtime code, use onerr for proper error handling.
+
+petiole must
+
+import "os"
+import "strconv"
+import "strings"
+import "fmt"
+
+# Do executes a function that returns (T, error) and panics if there's an error
+# Returns the value if successful
+# Example: config := must.Do(loadConfig())
+# Example: db := must.Do(connectDB())
+func Do(value any, err error) any
+    if err != empty
+        panic("must: {err}")
+    return value
+
+# DoMsg executes a function and panics with a custom message if there's an error
+# Example: config := must.DoMsg(loadConfig(), "failed to load configuration")
+func DoMsg(value any, err error, message string) any
+    if err != empty
+        panic("{message}: {err}")
+    return value
+
+# Ok panics if the error is not nil (useful when you don't need the value)
+# Example: must.Ok(os.MkdirAll(path, 0755))
+func Ok(err error)
+    if err != empty
+        panic("must: {err}")
+
+# OkMsg panics with a custom message if the error is not nil
+# Example: must.OkMsg(os.Chdir(dir), "failed to change directory")
+func OkMsg(err error, message string)
+    if err != empty
+        panic("{message}: {err}")
+
+# Environment Variable Helpers
+
+# Env returns the value of an environment variable, panics if not set
+# Example: apiKey := must.Env("API_KEY")
+func Env(key string) string
+    value := os.Getenv(key)
+    if value == ""
+        panic("must: environment variable {key} is required but not set")
+    return value
+
+# EnvOr returns the value of an environment variable, or a default if not set
+# This never panics - use when the variable is optional
+# Example: port := must.EnvOr("PORT", "8080")
+func EnvOr(key string, defaultValue string) string
+    value := os.Getenv(key)
+    if value == ""
+        return defaultValue
+    return value
+
+# EnvInt returns an environment variable as an integer, panics if not set or invalid
+# Example: port := must.EnvInt("PORT")
+func EnvInt(key string) int
+    value := os.Getenv(key)
+    if value == ""
+        panic("must: environment variable {key} is required but not set")
+    n, err := strconv.Atoi(value)
+    if err != empty
+        panic("must: environment variable {key} must be a valid integer, got '{value}'")
+    return n
+
+# EnvIntOr returns an environment variable as an integer, or default if not set
+# Panics only if the value is set but not a valid integer
+# Example: port := must.EnvIntOr("PORT", 8080)
+func EnvIntOr(key string, defaultValue int) int
+    value := os.Getenv(key)
+    if value == ""
+        return defaultValue
+    n, err := strconv.Atoi(value)
+    if err != empty
+        panic("must: environment variable {key} must be a valid integer, got '{value}'")
+    return n
+
+# EnvBool returns an environment variable as a boolean, panics if not set or invalid
+# Accepts: "true", "false", "1", "0", "yes", "no" (case insensitive)
+# Example: debug := must.EnvBool("DEBUG")
+func EnvBool(key string) bool
+    value := os.Getenv(key)
+    if value == ""
+        panic("must: environment variable {key} is required but not set")
+    return parseBool(key, value)
+
+# EnvBoolOr returns an environment variable as a boolean, or default if not set
+# Panics only if the value is set but not a valid boolean
+# Example: debug := must.EnvBoolOr("DEBUG", false)
+func EnvBoolOr(key string, defaultValue bool) bool
+    value := os.Getenv(key)
+    if value == ""
+        return defaultValue
+    return parseBool(key, value)
+
+# EnvList returns an environment variable as a list split by separator
+# Panics if the variable is not set
+# Example: hosts := must.EnvList("ALLOWED_HOSTS", ",")
+func EnvList(key string, separator string) list of string
+    value := os.Getenv(key)
+    if value == ""
+        panic("must: environment variable {key} is required but not set")
+    parts := strings.Split(value, separator)
+    result := make(list of string, 0, len(parts))
+    for _, part in parts
+        trimmed := strings.TrimSpace(part)
+        if trimmed != ""
+            result = append(result, trimmed)
+    return result
+
+# EnvListOr returns an environment variable as a list, or default if not set
+# Example: hosts := must.EnvListOr("ALLOWED_HOSTS", ",", empty list of string)
+func EnvListOr(key string, separator string, defaultValue list of string) list of string
+    value := os.Getenv(key)
+    if value == ""
+        return defaultValue
+    parts := strings.Split(value, separator)
+    result := make(list of string, 0, len(parts))
+    for _, part in parts
+        trimmed := strings.TrimSpace(part)
+        if trimmed != ""
+            result = append(result, trimmed)
+    return result
+
+# Assertion Helpers (for invariants)
+
+# True panics if the condition is false
+# Use for asserting invariants that should never be violated
+# Example: must.True(len(items) > 0, "items cannot be empty")
+func True(condition bool, message string)
+    if not condition
+        panic("assertion failed: {message}")
+
+# False panics if the condition is true
+# Example: must.False(user.Deleted, "cannot operate on deleted user")
+func False(condition bool, message string)
+    if condition
+        panic("assertion failed: {message}")
+
+# NotEmpty panics if the string is empty
+# Example: must.NotEmpty(config.APIKey, "API key")
+func NotEmpty(s string, name string)
+    if s == ""
+        panic("{name} cannot be empty")
+
+# NotNil panics if the value is nil
+# Note: Due to Go's interface nil semantics, this may not catch typed nils
+# Example: must.NotNil(handler, "handler")
+func NotNil(value any, name string)
+    if value == empty
+        panic("{name} cannot be nil")
+
+# Internal helper function
+func parseBool(key string, value string) bool
+    lower := strings.ToLower(strings.TrimSpace(value))
+    if lower == "true" or lower == "1" or lower == "yes"
+        return true
+    if lower == "false" or lower == "0" or lower == "no"
+        return false
+    panic("must: environment variable {key} must be a valid boolean, got '{value}'")

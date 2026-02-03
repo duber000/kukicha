@@ -386,6 +386,7 @@ func (p *Parser) parseFunctionDecl() *ast.FunctionDecl {
 
 func (p *Parser) parseParameters() []*ast.Parameter {
 	params := []*ast.Parameter{}
+	hasDefaultValue := false // Track if we've seen a parameter with a default value
 
 	if p.check(lexer.TOKEN_RPAREN) {
 		return params
@@ -403,7 +404,7 @@ func (p *Parser) parseParameters() []*ast.Parameter {
 
 		// Type is optional for untyped variadic (many values)
 		var paramType ast.TypeAnnotation
-		if !p.check(lexer.TOKEN_COMMA) && !p.check(lexer.TOKEN_RPAREN) {
+		if !p.check(lexer.TOKEN_COMMA) && !p.check(lexer.TOKEN_RPAREN) && !p.check(lexer.TOKEN_ASSIGN) {
 			paramType = p.parseTypeAnnotation()
 		}
 
@@ -415,10 +416,26 @@ func (p *Parser) parseParameters() []*ast.Parameter {
 			}
 		}
 
+		// Check for default value (e.g., count int = 10)
+		var defaultValue ast.Expression
+		if p.match(lexer.TOKEN_ASSIGN) {
+			defaultValue = p.parseExpression()
+			hasDefaultValue = true
+		} else if hasDefaultValue {
+			// Parameters with defaults must come after those without
+			p.addError("parameter '%s' must have a default value (parameters with defaults must be contiguous at the end)", paramName.Value)
+		}
+
+		// Variadic parameters cannot have default values
+		if variadic && defaultValue != nil {
+			p.addError("variadic parameter '%s' cannot have a default value", paramName.Value)
+		}
+
 		params = append(params, &ast.Parameter{
-			Name:     paramName,
-			Type:     paramType,
-			Variadic: variadic,
+			Name:         paramName,
+			Type:         paramType,
+			Variadic:     variadic,
+			DefaultValue: defaultValue,
 		})
 
 		if !p.match(lexer.TOKEN_COMMA) {
@@ -447,6 +464,54 @@ func (p *Parser) parseReturnTypes() []ast.TypeAnnotation {
 	}
 
 	return returns
+}
+
+// parseCallArguments parses function call arguments, supporting both positional
+// and named arguments. Named arguments use the syntax: name: value
+// Returns (positionalArgs, namedArgs, variadic)
+func (p *Parser) parseCallArguments() ([]ast.Expression, []*ast.NamedArgument, bool) {
+	args := []ast.Expression{}
+	namedArgs := []*ast.NamedArgument{}
+	variadic := false
+	hasNamedArg := false
+
+	if p.check(lexer.TOKEN_RPAREN) {
+		return args, namedArgs, variadic
+	}
+
+	for {
+		// Check for 'many' keyword (variadic argument)
+		if p.match(lexer.TOKEN_MANY) {
+			variadic = true
+		}
+
+		// Check if this is a named argument: identifier followed by colon
+		// We need to look ahead to see if this is "name: value" syntax
+		if p.check(lexer.TOKEN_IDENTIFIER) && p.peekNextToken().Type == lexer.TOKEN_COLON {
+			// Named argument
+			nameToken := p.advance()                  // consume identifier
+			p.advance()                               // consume colon
+			value := p.parseExpression()              // parse value
+			namedArgs = append(namedArgs, &ast.NamedArgument{
+				Token: nameToken,
+				Name:  &ast.Identifier{Token: nameToken, Value: nameToken.Lexeme},
+				Value: value,
+			})
+			hasNamedArg = true
+		} else {
+			// Positional argument
+			if hasNamedArg {
+				p.addError("positional argument cannot follow named argument")
+			}
+			args = append(args, p.parseExpression())
+		}
+
+		if !p.match(lexer.TOKEN_COMMA) {
+			break
+		}
+	}
+
+	return args, namedArgs, variadic
 }
 
 // ============================================================================
@@ -1310,25 +1375,14 @@ func (p *Parser) parsePostfixExpr() ast.Expression {
 		switch {
 		case p.match(lexer.TOKEN_LPAREN):
 			// Function call
-			args := []ast.Expression{}
-			variadic := false
-			if !p.check(lexer.TOKEN_RPAREN) {
-				for {
-					if p.match(lexer.TOKEN_MANY) {
-						variadic = true
-					}
-					args = append(args, p.parseExpression())
-					if !p.match(lexer.TOKEN_COMMA) {
-						break
-					}
-				}
-			}
+			args, namedArgs, variadic := p.parseCallArguments()
 			p.consume(lexer.TOKEN_RPAREN, "expected ')' after arguments")
 			expr = &ast.CallExpr{
-				Token:     p.previousToken(),
-				Function:  expr,
-				Arguments: args,
-				Variadic:  variadic,
+				Token:          p.previousToken(),
+				Function:       expr,
+				Arguments:      args,
+				NamedArguments: namedArgs,
+				Variadic:       variadic,
 			}
 
 		case p.match(lexer.TOKEN_DOT):
@@ -1353,27 +1407,16 @@ func (p *Parser) parsePostfixExpr() ast.Expression {
 			if p.check(lexer.TOKEN_LPAREN) {
 				// Method call
 				p.advance() // consume '('
-				args := []ast.Expression{}
-				variadic := false
-				if !p.check(lexer.TOKEN_RPAREN) {
-					for {
-						if p.match(lexer.TOKEN_MANY) {
-							variadic = true
-						}
-						args = append(args, p.parseExpression())
-						if !p.match(lexer.TOKEN_COMMA) {
-							break
-						}
-					}
-				}
+				args, namedArgs, variadic := p.parseCallArguments()
 				p.consume(lexer.TOKEN_RPAREN, "expected ')' after arguments")
 				expr = &ast.MethodCallExpr{
-					Token:     dotToken,
-					Object:    expr,
-					Method:    method,
-					Arguments: args,
-					Variadic:  variadic,
-					IsCall:    true,
+					Token:          dotToken,
+					Object:         expr,
+					Method:         method,
+					Arguments:      args,
+					NamedArguments: namedArgs,
+					Variadic:       variadic,
+					IsCall:         true,
 				}
 			} else if p.check(lexer.TOKEN_LBRACE) {
 				// Qualified struct literal: pkg.Type{}

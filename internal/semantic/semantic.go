@@ -143,11 +143,17 @@ func (a *Analyzer) collectFunctionDecl(decl *ast.FunctionDecl) {
 
 	// Build function type
 	params := make([]*TypeInfo, len(decl.Parameters))
+	paramNames := make([]string, len(decl.Parameters))
 	hasVariadic := false
+	defaultCount := 0
 	for i, param := range decl.Parameters {
 		params[i] = a.typeAnnotationToTypeInfo(param.Type)
+		paramNames[i] = param.Name.Value
 		if param.Variadic {
 			hasVariadic = true
+		}
+		if param.DefaultValue != nil {
+			defaultCount++
 		}
 	}
 
@@ -157,10 +163,12 @@ func (a *Analyzer) collectFunctionDecl(decl *ast.FunctionDecl) {
 	}
 
 	funcType := &TypeInfo{
-		Kind:     TypeKindFunction,
-		Params:   params,
-		Returns:  returns,
-		Variadic: hasVariadic,
+		Kind:         TypeKindFunction,
+		Params:       params,
+		Returns:      returns,
+		Variadic:     hasVariadic,
+		ParamNames:   paramNames,
+		DefaultCount: defaultCount,
 	}
 
 	// Add function to symbol table
@@ -834,23 +842,47 @@ func (a *Analyzer) analyzeOnErrClause(clause *ast.OnErrClause) {
 func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) []*TypeInfo {
 	funcType := a.analyzeExpression(expr.Function)
 
+	// Analyze named arguments (check for duplicates)
+	namedArgNames := make(map[string]bool)
+	for _, namedArg := range expr.NamedArguments {
+		if namedArgNames[namedArg.Name.Value] {
+			a.error(namedArg.Pos(), fmt.Sprintf("duplicate named argument: %s", namedArg.Name.Value))
+		}
+		namedArgNames[namedArg.Name.Value] = true
+		a.analyzeExpression(namedArg.Value)
+	}
+
 	// If it's a known function, validate arguments
 	if funcType.Kind == TypeKindFunction {
+		totalProvidedArgs := len(expr.Arguments) + len(expr.NamedArguments)
+
+		// Calculate required arguments (parameters without defaults)
+		requiredParams := len(funcType.Params)
+		if funcType.DefaultCount > 0 {
+			requiredParams = len(funcType.Params) - funcType.DefaultCount
+		}
+
 		// Validate argument count
 		if funcType.Variadic {
-			// Variadic: must have at least (params - 1) arguments
-			minArgs := len(funcType.Params) - 1
-			if len(expr.Arguments) < minArgs {
-				a.error(expr.Pos(), fmt.Sprintf("expected at least %d arguments, got %d", minArgs, len(expr.Arguments)))
+			// Variadic: must have at least (required params - 1) arguments
+			minArgs := requiredParams - 1
+			if minArgs < 0 {
+				minArgs = 0
+			}
+			if totalProvidedArgs < minArgs {
+				a.error(expr.Pos(), fmt.Sprintf("expected at least %d arguments, got %d", minArgs, totalProvidedArgs))
 			}
 		} else {
-			// Non-variadic: must have exact number of arguments
-			if len(expr.Arguments) != len(funcType.Params) {
-				a.error(expr.Pos(), fmt.Sprintf("expected %d arguments, got %d", len(funcType.Params), len(expr.Arguments)))
+			// Non-variadic: must have between required and total params
+			if totalProvidedArgs < requiredParams {
+				a.error(expr.Pos(), fmt.Sprintf("expected at least %d arguments, got %d", requiredParams, totalProvidedArgs))
+			}
+			if totalProvidedArgs > len(funcType.Params) {
+				a.error(expr.Pos(), fmt.Sprintf("expected at most %d arguments, got %d", len(funcType.Params), totalProvidedArgs))
 			}
 		}
 
-		// Validate argument types
+		// Validate positional argument types
 		for i, arg := range expr.Arguments {
 			argType := a.analyzeExpression(arg)
 
@@ -864,6 +896,9 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) []*TypeInfo {
 				a.error(expr.Pos(), fmt.Sprintf("argument %d: cannot use %s as %s", i+1, argType, funcType.Params[paramIndex]))
 			}
 		}
+
+		// Named arguments validation would require parameter name information
+		// which is tracked in ParamNames field
 
 		// Return all return types
 		if len(funcType.Returns) > 0 {
