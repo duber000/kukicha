@@ -158,6 +158,46 @@ for i, item in items        # Index and value
 status := "Active" if user.active else "Inactive"
 ```
 
+### 11. Named Arguments
+Call functions with explicit argument names for clarity.
+
+```kukicha
+# Without named arguments (order matters)
+files.Copy(source, dest)
+
+# With named arguments (self-documenting)
+files.Copy(from: source, to: dest)
+
+# Mix positional and named
+http.JSONError(w, message: "not found", status: 404)
+
+# Named arguments can be in any order after positional args
+fetch.Request(url, timeout: 30, retries: 3)
+fetch.Request(url, retries: 3, timeout: 30)  # Same effect
+```
+
+### 12. Default Parameter Values
+Define functions with optional parameters that have default values.
+
+```kukicha
+# Function with default parameter
+func Greet(name string, greeting string = "Hello")
+    print("{greeting}, {name}!")
+
+# Call with all arguments
+Greet("Alice", "Hi")          # "Hi, Alice!"
+
+# Call with default
+Greet("Bob")                  # "Hello, Bob!"
+
+# Combine with named arguments
+Greet("Charlie", greeting: "Welcome")
+
+# Multiple defaults (must be at end of parameter list)
+func Connect(host string, port int = 8080, timeout int = 30)
+    # ...
+```
+
 ---
 
 ## Go to Kukicha Translation Table
@@ -194,6 +234,8 @@ status := "Active" if user.active else "Inactive"
 | `make([]T, len)` | `make list of T, len` |
 | `defer f()` | `defer f()` |
 | `go f()` | `go f()` |
+| (no equivalent) | `foo(name: value)` (named arguments) |
+| (no equivalent) | `func F(x int = 10)` (default parameters) |
 
 ---
 

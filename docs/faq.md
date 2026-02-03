@@ -44,7 +44,32 @@ No. Kukicha has zero runtime overhead. The compiler transpiles your code into st
 
 Yes. You can import any Go package (standard library or third-party) and use it directly in Kukicha. If the compiler hasn't seen the type before, it "trusts" the external package, allowing you to leverage the entire Go ecosystem immediately.
 
-6. What editor support is available?
+6. Does Kukicha support named arguments or default parameters?
+
+Yes! Kukicha has both features to make code more readable:
+
+**Default Parameters** let you specify default values for function parameters:
+```kukicha
+func Greet(name string, greeting string = "Hello")
+    print("{greeting}, {name}!")
+
+Greet("Alice")          # "Hello, Alice!"
+Greet("Bob", "Hi")      # "Hi, Bob!"
+```
+
+**Named Arguments** let you specify argument names at the call site:
+```kukicha
+func Connect(host string, port int = 8080, timeout int = 30)
+    # ...
+
+# Clear and self-documenting
+Connect("localhost", timeout: 60)
+Connect("api.example.com", port: 443, timeout: 120)
+```
+
+Note: Named arguments must come after positional arguments, and parameters with defaults must come after those without.
+
+7. What editor support is available?
 
 **Zed** is currently supported with full language support:
 

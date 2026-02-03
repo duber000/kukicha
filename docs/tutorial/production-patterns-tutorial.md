@@ -328,22 +328,26 @@ func (s reference Server) handleListTodos(w http.ResponseWriter, r reference htt
     s.sendJSON(w, 200, todos)
 
 func (s reference Server) handleCreateTodo(w http.ResponseWriter, r reference http.Request)
-    # Parse request body using pipe
+    import "stdlib/validate"
+    import "stdlib/http" as httphelper
+
+    # Parse request body using the http helper
     input := CreateTodoInput{}
+    httphelper.ReadJSON(r, reference of input) onerr
+        return httphelper.JSONBadRequest(w, "Invalid JSON")
 
-    r.Body |> json.NewDecoder() |> json.Decode(_, reference of input) onerr
-        return s.sendError(w, 400, "Invalid JSON")
+    # Validate input using the validate package
+    input.title |> validate.NotEmpty() onerr
+        return httphelper.JSONBadRequest(w, "Title is required")
 
-    if input.title equals ""
-        s.sendError(w, 400, "Title is required")
-        return
-    
+    input.title |> validate.MaxLength(200) onerr
+        return httphelper.JSONBadRequest(w, "Title must be 200 characters or less")
+
     todo := s.db.CreateTodo(input.title) onerr
         log.Printf("Error creating todo: %v", error)
-        s.sendError(w, 500, "Failed to create todo")
-        return
-    
-    s.sendJSON(w, 201, todo)
+        return httphelper.JSONInternalError(w, "Failed to create todo")
+
+    httphelper.JSONCreated(w, todo)
 
 func (s reference Server) handleGetTodo(w http.ResponseWriter, r reference http.Request)
     id := s.getIdFromPath(r.URL.Path, "/todos/") onerr
@@ -417,13 +421,18 @@ func (s reference Server) sendError(w http.ResponseWriter, status int, message s
 # --- Main Entry Point ---
 
 func main()
-    # Configuration (could come from environment variables)
-    dbPath := "todos.db"
-    port := ":8080"
-    
+    # Configuration from environment variables (production best practice)
+    # Using the 'must' package for startup config - panic is acceptable here
+    import "stdlib/must"
+    import "stdlib/env"
+
+    # Required: DATABASE_URL must be set
+    dbPath := must.EnvOr("DATABASE_URL", "todos.db")
+
+    # Optional: PORT with default
+    port := env.GetOr("PORT", "8080")
+
     # Create the server
-    # Using panic for unrecoverable startup errors is acceptable here.
-    # For more graceful error handling, use: log.Fatalf("Failed to open database: %v", error)
     server := NewServer(dbPath) onerr panic "Failed to open database: {error}"
     
     # Ensures the SQLite file is closed when the program exits
@@ -504,16 +513,74 @@ result := operation() onerr return fmt.Errorf("operation failed: {error}")
 
 ---
 
+## Part 8: Production-Ready Packages
+
+Kukicha includes several packages designed for production code:
+
+### Configuration with `env` and `must`
+
+```kukicha
+import "stdlib/env"
+import "stdlib/must"
+
+func main()
+    # Required config (panic if missing)
+    apiKey := must.Env("API_KEY")
+
+    # Optional config with defaults
+    port := env.GetOr("PORT", "8080")
+    debug := env.GetBoolOrDefault("DEBUG", false)
+    timeout := env.GetIntOr("TIMEOUT", 30) onerr 30
+```
+
+### Input Validation with `validate`
+
+```kukicha
+import "stdlib/validate"
+
+func CreateUser(email string, age int) (User, error)
+    # Chain validations - each returns (value, error) for onerr
+    email |> validate.NotEmpty() onerr return User{}, error
+    email |> validate.Email() onerr return User{}, error
+
+    age |> validate.InRange(18, 120) onerr return User{}, error
+
+    return User{email: email, age: age}, empty
+```
+
+### HTTP Helpers
+
+```kukicha
+import "stdlib/http" as httphelper
+
+func HandleUser(w http.ResponseWriter, r reference http.Request)
+    # Read JSON body
+    input := UserInput{}
+    httphelper.ReadJSON(r, reference of input) onerr
+        return httphelper.JSONBadRequest(w, "Invalid JSON")
+
+    # Send JSON responses
+    httphelper.JSON(w, user)              # 200 OK
+    httphelper.JSONCreated(w, user)       # 201 Created
+    httphelper.JSONNotFound(w, "User not found")  # 404
+
+    # Query parameters
+    page := httphelper.GetQueryIntOr(r, "page", 1)
+    search := httphelper.GetQueryParam(r, "q")
+```
+
+---
+
 ## Summary: The Kukicha Learning Path
 
 You've completed the full Kukicha tutorial series!
 
 | Tutorial | What You Learned |
 |----------|-----------------|
-| ✅ **1. Beginner** | Variables, functions, strings, string petiole |
+| ✅ **1. Beginner** | Variables, functions, strings, string petiole, named arguments |
 | ✅ **2. Console Todo** | Types, methods (`on`), lists, `onerr`, file I/O |
 | ✅ **3. Web Todo** | HTTP servers, JSON, REST APIs |
-| ✅ **4. Production** | Databases, Go conventions, proper architecture |
+| ✅ **4. Production** | Databases, Go conventions, validation, env config |
 
 ---
 

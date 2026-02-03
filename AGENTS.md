@@ -35,6 +35,14 @@ func Divide(a int, b int) int, error
     if b equals 0
         return 0, error "division by zero"
     return a / b, empty
+
+# Default parameter values
+func Greet(name string, greeting string = "Hello") string
+    return "{greeting}, {name}!"
+
+# Named arguments (at call site)
+result := Greet("Alice", greeting: "Hi")
+files.Copy(from: source, to: dest)
 ```
 
 ### Methods (receiver after `on`)
@@ -155,15 +163,48 @@ Typical workflow for new syntax:
 
 | Package | Purpose |
 |---------|---------|
-| `stdlib/slice` | Filter, Map, GroupBy, Chunk, Reverse |
+| `stdlib/slice` | Filter, Map, GroupBy, GetOr, FirstOr, Find, Pop |
 | `stdlib/json` | jsonv2 wrapper (Marshal, Unmarshal, streaming) |
 | `stdlib/fetch` | HTTP client with builder pattern |
 | `stdlib/files` | Read, Write, Watch file operations |
 | `stdlib/shell` | Safe command execution |
 | `stdlib/cli` | CLI argument parsing |
 | `stdlib/concurrent` | Parallel, ParallelWithLimit |
+| `stdlib/validate` | Input validation (Email, URL, InRange, NotEmpty) |
+| `stdlib/must` | Panic-on-error helpers for startup (Env, EnvInt) |
+| `stdlib/env` | Typed env vars with onerr (Get, GetInt, GetBool) |
+| `stdlib/datetime` | Named formats, duration helpers (Format, Seconds) |
+| `stdlib/http` | HTTP helpers (JSON, JSONError, ReadJSON, GetQueryInt) |
 
 Import with: `import "stdlib/slice"`
+
+### Common Patterns
+
+```kukicha
+# Validation (returns error for onerr)
+import "stdlib/validate"
+email |> validate.Email() onerr return error
+age |> validate.InRange(18, 120) onerr return error
+
+# Startup config (panics if missing/invalid)
+import "stdlib/must"
+apiKey := must.Env("API_KEY")
+port := must.EnvIntOr("PORT", 8080)
+
+# Runtime config (returns error for onerr)
+import "stdlib/env"
+debug := env.GetBoolOrDefault("DEBUG", false)
+
+# HTTP responses
+import "stdlib/http" as httphelper
+httphelper.JSON(w, data)
+httphelper.JSONNotFound(w, "User not found")
+
+# Time formatting
+import "stdlib/datetime"
+datetime.Format(t, "iso8601")  # Not "2006-01-02T15:04:05Z07:00"!
+timeout := datetime.Seconds(30)
+```
 
 ## More Documentation
 
