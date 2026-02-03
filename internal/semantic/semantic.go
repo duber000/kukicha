@@ -46,7 +46,7 @@ func (a *Analyzer) checkPackageName() {
 	}
 
 	name := a.program.PetioleDecl.Name.Value
-	
+
 	// List of reserved Go standard library packages
 	reservedPackages := map[string]bool{
 		"bufio": true, "bytes": true, "context": true, "crypto": true,
@@ -355,7 +355,7 @@ func (a *Analyzer) analyzeVarDeclStmt(stmt *ast.VarDeclStmt) {
 	var multiValueTypes []*TypeInfo
 	if len(stmt.Values) == 1 && len(stmt.Names) > 1 {
 		multiValueTypes = a.analyzeExpressionMulti(stmt.Values[0])
-		
+
 		if len(multiValueTypes) != len(stmt.Names) {
 			// If we can't match exact count, check if it's dynamic/unknown
 			if len(multiValueTypes) == 1 && multiValueTypes[0].Kind == TypeKindUnknown {
@@ -442,7 +442,7 @@ func (a *Analyzer) analyzeAssignStmt(stmt *ast.AssignStmt) {
 	var multiValueTypes []*TypeInfo
 	if len(stmt.Values) == 1 && len(stmt.Targets) > 1 {
 		multiValueTypes = a.analyzeExpressionMulti(stmt.Values[0])
-		
+
 		if len(multiValueTypes) != len(stmt.Targets) {
 			// If we can't match exact count, check if it's dynamic/unknown
 			if len(multiValueTypes) == 1 && multiValueTypes[0].Kind == TypeKindUnknown {
@@ -852,6 +852,17 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) []*TypeInfo {
 		a.analyzeExpression(namedArg.Value)
 	}
 
+	// Validate usage of named arguments (only supported for local functions)
+	if len(expr.NamedArguments) > 0 {
+		if funcType.Kind != TypeKindFunction {
+			name := "function"
+			if id, ok := expr.Function.(*ast.Identifier); ok {
+				name = fmt.Sprintf("function '%s'", id.Value)
+			}
+			a.error(expr.Pos(), fmt.Sprintf("named arguments are not supported for imported or unknown %s (please use positional arguments)", name))
+		}
+	}
+
 	// If it's a known function, validate arguments
 	if funcType.Kind == TypeKindFunction {
 		totalProvidedArgs := len(expr.Arguments) + len(expr.NamedArguments)
@@ -912,6 +923,11 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) []*TypeInfo {
 func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr) []*TypeInfo {
 	// Analyze object
 	a.analyzeExpression(expr.Object)
+
+	// Method support is currently limited to positional arguments
+	if len(expr.NamedArguments) > 0 {
+		a.error(expr.Pos(), "named arguments are not supported for method calls (please use positional arguments)")
+	}
 
 	// Analyze arguments
 	for _, arg := range expr.Arguments {

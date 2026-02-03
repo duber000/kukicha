@@ -162,18 +162,19 @@ status := "Active" if user.active else "Inactive"
 Call functions with explicit argument names for clarity.
 
 ```kukicha
-# Without named arguments (order matters)
-files.Copy(source, dest)
+# Note: Named arguments are currently supported for locally defined functions only
+func Copy(from string, to string)
+    # ...
 
 # With named arguments (self-documenting)
-files.Copy(from: source, to: dest)
+Copy(from: source, to: dest)
 
 # Mix positional and named
-http.JSONError(w, message: "not found", status: 404)
+func Configure(host string, port int = 80, secure bool = false)
+    # ...
 
-# Named arguments can be in any order after positional args
-fetch.Request(url, timeout: 30, retries: 3)
-fetch.Request(url, retries: 3, timeout: 30)  # Same effect
+Configure("localhost", port: 8080, secure: true)
+Configure("localhost", secure: true)  # Use default port
 ```
 
 ### 12. Default Parameter Values
