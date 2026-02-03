@@ -158,6 +158,47 @@ for i, item in items        # Index and value
 status := "Active" if user.active else "Inactive"
 ```
 
+### 11. Named Arguments
+Call functions with explicit argument names for clarity.
+
+```kukicha
+# Note: Named arguments are currently supported for locally defined functions only
+func Copy(from string, to string)
+    # ...
+
+# With named arguments (self-documenting)
+Copy(from: source, to: dest)
+
+# Mix positional and named
+func Configure(host string, port int = 80, secure bool = false)
+    # ...
+
+Configure("localhost", port: 8080, secure: true)
+Configure("localhost", secure: true)  # Use default port
+```
+
+### 12. Default Parameter Values
+Define functions with optional parameters that have default values.
+
+```kukicha
+# Function with default parameter
+func Greet(name string, greeting string = "Hello")
+    print("{greeting}, {name}!")
+
+# Call with all arguments
+Greet("Alice", "Hi")          # "Hi, Alice!"
+
+# Call with default
+Greet("Bob")                  # "Hello, Bob!"
+
+# Combine with named arguments
+Greet("Charlie", greeting: "Welcome")
+
+# Multiple defaults (must be at end of parameter list)
+func Connect(host string, port int = 8080, timeout int = 30)
+    # ...
+```
+
 ---
 
 ## Go to Kukicha Translation Table
@@ -194,6 +235,8 @@ status := "Active" if user.active else "Inactive"
 | `make([]T, len)` | `make list of T, len` |
 | `defer f()` | `defer f()` |
 | `go f()` | `go f()` |
+| (no equivalent) | `foo(name: value)` (named arguments) |
+| (no equivalent) | `func F(x int = 10)` (default parameters) |
 
 ---
 

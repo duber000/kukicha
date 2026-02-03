@@ -65,6 +65,168 @@ func main()
     print("Saved successfully!")
 ```
 
+## Named Arguments and Default Parameters
+
+### Default Parameter Values
+```kukicha
+# Parameters with defaults must come after required parameters
+func Greet(name string, greeting string = "Hello", punctuation string = "!")
+    print("{greeting}, {name}{punctuation}")
+
+func main()
+    Greet("Alice")                          # "Hello, Alice!"
+    Greet("Bob", "Hi")                      # "Hi, Bob!"
+    Greet("Charlie", "Welcome", ".")        # "Welcome, Charlie."
+```
+
+### Named Arguments
+```kukicha
+# Named arguments make code self-documenting
+func CreateUser(name string, age int, active bool = true, role string = "user")
+    # ...
+
+func main()
+    # Positional only
+    CreateUser("Alice", 25, true, "admin")
+
+    # With named arguments - much clearer!
+    CreateUser("Bob", age: 30, role: "editor")
+
+    # Named args can be in any order (after positional)
+    CreateUser("Charlie", active: false, age: 22)
+```
+
+### Common Use: Configuration Functions
+```kukicha
+func Connect(host string, port int = 8080, timeout int = 30, retries int = 3)
+    print("Connecting to {host}:{port} with {timeout}s timeout, {retries} retries")
+
+func main()
+    # Just specify what you need
+    Connect("localhost")
+    Connect("api.example.com", timeout: 60)
+    Connect("db.local", port: 5432, retries: 5)
+```
+
+---
+
+## Production-Ready Packages
+
+### Validation with stdlib/validate
+```kukicha
+import "stdlib/validate"
+
+func CreateUser(email string, age int, password string) (User, error)
+    # Each validation returns (value, error) - perfect for onerr
+    email |> validate.NotEmpty() onerr return User{}, error
+    email |> validate.Email() onerr return User{}, error("invalid email format")
+
+    age |> validate.InRange(18, 120) onerr return User{}, error("age must be 18-120")
+
+    password |> validate.MinLength(8) onerr return User{}, error("password too short")
+    password |> validate.Matches(`[A-Z]`) onerr return User{}, error("need uppercase")
+
+    return User{email: email, age: age}, empty
+```
+
+### Environment Config with stdlib/env and stdlib/must
+```kukicha
+import "stdlib/env"
+import "stdlib/must"
+
+func main()
+    # Startup config - panic is acceptable (use must)
+    apiKey := must.Env("API_KEY")  # Panics if not set
+    dbUrl := must.EnvOr("DATABASE_URL", "localhost:5432")
+
+    # Runtime config - use onerr (use env)
+    port := env.GetIntOr("PORT", 8080) onerr 8080
+    debug := env.GetBoolOrDefault("DEBUG", false)
+    hosts := env.GetListOr("ALLOWED_HOSTS", ",", empty list of string)
+```
+
+### HTTP Helpers with stdlib/http
+```kukicha
+import "stdlib/http" as httphelper
+
+func HandleCreateUser(w http.ResponseWriter, r reference http.Request)
+    # Parse JSON body easily
+    input := UserInput{}
+    httphelper.ReadJSON(r, reference of input) onerr
+        return httphelper.JSONBadRequest(w, "Invalid JSON")
+
+    # Validate
+    user := CreateUser(input.email, input.age, input.password) onerr
+        return httphelper.JSONBadRequest(w, "{error}")
+
+    # Respond with JSON
+    httphelper.JSONCreated(w, user)
+
+func HandleGetUser(w http.ResponseWriter, r reference http.Request)
+    # Query params
+    id := httphelper.GetQueryInt(r, "id") onerr
+        return httphelper.JSONBadRequest(w, "id parameter required")
+
+    user := db.GetUser(id) onerr
+        return httphelper.JSONNotFound(w, "User not found")
+
+    httphelper.JSON(w, user)
+```
+
+### Time Handling with stdlib/datetime
+```kukicha
+import "stdlib/datetime"
+
+func main()
+    now := datetime.Now()
+
+    # Named formats - no more "2006-01-02T15:04:05Z07:00"!
+    print(datetime.Format(now, "iso8601"))   # 2024-01-15T14:30:00Z
+    print(datetime.Format(now, "date"))      # 2024-01-15
+    print(datetime.Format(now, "datetime"))  # 2024-01-15 14:30:00
+
+    # Duration helpers
+    timeout := datetime.Seconds(30)
+    cacheTime := datetime.Hours(24)
+
+    # Date arithmetic
+    tomorrow := datetime.AddDays(now, 1)
+    lastWeek := datetime.SubDays(now, 7)
+
+    # Comparisons
+    if datetime.IsPast(deadline)
+        print("Deadline passed!")
+
+    if datetime.IsToday(event)
+        print("Event is today!")
+```
+
+### Safe Slice Access with stdlib/slice
+```kukicha
+import "stdlib/slice"
+
+func main()
+    items := list of string{"a", "b", "c"}
+
+    # Safe access - never panics
+    first := slice.FirstOr(items, "default")
+    last := slice.LastOr(items, "default")
+
+    # Get with negative indexing
+    item := slice.GetOr(items, -1, "default")  # Last item or default
+
+    # Find with predicate
+    user := slice.Find(users, func(u User) bool
+        return u.active
+    ) onerr return defaultUser
+
+    # Check if empty
+    if slice.IsEmpty(items)
+        return
+```
+
+---
+
 ## Error Handling Patterns
 
 ### Pattern 1: Panic on Critical Errors

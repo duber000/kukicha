@@ -72,8 +72,13 @@ MethodDeclaration ::=
 
 ParameterList ::= Parameter { "," Parameter }
 
-Parameter ::= [ "many" ] IDENTIFIER [ TypeAnnotation ]
+Parameter ::= [ "many" ] IDENTIFIER [ TypeAnnotation ] [ "=" Expression ]
     # Type annotation is required except for untyped variadic ("many x")
+    # Optional default value (parameters with defaults must come after those without)
+    # Examples:
+    #   name string                     # required parameter
+    #   count int = 10                  # parameter with default value
+    #   many values                     # variadic (no default allowed)
 
 ReturnTypeList ::= TypeAnnotation | "(" TypeAnnotation { "," TypeAnnotation } ")"
 ```
@@ -294,7 +299,11 @@ PrimaryExpression ::=
 ExpressionList ::= Expression { "," Expression }
 
 ArgumentList ::= Argument { "," Argument }
-Argument ::= [ "many" ] Expression
+Argument ::= [ "many" ] ( NamedArgument | Expression )
+NamedArgument ::= IDENTIFIER ":" Expression
+    # Named arguments allow explicit parameter binding: foo(name: "value", count: 5)
+    # Named arguments must come after positional arguments
+    # Named arguments can appear in any order relative to each other
 ```
 
 ---

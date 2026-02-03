@@ -262,6 +262,52 @@ func main()
 - Parameters and return types must have **explicit types** (you write them out)
 - Local variables inside functions use **type inference** (Kukicha figures it out)
 
+### Functions with Default Parameters
+
+Sometimes you want a function that works with or without certain parameters. Kukicha lets you set **default values**:
+
+```kukicha
+# greeting has a default value of "Hello"
+func Greet(name string, greeting string = "Hello")
+    print("{greeting}, {name}!")
+
+func main()
+    Greet("Alice")           # Uses default: "Hello, Alice!"
+    Greet("Bob", "Hi")       # Override: "Hi, Bob!"
+    Greet("Charlie", "Welcome")  # "Welcome, Charlie!"
+```
+
+**Rules for defaults:**
+- Parameters with defaults must come **after** regular parameters
+- You can have multiple defaults: `func F(a int, b int = 5, c int = 10)`
+
+### Named Arguments for Clarity
+
+When calling functions, you can name your arguments to make the code clearer:
+
+```kukicha
+func CreateUser(name string, age int, active bool = true)
+    # ...
+
+func main()
+    # Without named arguments - what does 'true' mean?
+    CreateUser("Alice", 25, true)
+
+    # With named arguments - crystal clear!
+    CreateUser("Alice", age: 25, active: true)
+```
+
+Named arguments are especially helpful when you skip some defaults:
+
+```kukicha
+func Connect(host string, port int = 8080, timeout int = 30)
+    print("Connecting to {host}:{port} with {timeout}s timeout")
+
+func main()
+    # Just specify timeout, use default port
+    Connect("localhost", timeout: 60)
+```
+
 ---
 
 ## Strings - Working with Text
@@ -727,9 +773,12 @@ Ready for the next step? Follow this learning path:
 Try building these programs to practice your skills:
 
 1. **Email Validator** - Check if an email contains "@" and ends with a domain
+   - Bonus: Try using `validate.Email()` from `stdlib/validate`!
 2. **Word Counter** - Count how many words are in a sentence (hint: use `string.Fields`)
 3. **URL Parser** - Extract the domain from a URL (hint: use `string.TrimPrefix` and `string.Split`)
+   - Bonus: Validate with `validate.URL()` first!
 4. **Password Checker** - Verify a password is at least 8 characters and contains both letters and numbers
+   - Bonus: Use `validate.MinLength()` and `validate.Alphanumeric()`!
 
 ---
 

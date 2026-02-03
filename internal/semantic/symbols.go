@@ -101,15 +101,17 @@ func (tk TypeKind) String() string {
 
 // TypeInfo represents type information
 type TypeInfo struct {
-	Kind        TypeKind
-	Name        string      // For named types and placeholders
-	ElementType *TypeInfo   // For lists, channels, references
-	KeyType     *TypeInfo   // For maps
-	ValueType   *TypeInfo   // For maps
-	Params      []*TypeInfo // For functions
-	Returns     []*TypeInfo // For functions
-	Constraint  string      // For placeholders: "any", "comparable", "cmp.Ordered"
-	Variadic    bool        // For functions: true if last param is variadic
+	Kind         TypeKind
+	Name         string      // For named types and placeholders
+	ElementType  *TypeInfo   // For lists, channels, references
+	KeyType      *TypeInfo   // For maps
+	ValueType    *TypeInfo   // For maps
+	Params       []*TypeInfo // For functions
+	Returns      []*TypeInfo // For functions
+	Constraint   string      // For placeholders: "any", "comparable", "cmp.Ordered"
+	Variadic     bool        // For functions: true if last param is variadic
+	ParamNames   []string    // For functions: parameter names (for named argument validation)
+	DefaultCount int         // For functions: number of parameters with default values
 }
 
 func (ti *TypeInfo) String() string {

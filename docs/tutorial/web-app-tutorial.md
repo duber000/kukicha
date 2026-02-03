@@ -273,11 +273,22 @@ func sendError(response http.ResponseWriter, status int, message string)
     # The client will receive a JSON object like {"error":"message"} with the given status code
     response.Header().Set("Content-Type", "application/json")
     response.WriteHeader(status)
-    
+
     errorResponse := map of string to string
         error: message
     response |> json.NewEncoder() |> .Encode(errorResponse) onerr return
+```
 
+> **💡 Pro Tip:** In production code, use `stdlib/http` helpers instead of writing these manually:
+> ```kukicha
+> import "stdlib/http" as httphelper
+> httphelper.JSON(response, todo)           # Send JSON with correct headers
+> httphelper.JSONError(response, 400, "...")  # Send error as JSON
+> httphelper.ReadJSON(request, reference todo)  # Parse request body
+> ```
+> See the [Production Patterns Tutorial](production-patterns-tutorial.md) for more examples.
+
+```kukicha
 # --- API Handlers ---
 
 # GET /todos - List all todos (with optional search)

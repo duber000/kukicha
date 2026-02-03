@@ -1,0 +1,289 @@
+# Kukicha Standard Library - Validate (Input Validation Helpers)
+# Provides common validation functions that return errors for use with onerr
+# All functions are designed to be pipe-friendly and composable
+
+petiole validate
+
+import "errors"
+import "regexp"
+import "strings"
+import "unicode"
+import "net/url"
+import "strconv"
+
+# String Validation Functions
+
+# NotEmpty checks that a string is not empty
+# Returns an error if the string is empty or contains only whitespace
+# Example: name := input |> validate.NotEmpty() onerr return error
+func NotEmpty(s string) (string, error)
+    if strings.TrimSpace(s) == ""
+        return "", errors.New("value cannot be empty")
+    return s, empty
+
+# MinLength checks that a string has at least n characters
+# Example: password |> validate.MinLength(8) onerr return error
+func MinLength(s string, n int) (string, error)
+    if len(s) < n
+        return s, errors.New("value must be at least {n} characters")
+    return s, empty
+
+# MaxLength checks that a string has at most n characters
+# Example: username |> validate.MaxLength(20) onerr return error
+func MaxLength(s string, n int) (string, error)
+    if len(s) > n
+        return s, errors.New("value must be at most {n} characters")
+    return s, empty
+
+# Length checks that a string has exactly n characters
+# Example: code |> validate.Length(6) onerr return error
+func Length(s string, n int) (string, error)
+    if len(s) != n
+        return s, errors.New("value must be exactly {n} characters")
+    return s, empty
+
+# LengthBetween checks that a string length is between min and max (inclusive)
+# Example: bio |> validate.LengthBetween(10, 500) onerr return error
+func LengthBetween(s string, min int, max int) (string, error)
+    length := len(s)
+    if length < min or length > max
+        return s, errors.New("value must be between {min} and {max} characters")
+    return s, empty
+
+# Matches checks that a string matches a regular expression pattern
+# Example: phone |> validate.Matches(`^\d{3}-\d{4}$`) onerr return error
+func Matches(s string, pattern string) (string, error)
+    matched, err := regexp.MatchString(pattern, s)
+    if err != empty
+        return s, errors.New("invalid pattern: {err}")
+    if not matched
+        return s, errors.New("value does not match required pattern")
+    return s, empty
+
+# Email validates that a string looks like an email address
+# Uses a simple but practical regex pattern
+# Example: email |> validate.Email() onerr return error
+func Email(s string) (string, error)
+    # Simple email pattern: something@something.something
+    pattern := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
+    matched, _ := regexp.MatchString(pattern, s)
+    if not matched
+        return s, errors.New("invalid email address")
+    return s, empty
+
+# URL validates that a string is a valid URL
+# Example: website |> validate.URL() onerr return error
+func URL(s string) (string, error)
+    parsed, err := url.Parse(s)
+    if err != empty
+        return s, errors.New("invalid URL: {err}")
+    if parsed.Scheme == "" or parsed.Host == ""
+        return s, errors.New("URL must have scheme and host")
+    return s, empty
+
+# Alpha checks that a string contains only letters
+# Example: name |> validate.Alpha() onerr return error
+func Alpha(s string) (string, error)
+    for _, r in s
+        if not unicode.IsLetter(r)
+            return s, errors.New("value must contain only letters")
+    return s, empty
+
+# Alphanumeric checks that a string contains only letters and numbers
+# Example: username |> validate.Alphanumeric() onerr return error
+func Alphanumeric(s string) (string, error)
+    for _, r in s
+        if not unicode.IsLetter(r) and not unicode.IsDigit(r)
+            return s, errors.New("value must contain only letters and numbers")
+    return s, empty
+
+# Numeric checks that a string contains only digits
+# Example: zipcode |> validate.Numeric() onerr return error
+func Numeric(s string) (string, error)
+    for _, r in s
+        if not unicode.IsDigit(r)
+            return s, errors.New("value must contain only digits")
+    return s, empty
+
+# NoWhitespace checks that a string contains no whitespace
+# Example: token |> validate.NoWhitespace() onerr return error
+func NoWhitespace(s string) (string, error)
+    for _, r in s
+        if unicode.IsSpace(r)
+            return s, errors.New("value cannot contain whitespace")
+    return s, empty
+
+# StartsWith checks that a string starts with the given prefix
+# Example: id |> validate.StartsWith("usr_") onerr return error
+func StartsWith(s string, prefix string) (string, error)
+    if not strings.HasPrefix(s, prefix)
+        return s, errors.New("value must start with '{prefix}'")
+    return s, empty
+
+# EndsWith checks that a string ends with the given suffix
+# Example: filename |> validate.EndsWith(".json") onerr return error
+func EndsWith(s string, suffix string) (string, error)
+    if not strings.HasSuffix(s, suffix)
+        return s, errors.New("value must end with '{suffix}'")
+    return s, empty
+
+# Contains checks that a string contains the given substring
+# Example: description |> validate.Contains("important") onerr return error
+func Contains(s string, substr string) (string, error)
+    if not strings.Contains(s, substr)
+        return s, errors.New("value must contain '{substr}'")
+    return s, empty
+
+# OneOf checks that a string is one of the allowed values
+# Example: status |> validate.OneOf("pending", "active", "done") onerr return error
+func OneOf(s string, many allowed string) (string, error)
+    for _, a in allowed
+        if s == a
+            return s, empty
+    return s, errors.New("value must be one of the allowed options")
+
+# Number Validation Functions
+
+# Positive checks that a number is greater than zero
+# Example: quantity |> validate.Positive() onerr return error
+func Positive(n int) (int, error)
+    if n <= 0
+        return n, errors.New("value must be positive")
+    return n, empty
+
+# Negative checks that a number is less than zero
+# Example: offset |> validate.Negative() onerr return error
+func Negative(n int) (int, error)
+    if n >= 0
+        return n, errors.New("value must be negative")
+    return n, empty
+
+# NonNegative checks that a number is zero or greater
+# Example: age |> validate.NonNegative() onerr return error
+func NonNegative(n int) (int, error)
+    if n < 0
+        return n, errors.New("value cannot be negative")
+    return n, empty
+
+# NonZero checks that a number is not zero
+# Example: divisor |> validate.NonZero() onerr return error
+func NonZero(n int) (int, error)
+    if n == 0
+        return n, errors.New("value cannot be zero")
+    return n, empty
+
+# InRange checks that a number is between min and max (inclusive)
+# Example: age |> validate.InRange(18, 120) onerr return error
+func InRange(n int, min int, max int) (int, error)
+    if n < min or n > max
+        return n, errors.New("value must be between {min} and {max}")
+    return n, empty
+
+# Min checks that a number is at least min
+# Example: count |> validate.Min(1) onerr return error
+func Min(n int, min int) (int, error)
+    if n < min
+        return n, errors.New("value must be at least {min}")
+    return n, empty
+
+# Max checks that a number is at most max
+# Example: limit |> validate.Max(100) onerr return error
+func Max(n int, max int) (int, error)
+    if n > max
+        return n, errors.New("value must be at most {max}")
+    return n, empty
+
+# Float validation
+
+# PositiveFloat checks that a float is greater than zero
+# Example: price |> validate.PositiveFloat() onerr return error
+func PositiveFloat(n float64) (float64, error)
+    if n <= 0
+        return n, errors.New("value must be positive")
+    return n, empty
+
+# InRangeFloat checks that a float is between min and max (inclusive)
+# Example: rate |> validate.InRangeFloat(0.0, 1.0) onerr return error
+func InRangeFloat(n float64, min float64, max float64) (float64, error)
+    if n < min or n > max
+        return n, errors.New("value must be between {min} and {max}")
+    return n, empty
+
+# Parsing with Validation (combines parsing and validation)
+
+# ParseInt parses a string as an integer with validation
+# Example: count := input |> validate.ParseInt() onerr return error
+func ParseInt(s string) (int, error)
+    n, err := strconv.Atoi(s)
+    if err != empty
+        return 0, errors.New("invalid integer: {s}")
+    return n, empty
+
+# ParsePositiveInt parses and validates a positive integer
+# Example: id := input |> validate.ParsePositiveInt() onerr return error
+func ParsePositiveInt(s string) (int, error)
+    n, err := strconv.Atoi(s)
+    if err != empty
+        return 0, errors.New("invalid integer: {s}")
+    if n <= 0
+        return n, errors.New("value must be positive")
+    return n, empty
+
+# ParseFloat parses a string as a float64 with validation
+# Example: price := input |> validate.ParseFloat() onerr return error
+func ParseFloat(s string) (float64, error)
+    n, err := strconv.ParseFloat(s, 64)
+    if err != empty
+        return 0, errors.New("invalid number: {s}")
+    return n, empty
+
+# ParseBool parses a string as a boolean
+# Accepts: "true", "false", "1", "0", "yes", "no" (case insensitive)
+# Example: enabled := input |> validate.ParseBool() onerr return error
+func ParseBool(s string) (bool, error)
+    lower := strings.ToLower(strings.TrimSpace(s))
+    if lower == "true" or lower == "1" or lower == "yes"
+        return true, empty
+    if lower == "false" or lower == "0" or lower == "no"
+        return false, empty
+    return false, errors.New("invalid boolean: {s}")
+
+# Collection Validation
+
+# NotEmptyList checks that a list has at least one element
+# Example: items |> validate.NotEmptyList() onerr return error
+func NotEmptyList(items list of any) (list of any, error)
+    if len(items) == 0
+        return items, errors.New("list cannot be empty")
+    return items, empty
+
+# ListMinLength checks that a list has at least n elements
+# Example: tags |> validate.ListMinLength(1) onerr return error
+func ListMinLength(items list of any, n int) (list of any, error)
+    if len(items) < n
+        return items, errors.New("list must have at least {n} elements")
+    return items, empty
+
+# ListMaxLength checks that a list has at most n elements
+# Example: recipients |> validate.ListMaxLength(10) onerr return error
+func ListMaxLength(items list of any, n int) (list of any, error)
+    if len(items) > n
+        return items, errors.New("list must have at most {n} elements")
+    return items, empty
+
+# Custom Error Messages
+
+# WithMessage wraps a validation to use a custom error message
+# Example: email |> validate.WithMessage(validate.Email(), "Please enter a valid email")
+# Note: This is a pattern for creating custom error validators
+func WithMessage(value string, err error, message string) (string, error)
+    if err != empty
+        return value, errors.New(message)
+    return value, empty
+
+# Require is an alias for NotEmpty with a custom field name
+# Example: validate.Require(name, "name") onerr return error
+func Require(s string, fieldName string) (string, error)
+    if strings.TrimSpace(s) == ""
+        return "", errors.New("{fieldName} is required")
+    return s, empty

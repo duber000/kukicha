@@ -1,8 +1,12 @@
 # Kukicha Standard Library - HTTP (Server Helpers)
+# Provides helpers for writing HTTP servers with less boilerplate
 
 petiole http
 
 import "net/http"
+import "encoding/json/v2" as json
+import "io"
+import "strconv"
 
 # WithCSRF wraps a handler with Cross-Origin protection
 # Uses Fetch metadata headers (modern browsers)
@@ -19,3 +23,235 @@ func WithCSRF(handler any) any
 func Serve(addr string, handler any) error
     h := handler as http.Handler
     return http.ListenAndServe(addr, h)
+
+# Response Helpers
+# These functions simplify writing HTTP responses
+
+# JSON writes a value as JSON to the response with status 200
+# Sets Content-Type to application/json
+# Example: http.JSON(w, user)
+func JSON(w http.ResponseWriter, value any) error
+    w.Header().Set("Content-Type", "application/json")
+    return json.MarshalWrite(w, value)
+
+# JSONStatus writes a value as JSON with a custom status code
+# Sets Content-Type to application/json
+# Example: http.JSONStatus(w, user, 201)
+func JSONStatus(w http.ResponseWriter, value any, status int) error
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    return json.MarshalWrite(w, value)
+
+# JSONCreated writes a value as JSON with status 201 Created
+# Example: http.JSONCreated(w, newUser)
+func JSONCreated(w http.ResponseWriter, value any) error
+    return JSONStatus(w, value, 201)
+
+# JSONError writes an error response as JSON
+# Creates a {"error": "message"} response body
+# Example: http.JSONError(w, "user not found", 404)
+func JSONError(w http.ResponseWriter, message string, status int) error
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    errorBody := map of string to string{"error": message}
+    return json.MarshalWrite(w, errorBody)
+
+# JSONBadRequest writes a 400 Bad Request error as JSON
+# Example: http.JSONBadRequest(w, "invalid input")
+func JSONBadRequest(w http.ResponseWriter, message string) error
+    return JSONError(w, message, 400)
+
+# JSONUnauthorized writes a 401 Unauthorized error as JSON
+# Example: http.JSONUnauthorized(w, "invalid token")
+func JSONUnauthorized(w http.ResponseWriter, message string) error
+    return JSONError(w, message, 401)
+
+# JSONForbidden writes a 403 Forbidden error as JSON
+# Example: http.JSONForbidden(w, "access denied")
+func JSONForbidden(w http.ResponseWriter, message string) error
+    return JSONError(w, message, 403)
+
+# JSONNotFound writes a 404 Not Found error as JSON
+# Example: http.JSONNotFound(w, "user not found")
+func JSONNotFound(w http.ResponseWriter, message string) error
+    return JSONError(w, message, 404)
+
+# JSONInternalError writes a 500 Internal Server Error as JSON
+# Example: http.JSONInternalError(w, "database error")
+func JSONInternalError(w http.ResponseWriter, message string) error
+    return JSONError(w, message, 500)
+
+# Request Helpers
+# These functions simplify reading HTTP requests
+
+# ReadJSON reads the request body as JSON into the target
+# Target must be a pointer (use "reference of" in Kukicha)
+# Example: http.ReadJSON(r, reference user) onerr return http.JSONBadRequest(w, "invalid json")
+func ReadJSON(r reference http.Request, target any) error
+    return json.UnmarshalRead(r.Body, target)
+
+# ReadJSONAndClose reads the request body as JSON and closes it
+# Target must be a pointer (use "reference of" in Kukicha)
+# Automatically closes the request body after reading
+# Example: http.ReadJSONAndClose(r, reference user) onerr return http.JSONBadRequest(w, "invalid json")
+func ReadJSONAndClose(r reference http.Request, target any) error
+    defer r.Body.Close()
+    return json.UnmarshalRead(r.Body, target)
+
+# GetQueryParam returns a query parameter value, or empty string if not present
+# Example: name := http.GetQueryParam(r, "name")
+func GetQueryParam(r reference http.Request, key string) string
+    return r.URL.Query().Get(key)
+
+# GetQueryParamOr returns a query parameter value, or default if not present
+# Example: page := http.GetQueryParamOr(r, "page", "1")
+func GetQueryParamOr(r reference http.Request, key string, defaultValue string) string
+    value := r.URL.Query().Get(key)
+    if value == ""
+        return defaultValue
+    return value
+
+# GetQueryInt returns a query parameter as an integer
+# Returns an error if not present or not a valid integer
+# Example: page := http.GetQueryInt(r, "page") onerr return http.JSONBadRequest(w, "invalid page")
+func GetQueryInt(r reference http.Request, key string) (int, error)
+    value := r.URL.Query().Get(key)
+    if value == ""
+        return 0, error("query parameter '{key}' is required")
+    n, err := strconv.Atoi(value)
+    if err != empty
+        return 0, error("query parameter '{key}' must be an integer")
+    return n, empty
+
+# GetQueryIntOr returns a query parameter as an integer, or default if not present/invalid
+# Never fails - returns default on any error
+# Example: page := http.GetQueryIntOr(r, "page", 1)
+func GetQueryIntOr(r reference http.Request, key string, defaultValue int) int
+    value := r.URL.Query().Get(key)
+    if value == ""
+        return defaultValue
+    n, err := strconv.Atoi(value)
+    if err != empty
+        return defaultValue
+    return n
+
+# GetQueryBool returns a query parameter as a boolean
+# Accepts: "true", "false", "1", "0" (case insensitive)
+# Returns an error if not present or not a valid boolean
+# Example: verbose := http.GetQueryBool(r, "verbose") onerr return http.JSONBadRequest(w, "invalid verbose flag")
+func GetQueryBool(r reference http.Request, key string) (bool, error)
+    value := r.URL.Query().Get(key)
+    if value == ""
+        return false, error("query parameter '{key}' is required")
+    lower := value
+    if lower == "true" or lower == "1" or lower == "yes"
+        return true, empty
+    if lower == "false" or lower == "0" or lower == "no"
+        return false, empty
+    return false, error("query parameter '{key}' must be a boolean")
+
+# GetQueryBoolOr returns a query parameter as a boolean, or default if not present/invalid
+# Never fails - returns default on any error
+# Example: verbose := http.GetQueryBoolOr(r, "verbose", false)
+func GetQueryBoolOr(r reference http.Request, key string, defaultValue bool) bool
+    value := r.URL.Query().Get(key)
+    if value == ""
+        return defaultValue
+    if value == "true" or value == "1" or value == "yes"
+        return true
+    if value == "false" or value == "0" or value == "no"
+        return false
+    return defaultValue
+
+# GetHeader returns a header value, or empty string if not present
+# Example: token := http.GetHeader(r, "Authorization")
+func GetHeader(r reference http.Request, key string) string
+    return r.Header.Get(key)
+
+# GetHeaderOr returns a header value, or default if not present
+# Example: contentType := http.GetHeaderOr(r, "Content-Type", "application/json")
+func GetHeaderOr(r reference http.Request, key string, defaultValue string) string
+    value := r.Header.Get(key)
+    if value == ""
+        return defaultValue
+    return value
+
+# Response Status Helpers
+
+# NoContent sends a 204 No Content response
+# Example: return http.NoContent(w)
+func NoContent(w http.ResponseWriter)
+    w.WriteHeader(204)
+
+# Redirect sends a redirect response (302 by default)
+# Example: http.Redirect(w, r, "/new-location")
+func Redirect(w http.ResponseWriter, r reference http.Request, url string)
+    http.Redirect(w, r, url, 302)
+
+# RedirectPermanent sends a 301 permanent redirect response
+# Example: http.RedirectPermanent(w, r, "/new-location")
+func RedirectPermanent(w http.ResponseWriter, r reference http.Request, url string)
+    http.Redirect(w, r, url, 301)
+
+# Text writes a plain text response with status 200
+# Sets Content-Type to text/plain
+# Example: http.Text(w, "Hello, World!")
+func Text(w http.ResponseWriter, content string) error
+    w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+    _, err := io.WriteString(w, content)
+    return err
+
+# TextStatus writes a plain text response with a custom status code
+# Example: http.TextStatus(w, "Created", 201)
+func TextStatus(w http.ResponseWriter, content string, status int) error
+    w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+    w.WriteHeader(status)
+    _, err := io.WriteString(w, content)
+    return err
+
+# HTML writes an HTML response with status 200
+# Sets Content-Type to text/html
+# Example: http.HTML(w, "<h1>Hello</h1>")
+func HTML(w http.ResponseWriter, content string) error
+    w.Header().Set("Content-Type", "text/html; charset=utf-8")
+    _, err := io.WriteString(w, content)
+    return err
+
+# Method check helpers
+
+# IsGet returns true if the request method is GET
+# Example: if http.IsGet(r) ...
+func IsGet(r reference http.Request) bool
+    return r.Method == "GET"
+
+# IsPost returns true if the request method is POST
+# Example: if http.IsPost(r) ...
+func IsPost(r reference http.Request) bool
+    return r.Method == "POST"
+
+# IsPut returns true if the request method is PUT
+# Example: if http.IsPut(r) ...
+func IsPut(r reference http.Request) bool
+    return r.Method == "PUT"
+
+# IsDelete returns true if the request method is DELETE
+# Example: if http.IsDelete(r) ...
+func IsDelete(r reference http.Request) bool
+    return r.Method == "DELETE"
+
+# IsPatch returns true if the request method is PATCH
+# Example: if http.IsPatch(r) ...
+func IsPatch(r reference http.Request) bool
+    return r.Method == "PATCH"
+
+# MethodNotAllowed sends a 405 Method Not Allowed response
+# Sets the Allow header with permitted methods
+# Example: http.MethodNotAllowed(w, "GET", "POST")
+func MethodNotAllowed(w http.ResponseWriter, many allowed string)
+    allowHeader := ""
+    for i, method in allowed
+        if i > 0
+            allowHeader = allowHeader + ", "
+        allowHeader = allowHeader + method
+    w.Header().Set("Allow", allowHeader)
+    w.WriteHeader(405)

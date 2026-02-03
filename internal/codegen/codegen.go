@@ -32,27 +32,35 @@ type TypeParameter struct {
 //
 // This design keeps Kukicha's "beginner-friendly" goal: users don't write generic syntax,
 // but the generated Go code is fully type-safe with proper generic constraints.
+// FuncDefaults stores information about a function's default parameter values
+type FuncDefaults struct {
+	ParamNames    []string         // Parameter names in order
+	DefaultValues []ast.Expression // Default values (nil if no default)
+}
+
 type Generator struct {
 	program              *ast.Program
 	output               strings.Builder
 	indent               int
-	placeholderMap       map[string]string // Maps placeholder names to type param names (e.g., "any" -> "T", "any2" -> "K")
-	autoImports          map[string]bool   // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
-	pkgAliases           map[string]string // Maps original package name -> alias when collision detected (e.g., "json" -> "kukijson")
-	isStdlibIter         bool              // True if generating stdlib/iterator or stdlib/slice code (enables generic transpilation)
-	sourceFile           string            // Source file path for detecting stdlib
-	currentFuncName      string            // Current function being generated (for context-aware decisions)
-	processingReturnType bool              // Whether we are currently generating return types
-	tempCounter          int               // Counter for generating unique temporary variable names
+	placeholderMap       map[string]string       // Maps placeholder names to type param names (e.g., "any" -> "T", "any2" -> "K")
+	autoImports          map[string]bool         // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
+	pkgAliases           map[string]string       // Maps original package name -> alias when collision detected (e.g., "json" -> "kukijson")
+	funcDefaults         map[string]*FuncDefaults // Maps function names to their default parameter info
+	isStdlibIter         bool                    // True if generating stdlib/iterator or stdlib/slice code (enables generic transpilation)
+	sourceFile           string                  // Source file path for detecting stdlib
+	currentFuncName      string                  // Current function being generated (for context-aware decisions)
+	processingReturnType bool                    // Whether we are currently generating return types
+	tempCounter          int                     // Counter for generating unique temporary variable names
 }
 
 // New creates a new code generator
 func New(program *ast.Program) *Generator {
 	return &Generator{
-		program:     program,
-		indent:      0,
-		autoImports: make(map[string]bool),
-		pkgAliases:  make(map[string]string),
+		program:      program,
+		indent:       0,
+		autoImports:  make(map[string]bool),
+		pkgAliases:   make(map[string]string),
+		funcDefaults: make(map[string]*FuncDefaults),
 	}
 }
 
@@ -87,6 +95,9 @@ func (g *Generator) Generate() (string, error) {
 
 	// Pre-scan for auto-imports (e.g. net/http for fetch wrappers)
 	g.scanForAutoImports()
+
+	// Pre-scan for function defaults (needed for named arguments and default parameter values)
+	g.scanForFunctionDefaults()
 
 	// Generate imports (including auto-imports like fmt for string interpolation and print builtin)
 	needsFmt := g.needsStringInterpolation() || g.needsPrintBuiltin()
@@ -1742,9 +1753,67 @@ func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 		}
 	}
 
-	args := make([]string, len(expr.Arguments))
-	for i, arg := range expr.Arguments {
-		args[i] = g.exprToString(arg)
+	// If there are no named arguments, use the simple path
+	if len(expr.NamedArguments) == 0 {
+		args := make([]string, len(expr.Arguments))
+		for i, arg := range expr.Arguments {
+			args[i] = g.exprToString(arg)
+		}
+
+		if expr.Variadic {
+			return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", "))
+		}
+		return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
+	}
+
+	// Handle named arguments - reorder based on function parameter order
+	// Look up function defaults to get parameter names
+	var funcDef *FuncDefaults
+	if id, ok := expr.Function.(*ast.Identifier); ok {
+		funcDef = g.funcDefaults[id.Value]
+	}
+
+	if funcDef == nil {
+		// Can't resolve function - emit named arguments in order they appear
+		args := make([]string, 0, len(expr.Arguments)+len(expr.NamedArguments))
+		for _, arg := range expr.Arguments {
+			args = append(args, g.exprToString(arg))
+		}
+		for _, namedArg := range expr.NamedArguments {
+			args = append(args, g.exprToString(namedArg.Value))
+		}
+		if expr.Variadic {
+			return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", "))
+		}
+		return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
+	}
+
+	// Build argument map from named arguments
+	namedArgMap := make(map[string]ast.Expression)
+	for _, namedArg := range expr.NamedArguments {
+		namedArgMap[namedArg.Name.Value] = namedArg.Value
+	}
+
+	// Build final argument list in parameter order
+	args := make([]string, len(funcDef.ParamNames))
+	positionalIdx := 0
+
+	for i, paramName := range funcDef.ParamNames {
+		if positionalIdx < len(expr.Arguments) {
+			// Use positional argument
+			args[i] = g.exprToString(expr.Arguments[positionalIdx])
+			positionalIdx++
+		} else if namedVal, ok := namedArgMap[paramName]; ok {
+			// Use named argument
+			args[i] = g.exprToString(namedVal)
+		} else if funcDef.DefaultValues[i] != nil {
+			// Use default value
+			args[i] = g.exprToString(funcDef.DefaultValues[i])
+		} else {
+			// Missing argument - this should be caught by semantic analysis
+			// For safety, use empty placeholder
+			args[i] = "/* missing argument */"
+		}
 	}
 
 	if expr.Variadic {
@@ -1788,10 +1857,17 @@ func (g *Generator) generateMethodCallExpr(expr *ast.MethodCallExpr) string {
 		}
 	}
 
-	// Method call with explicit parentheses
-	args := make([]string, len(expr.Arguments))
-	for i, arg := range expr.Arguments {
-		args[i] = g.exprToString(arg)
+	// Collect all arguments: positional first, then named (in their declaration order)
+	args := make([]string, 0, len(expr.Arguments)+len(expr.NamedArguments))
+
+	// Add positional arguments
+	for _, arg := range expr.Arguments {
+		args = append(args, g.exprToString(arg))
+	}
+
+	// Add named argument values (in the order they appear)
+	for _, namedArg := range expr.NamedArguments {
+		args = append(args, g.exprToString(namedArg.Value))
 	}
 
 	if expr.Variadic {
@@ -2196,6 +2272,27 @@ func (g *Generator) scanForAutoImports() {
 			if fn.Body != nil {
 				g.scanBlockForAutoImports(fn.Body)
 			}
+		}
+	}
+}
+
+// scanForFunctionDefaults collects function parameter names and default values
+// This information is used when generating function calls with named arguments
+// or when arguments are omitted (relying on default values)
+func (g *Generator) scanForFunctionDefaults() {
+	for _, decl := range g.program.Declarations {
+		if fn, ok := decl.(*ast.FunctionDecl); ok {
+			defaults := &FuncDefaults{
+				ParamNames:    make([]string, len(fn.Parameters)),
+				DefaultValues: make([]ast.Expression, len(fn.Parameters)),
+			}
+
+			for i, param := range fn.Parameters {
+				defaults.ParamNames[i] = param.Name.Value
+				defaults.DefaultValues[i] = param.DefaultValue // may be nil
+			}
+
+			g.funcDefaults[fn.Name.Value] = defaults
 		}
 	}
 }
