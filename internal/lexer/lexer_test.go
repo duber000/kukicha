@@ -439,6 +439,18 @@ func TestPipeContinuation(t *testing.T) {
 			},
 		},
 		{
+			// Leading |> at column 0 (no indentation before the pipe).
+			// isPipeAtStartOfNextLine must start scanning at l.current,
+			// not l.current+1, or the '|' is skipped.
+			name: "leading pipe at column zero",
+			input: "x := y\n|> foo()\n",
+			expected: []TokenType{
+				TOKEN_IDENTIFIER, TOKEN_WALRUS, TOKEN_IDENTIFIER, TOKEN_PIPE,
+				TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_NEWLINE,
+				TOKEN_EOF,
+			},
+		},
+		{
 			// A comment after the trailing |> is transparent; the next
 			// line is still treated as a continuation.
 			name: "comment after pipe",

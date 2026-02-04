@@ -581,10 +581,11 @@ func isLetter(c rune) bool {
 }
 
 // isPipeAtStartOfNextLine checks if the next non-whitespace characters
-// (ignoring the current newline) form a pipe operator "|>".
+// on the upcoming line form a pipe operator "|>".  Called from the '\n'
+// (or '\r') case after advance() has already consumed the newline, so
+// l.current points to the first character of the next line.
 func (l *Lexer) isPipeAtStartOfNextLine() bool {
-	// Start checking from the character after the current newline
-	idx := l.current + 1 // l.current is the newline we are currently processing
+	idx := l.current
 
 	for idx < len(l.source) {
 		c := l.source[idx]

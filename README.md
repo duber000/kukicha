@@ -62,7 +62,7 @@ failing := pods
     |> slice.Map(formatStatus)
 
 if len(failing) > 0
-    slack.Alert(channel, "Pods failing:\n" + strings.Join(failing, "\n"))
+    slack.Alert(slackChannel, "Pods failing:\n" + strings.Join(failing, "\n"))
 ```
 
 Kukicha compiles to a **single static binary**. No Python dependencies. No Node.js runtime. Just copy and run.
