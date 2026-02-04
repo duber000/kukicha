@@ -777,7 +777,21 @@ func (a *Analyzer) analyzeBinaryExpr(expr *ast.BinaryExpr) *TypeInfo {
 	rightType := a.analyzeExpression(expr.Right)
 
 	switch expr.Operator {
-	case "+", "-", "*", "/", "%":
+	case "+":
+		// String concatenation
+		if leftType.Kind == TypeKindString && rightType.Kind == TypeKindString {
+			return &TypeInfo{Kind: TypeKindString}
+		}
+		// Numeric addition
+		if !isNumericType(leftType) || !isNumericType(rightType) {
+			a.error(expr.Pos(), fmt.Sprintf("cannot apply %s to %s and %s", expr.Operator, leftType, rightType))
+		}
+		if leftType.Kind == TypeKindFloat || rightType.Kind == TypeKindFloat {
+			return &TypeInfo{Kind: TypeKindFloat}
+		}
+		return &TypeInfo{Kind: TypeKindInt}
+
+	case "-", "*", "/", "%":
 		// Arithmetic operators
 		if !isNumericType(leftType) || !isNumericType(rightType) {
 			a.error(expr.Pos(), fmt.Sprintf("cannot apply %s to %s and %s", expr.Operator, leftType, rightType))

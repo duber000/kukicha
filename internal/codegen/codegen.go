@@ -1528,6 +1528,10 @@ func (g *Generator) generateBinaryExpr(expr *ast.BinaryExpr) string {
 		op = "&&"
 	case "or":
 		op = "||"
+	case "equals":
+		op = "=="
+	case "not equals":
+		op = "!="
 	}
 
 	return fmt.Sprintf("(%s %s %s)", left, op, right)
@@ -1753,17 +1757,26 @@ func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 		}
 	}
 
-	// If there are no named arguments, use the simple path
+	// If there are no named arguments and no defaults need filling, use the simple path
 	if len(expr.NamedArguments) == 0 {
-		args := make([]string, len(expr.Arguments))
-		for i, arg := range expr.Arguments {
-			args[i] = g.exprToString(arg)
+		needsDefaults := false
+		if id, ok := expr.Function.(*ast.Identifier); ok {
+			if fd := g.funcDefaults[id.Value]; fd != nil && len(expr.Arguments) < len(fd.ParamNames) {
+				needsDefaults = true
+			}
 		}
 
-		if expr.Variadic {
-			return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", "))
+		if !needsDefaults {
+			args := make([]string, len(expr.Arguments))
+			for i, arg := range expr.Arguments {
+				args[i] = g.exprToString(arg)
+			}
+
+			if expr.Variadic {
+				return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", "))
+			}
+			return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 		}
-		return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 	}
 
 	// Handle named arguments - reorder based on function parameter order

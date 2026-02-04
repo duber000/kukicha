@@ -1282,8 +1282,18 @@ func (p *Parser) parseBitwiseOrExpr() ast.Expression {
 func (p *Parser) parseComparisonExpr() ast.Expression {
 	left := p.parseAdditiveExpr()
 
-	for p.match(lexer.TOKEN_DOUBLE_EQUALS, lexer.TOKEN_NOT_EQUALS, lexer.TOKEN_LT, lexer.TOKEN_GT, lexer.TOKEN_LTE, lexer.TOKEN_GTE) {
-		operator := p.previousToken()
+	for {
+		var operator lexer.Token
+		if p.match(lexer.TOKEN_DOUBLE_EQUALS, lexer.TOKEN_NOT_EQUALS, lexer.TOKEN_LT, lexer.TOKEN_GT, lexer.TOKEN_LTE, lexer.TOKEN_GTE, lexer.TOKEN_EQUALS) {
+			operator = p.previousToken()
+		} else if p.check(lexer.TOKEN_NOT) && p.peekNextToken().Type == lexer.TOKEN_EQUALS {
+			operator = p.advance() // consume NOT
+			operator.Lexeme = "not equals"
+			p.advance() // consume EQUALS
+		} else {
+			break
+		}
+
 		right := p.parseAdditiveExpr()
 		left = &ast.BinaryExpr{
 			Token:    operator,
