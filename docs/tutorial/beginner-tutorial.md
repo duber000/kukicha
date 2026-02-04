@@ -478,33 +478,20 @@ lower := text |> string.TrimSpace() |> string.ToLower()
 
 It's called a "pipe" because it acts like a pipe at a construction site - data goes in one end and comes out the other end, transformed!
 
-**💡 Shorthand Pro-Tip:** If you are piping into a method that belongs to the data itself, you can just start with a dot!
-```kukicha
-# Instead of this:
-lower := text |> string.TrimSpace() |> string.ToLower()
-
-# If 'result' was an object with its own .Display() method:
-message := result |> .Display()  # Much cleaner!
-```
-
-**Advanced tip:** By default, the piped value becomes the first argument. If you need it elsewhere, use `_` as a placeholder:
-```kukicha
-# Put "text" as the second argument instead of first
-text |> process(config, _)  # Becomes: process(config, text)
-```
-
 ### Trimming Whitespace
 
-Remove extra spaces from the beginning and end of strings:
+Remove extra spaces from the beginning and end of strings. This is a perfect job for the pipe we just learned — trim the whitespace, then normalize the case, all in one line:
 
 ```kukicha
 import "stdlib/string"
 
 func main()
-    messy := "   hello   "
-    clean := string.TrimSpace(messy)
+    messy := "  HELLO  "
 
-    print("Messy: [{messy}]")   # Prints: Messy: [   hello   ]
+    # Pipe: trim whitespace, then lowercase — no temp variable needed
+    clean := messy |> string.TrimSpace() |> string.ToLower()
+
+    print("Messy: [{messy}]")   # Prints: Messy: [  HELLO  ]
     print("Clean: [{clean}]")   # Prints: Clean: [hello]
 ```
 
@@ -516,14 +503,14 @@ func main()
 import "stdlib/string"
 
 func main()
-    url := "https://example.com"
+    url := "https://example.com/"
     filename := "document.pdf"
 
-    # Remove the "https://" prefix
-    domain := string.TrimPrefix(url, "https://")
+    # URLs often have both a prefix and trailing slash — pipe strips both
+    domain := url |> string.TrimPrefix("https://") |> string.TrimSuffix("/")
     print(domain)  # Prints: example.com
 
-    # Remove the ".pdf" suffix
+    # Single operation — no pipe needed
     name := string.TrimSuffix(filename, ".pdf")
     print(name)  # Prints: document
 ```
@@ -646,19 +633,19 @@ func main()
 
 ### Replacing Text
 
-Replace parts of a string:
+Replace parts of a string. Need to make multiple replacements? Pipe them:
 
 ```kukicha
 import "stdlib/string"
 
 func main()
-    text := "I love cats. Cats are great!"
+    text := "I love cats and dogs"
 
-    # Replace all occurrences of "cats" with "dogs"
-    newText := string.ReplaceAll(text, "cats", "dogs")
+    # Chain two replacements — each one feeds into the next
+    newText := text |> string.ReplaceAll("cats", "kittens") |> string.ReplaceAll("dogs", "puppies")
 
     print(newText)
-    # Prints: I love dogs. dogs are great!
+    # Prints: I love kittens and puppies
 ```
 
 ---

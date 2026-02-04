@@ -205,6 +205,16 @@ func createTodo(response http.ResponseWriter, request reference http.Request)
 
 When we write `reference of todo`, we're giving the JSON decoder a way to **fill in** our todo variable. Without it, the decoder would only have a copy and couldn't modify our actual todo.
 
+> **💡 Tip: The `_` placeholder.** By default, the piped value becomes the first argument. Use `_` to place it elsewhere:
+> ```kukicha
+> # Default: piped value is the first argument
+> text |> string.ToLower()                      # → string.ToLower(text)
+>
+> # With _: piped value goes where _ is
+> data |> json.MarshalWrite(response, _)        # → json.MarshalWrite(response, data)
+> ```
+> You'll see this pattern throughout this tutorial — it keeps data flowing left-to-right even when the API expects the value in a later position.
+
 ---
 
 ## Step 5: Building the Todo Storage

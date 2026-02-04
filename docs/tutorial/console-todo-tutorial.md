@@ -127,6 +127,16 @@ func Display on todo Todo string
 
 The method checks if the todo is completed. If so, it shows a checkmark. Otherwise, it shows empty brackets.
 
+**💡 Tip:** When piping into a method that belongs to the value itself, use the dot shorthand:
+```kukicha
+# Calling directly:
+message := todo.Display()
+
+# Same thing, using pipe:
+message := todo |> .Display()
+```
+This keeps the left-to-right data flow when chaining — and makes it clear the method belongs to the piped value, not an imported package.
+
 ### A Method That Changes Things
 
 What if we want to mark a todo as done? We need a method that can **modify** the todo. For that, we use `reference`:
@@ -331,7 +341,7 @@ func Save on list TodoList, filename string error
     return empty
 ```
 
-**Pipe Operator:** Notice the clean pipeline: `lines |> string.Join("\n") |> files.WriteString(filename)`. The data flows left-to-right: join the lines, then write to file. Use the dot shorthand (`.Display()`) when calling methods directly on the value itself.
+**Pipe Operator:** Notice the clean pipeline: `lines |> string.Join("\n") |> files.WriteString(filename)`. The data flows left-to-right: join the lines, then write to file.
 
 ```kukicha
 # Load reads todos from a file
