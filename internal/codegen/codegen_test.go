@@ -860,3 +860,45 @@ func main()
 		})
 	}
 }
+
+func TestMultiLinePipeCodegen(t *testing.T) {
+	// Multi-line pipe must produce the same nested call as single-line.
+	singleLine := `func Test() string
+    return "hello" |> ToUpper() |> TrimSpace()
+`
+	multiLine := `func Test() string
+    return "hello" |>
+        ToUpper() |>
+        TrimSpace()
+`
+
+	generate := func(src string) string {
+		t.Helper()
+		p, err := parser.New(src, "test.kuki")
+		if err != nil {
+			t.Fatalf("lexer error: %v", err)
+		}
+		program, parseErrors := p.Parse()
+		if len(parseErrors) > 0 {
+			t.Fatalf("parse errors: %v", parseErrors)
+		}
+		gen := New(program)
+		output, err := gen.Generate()
+		if err != nil {
+			t.Fatalf("codegen error: %v", err)
+		}
+		return output
+	}
+
+	singleOut := generate(singleLine)
+	multiOut := generate(multiLine)
+
+	// Both must contain the fully-nested call.
+	want := "TrimSpace(ToUpper(\"hello\"))"
+	if !strings.Contains(singleOut, want) {
+		t.Errorf("single-line output missing %q:\n%s", want, singleOut)
+	}
+	if !strings.Contains(multiOut, want) {
+		t.Errorf("multi-line output missing %q:\n%s", want, multiOut)
+	}
+}

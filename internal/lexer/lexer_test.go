@@ -407,6 +407,74 @@ func Display on todo Todo
 	}
 }
 
+func TestPipeContinuation(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []TokenType
+	}{
+		{
+			// Trailing |> suppresses NEWLINE; continuation-line indentation
+			// does not produce INDENT/DEDENT.
+			name: "single continuation",
+			input: "func Test() string\n    return x |>\n        ToUpper()\n",
+			expected: []TokenType{
+				TOKEN_FUNC, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_IDENTIFIER, TOKEN_NEWLINE,
+				TOKEN_INDENT, TOKEN_RETURN, TOKEN_IDENTIFIER, TOKEN_PIPE,
+				TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_NEWLINE,
+				TOKEN_DEDENT, TOKEN_EOF,
+			},
+		},
+		{
+			// Two trailing |> in a row; only one INDENT/DEDENT pair at the
+			// end when the chain returns to the base indentation.
+			name: "chained continuation",
+			input: "func Test() string\n    return x |>\n        f() |>\n        g()\n",
+			expected: []TokenType{
+				TOKEN_FUNC, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_IDENTIFIER, TOKEN_NEWLINE,
+				TOKEN_INDENT, TOKEN_RETURN, TOKEN_IDENTIFIER, TOKEN_PIPE,
+				TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_PIPE,
+				TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_NEWLINE,
+				TOKEN_DEDENT, TOKEN_EOF,
+			},
+		},
+		{
+			// A comment after the trailing |> is transparent; the next
+			// line is still treated as a continuation.
+			name: "comment after pipe",
+			input: "func Test() string\n    return x |> # comment\n        ToUpper()\n",
+			expected: []TokenType{
+				TOKEN_FUNC, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_IDENTIFIER, TOKEN_NEWLINE,
+				TOKEN_INDENT, TOKEN_RETURN, TOKEN_IDENTIFIER, TOKEN_PIPE, TOKEN_COMMENT,
+				TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_NEWLINE,
+				TOKEN_DEDENT, TOKEN_EOF,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lexer := NewLexer(tt.input, "test.kuki")
+			tokens, err := lexer.ScanTokens()
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+			if len(tokens) != len(tt.expected) {
+				types := make([]string, len(tokens))
+				for i, tok := range tokens {
+					types[i] = tok.Type.String()
+				}
+				t.Fatalf("Expected %d tokens, got %d\nGot: %v", len(tt.expected), len(tokens), types)
+			}
+			for i, expected := range tt.expected {
+				if tokens[i].Type != expected {
+					t.Errorf("Token %d: expected %s, got %s", i, expected, tokens[i].Type)
+				}
+			}
+		})
+	}
+}
+
 func TestErrorCases(t *testing.T) {
 	tests := []struct {
 		name  string

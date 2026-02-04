@@ -82,10 +82,7 @@ import "net/http"
 import "encoding/json/v2"  # Go 1.25+ jsonv2 for 2-10x faster JSON
 
 func HandleUser(w http.ResponseWriter, r reference http.Request)
-    user := parseUser(r.Body) onerr
-        http.Error(w, "invalid request", 400)
-        return
-
+    user := parseUser(r.Body) onerr return
     user |> json.MarshalWrite(w, _)
 ```
 
@@ -158,9 +155,9 @@ type Todo struct {
 }
 
 func (todo Todo) Display() string {
-    status := "[x]"
-    if !todo.Done {
-        status = "[ ]"
+    status := "[ ]"
+    if todo.Done {
+        status = "[x]"
     }
     return fmt.Sprintf("%s %s", status, todo.Title)
 }

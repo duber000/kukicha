@@ -339,6 +339,45 @@ func TestParsePipeExpression(t *testing.T) {
 	}
 }
 
+func TestParsePipeExpressionMultiLine(t *testing.T) {
+	input := `func Test() string
+    return "hello" |>
+        ToUpper() |>
+        TrimSpace()
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	retStmt := fn.Body.Statements[0].(*ast.ReturnStmt)
+
+	// The outer pipe: (_ |> TrimSpace())
+	outerPipe, ok := retStmt.Values[0].(*ast.PipeExpr)
+	if !ok {
+		t.Fatalf("expected outer PipeExpr, got %T", retStmt.Values[0])
+	}
+
+	// The inner pipe: ("hello" |> ToUpper())
+	innerPipe, ok := outerPipe.Left.(*ast.PipeExpr)
+	if !ok {
+		t.Fatalf("expected inner PipeExpr on Left, got %T", outerPipe.Left)
+	}
+
+	if innerPipe.Left == nil || innerPipe.Right == nil {
+		t.Error("inner pipe has nil Left or Right")
+	}
+	if outerPipe.Right == nil {
+		t.Error("outer pipe has nil Right")
+	}
+}
+
 func TestParseOnErrStatement(t *testing.T) {
 	input := `func Test()
     val := ReadFile("test.txt") onerr 0

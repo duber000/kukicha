@@ -652,13 +652,13 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 	case *ast.PipeExpr:
 		return a.analyzePipeExpr(e)
 	case *ast.CallExpr:
-		types := a.analyzeCallExpr(e)
+		types := a.analyzeCallExpr(e, nil)
 		if len(types) > 0 {
 			return types[0]
 		}
 		return &TypeInfo{Kind: TypeKindUnknown}
 	case *ast.MethodCallExpr:
-		types := a.analyzeMethodCallExpr(e)
+		types := a.analyzeMethodCallExpr(e, nil)
 		if len(types) > 0 {
 			return types[0]
 		}
@@ -696,9 +696,9 @@ func (a *Analyzer) analyzeExpressionMulti(expr ast.Expression) []*TypeInfo {
 
 	switch e := expr.(type) {
 	case *ast.CallExpr:
-		return a.analyzeCallExpr(e)
+		return a.analyzeCallExpr(e, nil)
 	case *ast.MethodCallExpr:
-		return a.analyzeMethodCallExpr(e)
+		return a.analyzeMethodCallExpr(e, nil)
 	default:
 		return []*TypeInfo{a.analyzeExpression(expr)}
 	}
@@ -841,9 +841,27 @@ func (a *Analyzer) analyzeUnaryExpr(expr *ast.UnaryExpr) *TypeInfo {
 }
 
 func (a *Analyzer) analyzePipeExpr(expr *ast.PipeExpr) *TypeInfo {
-	// Left side is piped as first argument to right side (which must be a call)
-	a.analyzeExpression(expr.Left)
-	return a.analyzeExpression(expr.Right)
+	// Left side is piped as first argument to right side
+	leftType := a.analyzeExpression(expr.Left)
+
+	// Pass left type as piped argument to right side
+	switch right := expr.Right.(type) {
+	case *ast.CallExpr:
+		types := a.analyzeCallExpr(right, leftType)
+		if len(types) > 0 {
+			return types[0]
+		}
+		return &TypeInfo{Kind: TypeKindUnknown}
+	case *ast.MethodCallExpr:
+		types := a.analyzeMethodCallExpr(right, leftType)
+		if len(types) > 0 {
+			return types[0]
+		}
+		return &TypeInfo{Kind: TypeKindUnknown}
+	default:
+		// Fallback for other expressions (e.g. valid chains)
+		return a.analyzeExpression(expr.Right)
+	}
 }
 
 // analyzeOnErrClause analyzes the onerr clause on a statement
@@ -853,7 +871,7 @@ func (a *Analyzer) analyzeOnErrClause(clause *ast.OnErrClause) {
 	}
 }
 
-func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) []*TypeInfo {
+func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*TypeInfo {
 	funcType := a.analyzeExpression(expr.Function)
 
 	// Analyze named arguments (check for duplicates)
@@ -879,7 +897,11 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) []*TypeInfo {
 
 	// If it's a known function, validate arguments
 	if funcType.Kind == TypeKindFunction {
+		// Validate argument count
 		totalProvidedArgs := len(expr.Arguments) + len(expr.NamedArguments)
+		if pipedArg != nil {
+			totalProvidedArgs++
+		}
 
 		// Calculate required arguments (parameters without defaults)
 		requiredParams := len(funcType.Params)
@@ -887,7 +909,6 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) []*TypeInfo {
 			requiredParams = len(funcType.Params) - funcType.DefaultCount
 		}
 
-		// Validate argument count
 		if funcType.Variadic {
 			// Variadic: must have at least (required params - 1) arguments
 			minArgs := requiredParams - 1
@@ -907,10 +928,17 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) []*TypeInfo {
 			}
 		}
 
-		// Validate positional argument types
-		for i, arg := range expr.Arguments {
-			argType := a.analyzeExpression(arg)
+		// Collect all provided argument types in order
+		var providedArgTypes []*TypeInfo
+		if pipedArg != nil {
+			providedArgTypes = append(providedArgTypes, pipedArg)
+		}
+		for _, arg := range expr.Arguments {
+			providedArgTypes = append(providedArgTypes, a.analyzeExpression(arg))
+		}
 
+		// Validate positional argument types
+		for i, argType := range providedArgTypes {
 			// For variadic, all args beyond params-1 match the last param type
 			paramIndex := i
 			if funcType.Variadic && i >= len(funcType.Params)-1 {
@@ -934,7 +962,7 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr) []*TypeInfo {
 	return []*TypeInfo{{Kind: TypeKindUnknown}}
 }
 
-func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr) []*TypeInfo {
+func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *TypeInfo) []*TypeInfo {
 	// Analyze object
 	a.analyzeExpression(expr.Object)
 
@@ -947,6 +975,13 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr) []*TypeInfo {
 	for _, arg := range expr.Arguments {
 		a.analyzeExpression(arg)
 	}
+
+	// Handle pipedArg for method calls too?
+	// Currently method analysis is mostly "Unknown", but we should at least not crash/error on count if we implemented it.
+	// Since we return Unknown anyway, ignoring pipedArg here is safe for now,
+	// UNLESS we add argument validation logic for methods later.
+	// But wait, the previous code didn't validate method arguments at all (loop just calls analyzeExpression).
+	// So just updating signature is enough.
 
 	// For now, return unknown - full method resolution requires more complex type system
 	return []*TypeInfo{{Kind: TypeKindUnknown}}

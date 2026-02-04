@@ -489,9 +489,9 @@ func (p *Parser) parseCallArguments() ([]ast.Expression, []*ast.NamedArgument, b
 		// We need to look ahead to see if this is "name: value" syntax
 		if p.check(lexer.TOKEN_IDENTIFIER) && p.peekNextToken().Type == lexer.TOKEN_COLON {
 			// Named argument
-			nameToken := p.advance()                  // consume identifier
-			p.advance()                               // consume colon
-			value := p.parseExpression()              // parse value
+			nameToken := p.advance()     // consume identifier
+			p.advance()                  // consume colon
+			value := p.parseExpression() // parse value
 			namedArgs = append(namedArgs, &ast.NamedArgument{
 				Token: nameToken,
 				Name:  &ast.Identifier{Token: nameToken, Value: nameToken.Lexeme},
@@ -523,13 +523,13 @@ func (p *Parser) parseCallArguments() ([]ast.Expression, []*ast.NamedArgument, b
 // ARCHITECTURE NOTE: This is where Kukicha's beginner-friendly type syntax
 // is parsed. The English-like syntax maps to Go types:
 //
-//   Kukicha                   Go
-//   -------                   --
-//   list of string            []string
-//   map of string to int      map[string]int
-//   reference User            *User
-//   channel of int            chan int
-//   func(int) bool            func(int) bool
+//	Kukicha                   Go
+//	-------                   --
+//	list of string            []string
+//	map of string to int      map[string]int
+//	reference User            *User
+//	channel of int            chan int
+//	func(int) bool            func(int) bool
 //
 // Keywords `list`, `map`, `channel` are context-sensitive: they're only
 // treated as type keywords when followed by `of`. This allows using them
@@ -1447,6 +1447,9 @@ func (p *Parser) parsePostfixExpr() ast.Expression {
 								Value: fieldValue,
 							})
 							if p.match(lexer.TOKEN_COMMA) {
+								if p.check(lexer.TOKEN_RBRACE) {
+									break
+								}
 								continue
 							}
 							break
@@ -1708,6 +1711,9 @@ func (p *Parser) parseIdentifierOrStructLiteral() ast.Expression {
 				})
 
 				if p.match(lexer.TOKEN_COMMA) {
+					if p.check(lexer.TOKEN_RBRACE) {
+						break
+					}
 					continue
 				}
 				break
@@ -1821,6 +1827,9 @@ func (p *Parser) parseListLiteral() *ast.ListLiteralExpr {
 			if !p.match(lexer.TOKEN_COMMA) {
 				break
 			}
+			if p.check(lexer.TOKEN_RBRACKET) {
+				break
+			}
 		}
 	}
 
@@ -1845,6 +1854,9 @@ func (p *Parser) parseTypedListLiteral() *ast.ListLiteralExpr {
 		for {
 			elements = append(elements, p.parseExpression())
 			if !p.match(lexer.TOKEN_COMMA) {
+				break
+			}
+			if p.check(lexer.TOKEN_RBRACE) {
 				break
 			}
 		}

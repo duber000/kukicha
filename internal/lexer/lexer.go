@@ -33,6 +33,14 @@ type Lexer struct {
 	atLineStart        bool  // Whether we're at the start of a line
 	indentationHandled bool  // Whether indentation has been handled for the current line
 	errors             []error
+
+	// Pipe continuation support: a trailing |> at end of line suppresses the
+	// NEWLINE token and causes the next line's indentation to be consumed
+	// without emitting INDENT/DEDENT, so the pipe RHS is parsed as part of
+	// the same expression regardless of how it is indented.
+	lastTokenType    TokenType // last emitted token type (TOKEN_COMMENT excluded)
+	continuationLine bool      // true when the next line is a |> continuation
+	braceDepth       int       // current nesting level of (), [], {}
 }
 
 // NewLexer creates a new lexer for the given source code
@@ -45,6 +53,7 @@ func NewLexer(source string, filename string) *Lexer {
 		indentStack:        []int{0},
 		atLineStart:        true,
 		indentationHandled: false,
+		braceDepth:         0,
 	}
 }
 
@@ -72,6 +81,21 @@ func (l *Lexer) ScanTokens() ([]Token, error) {
 
 // scanToken scans a single token
 func (l *Lexer) scanToken() {
+	// Pipe continuation: the previous line ended with |> so this line's
+	// leading whitespace is consumed without emitting INDENT/DEDENT.  The
+	// indent stack is left untouched; when the pipe chain ends and a normal
+	// NEWLINE is emitted the next line's indentation is compared against the
+	// unchanged stack and DEDENT tokens are emitted as usual.
+	if l.atLineStart && l.continuationLine && !l.indentationHandled {
+		l.continuationLine = false
+		for !l.isAtEnd() && (l.peek() == ' ' || l.peek() == '\t') {
+			l.advance()
+		}
+		l.start = l.current // move past consumed whitespace so it is not included in the next token
+		l.indentationHandled = true
+		// Fall through — the next token on this line is scanned normally.
+	}
+
 	// Handle indentation at line start
 	if l.atLineStart && !l.indentationHandled {
 		c := l.peek()
@@ -107,7 +131,15 @@ func (l *Lexer) scanToken() {
 			l.advance()
 		}
 	case '\n':
-		l.addToken(TOKEN_NEWLINE)
+		// Implicit continuation if:
+		// 1. We are inside braces (braceDepth > 0)
+		// 2. The *previous* token was a pipe
+		// 3. The *next* token (on the new line) is a pipe
+		if l.braceDepth > 0 || l.lastTokenType == TOKEN_PIPE || l.isPipeAtStartOfNextLine() {
+			l.continuationLine = true
+		} else {
+			l.addToken(TOKEN_NEWLINE)
+		}
 		l.line++
 		l.column = 0
 		l.atLineStart = true
@@ -116,7 +148,11 @@ func (l *Lexer) scanToken() {
 		if l.peek() == '\n' {
 			l.advance()
 		}
-		l.addToken(TOKEN_NEWLINE)
+		if l.braceDepth > 0 || l.lastTokenType == TOKEN_PIPE || l.isPipeAtStartOfNextLine() {
+			l.continuationLine = true
+		} else {
+			l.addToken(TOKEN_NEWLINE)
+		}
 		l.line++
 		l.column = 0
 		l.atLineStart = true
@@ -130,16 +166,28 @@ func (l *Lexer) scanToken() {
 	case '\'':
 		l.scanRune()
 	case '(':
+		l.braceDepth++
 		l.addToken(TOKEN_LPAREN)
 	case ')':
+		if l.braceDepth > 0 {
+			l.braceDepth--
+		}
 		l.addToken(TOKEN_RPAREN)
 	case '[':
+		l.braceDepth++
 		l.addToken(TOKEN_LBRACKET)
 	case ']':
+		if l.braceDepth > 0 {
+			l.braceDepth--
+		}
 		l.addToken(TOKEN_RBRACKET)
 	case '{':
+		l.braceDepth++
 		l.addToken(TOKEN_LBRACE)
 	case '}':
+		if l.braceDepth > 0 {
+			l.braceDepth--
+		}
 		l.addToken(TOKEN_RBRACE)
 	case ',':
 		l.addToken(TOKEN_COMMA)
@@ -488,6 +536,12 @@ func (l *Lexer) addTokenWithLexeme(tokenType TokenType, lexeme string) {
 		File:   l.file,
 	}
 	l.tokens = append(l.tokens, token)
+	// Track last emitted type for pipe-continuation logic.  Comments are
+	// excluded so that a comment on the same line as a trailing |> does not
+	// break the continuation (the parser already skips TOKEN_COMMENT).
+	if tokenType != TOKEN_COMMENT {
+		l.lastTokenType = tokenType
+	}
 }
 
 func (l *Lexer) error(message string) {
@@ -524,4 +578,25 @@ func IsKeyword(s string) bool {
 // Helper to check if a rune is a letter (for identifiers)
 func isLetter(c rune) bool {
 	return unicode.IsLetter(c) || c == '_'
+}
+
+// isPipeAtStartOfNextLine checks if the next non-whitespace characters
+// (ignoring the current newline) form a pipe operator "|>".
+func (l *Lexer) isPipeAtStartOfNextLine() bool {
+	// Start checking from the character after the current newline
+	idx := l.current + 1 // l.current is the newline we are currently processing
+
+	for idx < len(l.source) {
+		c := l.source[idx]
+		if c == ' ' || c == '\t' {
+			idx++
+			continue
+		}
+		// Found non-whitespace
+		if c == '|' && idx+1 < len(l.source) && l.source[idx+1] == '>' {
+			return true
+		}
+		return false
+	}
+	return false
 }
