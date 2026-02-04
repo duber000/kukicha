@@ -216,8 +216,10 @@ func runCommand(filename string) {
 			fmt.Fprintf(os.Stderr, "Error updating go.mod: %v\n", modErr)
 			os.Exit(1)
 		}
-		// Write temp file in project dir so go.mod resolves correctly
-		tmpFile = filepath.Join(projectDir, ".kukicha_temp.go")
+		// Write temp file into .kukicha/ (already created by ensureStdlib)
+		// so go.mod resolves correctly. Must not use a dotfile name at the
+		// top of projectDir: the go tool ignores files starting with ".".
+		tmpFile = filepath.Join(projectDir, ".kukicha", "temp.go")
 	} else {
 		tmpFile = filepath.Join(os.TempDir(), "kukicha_temp.go")
 	}
