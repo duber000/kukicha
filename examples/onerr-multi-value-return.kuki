@@ -1,0 +1,27 @@
+# Example demonstrating the fix for "onerr with piped assignments" codegen issue
+# Previously this would fail with: "assignment mismatch: 3 variables but ... returns 2 values"
+# Now it works correctly: x, err := func()
+
+# Function that returns multiple values (value + error)
+func Parse(s string) (int, error)
+    if s equals "42"
+        return 42, empty
+    return 0, error "invalid number"
+
+func Fetch(url string) (string, error)
+    if url equals "ok"
+        return "data", empty
+    return "", error "fetch failed"
+
+func main()
+    # Test 1: Direct call with onerr panic
+    result1, err1 := Parse("42") onerr panic "parse failed"
+    print("Test 1 passed:", result1)
+
+    # Test 2: Piped call with onerr panic
+    result2, err2 := "42" |> Parse() onerr panic "parse piped failed"
+    print("Test 2 passed:", result2)
+
+    # Test 3: Piped call with onerr default value
+    result3, err3 := "invalid" |> Parse() onerr 0
+    print("Test 3 with default:", result3)

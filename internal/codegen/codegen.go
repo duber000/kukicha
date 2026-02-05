@@ -964,13 +964,46 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 
 	// Check for discard case first - we can skip error handling entirely
 	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
-		// For discard, just ignore the error by using _
+		// For discard with multi-value returns (where last value is error), just use the names as-is
+		// (the error variable is already one of the names, and we don't need separate error handling)
+		if len(names) > 1 && len(values) == 1 {
+			var lhsParts []string
+			for _, name := range names {
+				lhsParts = append(lhsParts, name.Value)
+			}
+			g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), valueExpr))
+			return
+		}
+
+		// For single-value assignments, ignore the error by using _
 		var lhsParts []string
 		for _, name := range names {
 			lhsParts = append(lhsParts, name.Value)
 		}
 		lhsParts = append(lhsParts, "_")
 		g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), valueExpr))
+		return
+	}
+
+	// Special case: if we have multiple names (e.g., x, err) and a single value expression,
+	// the single expression likely returns multiple values including an error.
+	// In this case, use the names as-is without adding an extra error variable.
+	// This handles cases like: x, err := Parse() onerr handler
+	// where Parse() returns (int, error) and names are [x, err]
+	if len(names) > 1 && len(values) == 1 {
+		var lhsParts []string
+		for _, name := range names {
+			lhsParts = append(lhsParts, name.Value)
+		}
+		g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), valueExpr))
+
+		// The last name is assumed to be the error variable
+		errVar := names[len(names)-1].Value
+		g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
+		g.indent++
+		g.generateOnErrHandler(names[:len(names)-1], clause.Handler, errVar)
+		g.indent--
+		g.writeLine("}")
 		return
 	}
 
@@ -1127,6 +1160,18 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 
 	// Check for discard case
 	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
+		// For discard with multi-value returns (where last value is error), just use the targets as-is
+		// (the error variable is already one of the targets, and we don't need separate error handling)
+		if len(stmt.Targets) > 1 && len(stmt.Values) == 1 {
+			var lhsParts []string
+			for _, t := range stmt.Targets {
+				lhsParts = append(lhsParts, g.exprToString(t))
+			}
+			g.writeLine(fmt.Sprintf("%s = %s", strings.Join(lhsParts, ", "), valueExpr))
+			return
+		}
+
+		// For single-value assignments, ignore the error by using _
 		var lhsParts []string
 		for _, t := range stmt.Targets {
 			lhsParts = append(lhsParts, g.exprToString(t))
@@ -1136,7 +1181,31 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 		return
 	}
 
-	// Generate unique error variable name
+	// Special case: if we have multiple targets (e.g., x, err) and a single value expression,
+	// the single expression likely returns multiple values including an error.
+	// In this case, use the targets as-is without adding an extra error variable.
+	// This handles cases like: x, err = data |> Parse() onerr handler
+	// where Parse() returns (int, error) and targets are [x, err]
+	if len(stmt.Targets) > 1 && len(stmt.Values) == 1 {
+		var lhsParts []string
+		for _, t := range stmt.Targets {
+			lhsParts = append(lhsParts, g.exprToString(t))
+		}
+		g.writeLine(fmt.Sprintf("%s = %s", strings.Join(lhsParts, ", "), valueExpr))
+
+		// The last target is assumed to be the error variable
+		if len(names) > 0 {
+			errVar := g.exprToString(stmt.Targets[len(stmt.Targets)-1])
+			g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
+			g.indent++
+			g.generateOnErrHandler(names[:len(names)-1], clause.Handler, errVar)
+			g.indent--
+			g.writeLine("}")
+		}
+		return
+	}
+
+	// Generate unique error variable name for single-return-value cases
 	errVar := g.uniqueId("err")
 
 	// Build the LHS: targets + error variable

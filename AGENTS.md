@@ -154,9 +154,9 @@ docs/                 # Documentation
 ### Parser Constraints (Last Updated: 2026-02-04)
 The following limitations still exist in the compiler:
 
-- **Codegen issue with onerr in piped assignments** — `x, err := data |> f() onerr handler` generates incorrect code that attempts to unpack extra error variables. **Workaround:** Use the standard pattern without pipes: `x, err := f(data) onerr handler`.
-  
-  *Note: The core semantic analysis limitation for `return x |> f()` where `f()` returns `(T, error)` has been fixed (commit: [TBD]). The issue now is purely in codegen's handling of `onerr` with piped assignments.*
+*(No parser constraints currently known. Recent fixes:)*
+- ~~Codegen issue with onerr in piped assignments~~ — **FIXED** (commit: [pending]). Previously `x, err := data |> f() onerr handler` would generate `x, err, err_1 := ...` with an extra error variable. Now correctly generates `x, err := ...`.
+- ~~Semantic limit on multi-value pipe return~~ — **FIXED** (commit: 19533d0). Previously `return x |> f()` where `f()` returns `(T, error)` would fail semantic analysis. Now correctly analyzes multi-value returns through pipes.
 
 ## Adding Features to the Compiler
 
