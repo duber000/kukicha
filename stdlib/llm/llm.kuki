@@ -31,6 +31,13 @@
 #       |> llm.Gateway("http://localhost:8000")
 #       |> llm.APIKey("my-gateway-key")
 #       |> llm.Ask("Hello!")
+#
+#   # Open WebUI or custom endpoints
+#   reply, err := llm.New("anthropic.claude-sonnet-4-20250514")
+#       |> llm.BaseURL("https://chat.example.edu")
+#       |> llm.Path("/api/chat/completions")
+#       |> llm.APIKey("your-key")
+#       |> llm.Ask("Hello!")
 
 petiole llm
 
@@ -138,6 +145,7 @@ type Client
     model string
     provider string
     baseURL string
+    path string
     apiKey string
     messages list of Message
     temperature float64
@@ -180,6 +188,7 @@ func New(model string) Client
         c.provider = ""
 
     c.baseURL = ""
+    c.path = ""
     c.apiKey = ""
     c.user = ""
     c.streamHandler = empty
@@ -204,6 +213,13 @@ func Gateway(c Client, url string) Client
 # Example: client |> llm.BaseURL("http://localhost:11434")
 func BaseURL(c Client, url string) Client
     c.baseURL = url
+    return c
+
+# Path overrides the default chat completions path ("/v1/chat/completions")
+# Use this for platforms like Open WebUI that use a different path
+# Example: client |> llm.Path("/api/chat/completions")
+func Path(c Client, path string) Client
+    c.path = path
     return c
 
 # APIKey sets the API key for authentication
@@ -468,6 +484,12 @@ func resolveBaseURL(c Client) string
     # Gateway or unknown provider
     return "http://localhost:8000"
 
+# Internal: resolve the chat completions path
+func resolvePath(c Client) string
+    if c.path != ""
+        return c.path
+    return "/v1/chat/completions"
+
 # Internal: build the request body
 func buildRequest(c Client) CompletionRequest
     req := CompletionRequest{}
@@ -517,7 +539,8 @@ func execute(c Client) (string, error)
 func executeRaw(c Client) (Completion, error)
     baseURL := resolveBaseURL(c)
     apiKey := resolveAPIKey(c)
-    url := "{baseURL}/v1/chat/completions"
+    chatPath := resolvePath(c)
+    url := "{baseURL}{chatPath}"
     body := buildRequest(c)
 
     req := fetch.New(url)
@@ -551,7 +574,8 @@ func executeRaw(c Client) (Completion, error)
 func executeStream(c Client) (string, error)
     baseURL := resolveBaseURL(c)
     apiKey := resolveAPIKey(c)
-    url := "{baseURL}/v1/chat/completions"
+    chatPath := resolvePath(c)
+    url := "{baseURL}{chatPath}"
     body := buildRequest(c)
 
     req := fetch.New(url)
