@@ -66,42 +66,42 @@ func Yesterday() time.Time
 # Nanoseconds creates a duration from nanoseconds
 # Example: d := datetime.Nanoseconds(500)
 func Nanoseconds(n int64) time.Duration
-    return time.Duration(n) * time.Nanosecond
+    return n * 1
 
 # Microseconds creates a duration from microseconds
 # Example: d := datetime.Microseconds(500)
 func Microseconds(n int64) time.Duration
-    return time.Duration(n) * time.Microsecond
+    return n * 1000
 
 # Milliseconds creates a duration from milliseconds
 # Example: d := datetime.Milliseconds(500)
 func Milliseconds(n int64) time.Duration
-    return time.Duration(n) * time.Millisecond
+    return n * 1000000
 
 # Seconds creates a duration from seconds
 # Example: d := datetime.Seconds(30)
 func Seconds(n int64) time.Duration
-    return time.Duration(n) * time.Second
+    return n * 1000000000
 
 # Minutes creates a duration from minutes
 # Example: d := datetime.Minutes(5)
 func Minutes(n int64) time.Duration
-    return time.Duration(n) * time.Minute
+    return n * 60000000000
 
 # Hours creates a duration from hours
 # Example: d := datetime.Hours(2)
 func Hours(n int64) time.Duration
-    return time.Duration(n) * time.Hour
+    return n * 3600000000000
 
 # Days creates a duration from days (24 hours)
 # Example: d := datetime.Days(7)
 func Days(n int64) time.Duration
-    return time.Duration(n) * 24 * time.Hour
+    return n * 86400000000000
 
 # Weeks creates a duration from weeks (7 days)
 # Example: d := datetime.Weeks(2)
 func Weeks(n int64) time.Duration
-    return time.Duration(n) * 7 * 24 * time.Hour
+    return n * 604800000000000
 
 # Time Arithmetic Helpers
 
@@ -160,14 +160,22 @@ func IsAfter(t1 time.Time, t2 time.Time) bool
 # IsBetween returns true if t is between start and end (inclusive)
 # Example: if datetime.IsBetween(event, startDate, endDate) ...
 func IsBetween(t time.Time, start time.Time, end time.Time) bool
-    return (t.Equal(start) or t.After(start)) and (t.Equal(end) or t.Before(end))
+    atOrAfterStart := t.Equal(start)
+    afterStart := t.After(start)
+    atOrBeforeEnd := t.Equal(end)
+    beforeEnd := t.Before(end)
+    return (atOrAfterStart or afterStart) and (atOrBeforeEnd or beforeEnd)
 
 # IsSameDay returns true if two times are on the same day
 # Example: if datetime.IsSameDay(t1, t2) ...
 func IsSameDay(t1 time.Time, t2 time.Time) bool
-    y1, m1, d1 := t1.Date()
-    y2, m2, d2 := t2.Date()
-    return y1 == y2 and m1 == m2 and d1 == d2
+    y1 := t1.Year()
+    m1 := t1.Month()
+    d1 := t1.Day()
+    y2 := t2.Year()
+    m2 := t2.Month()
+    d2 := t2.Day()
+    return (y1 == y2) and (m1 == m2) and (d1 == d2)
 
 # IsToday returns true if the time is today
 # Example: if datetime.IsToday(event) ...
@@ -204,7 +212,7 @@ func Year(t time.Time) int
 # Month returns the month (1-12)
 # Example: month := datetime.Month(t)
 func Month(t time.Time) int
-    return int(t.Month())
+    return t.Month() as int
 
 # Day returns the day of month (1-31)
 # Example: day := datetime.Day(t)
@@ -229,7 +237,7 @@ func Second(t time.Time) int
 # Weekday returns the day of week (0=Sunday, 6=Saturday)
 # Example: weekday := datetime.Weekday(t)
 func Weekday(t time.Time) int
-    return int(t.Weekday())
+    return t.Weekday() as int
 
 # WeekdayName returns the name of the weekday
 # Example: name := datetime.WeekdayName(t)  # "Monday"

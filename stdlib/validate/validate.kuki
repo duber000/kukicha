@@ -65,7 +65,7 @@ func Matches(s string, pattern string) (string, error)
 # Example: email |> validate.Email() onerr return error
 func Email(s string) (string, error)
     # Simple email pattern: something@something.something
-    pattern := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
+    pattern := "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$"
     matched, _ := regexp.MatchString(pattern, s)
     if not matched
         return s, errors.New("invalid email address")
@@ -198,7 +198,7 @@ func Max(n int, max int) (int, error)
 # PositiveFloat checks that a float is greater than zero
 # Example: price |> validate.PositiveFloat() onerr return error
 func PositiveFloat(n float64) (float64, error)
-    if n <= 0
+    if n <= 0.0
         return n, errors.New("value must be positive")
     return n, empty
 
@@ -234,7 +234,7 @@ func ParsePositiveInt(s string) (int, error)
 func ParseFloat(s string) (float64, error)
     n, err := strconv.ParseFloat(s, 64)
     if err != empty
-        return 0, errors.New("invalid number: {s}")
+        return 0.0, errors.New("invalid number: {s}")
     return n, empty
 
 # ParseBool parses a string as a boolean

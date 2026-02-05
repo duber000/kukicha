@@ -151,13 +151,6 @@ docs/                 # Documentation
 4. **Explicit function signatures** - Parameters and return types must be declared
 5. **Test with `make test`** - Sets required `GOEXPERIMENT=jsonv2,greenteagc`
 
-### Parser Constraints (Last Updated: 2026-02-04)
-The following limitations still exist in the compiler:
-
-*(No parser constraints currently known. Recent fixes:)*
-- ~~Codegen issue with onerr in piped assignments~~ — **FIXED** (commit: [pending]). Previously `x, err := data |> f() onerr handler` would generate `x, err, err_1 := ...` with an extra error variable. Now correctly generates `x, err := ...`.
-- ~~Semantic limit on multi-value pipe return~~ — **FIXED** (commit: 19533d0). Previously `return x |> f()` where `f()` returns `(T, error)` would fail semantic analysis. Now correctly analyzes multi-value returns through pipes.
-
 ## Adding Features to the Compiler
 
 Typical workflow for new syntax:

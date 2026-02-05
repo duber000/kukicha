@@ -351,10 +351,26 @@ func (a *Analyzer) analyzeVarDeclStmt(stmt *ast.VarDeclStmt) {
 		valueTypes[i] = a.analyzeExpression(val)
 	}
 
-	// Special handling for multi-value return from single function call
+	// Special handling for multi-value return from single function call or type assertion
 	var multiValueTypes []*TypeInfo
 	if len(stmt.Values) == 1 && len(stmt.Names) > 1 {
-		multiValueTypes = a.analyzeExpressionMulti(stmt.Values[0])
+		// Check if this is a type assertion (e.g., value, ok := expr as Type)
+		if len(stmt.Names) == 2 {
+			if typeCast, ok := stmt.Values[0].(*ast.TypeCastExpr); ok {
+				// Type assertion returns (value, bool)
+				targetType := a.typeAnnotationToTypeInfo(typeCast.TargetType)
+				multiValueTypes = []*TypeInfo{
+					targetType,
+					{Kind: TypeKindBool},
+				}
+			} else {
+				// Regular multi-value return
+				multiValueTypes = a.analyzeExpressionMulti(stmt.Values[0])
+			}
+		} else {
+			// Regular multi-value return
+			multiValueTypes = a.analyzeExpressionMulti(stmt.Values[0])
+		}
 
 		if len(multiValueTypes) != len(stmt.Names) {
 			// If we can't match exact count, check if it's dynamic/unknown
@@ -438,10 +454,26 @@ func (a *Analyzer) analyzeAssignStmt(stmt *ast.AssignStmt) {
 		valueTypes[i] = a.analyzeExpression(val)
 	}
 
-	// Special handling for multi-value return from single function call
+	// Special handling for multi-value return from single function call or type assertion
 	var multiValueTypes []*TypeInfo
 	if len(stmt.Values) == 1 && len(stmt.Targets) > 1 {
-		multiValueTypes = a.analyzeExpressionMulti(stmt.Values[0])
+		// Check if this is a type assertion (e.g., value, ok := expr as Type)
+		if len(stmt.Targets) == 2 {
+			if typeCast, ok := stmt.Values[0].(*ast.TypeCastExpr); ok {
+				// Type assertion returns (value, bool)
+				targetType := a.typeAnnotationToTypeInfo(typeCast.TargetType)
+				multiValueTypes = []*TypeInfo{
+					targetType,
+					{Kind: TypeKindBool},
+				}
+			} else {
+				// Regular multi-value return
+				multiValueTypes = a.analyzeExpressionMulti(stmt.Values[0])
+			}
+		} else {
+			// Regular multi-value return
+			multiValueTypes = a.analyzeExpressionMulti(stmt.Values[0])
+		}
 
 		if len(multiValueTypes) != len(stmt.Targets) {
 			// If we can't match exact count, check if it's dynamic/unknown
@@ -714,6 +746,11 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 			return chanType.ElementType
 		}
 		return &TypeInfo{Kind: TypeKindUnknown}
+	case *ast.TypeCastExpr:
+		// Analyze the expression being cast
+		_ = a.analyzeExpression(e.Expression)
+		// Return the target type
+		return a.typeAnnotationToTypeInfo(e.TargetType)
 	default:
 		return &TypeInfo{Kind: TypeKindUnknown}
 	}
@@ -830,6 +867,15 @@ func (a *Analyzer) analyzeBinaryExpr(expr *ast.BinaryExpr) *TypeInfo {
 		if !isNumericType(leftType) || !isNumericType(rightType) {
 			a.error(expr.Pos(), fmt.Sprintf("cannot apply %s to %s and %s", expr.Operator, leftType, rightType))
 		}
+		// Special case: if one operand is a named type (like time.Duration), return that type for multiplication
+		if expr.Operator == "*" {
+			if leftType.Kind == TypeKindNamed && leftType.Name != "" {
+				return leftType
+			}
+			if rightType.Kind == TypeKindNamed && rightType.Name != "" {
+				return rightType
+			}
+		}
 		// Result type is the wider of the two
 		if leftType.Kind == TypeKindFloat || rightType.Kind == TypeKindFloat {
 			return &TypeInfo{Kind: TypeKindFloat}
@@ -846,7 +892,7 @@ func (a *Analyzer) analyzeBinaryExpr(expr *ast.BinaryExpr) *TypeInfo {
 	case "and", "or":
 		// Logical operators
 		if leftType.Kind != TypeKindBool || rightType.Kind != TypeKindBool {
-			a.error(expr.Pos(), fmt.Sprintf("logical operator requires boolean operands"))
+			a.error(expr.Pos(), fmt.Sprintf("logical operator requires boolean operands, got %s and %s", leftType, rightType))
 		}
 		return &TypeInfo{Kind: TypeKindBool}
 
@@ -927,6 +973,33 @@ func (a *Analyzer) analyzeOnErrClause(clause *ast.OnErrClause) {
 }
 
 func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*TypeInfo {
+	// Check for known stdlib functions first
+	if id, ok := expr.Function.(*ast.Identifier); ok {
+		switch id.Value {
+		case "os.LookupEnv":
+			return []*TypeInfo{
+				{Kind: TypeKindString},
+				{Kind: TypeKindBool},
+			}
+		}
+	}
+	
+	// Check for known stdlib method calls (e.g., os.LookupEnv)
+	// This might be parsed as a MethodCallExpr in some cases
+	if methodCall, ok := expr.Function.(*ast.MethodCallExpr); ok {
+		if objID, ok := methodCall.Object.(*ast.Identifier); ok {
+			methodName := methodCall.Method.Value
+			qualifiedName := objID.Value + "." + methodName
+			switch qualifiedName {
+			case "os.LookupEnv":
+				return []*TypeInfo{
+					{Kind: TypeKindString},
+					{Kind: TypeKindBool},
+				}
+			}
+		}
+	}
+
 	funcType := a.analyzeExpression(expr.Function)
 
 	// Analyze named arguments (check for duplicates)
@@ -1019,7 +1092,7 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 
 func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *TypeInfo) []*TypeInfo {
 	// Analyze object
-	a.analyzeExpression(expr.Object)
+	objType := a.analyzeExpression(expr.Object)
 
 	// Method support is currently limited to positional arguments
 	if len(expr.NamedArguments) > 0 {
@@ -1029,6 +1102,25 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 	// Analyze arguments
 	for _, arg := range expr.Arguments {
 		a.analyzeExpression(arg)
+	}
+
+	// Handle known stdlib method return types
+	methodName := expr.Method.Value
+	
+	// time.Time methods with known return types
+	if objType != nil && objType.Kind == TypeKindNamed && objType.Name == "time.Time" {
+		switch methodName {
+		case "Equal", "Before", "After":
+			return []*TypeInfo{{Kind: TypeKindBool}}
+		case "Year":
+			return []*TypeInfo{{Kind: TypeKindInt}}
+		case "Month":
+			return []*TypeInfo{{Kind: TypeKindNamed, Name: "time.Month"}}
+		case "Day", "Hour", "Minute", "Second":
+			return []*TypeInfo{{Kind: TypeKindInt}}
+		case "Weekday":
+			return []*TypeInfo{{Kind: TypeKindNamed, Name: "time.Weekday"}}
+		}
 	}
 
 	// Handle pipedArg for method calls too?
@@ -1263,6 +1355,12 @@ func (a *Analyzer) typesCompatible(t1, t2 *TypeInfo) bool {
 		return true
 	}
 	if t2.Kind == TypeKindNamed && (t2.Name == "interface{}" || t2.Name == "any") {
+		return true
+	}
+
+	// Special case: time.Duration is compatible with int64 (Duration is defined as int64 in Go)
+	if (t1.Kind == TypeKindNamed && t1.Name == "time.Duration" && t2.Kind == TypeKindInt) ||
+		(t2.Kind == TypeKindNamed && t2.Name == "time.Duration" && t1.Kind == TypeKindInt) {
 		return true
 	}
 

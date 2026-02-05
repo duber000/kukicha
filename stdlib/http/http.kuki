@@ -7,6 +7,7 @@ import "net/http"
 import "encoding/json/v2" as json
 import "io"
 import "strconv"
+import "strings"
 
 # WithCSRF wraps a handler with Cross-Origin protection
 # Uses Fetch metadata headers (modern browsers)
@@ -248,10 +249,9 @@ func IsPatch(r reference http.Request) bool
 # Sets the Allow header with permitted methods
 # Example: http.MethodNotAllowed(w, "GET", "POST")
 func MethodNotAllowed(w http.ResponseWriter, many allowed string)
-    allowHeader := ""
-    for i, method in allowed
-        if i > 0
-            allowHeader = allowHeader + ", "
-        allowHeader = allowHeader + method
+    parts := list of string{}
+    for method in allowed
+        parts = append(parts, method)
+    allowHeader := strings.Join(parts, ", ")
     w.Header().Set("Allow", allowHeader)
     w.WriteHeader(405)
