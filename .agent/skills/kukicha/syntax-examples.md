@@ -17,11 +17,7 @@ type Todo
     tags list of string
 
 func CreateTodo(id int64, title string) Todo
-    return Todo
-        id: id
-        title: title
-        completed: false
-        tags: list of string{}
+    return Todo{id: id, title: title, completed: false, tags: list of string{}}
 
 func Display on todo Todo string
     status := "[ ]"
@@ -36,14 +32,14 @@ func AddTag on todo reference Todo tag string
     todo.tags = append(todo.tags, tag)
 
 func SaveTodos(todos list of Todo, path string) error
-    data := json.Marshal(todos) onerr return error
-    files.Write(path, string(data)) onerr return error
+    data := json.Marshal(todos) onerr return error "{error}"
+    files.Write(path, string(data)) onerr return error "{error}"
     return empty
 
 func LoadTodos(path string) list of Todo, error
-    content := files.Read(path) onerr return empty list of Todo, error
+    content := files.Read(path) onerr return empty list of Todo, error "{error}"
     todos := list of Todo{}
-    json.Unmarshal(list of byte(content), reference of todos) onerr return empty list of Todo, error
+    json.Unmarshal(list of byte(content), reference of todos) onerr return empty list of Todo, error "{error}"
     return todos, empty
 
 func main()
@@ -116,15 +112,15 @@ func main()
 ```kukicha
 import "stdlib/validate"
 
-func CreateUser(email string, age int, password string) (User, error)
+func CreateUser(email string, age int, password string) User, error
     # Each validation returns (value, error) - perfect for onerr
-    email |> validate.NotEmpty() onerr return User{}, error
-    email |> validate.Email() onerr return User{}, error("invalid email format")
+    email |> validate.NotEmpty() onerr return User{}, error "{error}"
+    email |> validate.Email() onerr return User{}, error "invalid email format"
 
-    age |> validate.InRange(18, 120) onerr return User{}, error("age must be 18-120")
+    age |> validate.InRange(18, 120) onerr return User{}, error "age must be 18-120"
 
-    password |> validate.MinLength(8) onerr return User{}, error("password too short")
-    password |> validate.Matches(`[A-Z]`) onerr return User{}, error("need uppercase")
+    password |> validate.MinLength(8) onerr return User{}, error "password too short"
+    password |> validate.Matches(`[A-Z]`) onerr return User{}, error "need uppercase"
 
     return User{email: email, age: age}, empty
 ```
@@ -150,25 +146,33 @@ func main()
 import "stdlib/http" as httphelper
 
 func HandleCreateUser(w http.ResponseWriter, r reference http.Request)
-    # Parse JSON body easily
+    # Parse JSON body
     input := UserInput{}
-    httphelper.ReadJSON(r, reference of input) onerr
-        return httphelper.JSONBadRequest(w, "Invalid JSON")
+    readErr := httphelper.ReadJSON(r, reference of input)
+    if readErr not equals empty
+        httphelper.JSONBadRequest(w, "Invalid JSON")
+        return
 
     # Validate
-    user := CreateUser(input.email, input.age, input.password) onerr
-        return httphelper.JSONBadRequest(w, "{error}")
+    user, createErr := CreateUser(input.email, input.age, input.password)
+    if createErr not equals empty
+        httphelper.JSONBadRequest(w, "{createErr}")
+        return
 
     # Respond with JSON
     httphelper.JSONCreated(w, user)
 
 func HandleGetUser(w http.ResponseWriter, r reference http.Request)
     # Query params
-    id := httphelper.GetQueryInt(r, "id") onerr
-        return httphelper.JSONBadRequest(w, "id parameter required")
+    id, idErr := httphelper.GetQueryInt(r, "id")
+    if idErr not equals empty
+        httphelper.JSONBadRequest(w, "id parameter required")
+        return
 
-    user := db.GetUser(id) onerr
-        return httphelper.JSONNotFound(w, "User not found")
+    user, userErr := db.GetUser(id)
+    if userErr not equals empty
+        httphelper.JSONNotFound(w, "User not found")
+        return
 
     httphelper.JSON(w, user)
 ```
@@ -205,6 +209,9 @@ func main()
 ```kukicha
 import "stdlib/slice"
 
+func isActiveUser(u User) bool
+    return u.active
+
 func main()
     items := list of string{"a", "b", "c"}
 
@@ -215,10 +222,8 @@ func main()
     # Get with negative indexing
     item := slice.GetOr(items, -1, "default")  # Last item or default
 
-    # Find with predicate
-    user := slice.Find(users, func(u User) bool
-        return u.active
-    ) onerr return defaultUser
+    # Find with predicate (use named function — inline closures don't compile)
+    user := slice.Find(users, isActiveUser) onerr return defaultUser
 
     # Check if empty
     if slice.IsEmpty(items)
@@ -241,9 +246,9 @@ func mustLoadConfig() Config
 ### Pattern 2: Propagate Errors
 ```kukicha
 func loadUser(id int64) User, error
-    data := db.Query("SELECT * FROM users WHERE id = ?", id) onerr return empty User, error
+    data := db.Query("SELECT * FROM users WHERE id = ?", id) onerr return empty User, error "{error}"
     user := User{}
-    parseResult(data, reference of user) onerr return empty User, error
+    parseResult(data, reference of user) onerr return empty User, error "{error}"
     return user, empty
 ```
 
@@ -270,7 +275,6 @@ func validateAge(age int) error
 ### Data Processing Pipeline
 ```kukicha
 import "stdlib/slice"
-import "stdlib/slice"
 import "stdlib/json"
 import "stdlib/fetch"
 
@@ -279,22 +283,24 @@ type User
     age int
     active bool
 
+func isAdultActive(u User) bool
+    return u.active and u.age >= 18
+
+func userName(u User) string
+    return u.name
+
 func getActiveAdultNames(url string) list of string
     users := list of User{}
-    url
-        |> fetch.Get()
-        |> fetch.CheckStatus()
-        |> fetch.Bytes()
-        |> json.Unmarshal(reference of users)
-        onerr return empty list of User
-    
+    resp := fetch.Get(url) onerr return empty list of string
+    resp = resp |> fetch.CheckStatus() onerr return empty list of string
+    data := resp |> fetch.Bytes() onerr return empty list of string
+    unmarshalErr := json.Unmarshal(data, reference of users)
+    if unmarshalErr not equals empty
+        return empty list of string
+
     return users
-        |> slice.Filter(func(u User) bool
-            return u.active and u.age >= 18
-        )
-        |> slice.Map(func(u User) string
-            return u.name
-        )
+        |> slice.Filter(isAdultActive)
+        |> slice.Map(userName)
         |> slice.Sort()
 ```
 
@@ -335,16 +341,18 @@ Transpilation:
 import "stdlib/files"
 import "strings"
 
+func isErrorLine(line string) bool
+    return strings.Contains(line, "ERROR")
+
+func trimLine(line string) string
+    return strings.TrimSpace(line)
+
 func processLogFile(path string) list of string
-    return path
-        |> files.Read()
+    content := files.Read(path) onerr panic "cannot read file"
+    return content
         |> strings.Split("\n")
-        |> slice.Filter(func(line string) bool
-            return strings.Contains(line, "ERROR")
-        )
-        |> slice.Map(func(line string) string
-            return strings.TrimSpace(line)
-        )
+        |> slice.Filter(isErrorLine)
+        |> slice.Map(trimLine)
 ```
 
 ## Interface Implementation
@@ -437,18 +445,20 @@ Kukicha uses special transpilation for Go 1.25+ generics without requiring you t
 import "stdlib/iter"
 import "stdlib/slice"
 
+func isEven(n int) bool
+    return n % 2 equals 0
+
+func square(n int) int
+    return n * n
+
 func main()
     numbers := list of int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
-    # Filter and transform
+    # Filter and transform (use named functions — inline closures don't compile)
     result := numbers
         |> iter.FromSlice()
-        |> iter.Filter(func(n int) bool
-            return n % 2 equals 0
-        )
-        |> iter.Map(func(n int) int
-            return n * n
-        )
+        |> iter.Filter(isEven)
+        |> iter.Map(square)
         |> iter.Take(3)
         |> slice.Collect()
 
@@ -469,13 +479,13 @@ type DayStats
     day string
     count int
 
+func getLogLevel(e LogEntry) string
+    return e.level
+
 func analyzeLog(entries list of LogEntry) map of string to list of LogEntry
     # GroupBy automatically generates: GroupBy[LogEntry, string](items, keyFunc)
     # The key type (string) must be comparable - the transpiler ensures this!
-    return entries
-        |> slice.GroupBy(func(e LogEntry) string
-            return e.level
-        )
+    return entries |> slice.GroupBy(getLogLevel)
 
 func main()
     logs := list of LogEntry{
@@ -534,11 +544,7 @@ func Speak on d Dog string
     return "{d.name} barks!"
 
 func main()
-    dog := Dog
-        Animal: Animal
-            name: "Buddy"
-            age: 3
-        breed: "Golden Retriever"
+    dog := Dog{Animal: Animal{name: "Buddy", age: 3}, breed: "Golden Retriever"}
 
     print(dog.name)      # Access embedded field
     print(dog.Speak())   # Calls Dog's Speak method
@@ -556,7 +562,7 @@ type APIResponse
 
 func parseResponse(jsonData list of byte) APIResponse, error
     response := APIResponse{}
-    json.Unmarshal(jsonData, reference of response) onerr return empty APIResponse, error
+    json.Unmarshal(jsonData, reference of response) onerr return empty APIResponse, error "{error}"
     return response, empty
 
 func toJSON(data APIResponse) string
@@ -591,23 +597,27 @@ func Reduce(items list of int, initial int, reducer func(int, int) int) int
         accumulator = reducer(accumulator, item)
     return accumulator
 
+# Named callbacks (inline closures don't compile — parser limitation)
+func isEvenNum(n int) bool
+    return n % 2 equals 0
+
+func squareNum(n int) int
+    return n * n
+
+func sumReducer(acc int, n int) int
+    return acc + n
+
 func main()
     numbers := list of int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
     # Filter for even numbers
-    evens := Filter(numbers, func(n int) bool
-        return n % 2 equals 0
-    )
+    evens := Filter(numbers, isEvenNum)
 
     # Map to squares
-    squares := Map(evens, func(n int) int
-        return n * n
-    )
+    squares := Map(evens, squareNum)
 
     # Sum all squares
-    total := Reduce(squares, 0, func(acc int, n int) int
-        return acc + n
-    )
+    total := Reduce(squares, 0, sumReducer)
 
     print(total)  # 4 + 16 + 36 + 64 + 100 = 220
 ```
@@ -619,12 +629,13 @@ func ForEach(items list of string, action func(string))
     for item in items
         action(item)
 
+func greetPerson(name string)
+    print("Hello, {name}!")
+
 func main()
     names := list of string{"Alice", "Bob", "Charlie"}
 
-    ForEach(names, func(name string)
-        print("Hello, {name}!")
-    )
+    ForEach(names, greetPerson)
 ```
 
 ### Complex Callback Example
@@ -649,28 +660,25 @@ func TransformUsers(users list of User, transform func(reference User) string) l
         result = append(result, transform(reference of user))
     return result
 
+# Named callbacks (inline closures don't compile — parser limitation)
+func isAdultUser(u reference User) bool
+    return u.age >= 30
+
+func formatUser(u reference User) string
+    return "{u.name} ({u.age})"
+
 func main()
     users := list of User{
-        User
-            name: "Alice"
-            age: 30
-        User
-            name: "Bob"
-            age: 25
-        User
-            name: "Charlie"
-            age: 35
+        User{name: "Alice", age: 30},
+        User{name: "Bob", age: 25},
+        User{name: "Charlie", age: 35},
     }
 
     # Filter adults (age >= 30)
-    adults := FilterUsers(users, func(u reference User) bool
-        return u.age >= 30
-    )
+    adults := FilterUsers(users, isAdultUser)
 
     # Transform to display names
-    names := TransformUsers(adults, func(u reference User) string
-        return "{u.name} ({u.age})"
-    )
+    names := TransformUsers(adults, formatUser)
 
     for name in names
         print(name)
@@ -684,15 +692,16 @@ func DoAsync(operation func() string, onSuccess func(string), onError func(error
     result := operation()
     onSuccess(result)
 
+# Named callbacks (inline closures don't compile — parser limitation)
+func doWork() string
+    return "Success!"
+
+func onSuccess(msg string)
+    print("Result: {msg}")
+
+func onError(err error)
+    print("Error: {err}")
+
 func main()
-    DoAsync(
-        func() string
-            return "Success!"
-        ,
-        func(msg string)
-            print("Result: {msg}")
-        ,
-        func(err error)
-            print("Error: {err}")
-    )
+    DoAsync(doWork, onSuccess, onError)
 ```

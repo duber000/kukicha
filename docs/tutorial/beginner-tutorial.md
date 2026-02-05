@@ -578,24 +578,26 @@ func main()
         print("This is a text file!")
 ```
 
-### The 'in' Operator - Membership Testing
+### Membership Testing with Contains
 
-Kukicha has a super convenient shortcut for checking if text contains something:
+Check whether a string contains a substring using `string.Contains`:
 
 ```kukicha
+import "stdlib/string"
+
 func main()
     message := "Error: File not found"
 
-    # Check if "Error" is in the message
-    if "Error" in message
+    # Check if the message contains "Error"
+    if string.Contains(message, "Error")
         print("This is an error message!")
 
     # Check if "Success" is NOT in the message
-    if "Success" not in message
+    if not string.Contains(message, "Success")
         print("Operation did not succeed")
 ```
 
-This is easier than using `string.Contains`!
+You already saw `string.Contains` earlier — it's your go-to for this kind of check.
 
 ### Finding Positions
 
@@ -633,7 +635,7 @@ func main()
 
 ### Replacing Text
 
-Replace parts of a string. Need to make multiple replacements? Pipe them:
+Replace parts of a string. Need to make multiple replacements? Pipe them, one step per line:
 
 ```kukicha
 import "stdlib/string"
@@ -641,8 +643,10 @@ import "stdlib/string"
 func main()
     text := "I love cats and dogs"
 
-    # Chain two replacements — each one feeds into the next
-    newText := text |> string.ReplaceAll("cats", "kittens") |> string.ReplaceAll("dogs", "puppies")
+    # Each replacement feeds into the next — line up the pipes to see the flow
+    newText := text
+        |> string.ReplaceAll("cats", "kittens")
+        |> string.ReplaceAll("dogs", "puppies")
 
     print(newText)
     # Prints: I love kittens and puppies
@@ -695,7 +699,7 @@ func main()
     # Demonstrate string searching
     print("\n=== Name Search ===")
 
-    if "Alice" in name1
+    if string.Contains(name1, "Alice")
         print("Found Alice!")
 
     if string.Contains(name2, "Bob")
@@ -720,7 +724,7 @@ Found Bob!
 3. ✅ Using parameters and return values
 4. ✅ String interpolation
 5. ✅ Using the string petiole (TrimSpace, Title, Contains)
-6. ✅ The `in` operator for string searching
+6. ✅ `string.Contains` for string searching
 7. ✅ Combining everything into a working program
 
 ---

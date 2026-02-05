@@ -19,6 +19,7 @@ const (
 	TOKEN_IMPORT
 	TOKEN_TYPE
 	TOKEN_INTERFACE
+	TOKEN_VAR
 	TOKEN_FUNC
 	TOKEN_RETURN
 	TOKEN_IF
@@ -140,6 +141,8 @@ func (t TokenType) String() string {
 		return "TYPE"
 	case TOKEN_INTERFACE:
 		return "INTERFACE"
+	case TOKEN_VAR:
+		return "VAR"
 	case TOKEN_FUNC:
 		return "FUNC"
 	case TOKEN_RETURN:
@@ -318,6 +321,7 @@ var keywords = map[string]TokenType{
 	"import":      TOKEN_IMPORT,
 	"type":        TOKEN_TYPE,
 	"interface":   TOKEN_INTERFACE,
+	"var":         TOKEN_VAR,
 	"func":        TOKEN_FUNC,
 	"return":      TOKEN_RETURN,
 	"if":          TOKEN_IF,

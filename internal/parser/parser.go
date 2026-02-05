@@ -121,6 +121,16 @@ func (p *Parser) peekNextToken() lexer.Token {
 	return p.tokens[p.pos+1]
 }
 
+func (p *Parser) peekAt(offset int) lexer.Token {
+	// Note: skipIgnoredTokens is already called by peekToken/peekNextToken but
+	// for safety we don't call it here to avoid complex side effects if used with large offsets.
+	// Actually, most peek methods call it.
+	if p.pos+offset >= len(p.tokens) {
+		return lexer.Token{Type: lexer.TOKEN_EOF}
+	}
+	return p.tokens[p.pos+offset]
+}
+
 func (p *Parser) peekTokenAt(index int) lexer.Token {
 	p.skipIgnoredTokens()
 	if index >= len(p.tokens) {
@@ -233,6 +243,8 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 		return p.parseInterfaceDecl()
 	case lexer.TOKEN_FUNC:
 		return p.parseFunctionDecl()
+	case lexer.TOKEN_VAR:
+		return p.parseVarDeclaration()
 	default:
 		if !p.isAtEnd() {
 			p.error(p.peekToken(), fmt.Sprintf("unexpected token %s, expected declaration", p.peekToken().Type))
@@ -1241,6 +1253,20 @@ func (p *Parser) parsePipeExpr() ast.Expression {
 // Called when TOKEN_ONERR has already been detected (but not consumed).
 func (p *Parser) parseOnErrClause() *ast.OnErrClause {
 	token := p.advance() // consume 'onerr'
+
+	// Check for block handler: onerr \n INDENT ...
+	p.skipNewlines()
+	if p.check(lexer.TOKEN_INDENT) {
+		block := p.parseBlock()
+		return &ast.OnErrClause{
+			Token: token,
+			Handler: &ast.BlockExpr{
+				Token: block.Token,
+				Body:  block,
+			},
+		}
+	}
+
 	handler := p.parseExpression()
 	return &ast.OnErrClause{Token: token, Handler: handler}
 }
@@ -1290,6 +1316,12 @@ func (p *Parser) parseComparisonExpr() ast.Expression {
 			operator = p.advance() // consume NOT
 			operator.Lexeme = "not equals"
 			p.advance() // consume EQUALS
+		} else if p.match(lexer.TOKEN_IN) {
+			operator = p.previousToken()
+		} else if p.check(lexer.TOKEN_NOT) && p.peekNextToken().Type == lexer.TOKEN_IN {
+			operator = p.advance() // consume NOT
+			operator.Lexeme = "not in"
+			p.advance() // consume IN
 		} else {
 			break
 		}
@@ -1572,7 +1604,17 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 	case lexer.TOKEN_RECEIVE:
 		return p.parseReceiveExpr()
 	case lexer.TOKEN_LIST:
-		return p.parseTypedListLiteral()
+		if p.peekNextToken().Type == lexer.TOKEN_OF {
+			return p.parseTypedListLiteral()
+		}
+		token := p.advance()
+		return &ast.Identifier{Token: token, Value: token.Lexeme}
+	case lexer.TOKEN_MAP:
+		if p.peekNextToken().Type == lexer.TOKEN_OF {
+			return p.parseMapLiteral()
+		}
+		token := p.advance()
+		return &ast.Identifier{Token: token, Value: token.Lexeme}
 	case lexer.TOKEN_LBRACKET:
 		return p.parseListLiteral()
 	case lexer.TOKEN_LPAREN:
@@ -1675,9 +1717,23 @@ func (p *Parser) parseIdentifierOrStructLiteral() ast.Expression {
 	ident := p.parseIdentifier()
 
 	// Check for struct literal
-	if p.check(lexer.TOKEN_LBRACE) {
-		p.advance() // consume '{'
+	var fields []*ast.FieldValue
+	isIndented := false
+	isBraced := false
 
+	if p.check(lexer.TOKEN_LBRACE) {
+		isBraced = true
+		p.advance() // consume '{'
+	} else if p.peekToken().Type == lexer.TOKEN_NEWLINE &&
+		p.peekNextToken().Type == lexer.TOKEN_INDENT &&
+		p.peekAt(2).Type == lexer.TOKEN_IDENTIFIER &&
+		p.peekAt(3).Type == lexer.TOKEN_COLON {
+		isIndented = true
+		p.advance() // consume NEWLINE
+		p.advance() // consume INDENT
+	}
+
+	if isBraced || isIndented {
 		// Parse type from identifier
 		var typ ast.TypeAnnotation
 		switch ident.Value {
@@ -1695,32 +1751,49 @@ func (p *Parser) parseIdentifierOrStructLiteral() ast.Expression {
 			}
 		}
 
-		// Check for map literal: {key: value}
-		// vs struct literal: TypeName{field: value}
-		// We'll treat this as struct literal for now
-		fields := []*ast.FieldValue{}
+		fields = []*ast.FieldValue{}
 
-		if !p.check(lexer.TOKEN_RBRACE) {
-			for {
+		if isBraced {
+			if !p.check(lexer.TOKEN_RBRACE) {
+				for {
+					fieldName := p.parseIdentifier()
+					p.consume(lexer.TOKEN_COLON, "expected ':' after field name")
+					fieldValue := p.parseExpression()
+					fields = append(fields, &ast.FieldValue{
+						Name:  fieldName,
+						Value: fieldValue,
+					})
+
+					if p.match(lexer.TOKEN_COMMA) {
+						if p.check(lexer.TOKEN_RBRACE) {
+							break
+						}
+						continue
+					}
+					break
+				}
+			}
+			p.consume(lexer.TOKEN_RBRACE, "expected '}' after struct literal")
+		} else {
+			// Indented
+			for !p.check(lexer.TOKEN_DEDENT) && !p.isAtEnd() {
+				p.skipNewlines()
+				if p.check(lexer.TOKEN_DEDENT) {
+					break
+				}
+
 				fieldName := p.parseIdentifier()
 				p.consume(lexer.TOKEN_COLON, "expected ':' after field name")
 				fieldValue := p.parseExpression()
-				fields = append(fields, &ast.FieldValue{
-					Name:  fieldName,
-					Value: fieldValue,
-				})
+				fields = append(fields, &ast.FieldValue{Name: fieldName, Value: fieldValue})
 
-				if p.match(lexer.TOKEN_COMMA) {
-					if p.check(lexer.TOKEN_RBRACE) {
-						break
-					}
-					continue
+				if p.check(lexer.TOKEN_COMMA) {
+					p.advance()
 				}
-				break
+				p.skipNewlines()
 			}
+			p.consume(lexer.TOKEN_DEDENT, "expected dedent after struct fields")
 		}
-
-		p.consume(lexer.TOKEN_RBRACE, "expected '}' after struct literal")
 
 		return &ast.StructLiteralExpr{
 			Token:  ident.Token,
@@ -1982,4 +2055,91 @@ func (p *Parser) parseShorthandMethodCall() ast.Expression {
 	}
 
 	return expr
+}
+
+func (p *Parser) parseVarDeclaration() ast.Declaration {
+	token := p.advance() // consume 'var'
+	p.skipNewlines()
+
+	// Parse identifiers
+	var names []*ast.Identifier
+	firstIdent := p.parseIdentifier()
+	if firstIdent == nil {
+		return nil
+	}
+	names = append(names, firstIdent)
+
+	for p.match(lexer.TOKEN_COMMA) {
+		ident := p.parseIdentifier()
+		if ident == nil {
+			return nil
+		}
+		names = append(names, ident)
+	}
+
+	// Parse type (optional)
+	var typeAnnot ast.TypeAnnotation
+	// Check if next is assignment or implicit newline/EOF (if allowed?)
+	// If not assignment, try to parse type.
+	if !p.check(lexer.TOKEN_ASSIGN) {
+		typeAnnot = p.parseTypeAnnotation()
+	}
+
+	// Parse values
+	var values []ast.Expression
+	if p.match(lexer.TOKEN_ASSIGN) {
+		values = p.parseExpressionList()
+	}
+
+	p.skipNewlines()
+
+	return &ast.VarDeclStmt{
+		Token:  token,
+		Names:  names,
+		Type:   typeAnnot,
+		Values: values,
+	}
+}
+
+func (p *Parser) parseMapLiteral() *ast.MapLiteralExpr {
+	token := p.advance() // consume 'map'
+	p.consume(lexer.TOKEN_OF, "expected 'of' after 'map'")
+	keyType := p.parseTypeAnnotation()
+	p.consume(lexer.TOKEN_TO, "expected 'to' after key type")
+	valType := p.parseTypeAnnotation()
+
+	// Handle both Brace-based: { key: val } and Indent-based?
+	// The constraints said "No map literals — map of K to V{...} does not parse".
+	// So explicit braces are requested.
+
+	p.consume(lexer.TOKEN_LBRACE, "expected '{' after map type")
+
+	pairs := []*ast.KeyValuePair{}
+	if !p.check(lexer.TOKEN_RBRACE) {
+		for {
+			// Newlines are suppressed inside braces by lexer, but we can verify
+			key := p.parseExpression()
+			p.consume(lexer.TOKEN_COLON, "expected ':' after map key")
+			val := p.parseExpression()
+
+			pairs = append(pairs, &ast.KeyValuePair{Key: key, Value: val})
+
+			if p.match(lexer.TOKEN_COMMA) {
+				if p.check(lexer.TOKEN_RBRACE) {
+					break
+				}
+				continue
+			}
+			break
+		}
+	}
+
+	p.consume(lexer.TOKEN_RBRACE, "expected '}' after map literal")
+
+	return &ast.MapLiteralExpr{
+		Token:   token,
+		KeyType: keyType,
+		ValType: valType,
+		Pairs:   pairs,
+	}
 }

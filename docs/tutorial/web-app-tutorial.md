@@ -159,10 +159,7 @@ type Todo
 
 func sendTodo(response http.ResponseWriter, request reference http.Request)
     # Create a todo
-    todo := Todo
-        id: 1
-        title: "Learn Kukicha"
-        completed: false
+    todo := Todo{id: 1, title: "Learn Kukicha", completed: false}
     
     # Tell the browser we're sending JSON
     response.Header().Set("Content-Type", "application/json")
@@ -186,15 +183,20 @@ When creating a new todo, the user sends JSON data to us. We need to read and pa
 func createTodo(response http.ResponseWriter, request reference http.Request)
     # Create an empty todo to fill with the incoming data
     todo := Todo{}
-    
-    # Parse the JSON from the request body using pipe
+
+    # Parse the JSON from the request body — pipe it through decoder
     # "reference of" gets a pointer so the decoder can fill in our todo
-    request.Body |> json.NewDecoder() |> json.Decode(_, reference of todo) onerr
-        return response.WriteHeader(400) |> fmt.Fprintln(response, "Invalid JSON")
-    
+    decodeErr := request.Body
+        |> json.NewDecoder()
+        |> json.Decode(_, reference of todo)
+    if decodeErr not equals empty
+        response.WriteHeader(400)
+        fmt.Fprintln(response, "Invalid JSON")
+        return
+
     # Now 'todo' contains the data the user sent!
     print("Received todo: {todo.title}")
-    
+
     # Send back a success response
     response.Header().Set("Content-Type", "application/json")
     response.WriteHeader(201)  # 201 = Created
@@ -219,15 +221,16 @@ When we write `reference of todo`, we're giving the JSON decoder a way to **fill
 
 ## Step 5: Building the Todo Storage
 
-Let's create a simple way to store our todos. We'll use a **global variable** for now (we'll learn a better way in the next tutorial):
+Let's create a type to hold our todo list and the next available ID. Wrapping state in a type keeps things organized — and as a bonus, we can pass our store to HTTP handlers using **method values** (we'll see that in Step 6):
 
 ```kukicha
-# Our todo storage - a list of todos and the next available ID
-var todos list of Todo
-var nextId int = 1
+# Our todo storage - bundled into a type
+type TodoStore
+    todos list of Todo
+    nextId int
 ```
 
-For finding todos by ID, we'll use a helper function that returns just the index (we can get the todo from the index if needed). This is more efficient than returning multiple values when we only need the index for updates and deletes.
+For finding todos by ID, we'll walk the list and return the index. We can get the todo from the index if needed — this avoids returning multiple values when we only need the index for updates and deletes.
 
 ---
 
@@ -239,9 +242,7 @@ Now let's put it all together! Create `main.kuki`:
 import "net/http"
 import "encoding/json/v2"  # Go 1.25+ for better performance
 import "strconv"
-import "slices"
 import "stdlib/string"
-import "stdlib/iterator"
 
 # --- Data Types ---
 
@@ -250,43 +251,47 @@ type Todo
     title string
     completed bool
 
-# --- Storage ---
+# ErrorResponse is what the client receives when something goes wrong.
+# The json tag maps the "err" field to the JSON key "error".
+type ErrorResponse
+    err string json:"error"
+
+# --- Store ---
 # (In the Production tutorial, we'll use a database instead)
 
-var todos list of Todo
-var nextId int = 1
+type TodoStore
+    todos list of Todo
+    nextId int
 
 # --- Helper Functions ---
 
-func findTodoIndex(id int) int
-    # Use standard slices.IndexFunc to find the item
-    return todos |> slices.IndexFunc(func(t Todo) bool
-        return t.id equals id
-    )
+func findTodoIndex on store reference TodoStore(id int) int
+    # Walk the list to find the matching ID
+    for i, todo in store.todos
+        if todo.id equals id
+            return i
+    return -1
 
 func getIdFromPath(path string, prefix string) (int, bool)
     # Extract "1" from "/todos/1"
     idStr := string.TrimPrefix(path, prefix)
     if idStr equals "" or idStr equals path
         return 0, false
-    
+
     id := idStr |> strconv.Atoi() onerr return 0, false
     return id, true
 
-func sendJSON(response http.ResponseWriter, data any)
+func sendJSON on store reference TodoStore(response http.ResponseWriter, data any)
     # Helper to send any data as JSON with correct content-type header
     response.Header().Set("Content-Type", "application/json")
     response |> json.NewEncoder() |> .Encode(data) onerr return
 
-func sendError(response http.ResponseWriter, status int, message string)
+func sendError on store reference TodoStore(response http.ResponseWriter, status int, message string)
     # Helper to send error responses as JSON
     # The client will receive a JSON object like {"error":"message"} with the given status code
     response.Header().Set("Content-Type", "application/json")
     response.WriteHeader(status)
-
-    errorResponse := map of string to string
-        error: message
-    response |> json.NewEncoder() |> .Encode(errorResponse) onerr return
+    response |> json.NewEncoder() |> .Encode(ErrorResponse{err: message}) onerr return
 ```
 
 > **💡 Pro Tip:** In production code, use `stdlib/http` helpers instead of writing these manually:
@@ -302,138 +307,149 @@ func sendError(response http.ResponseWriter, status int, message string)
 # --- API Handlers ---
 
 # GET /todos - List all todos (with optional search)
-func handleListTodos(response http.ResponseWriter, request reference http.Request)
+func handleListTodos on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Note: In production, you'd add limit/offset query parameters for pagination
     # to handle large datasets efficiently
     search := request.URL.Query().Get("search")
     if search equals ""
-        sendJSON(response, todos)
+        store.sendJSON(response, store.todos)
         return
-    
-    # Supercharge the data flow with iterators!
-    # Note: This is a simple case-insensitive substring match
+
+    # Filter todos that contain the search string (case-insensitive)
+    # Note: This is a simple substring match.
     # For production, regex or full-text search would be better for larger datasets
-    filtered := todos
-        |> slices.Values()
-        |> iterator.Filter(func(t Todo) bool
-            return string.Contains(string.ToLower(t.title), string.ToLower(search))
-        )
-        |> iterator.Collect()
-    
-    sendJSON(response, filtered)
+    filtered := empty list of Todo
+    for todo in store.todos
+        if string.Contains(string.ToLower(todo.title), string.ToLower(search))
+            filtered = append(filtered, todo)
+
+    store.sendJSON(response, filtered)
 
 # POST /todos - Create a new todo
-func handleCreateTodo(response http.ResponseWriter, request reference http.Request)
-    # Parse the incoming JSON using pipe
-    todo := Todo{}
+func handleCreateTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
+    # Parse the incoming JSON — pipe through decoder
     # reference of todo gives the decoder a pointer so it can fill in the struct
-    request.Body |> json.NewDecoder() |> json.Decode(_, reference of todo) onerr
-        return sendError(response, 400, "Invalid JSON")
-    
+    todo := Todo{}
+    decodeErr := request.Body
+        |> json.NewDecoder()
+        |> json.Decode(_, reference of todo)
+    if decodeErr not equals empty
+        store.sendError(response, 400, "Invalid JSON")
+        return
+
     # Validate
     if todo.title equals ""
-        return sendError(response, 400, "Title is required")
-    
+        store.sendError(response, 400, "Title is required")
+        return
+
     # Assign an ID and add to the list
-    todo.id = nextId
-    nextId = nextId + 1
-    todos = append(todos, todo)
-    
+    todo.id = store.nextId
+    store.nextId = store.nextId + 1
+    store.todos = append(store.todos, todo)
+
     # Send back the created todo
     response.WriteHeader(201)
-    sendJSON(response, todo)
+    store.sendJSON(response, todo)
 
 # GET /todos/{id} - Get a specific todo
-func handleGetTodo(response http.ResponseWriter, request reference http.Request)
+func handleGetTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Get the ID from the URL
     id, ok := getIdFromPath(request.URL.Path, "/todos/")
     if not ok
-        sendError(response, 400, "Invalid todo ID")
+        store.sendError(response, 400, "Invalid todo ID")
         return
-    
+
     # Find the todo
-    index := findTodoIndex(id)
+    index := store.findTodoIndex(id)
     if index equals -1
-        sendError(response, 404, "Todo not found")
+        store.sendError(response, 404, "Todo not found")
         return
-    
-    sendJSON(response, todos[index])
+
+    store.sendJSON(response, store.todos[index])
 
 # PUT /todos/{id} - Update a todo
-func handleUpdateTodo(response http.ResponseWriter, request reference http.Request)
+func handleUpdateTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Get the ID from the URL
     id, ok := getIdFromPath(request.URL.Path, "/todos/")
     if not ok
-        sendError(response, 400, "Invalid todo ID")
+        store.sendError(response, 400, "Invalid todo ID")
         return
-    
+
     # Find the todo
-    index := findTodoIndex(id)
+    index := store.findTodoIndex(id)
     if index equals -1
-        sendError(response, 404, "Todo not found")
+        store.sendError(response, 404, "Todo not found")
         return
-    
-    # Parse the update using pipe
+
+    # Parse the update — pipe through decoder
     updated := Todo{}
-    request.Body |> json.NewDecoder() |> json.Decode(_, reference of updated) onerr
-        return sendError(response, 400, "Invalid JSON")
-    
+    updateErr := request.Body
+        |> json.NewDecoder()
+        |> json.Decode(_, reference of updated)
+    if updateErr not equals empty
+        store.sendError(response, 400, "Invalid JSON")
+        return
+
     # Keep the original ID, update other fields
     updated.id = id
-    todos[index] = updated
-    
-    sendJSON(response, updated)
+    store.todos[index] = updated
+
+    store.sendJSON(response, updated)
 
 # DELETE /todos/{id} - Delete a todo
-func handleDeleteTodo(response http.ResponseWriter, request reference http.Request)
+func handleDeleteTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Get the ID from the URL
     id, ok := getIdFromPath(request.URL.Path, "/todos/")
     if not ok
-        sendError(response, 400, "Invalid todo ID")
+        store.sendError(response, 400, "Invalid todo ID")
         return
-    
+
     # Find the todo
-    index := findTodoIndex(id)
+    index := store.findTodoIndex(id)
     if index equals -1
-        sendError(response, 404, "Todo not found")
+        store.sendError(response, 404, "Todo not found")
         return
-    
+
     # Remove by creating a new list without this item
-    todos = append(todos[:index], todos[index+1:]...)
-    
+    # 'many' unpacks the second slice so append sees individual elements
+    store.todos = append(store.todos[:index], many store.todos[index+1:])
+
     response.WriteHeader(204)  # 204 = No Content (success, nothing to return)
 
 # --- Route Handler ---
 
-func handleTodos(response http.ResponseWriter, request reference http.Request)
+func handleTodos on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Route to the right handler based on the path and method
-    
+
     if request.URL.Path equals "/todos"
         # Collection routes: /todos
         if request.Method equals "GET"
-            handleListTodos(response, request)
+            store.handleListTodos(response, request)
         else if request.Method equals "POST"
-            handleCreateTodo(response, request)
+            store.handleCreateTodo(response, request)
         else
-            sendError(response, 405, "Method not allowed")
+            store.sendError(response, 405, "Method not allowed")
     else
         # Item routes: /todos/{id}
         if request.Method equals "GET"
-            handleGetTodo(response, request)
+            store.handleGetTodo(response, request)
         else if request.Method equals "PUT"
-            handleUpdateTodo(response, request)
+            store.handleUpdateTodo(response, request)
         else if request.Method equals "DELETE"
-            handleDeleteTodo(response, request)
+            store.handleDeleteTodo(response, request)
         else
-            sendError(response, 405, "Method not allowed")
+            store.sendError(response, 405, "Method not allowed")
 
 # --- Main Entry Point ---
 
 func main()
-    # Set up routes
-    http.HandleFunc("/todos", handleTodos)
-    http.HandleFunc("/todos/", handleTodos)  # Trailing slash catches /todos/1
-    
+    # Create the store with an empty todo list
+    store := TodoStore{todos: empty list of Todo, nextId: 1}
+
+    # Set up routes — method values let us pass a method as a handler function
+    http.HandleFunc("/todos", store.handleTodos)
+    http.HandleFunc("/todos/", store.handleTodos)  # Trailing slash catches /todos/1
+
     print("=== Kukicha Todo API ===")
     print("Server running on http://localhost:8080")
     print("API endpoint: http://localhost:8080/todos")
@@ -442,7 +458,7 @@ func main()
     print("  curl http://localhost:8080/todos")
     print("  curl -X POST -d '{\"title\":\"Learn Kukicha\"}' http://localhost:8080/todos")
     print("")
-    
+
     # Note: In production, capture SIGINT and call http.Server.Shutdown()
     # for graceful shutdown instead of relying on panic
     http.ListenAndServe(":8080", empty) onerr panic "server failed to start"
@@ -529,7 +545,8 @@ Congratulations! You've built a real web API. Let's review:
 |---------|--------------|
 | **HTTP Server** | `http.ListenAndServe()` starts a web server |
 | **Pipe Operator** | Cleanly chain functions (like JSON encoders) with `|>` |
-| **Handlers** | Functions that respond to web requests |
+| **Method Values** | Pass `store.handleTodos` directly as an HTTP handler |
+| **Handlers** | Methods that respond to web requests |
 | **Request Methods** | GET (read), POST (create), PUT (update), DELETE (remove) |
 | **JSON** | Data format for web APIs (`encoding/json` package) |
 | **Status Codes** | Numbers that indicate success or failure |
@@ -542,7 +559,7 @@ Congratulations! You've built a real web API. Let's review:
 Our todo API works, but it has some limitations:
 
 1. **Data disappears when you restart** - We're storing in memory, not a database
-2. **Not safe for multiple users** - Concurrent writes to the global `todos` slice could race and corrupt data. In production, you'd use a mutex (sync lock) to protect access
+2. **Not safe for multiple users** - Concurrent writes to `store.todos` could race and corrupt data. In production, you'd use a mutex (sync lock) to protect access
 3. **No authentication** - Anyone can access it
 4. **No input validation** - We only check that title isn't empty. In production, you'd validate title length, sanitize input, and enforce business rules
 5. **Simple search only** - The substring search is slow on large datasets. You'd use regex or full-text search in production

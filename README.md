@@ -5,11 +5,11 @@
 Kukicha is a beginner-friendly programming language that transpiles to idiomatic Go code. No runtime overhead. No magic. Just cleaner syntax that becomes real Go.
 
 ```kukicha
-func isActive(u User) bool
-    return u.active
+func isActive(user User) bool
+    return user.active
 
-func getName(u User) string
-    return u.name
+func getName(user User) string
+    return user.name
 
 func main()
     users := fetchUsers() onerr panic "failed to fetch"
@@ -37,7 +37,7 @@ Kukicha fixes this:
 | `&&`, `\|\|`, `!` | `and`, `or`, `not` |
 | `*User`, `&user` | `reference User`, `reference of user` |
 | `nil` | `empty` |
-| `if err != nil { return err }` | `onerr return error` |
+| `if err != nil { return err }` | `onerr return error "{error}"` |
 | `break`, `continue` | `break`, `continue` |
 | `for { ... }` | `for` |
 

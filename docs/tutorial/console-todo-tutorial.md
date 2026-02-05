@@ -94,10 +94,7 @@ Now let's write a function to create a new todo:
 ```kukicha
 # CreateTodo makes a new todo with the given id and title
 func CreateTodo(id int, title string) Todo
-    return Todo
-        id: id
-        title: title
-        completed: false
+    return Todo{id: id, title: title, completed: false}
 ```
 
 This function takes an `id` number and a `title` string, and returns a brand new `Todo` with `completed` set to `false` (because new tasks aren't done yet!).
@@ -224,39 +221,39 @@ Now let's add methods to this type:
 
 ```kukicha
 # Add creates a new todo and adds it to the list
-# 'list' is the receiver (the TodoList instance we're working on)
-func Add on list reference TodoList, title string
-    todo := CreateTodo(list.nextId, title)
-    list.items = append(list.items, todo)
-    list.nextId = list.nextId + 1
+# 'tl' is the receiver (the TodoList instance we're working on)
+# Extra parameters go in parentheses after the receiver type
+func Add on tl reference TodoList(title string)
+    todo := CreateTodo(tl.nextId, title)
+    tl.items = append(tl.items, todo)
+    tl.nextId = tl.nextId + 1
     print("Added: {title}")
 ```
 
-**Note on receiver naming:** We use `list` as the receiver variable name (referring to the `TodoList` instance), which is clearer than a generic name. Some codebases use `tl` or `self` - pick whatever makes your code most readable!
+**Note on receiver naming:** We use `tl` as the receiver variable name (referring to the `TodoList` instance). Avoid using `list` — it's a keyword in Kukicha (as in `list of int`).
 
 ```kukicha
 # ShowAll displays all todos in the list
-func ShowAll on list TodoList
-    if len(list.items) equals 0
+func ShowAll on tl TodoList
+    if len(tl.items) equals 0
         print("No todos yet! Use 'add' to create one.")
         return
-    
+
     print("\n=== Your Todos ===")
-    for todo in list.items
+    for todo in tl.items
         print(todo.Display())
     print("")
 ```
 
 ```kukicha
 # Complete marks a todo as done by its id
-func Complete on list reference TodoList, id int
-    for i, todo in list.items
+func Complete on tl reference TodoList(id int)
+    for i, todo in tl.items
         if todo.id equals id
-            list.items[i].completed = true
+            tl.items[i].completed = true
             print("Completed: {todo.title}")
-            return true
+            return
     print("Todo #{id} not found")
-    return false
 ```
 
 ---
@@ -267,24 +264,24 @@ Real programs need to handle errors. What if the user types something that isn't
 
 Kukicha makes error handling readable with the `onerr` keyword.
 
-### The Old Way (tedious)
+### Without `onerr`
 
 ```kukicha
-# Without onerr - lots of repetitive code
+# Manual error check - explicit but verbose
 result, err := somethingThatMightFail()
 if err not equals empty
     print("Something went wrong!")
     return
 ```
 
-### The Kukicha Way (clean)
+### With `onerr` (single expression)
 
 ```kukicha
-# With onerr - handle the error inline
-result := somethingThatMightFail() onerr
-    print("Something went wrong!")
-    return
+# onerr handles the error in one line — best for simple cases
+result := somethingThatMightFail() onerr "default value"
 ```
+
+For multi-statement error handlers (like logging + returning), use the manual check above. `onerr` shines when the handler is a single expression: a default value, a `panic`, or a `return`.
 
 ### Common `onerr` Patterns
 
@@ -292,19 +289,23 @@ result := somethingThatMightFail() onerr
 # Pattern 1: Provide a default value
 name := getUserInput() onerr "Anonymous"
 
-# Pattern 2: Print an error and return
-data := loadFile() onerr
-    print("Could not load file")
-    return
-
-# Pattern 3: Panic (crash) with a message
+# Pattern 2: Panic (crash) with a message — good for startup config
 config := loadConfig() onerr panic "Missing config file!"
 
-# Pattern 4: Exit with an error (Advanced)
-# If your function returns an error, you can pass it along:
-func DoWork() error
-    data := loadFile() onerr return error
-    return empty
+# Pattern 3: Propagate the error to the caller
+# error "{error}" wraps the original error in a new one
+func DoWork() (string, error)
+    data := loadFile() onerr return empty, error "{error}"
+    return data, empty
+
+# Pattern 4: When you need to do something before returning,
+# use a manual error check instead:
+func DoWorkVerbose() (string, error)
+    data, err := loadFile()
+    if err not equals empty
+        print("Could not load file")
+        return empty, err
+    return data, empty
 ```
 
 ---
@@ -321,76 +322,73 @@ import "stdlib/string"
 import "strconv"
 
 # Save writes all todos to a file
-func Save on list TodoList, filename string error
+func Save on tl TodoList(filename string) error
     lines := empty list of string
 
-    for todo in list.items
+    for todo in tl.items
         # Format: id|title|completed
         # We use pipe (|) as a delimiter because titles can contain commas or spaces
-        # The format is simple: id|title|completed
         completed := "false"
         if todo.completed
             completed = "true"
         line := "{todo.id}|{todo.title}|{completed}"
         lines = append(lines, line)
 
-    # Join all lines and write to file using pipe operator
-    lines |> string.Join("\n") |> files.WriteString(filename) onerr return error
+    # Join all lines and write to file — pipe the data left to right
+    lines
+        |> string.Join("\n")
+        |> files.WriteString(filename) onerr return error "{error}"
 
-    print("Saved {len(list.items)} todos to {filename}")
+    print("Saved {len(tl.items)} todos to {filename}")
     return empty
 ```
 
-**Pipe Operator:** Notice the clean pipeline: `lines |> string.Join("\n") |> files.WriteString(filename)`. The data flows left-to-right: join the lines, then write to file.
+**Pipe Operator:** Notice the clean pipeline: join the lines, then write to file, with each step on its own line. The `onerr return error "{error}"` propagates any write failure to the caller.
 
 ```kukicha
 # Load reads todos from a file
 func Load(filename string) (TodoList, error)
-    list := TodoList
-        items: empty list of Todo
-        nextId: 1
+    tl := TodoList{items: empty list of Todo, nextId: 1}
 
     # Read the file content as bytes, convert to string, and split into lines
     data, err := files.Read(filename)
     if err != empty
-        return list, err
-    lines := string.Split(data as string, "\n")
-    
+        return tl, err
+    lines := string.Split(string(data), "\n")
+
     # Skip if file is empty
     if len(lines) equals 0 or (len(lines) equals 1 and lines[0] equals "")
-        return list, empty
+        return tl, empty
     maxId := 0
-    
+
     for line in lines
         if line equals ""
             continue
-        
+
         parts := string.Split(line, "|")
         if len(parts) not equals 3
             continue
-        
-        id := parts[0] |> strconv.Atoi() onerr continue
+
+        # strconv.Atoi can fail on bad data — skip the line if so
+        id, parseErr := strconv.Atoi(parts[0])
+        if parseErr not equals empty
+            continue
         title := parts[1]
         completed := parts[2] equals "true"
-        
-        todo := Todo
-            id: id
-            title: title
-            completed: completed
-        
-        list.items = append(list.items, todo)
-        
+
+        tl.items = append(tl.items, Todo{id: id, title: title, completed: completed})
+
         if id > maxId
             maxId = id
-    
-    list.nextId = maxId + 1
-    print("Loaded {len(list.items)} todos from {filename}")
-    return list, empty
+
+    tl.nextId = maxId + 1
+    print("Loaded {len(tl.items)} todos from {filename}")
+    return tl, empty
 ```
 
-Notice how `onerr` makes the file operations clean:
-- `onerr return error` - Pass the error to the caller
-- `onerr continue` - Skip this line and try the next one
+Notice the error handling approaches:
+- `onerr return error "{error}"` (in Save) — propagates the error to the caller in one line
+- Manual `if err not equals empty` (in Load) — use this when you need to do something other than return before continuing
 
 ---
 
@@ -429,84 +427,79 @@ func Display on todo Todo string
 
 # --- TodoList Methods ---
 
-func Add on list reference TodoList, title string
-    todo := Todo
-        id: list.nextId
-        title: title
-        completed: false
-    list.items = append(list.items, todo)
-    list.nextId = list.nextId + 1
+func Add on tl reference TodoList(title string)
+    todo := Todo{id: tl.nextId, title: title, completed: false}
+    tl.items = append(tl.items, todo)
+    tl.nextId = tl.nextId + 1
     print("Added: {title}")
 
-func ShowAll on list TodoList
-    if len(list.items) equals 0
+func ShowAll on tl TodoList
+    if len(tl.items) equals 0
         print("\nNo todos yet! Use 'add <task>' to create one.\n")
         return
-    
+
     print("\n=== Your Todos ===")
-    for todo in list.items
+    for todo in tl.items
         print(todo.Display())
     print("")
 
-func Complete on list reference TodoList, id int
-    for i, todo in list.items
+func Complete on tl reference TodoList(id int)
+    for i, todo in tl.items
         if todo.id equals id
-            list.items[i].completed = true
+            tl.items[i].completed = true
             print("Completed: {todo.title}")
             return
     print("Todo #{id} not found")
 
-func Save on list TodoList, filename string
+func Save on tl TodoList(filename string)
     lines := empty list of string
 
-    for todo in list.items
+    for todo in tl.items
         completed := "false"
         if todo.completed
             completed = "true"
         lines = append(lines, "{todo.id}|{todo.title}|{completed}")
 
-    lines |> string.Join("\n") |> files.WriteString(filename) onerr
-        print("Error saving: could not write file")
-        return
+    # Join lines and write to file — pipe the data left to right
+    lines
+        |> string.Join("\n")
+        |> files.WriteString(filename) onerr return
 
-    print("Saved {len(list.items)} todos to {filename}")
+    print("Saved {len(tl.items)} todos to {filename}")
 
 # --- Helper Functions ---
 
 func LoadTodos(filename string) TodoList
-    list := TodoList
-        items: empty list of Todo
-        nextId: 1
+    tl := TodoList{items: empty list of Todo, nextId: 1}
 
     data, err := files.Read(filename)
     if err != empty
-        return list
-    lines := string.Split(data as string, "\n")
-    
+        return tl
+    lines := string.Split(string(data), "\n")
+
     maxId := 0
     for line in lines
         if line equals ""
             continue
-        
+
         parts := string.Split(line, "|")
         if len(parts) not equals 3
             continue
-        
-        id := parts[0] |> strconv.Atoi() onerr continue
+
+        # Atoi can fail on bad data — skip the line
+        id, parseErr := strconv.Atoi(parts[0])
+        if parseErr not equals empty
+            continue
         title := parts[1]
         completed := parts[2] equals "true"
-        
-        list.items = append(list.items, Todo
-            id: id
-            title: title
-            completed: completed
-        )
-        
+
+        tl.items = append(tl.items, Todo{id: id, title: title, completed: completed})
+
         if id > maxId
             maxId = id
-    
-    list.nextId = maxId + 1
-    return list
+
+    tl.nextId = maxId + 1
+    return tl
 
 func PrintHelp()
     print("Commands:")
@@ -522,72 +515,67 @@ func PrintHelp()
 func main()
     filename := "todos.txt"
     # Note: This file will be created in the current working directory
-    # This works the same on Windows, macOS, and Linux
-    
+
     # Try to load existing todos
-    list := LoadTodos(filename)
-    
+    tl := LoadTodos(filename)
+
     print("=== Kukicha Todo App ===")
     print("Type 'help' for commands\n")
-    
+
     # Show existing todos if any
-    if len(list.items) > 0
-        list.ShowAll()
-    
+    if len(tl.items) > 0
+        tl.ShowAll()
+
     # Create a reader for user input
     reader := bufio.NewReader(os.Stdin)
-    
+
     # Main loop
     for
         fmt.Print("> ")
-        
-        # Read user input
-        input := reader.ReadString('\n') onerr
-            print("Error reading input")
-            continue
-        
-        # Clean up the input using pipe
-        input = input 
-            |> string.TrimSpace()
-        
+
+        # Read user input — default to empty string on error
+        input := reader.ReadString('\n') onerr ""
+        input = input |> string.TrimSpace()
+
         if input equals ""
             continue
-        
-        # Parse the command using pipe
+
         # SplitN(" ", 2) splits into at most 2 parts, so "add Buy milk" becomes ["add", "Buy milk"]
         # This protects against titles containing spaces
         parts := input |> string.SplitN(" ", 2)
         command := parts[0] |> string.ToLower()
-        
+
         if command equals "quit" or command equals "exit" or command equals "q"
             print("Goodbye!")
             break
-        
+
         else if command equals "help" or command equals "?"
             PrintHelp()
-        
+
         else if command equals "list" or command equals "ls"
-            list.ShowAll()
-        
+            tl.ShowAll()
+
         else if command equals "add"
             if len(parts) < 2
                 print("Usage: add <task description>")
                 continue
             title := parts[1]
-            list.Add(title)
-        
+            tl.Add(title)
+
         else if command equals "done" or command equals "complete"
             if len(parts) < 2
                 print("Usage: done <id>")
                 continue
-            id := parts[1] |> strconv.Atoi() onerr
+            # Parse the id — print a message and skip if it's not a number
+            id, idErr := strconv.Atoi(parts[1])
+            if idErr not equals empty
                 print("Invalid id: {parts[1]}")
                 continue
-            list.Complete(id)
-        
+            tl.Complete(id)
+
         else if command equals "save"
-            list.Save(filename)
-        
+            tl.Save(filename)
+
         else
             print("Unknown command: {command}")
             print("Type 'help' for available commands")

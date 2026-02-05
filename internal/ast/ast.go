@@ -282,6 +282,7 @@ func (s *VarDeclStmt) Pos() Position {
 	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
 }
 func (s *VarDeclStmt) stmtNode() {}
+func (s *VarDeclStmt) declNode() {}
 
 type AssignStmt struct {
 	Targets []Expression // Can be single or multiple targets
@@ -843,3 +844,14 @@ func (e *DerefExpr) Pos() Position {
 	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
 }
 func (e *DerefExpr) exprNode() {}
+
+type BlockExpr struct {
+	Token lexer.Token // The INDENT token
+	Body  *BlockStmt
+}
+
+func (e *BlockExpr) TokenLiteral() string { return e.Token.Lexeme }
+func (e *BlockExpr) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *BlockExpr) exprNode() {}

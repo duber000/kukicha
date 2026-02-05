@@ -76,7 +76,7 @@ content := file.read("config.json") onerr panic "missing file"
 port := env.get("PORT") onerr "8080"
 
 # Return error to caller
-data := fetchData() onerr return empty, error
+data := fetchData() onerr return empty, error "{error}"
 
 # Discard error (use sparingly)
 result := riskyOp() onerr discard
@@ -89,14 +89,16 @@ result := data
     |> transform()
     |> process()
 
-# With arguments (piped value becomes first argument)
+# With arguments — use named functions (inline closures don't compile)
+func isActive(u User) bool
+    return u.active
+
+func getName(u User) string
+    return u.name
+
 users := fetchUsers()
-    |> slice.Filter(func(u User) bool
-        return u.active
-    )
-    |> slice.Map(func(u User) string
-        return u.name
-    )
+    |> slice.Filter(isActive)
+    |> slice.Map(getName)
 
 # Placeholder strategy: use _ to specify where piped value goes
 # Useful when piped value isn't the first argument
@@ -167,11 +169,12 @@ interface Storage
 items := list of string{"a", "b", "c"}
 last := items[-1]                    # Negative indexing supported
 
-# Maps
-config := map of string to int{"port": 8080}
+# Maps (use make + assignment — map literals don't parse)
+config := make(map of string to int)
+config["port"] = 8080
 
-# Check membership
-if user in admins
+# Check membership (use slices.Contains — 'in' only works in for loops)
+if slices.Contains(admins, user)
     grantAccess()
 ```
 
@@ -251,10 +254,11 @@ func ForEach(items list of string, action func(string))
     for item in items
         action(item)
 
-# Pass function literal as callback
-evens := Filter(list of int{1, 2, 3, 4}, func(n int) bool
+# Pass named function as callback (inline closures don't compile)
+func isEven(n int) bool
     return n % 2 equals 0
-)
+
+evens := Filter(list of int{1, 2, 3, 4}, isEven)
 ```
 
 ## Transpilation Patterns
@@ -315,22 +319,27 @@ resp = resp |> fetch.CheckStatus() onerr panic "bad status"
 data := resp |> fetch.Bytes() onerr panic "read failed"
 json.Unmarshal(data, reference of repos) onerr panic "parse failed"
 
-# Filter with pipes
-activeRepos := repos |> slice.Filter(func(r Repo) bool
+# Filter with pipes — use named predicate
+func hasEnoughStars(r Repo) bool
     return r.Stars > 100
-)
+
+activeRepos := repos |> slice.Filter(hasEnoughStars)
 ```
 
 ### Parse Package (jsonv2 powered)
 ```kukicha
 # Standard JSON parsing - use json.Unmarshal with parse.Json()
 config := Config{}
-jsonStr |> parse.Json() |> json.Unmarshal(_, reference config) onerr panic "parse failed"
+jsonStr |> parse.Json() |> json.Unmarshal(_, reference of config) onerr panic "parse failed"
 
 # NDJSON (newline-delimited JSON) parsing
 lines := logData |> parse.JsonLines()  # Returns list of JSON strings
-logs := lines |> slice.Map(parse.Json)  # Convert each line to bytes
-           |> slice.Map(json.Unmarshal(_, reference of LogEntry{}))
+logs := list of LogEntry{}
+for line in lines
+    entry := LogEntry{}
+    parseErr := json.Unmarshal(list of byte(line), reference of entry)
+    if parseErr equals empty
+        logs = append(logs, entry)
 
 # Pretty-print JSON - delegates to json.MarshalPretty
 output := config |> parse.JsonPretty()
@@ -344,7 +353,7 @@ import "stdlib/concurrent"
 concurrent.Parallel(task1, task2, task3)
 
 # Limit concurrent execution (at most 4 tasks at once)
-concurrent.ParallelWithLimit(4, tasks...)
+concurrent.ParallelWithLimit(4, many tasks)
 
 # Run a function in a goroutine
 concurrent.Go(myFunc)
@@ -430,9 +439,10 @@ type LogEntry
     message string
 
 # Group log entries by level (automatically generates [T any, K comparable])
-entries := logs |> slice.GroupBy(func(e LogEntry) string
+func getLevel(e LogEntry) string
     return e.level
-)
+
+entries := logs |> slice.GroupBy(getLevel)
 # Result: map[string][]LogEntry with keys "ERROR", "WARN", "INFO", etc.
 
 # GroupBy is Go 1.25+ generic - you write simple Kukicha code, transpiler handles the generics
@@ -468,10 +478,8 @@ import "stdlib/slice"
 
 ### Struct Literals
 ```kukicha
-todo := Todo
-    id: 1
-    title: "Learn Kukicha"
-    completed: false
+# Use inline form (multiline struct literals don't parse)
+todo := Todo{id: 1, title: "Learn Kukicha", completed: false}
 ```
 
 ### Defer

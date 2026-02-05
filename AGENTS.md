@@ -56,11 +56,12 @@ func SetDone on todo reference Todo       # Pointer receiver
 
 ### Error Handling (`onerr`)
 ```kukicha
-data := fetchData() onerr panic "failed"      # Panic on error
-data := fetchData() onerr return empty, error # Propagate error
-port := getPort() onerr 8080                  # Default value
-_ := riskyOp() onerr discard                  # Ignore error
+data := fetchData() onerr panic "failed"              # Panic on error
+data := fetchData() onerr return empty, error "{error}" # Propagate error
+port := getPort() onerr 8080                          # Default value
+_ := riskyOp() onerr discard                          # Ignore error
 ```
+> **Note:** `error` always requires a message string. Use `error "{error}"` to re-wrap the implicit onerr error variable. Multi-statement error handling is supported via indented blocks following `onerr`.
 
 ### Types
 ```kukicha
@@ -75,7 +76,7 @@ type Todo
 ```kukicha
 items := list of string{"a", "b", "c"}
 config := map of string to int{"port": 8080}
-last := items[-1]                   # Negative indexing
+last := items[-1]                      # Negative indexing
 ```
 
 ### Control Flow
@@ -150,6 +151,12 @@ docs/                 # Documentation
 4. **Explicit function signatures** - Parameters and return types must be declared
 5. **Test with `make test`** - Sets required `GOEXPERIMENT=jsonv2,greenteagc`
 
+### Parser Constraints (Last Updated: 2026-02-04)
+The following limitations still exist in the compiler:
+
+- **No closures as call arguments** — `f(func(x T) bool\n    return ...\n)` fails because indentation tokens are suppressed inside parentheses. **Workaround:** Extract to a named top-level function and pass by name: `f(myPredicate)`.
+- **Semantic limit on multi-value pipe return** — `return x |> f()` where `f` returns `(T, error)` parses correctly but currently fails semantic analysis/codegen. **Workaround:** Capture to a variable first: `val, err := x |> f() \n return val, err`.
+
 ## Adding Features to the Compiler
 
 Typical workflow for new syntax:
@@ -183,8 +190,8 @@ Import with: `import "stdlib/slice"`
 ```kukicha
 # Validation (returns error for onerr)
 import "stdlib/validate"
-email |> validate.Email() onerr return error
-age |> validate.InRange(18, 120) onerr return error
+email |> validate.Email() onerr return error "{error}"
+age |> validate.InRange(18, 120) onerr return error "{error}"
 
 # Startup config (panics if missing/invalid)
 import "stdlib/must"

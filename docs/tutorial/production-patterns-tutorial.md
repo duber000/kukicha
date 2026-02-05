@@ -29,34 +29,19 @@ Let's fix all three!
 
 ---
 
-## Part 1: Go-Style Method Receivers
+## Part 1: Method Receivers
 
 In the previous tutorials, we used Kukicha's `on` syntax for methods:
 
 ```kukicha
 # Kukicha style - English-like
-func Display on todo Todo string
+func Display on todo Todo() string
     return "{todo.id}. {todo.title}"
 ```
 
-Go uses a different syntax that you'll see in most Go code:
+This is the **only** method syntax Kukicha supports. When you read Go code, you'll see a different syntax (`func (todo Todo) Display() string`), but in Kukicha that maps directly to the `on` form. The translation table at the end of this tutorial covers the full mapping.
 
-```kukicha
-# Go style - what you'll see in codebases
-func (todo Todo) Display() string
-    return "{todo.id}. {todo.title}"
-```
-
-Both compile to the same Go code! The Go style puts the receiver in parentheses before the function name.
-
-### When to Use Which?
-
-| Style | Best For |
-|-------|----------|
-| `func Name on receiver Type` | Learning, readability |
-| `func (receiver Type) Name()` | Go compatibility, team projects |
-
-For this tutorial, we'll use **Go-style receivers** since that's what you'll encounter in real Go projects.
+For this tutorial, we'll use `on`-style receivers throughout — the same pattern you learned in the Console Todo tutorial, but now with pointer receivers for mutation.
 
 ### Understanding `reference` vs `reference of`
 
@@ -108,26 +93,23 @@ Now let's write methods that use locking:
 
 ```kukicha
 # Get all todos - uses a read lock
-func (s reference Server) GetAllTodos() list of Todo
+func GetAllTodos on s reference Server() list of Todo
     s.mu.RLock()           # Start reading
     defer s.mu.RUnlock()   # Unlock when done (even if there's an error)
-    
+
     # Return a copy using standard slices.Clone
     return slices.Clone(s.todos)
 
 # Create a new todo - uses a write lock
-func (s reference Server) CreateTodo(title string) Todo
+func CreateTodo on s reference Server(title string) Todo
     s.mu.Lock()           # Start writing (exclusive access)
     defer s.mu.Unlock()   # Unlock when done
-    
-    todo := Todo
-        id: s.nextId
-        title: title
-        completed: false
-    
+
+    todo := Todo{id: s.nextId, title: title, completed: false}
+
     s.nextId = s.nextId + 1
     s.todos = append(s.todos, todo)
-    
+
     return todo
 ```
 
@@ -164,7 +146,7 @@ func OpenDatabase(filename string) (Database, error)
     db, err := sql.Open("sqlite3", filename)
     if err not equals empty
         return empty, err
-    
+
     # Create the todos table
     createTable := `
         CREATE TABLE IF NOT EXISTS todos (
@@ -173,12 +155,12 @@ func OpenDatabase(filename string) (Database, error)
             completed BOOLEAN DEFAULT FALSE
         )
     `
-    db.Exec(createTable) onerr return empty, error
-    
+    db.Exec(createTable) onerr return empty, error "{error}"
+
     return Database{db: db}, empty
 
 # Close the database
-func (d Database) Close()
+func Close on d Database()
     # empty is equivalent to nil in Go
     if d.db not equals empty
         d.db.Close()
@@ -188,59 +170,59 @@ func (d Database) Close()
 
 ```kukicha
 # Create a new todo
-func (d Database) CreateTodo(title string) (Todo, error)
-    result := d.db.Exec("INSERT INTO todos (title, completed) VALUES (?, FALSE)", title) 
-        onerr return Todo{}, error
-    
+func CreateTodo on d Database(title string) (Todo, error)
+    result, execErr := d.db.Exec("INSERT INTO todos (title, completed) VALUES (?, FALSE)", title)
+    if execErr not equals empty
+        return Todo{}, execErr
+
     # Note: 'onerr' creates an implicit 'error' variable. If we used it again here,
     # it would "shadow" (hide) the outer error from the function signature.
     # Always explicitly handle or propagate the error to avoid confusion.
-    id := result.LastInsertId() onerr return Todo{}, error
-    
-    todo := Todo
-        id: int(id)
-        title: title
-        completed: false
-    return todo, empty
+    id, idErr := result.LastInsertId()
+    if idErr not equals empty
+        return Todo{}, idErr
+
+    return Todo{id: int(id), title: title, completed: false}, empty
 
 # Get all todos
-func (d Database) GetAllTodos() (list of Todo, error)
+func GetAllTodos on d Database() (list of Todo, error)
     # Returns a cloned slice to prevent external mutations
     # Note: This is a shallow copy; deep copy needed if fields become reference types
-    rows := d.db.Query("SELECT id, title, completed FROM todos") onerr
-        return empty, error
+    rows, queryErr := d.db.Query("SELECT id, title, completed FROM todos")
+    if queryErr not equals empty
+        return empty, queryErr
     defer rows.Close()
-    
+
     todos := empty list of Todo
-    
+
     for rows.Next()
         todo := Todo{}
-        rows.Scan(reference of todo.id, reference of todo.title, reference of todo.completed) onerr
+        scanErr := rows.Scan(reference of todo.id, reference of todo.title, reference of todo.completed)
+        if scanErr not equals empty
             continue
         todos = append(todos, todo)
-    
+
     return todos, empty
 
 # Get a single todo by ID
-func (d Database) GetTodo(id int) (Todo, error)
+func GetTodo on d Database(id int) (Todo, error)
     row := d.db.QueryRow("SELECT id, title, completed FROM todos WHERE id = ?", id)
-    
+
     todo := Todo{}
-    row.Scan(reference of todo.id, reference of todo.title, reference of todo.completed) onerr
-        return Todo{}, error
-    
+    scanErr := row.Scan(reference of todo.id, reference of todo.title, reference of todo.completed)
+    if scanErr not equals empty
+        return Todo{}, scanErr
+
     return todo, empty
 
 # Update a todo
-func (d Database) UpdateTodo(id int, title string, completed bool) error
-    d.db.Exec("UPDATE todos SET title = ?, completed = ? WHERE id = ?", title, completed, id) onerr
-        return error
+func UpdateTodo on d Database(id int, title string, completed bool) error
+    d.db.Exec("UPDATE todos SET title = ?, completed = ? WHERE id = ?", title, completed, id) onerr return error "{error}"
     return empty
 
 # Delete a todo
-func (d Database) DeleteTodo(id int) error
-    d.db.Exec("DELETE FROM todos WHERE id = ?", id) onerr
-        return error
+func DeleteTodo on d Database(id int) error
+    d.db.Exec("DELETE FROM todos WHERE id = ?", id) onerr return error "{error}"
     return empty
 ```
 
@@ -265,6 +247,10 @@ import "encoding/json/v2"
 
 # Kukicha stdlib
 import "stdlib/string"
+import "stdlib/validate"
+import "stdlib/http" as httphelper
+import "stdlib/must"
+import "stdlib/env"
 
 # Third-party packages
 import _ "github.com/mattn/go-sqlite3"   # SQLite driver (requires CGO)
@@ -280,7 +266,7 @@ type Server
     db Database
 
 type ErrorResponse
-    error string json:"error"
+    err string json:"error"
 
 type CreateTodoInput
     title string
@@ -292,16 +278,17 @@ type UpdateTodoInput
 # --- Server Constructor ---
 
 func NewServer(dbPath string) (reference Server, error)
-    db := OpenDatabase(dbPath) onerr return empty, error
-    
-    server := Server
-        db: db
-    
+    db, dbErr := OpenDatabase(dbPath)
+    if dbErr not equals empty
+        return empty, dbErr
+
+    server := Server{db: db}
+
     return reference of server, empty
 
-# --- HTTP Handlers (Go-style receivers) ---
+# --- HTTP Handlers ---
 
-func (s reference Server) HandleTodos(w http.ResponseWriter, r reference http.Request)
+func HandleTodos on s reference Server(w http.ResponseWriter, r reference http.Request)
     if r.URL.Path equals "/todos"
         if r.Method equals "GET"
             s.handleListTodos(w, r)
@@ -319,112 +306,129 @@ func (s reference Server) HandleTodos(w http.ResponseWriter, r reference http.Re
         else
             s.sendError(w, 405, "Method not allowed")
 
-func (s reference Server) handleListTodos(w http.ResponseWriter, r reference http.Request)
-    todos, err := s.db.GetAllTodos() onerr
+func handleListTodos on s reference Server(w http.ResponseWriter, r reference http.Request)
+    todos, err := s.db.GetAllTodos()
+    if err not equals empty
         log.Printf("Error fetching todos: %v", err)
         s.sendError(w, 500, "Failed to fetch todos")
         return
-    
+
     s.sendJSON(w, 200, todos)
 
-func (s reference Server) handleCreateTodo(w http.ResponseWriter, r reference http.Request)
-    import "stdlib/validate"
-    import "stdlib/http" as httphelper
-
+func handleCreateTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
     # Parse request body using the http helper
     input := CreateTodoInput{}
-    httphelper.ReadJSON(r, reference of input) onerr
-        return httphelper.JSONBadRequest(w, "Invalid JSON")
+    readErr := httphelper.ReadJSON(r, reference of input)
+    if readErr not equals empty
+        httphelper.JSONBadRequest(w, "Invalid JSON")
+        return
 
     # Validate input using the validate package
-    input.title |> validate.NotEmpty() onerr
-        return httphelper.JSONBadRequest(w, "Title is required")
+    _, titleErr := input.title |> validate.NotEmpty()
+    if titleErr not equals empty
+        httphelper.JSONBadRequest(w, "Title is required")
+        return
 
-    input.title |> validate.MaxLength(200) onerr
-        return httphelper.JSONBadRequest(w, "Title must be 200 characters or less")
+    _, lenErr := input.title |> validate.MaxLength(200)
+    if lenErr not equals empty
+        httphelper.JSONBadRequest(w, "Title must be 200 characters or less")
+        return
 
-    todo := s.db.CreateTodo(input.title) onerr
-        log.Printf("Error creating todo: %v", error)
-        return httphelper.JSONInternalError(w, "Failed to create todo")
+    todo, createErr := s.db.CreateTodo(input.title)
+    if createErr not equals empty
+        log.Printf("Error creating todo: %v", createErr)
+        httphelper.JSONInternalError(w, "Failed to create todo")
+        return
 
     httphelper.JSONCreated(w, todo)
 
-func (s reference Server) handleGetTodo(w http.ResponseWriter, r reference http.Request)
-    id := s.getIdFromPath(r.URL.Path, "/todos/") onerr
+func handleGetTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
+    id, idErr := s.getIdFromPath(r.URL.Path, "/todos/")
+    if idErr not equals empty
         s.sendError(w, 400, "Invalid ID")
         return
-    
-    todo := s.db.GetTodo(id) onerr
-        return s.sendError(w, 404, "Todo not found")
-    
+
+    todo, err := s.db.GetTodo(id)
+    if err not equals empty
+        s.sendError(w, 404, "Todo not found")
+        return
+
     s.sendJSON(w, 200, todo)
 
-func (s reference Server) handleUpdateTodo(w http.ResponseWriter, r reference http.Request)
-    id := s.getIdFromPath(r.URL.Path, "/todos/") onerr
+func handleUpdateTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
+    id, idErr := s.getIdFromPath(r.URL.Path, "/todos/")
+    if idErr not equals empty
         s.sendError(w, 400, "Invalid ID")
         return
-    
+
     # Parse request body using pipe
     # Note: This is a full update (PUT). For partial updates, use PATCH with optional fields
     input := UpdateTodoInput{}
-    
-    r.Body |> json.NewDecoder() |> json.Decode(_, reference of input) onerr
-        return s.sendError(w, 400, "Invalid JSON")
-    
-    s.db.UpdateTodo(id, input.title, input.completed) onerr
-        log.Printf("Error updating todo: %v", error)
+    decodeErr := r.Body
+        |> json.NewDecoder()
+        |> json.Decode(_, reference of input)
+    if decodeErr not equals empty
+        s.sendError(w, 400, "Invalid JSON")
+        return
+
+    updateErr := s.db.UpdateTodo(id, input.title, input.completed)
+    if updateErr not equals empty
+        log.Printf("Error updating todo: %v", updateErr)
         s.sendError(w, 500, "Failed to update todo")
         return
-    
+
     # Fetch the updated todo to return
-    todo := s.db.GetTodo(id) onerr
-        return s.sendError(w, 404, "Todo not found")
-    
+    todo, getErr := s.db.GetTodo(id)
+    if getErr not equals empty
+        s.sendError(w, 404, "Todo not found")
+        return
+
     s.sendJSON(w, 200, todo)
 
-func (s reference Server) handleDeleteTodo(w http.ResponseWriter, r reference http.Request)
-    id := s.getIdFromPath(r.URL.Path, "/todos/") onerr
+func handleDeleteTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
+    id, idErr := s.getIdFromPath(r.URL.Path, "/todos/")
+    if idErr not equals empty
         s.sendError(w, 400, "Invalid ID")
         return
-    
+
     # In a production API, you might check if the todo was actually deleted (rows affected)
     # and return 404 if not found for better idempotency semantics
-    s.db.DeleteTodo(id) onerr
-        log.Printf("Error deleting todo: %v", error)
+    deleteErr := s.db.DeleteTodo(id)
+    if deleteErr not equals empty
+        log.Printf("Error deleting todo: %v", deleteErr)
         s.sendError(w, 500, "Failed to delete todo")
         return
-    
+
     w.WriteHeader(204)
 
 # --- Helper Methods ---
 
-func (s reference Server) getIdFromPath(path string, prefix string) (int, error)
-    # When called with onerr, any error returned triggers the error handler block
-    # E.g., id := s.getIdFromPath(...) onerr { ... } executes the block if path is invalid
+func getIdFromPath on s reference Server(path string, prefix string) (int, error)
+    # When called with manual error check, any error returned lets the caller decide
+    # what to do — e.g., send a 400 response if path is invalid
     idStr := path |> string.TrimPrefix(prefix)
     if idStr equals "" or idStr equals path
         return 0, fmt.Errorf("invalid path")
-    return idStr |> strconv.Atoi()
+    id := idStr |> strconv.Atoi() onerr return 0, error "{error}"
+    return id, empty
 
-func (s reference Server) sendJSON(w http.ResponseWriter, status int, data any)
+func sendJSON on s reference Server(w http.ResponseWriter, status int, data any)
     # Set header before WriteHeader; after WriteHeader, header changes are ignored
     # The Encode call writes the response body; any error after WriteHeader can't change status
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(status)
     w |> json.NewEncoder() |> .Encode(data) onerr return
 
-func (s reference Server) sendError(w http.ResponseWriter, status int, message string)
+func sendError on s reference Server(w http.ResponseWriter, status int, message string)
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(status)
-    w |> json.NewEncoder() |> .Encode(ErrorResponse{error: message}) onerr return
+    w |> json.NewEncoder() |> .Encode(ErrorResponse{err: message}) onerr return
 
 # --- Main Entry Point ---
 
 func main()
     # Configuration from environment variables (production best practice)
     # Using the 'must' package for startup config - panic is acceptable here
-    import "stdlib/must"
-    import "stdlib/env"
 
     # Required: DATABASE_URL must be set
     dbPath := must.EnvOr("DATABASE_URL", "todos.db")
@@ -434,19 +438,19 @@ func main()
 
     # Create the server
     server := NewServer(dbPath) onerr panic "Failed to open database: {error}"
-    
+
     # Ensures the SQLite file is closed when the program exits
     defer server.db.Close()
-    
+
     # Register routes
     # Trailing slash catches /todos/1 and other ID-based routes
     http.HandleFunc("/todos", server.HandleTodos)
     http.HandleFunc("/todos/", server.HandleTodos)
-    
+
     # Start server
     log.Printf("Server starting on http://localhost%s", port)
     log.Printf("Database: %s", dbPath)
-    
+
     # Note: In production, capture SIGINT (Ctrl+C) and call http.Server.Shutdown()
     # for graceful shutdown instead of relying on panic
     http.ListenAndServe(port, empty) onerr panic "Server failed: {error}"
@@ -460,12 +464,12 @@ Let's compare the web tutorial version with this production version:
 
 | Aspect | Web Tutorial | Production |
 |--------|--------------|------------|
-| **Storage** | Global `var todos` | SQLite database |
+| **Storage** | In-memory `TodoStore` | SQLite database |
 | **Safety** | None | Database handles concurrency |
-| **Method style** | Standalone functions | `func (s reference Server)` |
+| **Method style** | Methods on `TodoStore` | Methods on `Server` with DB |
 | **Error handling** | Basic | Logging + proper responses |
 | **Lifecycle** | None | `NewServer()` constructor, `Close()` cleanup |
-| **State** | Global variables | Encapsulated in `Server` type |
+| **State** | `TodoStore` type | `Server` type with `Database` |
 
 ---
 
@@ -474,9 +478,8 @@ Let's compare the web tutorial version with this production version:
 ### Pointer Receivers
 
 ```kukicha
-# Kukicha: "reference Server"
-# Go convention: "*Server"
-func (s reference Server) Method()
+# Kukicha: "reference Server"  →  Go: "*Server"
+func Method on s reference Server()
 ```
 
 Use pointer receivers when:
@@ -497,9 +500,9 @@ func NewServer(config string) (reference Server, error)
 
 ```kukicha
 func DoWork() error
-    resource := Acquire() onerr return error
+    resource := Acquire() onerr return error "{error}"
     defer resource.Close()  # Guaranteed to run when function exits
-    
+
     # Do work...
     return empty
 ```
@@ -540,10 +543,10 @@ import "stdlib/validate"
 
 func CreateUser(email string, age int) (User, error)
     # Chain validations - each returns (value, error) for onerr
-    email |> validate.NotEmpty() onerr return User{}, error
-    email |> validate.Email() onerr return User{}, error
+    email |> validate.NotEmpty() onerr return User{}, error "{error}"
+    email |> validate.Email() onerr return User{}, error "{error}"
 
-    age |> validate.InRange(18, 120) onerr return User{}, error
+    age |> validate.InRange(18, 120) onerr return User{}, error "{error}"
 
     return User{email: email, age: age}, empty
 ```
@@ -556,8 +559,10 @@ import "stdlib/http" as httphelper
 func HandleUser(w http.ResponseWriter, r reference http.Request)
     # Read JSON body
     input := UserInput{}
-    httphelper.ReadJSON(r, reference of input) onerr
-        return httphelper.JSONBadRequest(w, "Invalid JSON")
+    readErr := httphelper.ReadJSON(r, reference of input)
+    if readErr not equals empty
+        httphelper.JSONBadRequest(w, "Invalid JSON")
+        return
 
     # Send JSON responses
     httphelper.JSON(w, user)              # 200 OK

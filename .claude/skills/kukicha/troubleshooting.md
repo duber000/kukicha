@@ -177,7 +177,7 @@ items := list of string{}   # Type required
 ### Multiple Return Values with onerr
 ```kukicha
 # When function returns (T, error)
-value := getData() onerr return empty, error
+value := getData() onerr return empty, error "{error}"
 
 # When function returns (T1, T2, error)
 # Use tuple unpacking first
@@ -190,7 +190,7 @@ if err != empty
 ```kukicha
 # Must match function's return signature
 func LoadConfig() Config, error
-    data := readFile() onerr return empty Config, error  # Explicit empty type
+    data := readFile() onerr return empty Config, error "{error}"  # Explicit empty type
     # ...
 ```
 
@@ -306,15 +306,19 @@ callback func(int) int
 func Filter(items list of int, predicate func(int) bool) list of int
     # ...
 
-# Wrong - takes 2 parameters instead of 1
-result := Filter(numbers, func(a int, b int) bool
-    return a > b
-)
+# Note: inline closures don't compile — extract to named top-level functions
 
-# Correct - takes 1 parameter
-result := Filter(numbers, func(n int) bool
+# Wrong - takes 2 parameters instead of 1
+func wrongPred(a int, b int) bool
+    return a > b
+
+result := Filter(numbers, wrongPred)
+
+# Correct - takes 1 parameter matching func(int) bool
+func aboveFive(n int) bool
     return n > 5
-)
+
+result := Filter(numbers, aboveFive)
 ```
 
 ### "function literal must return type"
@@ -369,7 +373,7 @@ for i from 0 to 1000000
     msg := "Item {i}"  # fmt.Sprintf overhead
 
 # Better for hot paths
-var builder strings.Builder
+builder := strings.Builder{}
 for i from 0 to 1000000
     builder.WriteString("Item ")
     builder.WriteString(strconv.Itoa(i))
