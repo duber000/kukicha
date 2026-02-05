@@ -1,0 +1,610 @@
+# Kukicha Standard Library - LLM (any-llm Gateway Client)
+# Unified client for any-llm-gateway (https://github.com/mozilla-ai/any-llm)
+# Provides both simple functions and a fluent builder pattern for chat completions
+#
+# Supports:
+#   - Multiple providers (OpenAI, Anthropic, Mistral, Ollama, etc.)
+#   - Streaming responses via Server-Sent Events
+#   - Tool/function calling
+#   - Configurable temperature, max tokens, top_p, and more
+#
+# Examples:
+#   # Quick completion
+#   reply, err := llm.Complete("openai:gpt-4o-mini", "What is Go?")
+#
+#   # Builder pattern with provider and options
+#   reply, err := llm.New("gpt-4o-mini")
+#       |> llm.Provider("openai")
+#       |> llm.System("You are a helpful assistant.")
+#       |> llm.Temperature(0.7)
+#       |> llm.MaxTokens(500)
+#       |> llm.Ask("Explain pipes in Kukicha")
+#
+#   # Streaming
+#   llm.New("gpt-4o-mini")
+#       |> llm.Provider("openai")
+#       |> llm.Stream(handleChunk)
+#       |> llm.Ask("Write a poem")
+#
+#   # Using the gateway
+#   reply, err := llm.New("gpt-4o-mini")
+#       |> llm.Gateway("http://localhost:8000")
+#       |> llm.APIKey("my-gateway-key")
+#       |> llm.Ask("Hello!")
+
+petiole llm
+
+import "stdlib/fetch"
+import "stdlib/json"
+import "stdlib/env"
+import "bufio"
+import "strings"
+import "fmt"
+import "io"
+
+# Message represents a single message in a chat conversation
+type Message
+    Role string json:"role"
+    Content string json:"content"
+
+# ToolFunction describes a function that the model can call
+type ToolFunction
+    Name string json:"name"
+    Description string json:"description"
+    Parameters any json:"parameters"
+
+# Tool represents a tool available to the model
+type Tool
+    Type string json:"type"
+    Function ToolFunction json:"function"
+
+# ToolCall represents a tool call made by the model
+type ToolCall
+    ID string json:"id"
+    Type string json:"type"
+    Function ToolCallFunction json:"function"
+
+# ToolCallFunction holds the function name and arguments from a tool call
+type ToolCallFunction
+    Name string json:"name"
+    Arguments string json:"arguments"
+
+# Choice represents a single completion choice from the API
+type Choice
+    Index int json:"index"
+    Message ResponseMessage json:"message"
+    FinishReason string json:"finish_reason"
+
+# ResponseMessage is the assistant's response message
+type ResponseMessage
+    Role string json:"role"
+    Content string json:"content"
+    ToolCalls list of ToolCall json:"tool_calls,omitzero"
+
+# Usage holds token usage information
+type Usage
+    PromptTokens int json:"prompt_tokens"
+    CompletionTokens int json:"completion_tokens"
+    TotalTokens int json:"total_tokens"
+
+# Completion is the response from a chat completion request
+type Completion
+    ID string json:"id"
+    Object string json:"object"
+    Created int json:"created"
+    Model string json:"model"
+    Choices list of Choice json:"choices"
+    Usage Usage json:"usage"
+
+# ChunkDelta holds incremental content in a streaming chunk
+type ChunkDelta
+    Role string json:"role,omitzero"
+    Content string json:"content,omitzero"
+
+# ChunkChoice represents a single choice in a streaming chunk
+type ChunkChoice
+    Index int json:"index"
+    Delta ChunkDelta json:"delta"
+    FinishReason string json:"finish_reason,omitzero"
+
+# Chunk is a single Server-Sent Event chunk during streaming
+type Chunk
+    ID string json:"id"
+    Object string json:"object"
+    Created int json:"created"
+    Model string json:"model"
+    Choices list of ChunkChoice json:"choices"
+
+# CompletionRequest is the JSON body sent to the chat completions endpoint
+type CompletionRequest
+    Model string json:"model"
+    Messages list of Message json:"messages"
+    Temperature float64 json:"temperature,omitzero"
+    MaxTokens int json:"max_tokens,omitzero"
+    TopP float64 json:"top_p,omitzero"
+    N int json:"n,omitzero"
+    Stop list of string json:"stop,omitzero"
+    PresencePenalty float64 json:"presence_penalty,omitzero"
+    FrequencyPenalty float64 json:"frequency_penalty,omitzero"
+    Seed int json:"seed,omitzero"
+    User string json:"user,omitzero"
+    Stream bool json:"stream,omitzero"
+    Tools list of Tool json:"tools,omitzero"
+    ToolChoice any json:"tool_choice,omitzero"
+    ResponseFormat any json:"response_format,omitzero"
+
+# Client holds the configuration for an LLM request (builder pattern)
+type Client
+    model string
+    provider string
+    baseURL string
+    apiKey string
+    messages list of Message
+    temperature float64
+    maxTokens int
+    topP float64
+    n int
+    stop list of string
+    presencePenalty float64
+    frequencyPenalty float64
+    seed int
+    user string
+    tools list of Tool
+    toolChoice any
+    responseFormat any
+    streamHandler func(string)
+
+# New creates a new LLM client builder for the given model
+# The model can include a provider prefix like "openai:gpt-4o-mini"
+# or be just the model name, with the provider set separately
+# Example: client := llm.New("gpt-4o-mini")
+func New(model string) Client
+    c := Client{}
+    c.messages = empty list of Message
+    c.tools = empty list of Tool
+    c.temperature = 0.0
+    c.maxTokens = 0
+    c.topP = 0.0
+    c.n = 0
+    c.seed = 0
+    c.presencePenalty = 0.0
+    c.frequencyPenalty = 0.0
+
+    # Parse "provider:model" format
+    if strings.Contains(model, ":")
+        parts := strings.SplitN(model, ":", 2)
+        c.provider = parts[0]
+        c.model = parts[1]
+    else
+        c.model = model
+        c.provider = ""
+
+    c.baseURL = ""
+    c.apiKey = ""
+    c.user = ""
+    c.streamHandler = empty
+    c.toolChoice = empty
+    c.responseFormat = empty
+    return c
+
+# Provider sets the LLM provider (e.g., "openai", "anthropic", "mistral", "ollama")
+# Example: client |> llm.Provider("openai")
+func Provider(c Client, provider string) Client
+    c.provider = provider
+    return c
+
+# Gateway sets the base URL to an any-llm-gateway instance
+# Example: client |> llm.Gateway("http://localhost:8000")
+func Gateway(c Client, url string) Client
+    c.baseURL = url
+    return c
+
+# BaseURL sets a custom API base URL (alias for Gateway)
+# Useful for self-hosted or alternative API endpoints
+# Example: client |> llm.BaseURL("http://localhost:11434")
+func BaseURL(c Client, url string) Client
+    c.baseURL = url
+    return c
+
+# APIKey sets the API key for authentication
+# If not set, the client will look for provider-specific env vars
+# (OPENAI_API_KEY, ANTHROPIC_API_KEY, MISTRAL_API_KEY, etc.)
+# Example: client |> llm.APIKey("sk-...")
+func APIKey(c Client, key string) Client
+    c.apiKey = key
+    return c
+
+# System adds a system message to the conversation
+# Example: client |> llm.System("You are a helpful coding assistant.")
+func System(c Client, content string) Client
+    msg := Message{Role: "system", Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# User adds a user message to the conversation
+# Example: client |> llm.User("Explain monads in simple terms")
+func User(c Client, content string) Client
+    msg := Message{Role: "user", Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# Assistant adds an assistant message to the conversation (for multi-turn)
+# Example: client |> llm.Assistant("Monads are...")
+func Assistant(c Client, content string) Client
+    msg := Message{Role: "assistant", Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# AddMessage adds a message with a custom role to the conversation
+# Example: client |> llm.AddMessage("user", "Hello!")
+func AddMessage(c Client, role string, content string) Client
+    msg := Message{Role: role, Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# Messages sets the full message list (replaces any existing messages)
+# Example: client |> llm.Messages(myMessages)
+func Messages(c Client, msgs list of Message) Client
+    c.messages = msgs
+    return c
+
+# Temperature sets the sampling temperature (0.0 to 2.0)
+# Lower values make output more deterministic, higher values more creative
+# Example: client |> llm.Temperature(0.7)
+func Temperature(c Client, temp float64) Client
+    c.temperature = temp
+    return c
+
+# MaxTokens sets the maximum number of tokens to generate
+# Example: client |> llm.MaxTokens(1000)
+func MaxTokens(c Client, max int) Client
+    c.maxTokens = max
+    return c
+
+# TopP sets nucleus sampling parameter (0.0 to 1.0)
+# Example: client |> llm.TopP(0.9)
+func TopP(c Client, p float64) Client
+    c.topP = p
+    return c
+
+# Stop sets stop sequences that will halt generation
+# Example: client |> llm.Stop(list of string{".", "\n"})
+func Stop(c Client, sequences list of string) Client
+    c.stop = sequences
+    return c
+
+# PresencePenalty sets the presence penalty (-2.0 to 2.0)
+# Positive values penalize tokens that already appeared in the text
+# Example: client |> llm.PresencePenalty(0.6)
+func PresencePenalty(c Client, penalty float64) Client
+    c.presencePenalty = penalty
+    return c
+
+# FrequencyPenalty sets the frequency penalty (-2.0 to 2.0)
+# Positive values penalize tokens based on frequency in the text
+# Example: client |> llm.FrequencyPenalty(0.5)
+func FrequencyPenalty(c Client, penalty float64) Client
+    c.frequencyPenalty = penalty
+    return c
+
+# Seed sets the random seed for deterministic output (if supported)
+# Example: client |> llm.Seed(42)
+func Seed(c Client, seed int) Client
+    c.seed = seed
+    return c
+
+# SetUser sets the end-user identifier for abuse tracking
+# Example: client |> llm.SetUser("user-123")
+func SetUser(c Client, user string) Client
+    c.user = user
+    return c
+
+# AddTool adds a tool (function) the model can call
+# Example:
+#   client |> llm.AddTool("get_weather", "Get current weather", params)
+func AddTool(c Client, name string, description string, parameters any) Client
+    fn := ToolFunction{Name: name, Description: description, Parameters: parameters}
+    tool := Tool{Type: "function", Function: fn}
+    c.tools = append(c.tools, tool)
+    return c
+
+# ToolChoiceAuto lets the model decide whether to use tools
+# Example: client |> llm.ToolChoiceAuto()
+func ToolChoiceAuto(c Client) Client
+    c.toolChoice = "auto"
+    return c
+
+# ToolChoiceRequired forces the model to use a tool
+# Example: client |> llm.ToolChoiceRequired()
+func ToolChoiceRequired(c Client) Client
+    c.toolChoice = "required"
+    return c
+
+# ToolChoiceNone prevents the model from using tools
+# Example: client |> llm.ToolChoiceNone()
+func ToolChoiceNone(c Client) Client
+    c.toolChoice = "none"
+    return c
+
+# JSONMode requests JSON output from the model
+# Example: client |> llm.JSONMode()
+func JSONMode(c Client) Client
+    c.responseFormat = map of string to string{"type": "json_object"}
+    return c
+
+# Stream sets a handler function for streaming responses
+# The handler receives each text chunk as it arrives
+# Example: client |> llm.Stream(func(chunk string) { print(chunk) })
+func Stream(c Client, handler func(string)) Client
+    c.streamHandler = handler
+    return c
+
+# Ask sends a user message and executes the completion request
+# This is the terminal operation that triggers the API call
+# Returns the assistant's response text and any error
+#
+# Example: reply, err := llm.New("openai:gpt-4o-mini") |> llm.Ask("Hello!")
+func Ask(c Client, prompt string) (string, error)
+    c = User(c, prompt)
+    return execute(c)
+
+# Send executes the completion request with the messages already configured
+# Use this when you've already added all messages via User(), System(), etc.
+# Returns the assistant's response text and any error
+#
+# Example:
+#   reply, err := llm.New("openai:gpt-4o-mini")
+#       |> llm.System("You are a poet.")
+#       |> llm.User("Write a haiku about Go")
+#       |> llm.Send()
+func Send(c Client) (string, error)
+    return execute(c)
+
+# SendRaw executes the request and returns the full Completion object
+# Use this when you need access to tool calls, usage stats, or multiple choices
+#
+# Example:
+#   result, err := llm.New("openai:gpt-4o-mini")
+#       |> llm.User("Hello")
+#       |> llm.SendRaw()
+#   print(result.Usage.TotalTokens)
+func SendRaw(c Client) (Completion, error)
+    return executeRaw(c)
+
+# Complete is a quick one-shot completion function
+# Takes a "provider:model" string and a prompt, returns the response text
+# Uses provider-specific env vars for API keys
+#
+# Example: reply, err := llm.Complete("openai:gpt-4o-mini", "What is Go?")
+func Complete(model string, prompt string) (string, error)
+    c := New(model)
+    return Ask(c, prompt)
+
+# CompleteWithSystem is a quick completion with a system prompt
+#
+# Example: reply, err := llm.CompleteWithSystem("openai:gpt-4o-mini", "Be brief.", "What is Go?")
+func CompleteWithSystem(model string, systemPrompt string, prompt string) (string, error)
+    c := New(model)
+    c = System(c, systemPrompt)
+    return Ask(c, prompt)
+
+# GetContent extracts the text content from a Completion response
+# Returns the content of the first choice, or empty string if none
+# Example: text := llm.GetContent(completion)
+func GetContent(comp Completion) string
+    if len(comp.Choices) == 0
+        return ""
+    return comp.Choices[0].Message.Content
+
+# GetToolCalls extracts tool calls from a Completion response
+# Returns the tool calls from the first choice, or empty list if none
+# Example: calls := llm.GetToolCalls(completion)
+func GetToolCalls(comp Completion) list of ToolCall
+    if len(comp.Choices) == 0
+        return empty list of ToolCall
+    return comp.Choices[0].Message.ToolCalls
+
+# HasToolCalls returns true if the completion contains tool calls
+# Example: if llm.HasToolCalls(completion) ...
+func HasToolCalls(comp Completion) bool
+    calls := GetToolCalls(comp)
+    return len(calls) > 0
+
+# Internal: resolve API key from explicit setting or environment
+func resolveAPIKey(c Client) string
+    if c.apiKey != ""
+        return c.apiKey
+
+    # Try provider-specific environment variables
+    if c.provider == "openai"
+        key := env.GetOr("OPENAI_API_KEY", "")
+        return key
+    if c.provider == "anthropic"
+        key := env.GetOr("ANTHROPIC_API_KEY", "")
+        return key
+    if c.provider == "mistral"
+        key := env.GetOr("MISTRAL_API_KEY", "")
+        return key
+    if c.provider == "groq"
+        key := env.GetOr("GROQ_API_KEY", "")
+        return key
+    if c.provider == "together"
+        key := env.GetOr("TOGETHER_API_KEY", "")
+        return key
+    if c.provider == "deepseek"
+        key := env.GetOr("DEEPSEEK_API_KEY", "")
+        return key
+    if c.provider == "xai"
+        key := env.GetOr("XAI_API_KEY", "")
+        return key
+
+    # Fallback: try generic key
+    key := env.GetOr("LLM_API_KEY", "")
+    return key
+
+# Internal: resolve the base URL for the provider
+func resolveBaseURL(c Client) string
+    if c.baseURL != ""
+        return c.baseURL
+
+    # Default provider endpoints
+    if c.provider == "openai"
+        return "https://api.openai.com"
+    if c.provider == "anthropic"
+        return "https://api.anthropic.com"
+    if c.provider == "mistral"
+        return "https://api.mistral.ai"
+    if c.provider == "groq"
+        return "https://api.groq.com/openai"
+    if c.provider == "together"
+        return "https://api.together.xyz"
+    if c.provider == "deepseek"
+        return "https://api.deepseek.com"
+    if c.provider == "xai"
+        return "https://api.x.ai"
+    if c.provider == "ollama"
+        return "http://localhost:11434"
+
+    # Gateway or unknown provider
+    return "http://localhost:8000"
+
+# Internal: build the request body
+func buildRequest(c Client) CompletionRequest
+    req := CompletionRequest{}
+    req.Model = c.model
+    req.Messages = c.messages
+
+    if c.temperature != 0.0
+        req.Temperature = c.temperature
+    if c.maxTokens != 0
+        req.MaxTokens = c.maxTokens
+    if c.topP != 0.0
+        req.TopP = c.topP
+    if c.n != 0
+        req.N = c.n
+    if c.seed != 0
+        req.Seed = c.seed
+    if c.presencePenalty != 0.0
+        req.PresencePenalty = c.presencePenalty
+    if c.frequencyPenalty != 0.0
+        req.FrequencyPenalty = c.frequencyPenalty
+    if c.user != ""
+        req.User = c.user
+    if len(c.stop) > 0
+        req.Stop = c.stop
+    if len(c.tools) > 0
+        req.Tools = c.tools
+    if c.toolChoice != empty
+        req.ToolChoice = c.toolChoice
+    if c.responseFormat != empty
+        req.ResponseFormat = c.responseFormat
+    if c.streamHandler != empty
+        req.Stream = true
+
+    return req
+
+# Internal: execute a completion and return just the text
+func execute(c Client) (string, error)
+    if c.streamHandler != empty
+        return executeStream(c)
+
+    comp, err := executeRaw(c)
+    if err != empty
+        return "", err
+    return GetContent(comp), empty
+
+# Internal: execute a completion and return the full response
+func executeRaw(c Client) (Completion, error)
+    baseURL := resolveBaseURL(c)
+    apiKey := resolveAPIKey(c)
+    url := "{baseURL}/v1/chat/completions"
+    body := buildRequest(c)
+
+    req := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Body(body)
+
+    if apiKey != ""
+        req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        return Completion{}, err
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        errBody, readErr := io.ReadAll(resp.Body)
+        if readErr != empty
+            return Completion{}, error("API request failed with status {resp.StatusCode}")
+        return Completion{}, error("API request failed ({resp.StatusCode}): {errBody as string}")
+
+    comp := Completion{}
+    jsonErr := json.UnmarshalRead(resp.Body, reference of comp)
+    if jsonErr != empty
+        return Completion{}, jsonErr
+
+    return comp, empty
+
+# Internal: execute a streaming completion
+func executeStream(c Client) (string, error)
+    baseURL := resolveBaseURL(c)
+    apiKey := resolveAPIKey(c)
+    url := "{baseURL}/v1/chat/completions"
+    body := buildRequest(c)
+
+    req := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Header("Accept", "text/event-stream")
+        |> fetch.Body(body)
+
+    if apiKey != ""
+        req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        return "", err
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        errBody, readErr := io.ReadAll(resp.Body)
+        if readErr != empty
+            return "", error("API request failed with status {resp.StatusCode}")
+        return "", error("API request failed ({resp.StatusCode}): {errBody as string}")
+
+    # Read SSE stream line by line
+    fullContent := ""
+    scanner := bufio.NewScanner(resp.Body)
+    for scanner.Scan()
+        line := scanner.Text()
+
+        # Skip empty lines and comments
+        if line == "" or strings.HasPrefix(line, ":")
+            continue
+
+        # Check for end of stream
+        if line == "data: [DONE]"
+            break
+
+        # Parse SSE data lines
+        if strings.HasPrefix(line, "data: ")
+            data := strings.TrimPrefix(line, "data: ")
+            chunk := Chunk{}
+            parseErr := json.Unmarshal(data as list of byte, reference of chunk)
+            if parseErr != empty
+                continue
+
+            if len(chunk.Choices) > 0
+                content := chunk.Choices[0].Delta.Content
+                if content != ""
+                    fullContent = fullContent + content
+                    c.streamHandler(content)
+
+    scanErr := scanner.Err()
+    if scanErr != empty
+        return fullContent, scanErr
+
+    return fullContent, empty

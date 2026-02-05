@@ -1,0 +1,99 @@
+# Example: LLM Chat Client
+# Demonstrates usage of the stdlib/llm package with an any-llm gateway
+#
+# Prerequisites:
+#   export OPENAI_API_KEY="sk-..."
+#
+# Or with any-llm-gateway:
+#   export LLM_API_KEY="your-gateway-key"
+
+import "stdlib/llm"
+
+func main()
+    # ──────────────────────────────────────
+    # 1. Quick one-shot completion
+    # ──────────────────────────────────────
+    print("--- Quick completion ---")
+    reply, err := llm.Complete("openai:gpt-4o-mini", "What is Kukicha tea in one sentence?")
+    if err != empty
+        print("Error: {err}")
+        return
+    print("Reply: {reply}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 2. Builder pattern with system prompt
+    # ──────────────────────────────────────
+    print("--- Builder with system prompt ---")
+    answer, err2 := llm.New("gpt-4o-mini")
+        |> llm.Provider("openai")
+        |> llm.System("You are a concise assistant. Reply in one sentence.")
+        |> llm.Temperature(0.3)
+        |> llm.MaxTokens(100)
+        |> llm.Ask("What is the pipe operator?")
+    if err2 != empty
+        print("Error: {err2}")
+        return
+    print("Answer: {answer}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 3. Multi-turn conversation
+    # ──────────────────────────────────────
+    print("--- Multi-turn conversation ---")
+    response, err3 := llm.New("openai:gpt-4o-mini")
+        |> llm.System("You are a friendly tutor.")
+        |> llm.User("What is a goroutine?")
+        |> llm.Assistant("A goroutine is a lightweight thread managed by the Go runtime.")
+        |> llm.User("How do I create one?")
+        |> llm.Send()
+    if err3 != empty
+        print("Error: {err3}")
+        return
+    print("Response: {response}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 4. Streaming response
+    # ──────────────────────────────────────
+    print("--- Streaming ---")
+    streamed, err4 := llm.New("openai:gpt-4o-mini")
+        |> llm.Temperature(0.9)
+        |> llm.Stream(func(chunk string)
+            fmt.Print(chunk)
+        )
+        |> llm.Ask("Write a haiku about programming")
+    if err4 != empty
+        print("\nStream error: {err4}")
+        return
+    print("")
+    print("(Full text: {streamed})")
+    print("")
+
+    # ──────────────────────────────────────
+    # 5. Full response with usage stats
+    # ──────────────────────────────────────
+    print("--- Full response ---")
+    comp, err5 := llm.New("openai:gpt-4o-mini")
+        |> llm.User("Say hello in three languages")
+        |> llm.SendRaw()
+    if err5 != empty
+        print("Error: {err5}")
+        return
+    print("Content: {llm.GetContent(comp)}")
+    print("Model: {comp.Model}")
+    print("Tokens used: {comp.Usage.TotalTokens}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 6. Using any-llm-gateway
+    # ──────────────────────────────────────
+    print("--- Gateway usage ---")
+    gatewayReply, err6 := llm.New("gpt-4o-mini")
+        |> llm.Gateway("http://localhost:8000")
+        |> llm.APIKey("my-gateway-key")
+        |> llm.Ask("Hello from the gateway!")
+    if err6 != empty
+        print("Gateway error (expected if not running): {err6}")
+    else
+        print("Gateway reply: {gatewayReply}")
