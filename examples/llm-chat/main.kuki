@@ -1,5 +1,6 @@
 # Example: LLM Chat Client
-# Demonstrates usage of the stdlib/llm package with an any-llm gateway
+# Demonstrates usage of the stdlib/llm package with both Chat Completions
+# and OpenResponses APIs
 #
 # Prerequisites:
 #   export OPENAI_API_KEY="sk-..."
@@ -8,8 +9,13 @@
 #   export LLM_API_KEY="your-gateway-key"
 
 import "stdlib/llm"
+import "fmt"
 
 func main()
+    # ═══════════════════════════════════════
+    # CHAT COMPLETIONS API
+    # ═══════════════════════════════════════
+
     # ──────────────────────────────────────
     # 1. Quick one-shot completion
     # ──────────────────────────────────────
@@ -97,3 +103,121 @@ func main()
         print("Gateway error (expected if not running): {err6}")
     else
         print("Gateway reply: {gatewayReply}")
+    print("")
+
+    # ═══════════════════════════════════════
+    # OPENRESPONSES API (POST /v1/responses)
+    # https://www.openresponses.org/specification
+    # ═══════════════════════════════════════
+
+    # ──────────────────────────────────────
+    # 7. Quick OpenResponses completion
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Quick response ---")
+    orReply, err7 := llm.Respond("openai:gpt-4o", "What is Kukicha tea in one sentence?")
+    if err7 != empty
+        print("Error: {err7}")
+    else
+        print("Reply: {orReply}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 8. OpenResponses with instructions
+    # ──────────────────────────────────────
+    print("--- OpenResponses: With instructions ---")
+    orAnswer, err8 := llm.NewResponse("gpt-4o")
+        |> llm.RProvider("openai")
+        |> llm.Instructions("You are a concise assistant. Reply in one sentence.")
+        |> llm.RTemperature(0.3)
+        |> llm.RMaxOutputTokens(100)
+        |> llm.RAsk("What is the pipe operator?")
+    if err8 != empty
+        print("Error: {err8}")
+    else
+        print("Answer: {orAnswer}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 9. OpenResponses streaming
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Streaming ---")
+    orStreamed, err9 := llm.NewResponse("openai:gpt-4o")
+        |> llm.RTemperature(0.9)
+        |> llm.RStream(func(chunk string)
+            fmt.Print(chunk)
+        )
+        |> llm.RAsk("Write a haiku about programming")
+    if err9 != empty
+        print("\nStream error: {err9}")
+    else
+        print("")
+        print("(Full text: {orStreamed})")
+    print("")
+
+    # ──────────────────────────────────────
+    # 10. OpenResponses with full response
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Full response ---")
+    orResp, err10 := llm.NewResponse("openai:gpt-4o")
+        |> llm.RUserMessage("Say hello in three languages")
+        |> llm.RSendRaw()
+    if err10 != empty
+        print("Error: {err10}")
+    else
+        print("Text: {llm.GetResponseText(orResp)}")
+        print("Model: {orResp.Model}")
+        print("Status: {orResp.Status}")
+        print("Tokens: {orResp.Usage.TotalTokens}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 11. OpenResponses multi-turn with previous_response_id
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Multi-turn ---")
+    firstResp, err11 := llm.NewResponse("openai:gpt-4o")
+        |> llm.RStore()
+        |> llm.RAskRaw("What is a goroutine?")
+    if err11 != empty
+        print("Error: {err11}")
+    else
+        print("First: {llm.GetResponseText(firstResp)}")
+        # Continue the conversation using previous_response_id
+        followUp, err12 := llm.NewResponse("openai:gpt-4o")
+            |> llm.PreviousResponse(firstResp.ID)
+            |> llm.RAsk("How do I create one?")
+        if err12 != empty
+            print("Follow-up error: {err12}")
+        else
+            print("Follow-up: {followUp}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 12. OpenResponses with event handler
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Event handler ---")
+    _, err13 := llm.NewResponse("openai:gpt-4o")
+        |> llm.RStreamEvents(func(evt llm.StreamEvent)
+            if evt.Type == "response.output_text.delta"
+                fmt.Print(evt.Delta)
+            if evt.Type == "response.completed"
+                print("")
+                print("(Response completed)")
+        )
+        |> llm.RAsk("Count to five")
+    if err13 != empty
+        print("Error: {err13}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 13. OpenResponses with custom endpoint
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Custom endpoint ---")
+    customReply, err14 := llm.NewResponse("gpt-4o")
+        |> llm.RBaseURL("https://chat.example.edu")
+        |> llm.RPath("/api/responses")
+        |> llm.RAPIKey("your-key")
+        |> llm.RAsk("Hello from custom endpoint!")
+    if err14 != empty
+        print("Custom endpoint error (expected): {err14}")
+    else
+        print("Custom reply: {customReply}")
