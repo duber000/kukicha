@@ -492,6 +492,38 @@ func (a *Analyzer) analyzeReturnStmt(stmt *ast.ReturnStmt) {
 		return
 	}
 
+	// Special handling for multi-value return from single expression (e.g., pipe expression)
+	var valueTypes []*TypeInfo
+	if len(stmt.Values) == 1 && len(a.currentFunc.Returns) > 1 {
+		valueTypes = a.analyzeExpressionMulti(stmt.Values[0])
+		
+		if len(valueTypes) != len(a.currentFunc.Returns) {
+			// If we can't match exact count, check if it's dynamic/unknown
+			if len(valueTypes) == 1 && valueTypes[0].Kind == TypeKindUnknown {
+				// Allow return of Unknown to multiple return positions
+			} else {
+				a.error(stmt.Pos(), fmt.Sprintf("expected %d return values, got %d", len(a.currentFunc.Returns), len(valueTypes)))
+				return
+			}
+		}
+
+		// Check types for multi-value return
+		for i := range a.currentFunc.Returns {
+			var valType *TypeInfo
+			if i < len(valueTypes) {
+				valType = valueTypes[i]
+			} else {
+				valType = valueTypes[0] // Fallback for Unknown
+			}
+			expectedType := a.typeAnnotationToTypeInfo(a.currentFunc.Returns[i])
+
+			if !a.typesCompatible(expectedType, valType) {
+				a.error(stmt.Pos(), fmt.Sprintf("cannot return %s as %s", valType, expectedType))
+			}
+		}
+		return
+	}
+
 	// Check return value count
 	if len(stmt.Values) != len(a.currentFunc.Returns) {
 		a.error(stmt.Pos(), fmt.Sprintf("expected %d return values, got %d", len(a.currentFunc.Returns), len(stmt.Values)))
@@ -699,6 +731,8 @@ func (a *Analyzer) analyzeExpressionMulti(expr ast.Expression) []*TypeInfo {
 		return a.analyzeCallExpr(e, nil)
 	case *ast.MethodCallExpr:
 		return a.analyzeMethodCallExpr(e, nil)
+	case *ast.PipeExpr:
+		return a.analyzePipeExprMulti(e)
 	default:
 		return []*TypeInfo{a.analyzeExpression(expr)}
 	}
@@ -861,6 +895,27 @@ func (a *Analyzer) analyzePipeExpr(expr *ast.PipeExpr) *TypeInfo {
 	default:
 		// Fallback for other expressions (e.g. valid chains)
 		return a.analyzeExpression(expr.Right)
+	}
+}
+
+// analyzePipeExprMulti analyzes a pipe expression and returns all its values
+// This handles cases like: return x |> f() where f() returns (T, error)
+func (a *Analyzer) analyzePipeExprMulti(expr *ast.PipeExpr) []*TypeInfo {
+	// Left side is piped as first argument to right side
+	leftType := a.analyzeExpression(expr.Left)
+
+	// Pass left type as piped argument to right side
+	switch right := expr.Right.(type) {
+	case *ast.CallExpr:
+		return a.analyzeCallExpr(right, leftType)
+	case *ast.MethodCallExpr:
+		return a.analyzeMethodCallExpr(right, leftType)
+	case *ast.PipeExpr:
+		// Nested pipe: analyze recursively
+		return a.analyzePipeExprMulti(right)
+	default:
+		// Fallback for other expressions
+		return []*TypeInfo{a.analyzeExpression(expr.Right)}
 	}
 }
 

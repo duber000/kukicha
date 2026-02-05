@@ -623,3 +623,62 @@ func main()
 		})
 	}
 }
+
+func TestPipeMultiValueReturn(t *testing.T) {
+	// Test the fix for: "Semantic limit on multi-value pipe return"
+	// This should now work: return x |> f() where f() returns (T, error)
+	input := `func Test() (int, error)
+    return 42 |> someFunc()
+
+func someFunc(x int) (int, error)
+    return x + 1, empty
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	if len(errors) > 0 {
+		t.Fatalf("expected no semantic errors for pipe multi-value return, got: %v", errors)
+	}
+}
+
+func TestPipeMultiValueReturnTypeMismatch(t *testing.T) {
+	// Test that type checking still works with pipe multi-value returns
+	input := `func Test() (string, error)
+    return 42 |> someFunc()
+
+func someFunc(x int) (int, error)
+    return x + 1, empty
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	if len(errors) == 0 {
+		t.Fatal("expected type mismatch error for incompatible pipe return")
+	}
+
+	if !strings.Contains(errors[0].Error(), "cannot return") {
+		t.Errorf("expected type mismatch error, got: %v", errors[0])
+	}
+}

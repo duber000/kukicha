@@ -1,0 +1,36 @@
+# Example demonstrating the fix for multi-value pipe returns
+# Previously this would fail with: "Semantic limit on multi-value pipe return"
+# Now it works: return x |> f() where f() returns (T, error)
+
+# This function returns multiple values
+func ParseInt(s string) (int, error)
+    if s equals "42"
+        return 42, empty
+    return 0, error "invalid number"
+
+# This now works! Previously required workaround:
+#   val, err := s |> ParseInt()
+#   return val, err
+func ProcessData(input string) (int, error)
+    return input |> ParseInt()
+
+# Chain multiple functions that return errors
+func DoubleValue(x int) (int, error)
+    if x equals 0
+        return 0, error "cannot double zero"
+    return x * 2, empty
+
+func main()
+    # This now works! Previously would fail semantic analysis
+    result, err := ProcessData("42")
+    if err equals empty
+        print("Error:", err)
+        return
+    
+    # And this should also work now
+    doubled, err2 := DoubleValue(result)
+    if err2 equals empty
+        print("Error:", err2)
+        return
+    
+    print(doubled)
