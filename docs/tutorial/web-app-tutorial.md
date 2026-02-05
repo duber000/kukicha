@@ -158,8 +158,11 @@ type Todo
     completed bool
 
 func sendTodo(response http.ResponseWriter, request reference http.Request)
-    # Create a todo
-    todo := Todo{id: 1, title: "Learn Kukicha", completed: false}
+    # Create a todo with indented syntax
+    todo := Todo
+        id: 1
+        title: "Learn Kukicha"
+        completed: false
     
     # Tell the browser we're sending JSON
     response.Header().Set("Content-Type", "application/json")
@@ -255,6 +258,12 @@ type Todo
 # The json tag maps the "err" field to the JSON key "error".
 type ErrorResponse
     err string json:"error"
+
+# Metadata can be used to store extra info (demonstrating map literals)
+var API_METADATA = map of string to string{
+    "version": "1.0",
+    "environment": "development",
+}
 
 # --- Store ---
 # (In the Production tutorial, we'll use a database instead)
@@ -443,8 +452,10 @@ func handleTodos on store reference TodoStore(response http.ResponseWriter, requ
 # --- Main Entry Point ---
 
 func main()
-    # Create the store with an empty todo list
-    store := TodoStore{todos: empty list of Todo, nextId: 1}
+    # Create the store with an empty todo list using indented literal
+    store := TodoStore
+        todos: empty list of Todo
+        nextId: 1
 
     # Set up routes — method values let us pass a method as a handler function
     http.HandleFunc("/todos", store.handleTodos)

@@ -170,6 +170,20 @@ func main()
 - `:=` creates a **new** variable
 - `=` updates an **existing** variable
 
+### Top-level Variables
+Sometimes you want a variable to be accessible throughout your whole file, like a configuration setting. For this, you use the `variable` keyword at the top level (outside of any function):
+
+```kukicha
+variable APP_NAME string = "My Awesome App"
+variable MAX_STRENGTH int = 100
+
+function main()
+    print("Welcome to {APP_NAME}!")
+    print("Max strength is {MAX_STRENGTH}")
+```
+
+> **💡 Note on Abbreviations:** Because we use these so often, Kukicha also lets you use abbreviations: `var` instead of `variable`, and `func` instead of `function`. You'll see both in the documentation!
+
 ---
 
 ## Types - What Kind of Data?
@@ -207,11 +221,14 @@ Types prevent mistakes. If you try to do something that doesn't make sense (like
 
 A **function** is a named block of code that performs a specific task. Think of it like a recipe you can use over and over.
 
+### 1. The `function` (or `func`) keyword
+This tells Kukicha we are starting a new function.
+
 ### Basic Function
 
 ```kukicha
 # Define a function named Greet
-func Greet()
+function Greet()
     print("Hello!")
 
 # The main function - where your program starts
@@ -232,7 +249,7 @@ Functions can accept **parameters** (inputs):
 
 ```kukicha
 # This function takes one parameter: a string named 'name'
-func Greet(name string)
+function Greet(name string)
     print("Hello, {name}!")
 
 func main()

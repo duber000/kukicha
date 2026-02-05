@@ -175,7 +175,17 @@ Typical workflow for new syntax:
 | `stdlib/must` | Panic-on-error helpers for startup (Env, EnvInt) |
 | `stdlib/env` | Typed env vars with onerr (Get, GetInt, GetBool) |
 | `stdlib/datetime` | Named formats, duration helpers (Format, Seconds) |
-| `stdlib/http` | HTTP helpers (JSON, JSONError, ReadJSON, GetQueryInt) |
+| `stdlib/http` | HTTP helpers (JSON, JSONError, ReadJSON) |
+| `stdlib/iterator` | Functional iteration (Map, Filter, Reduce) |
+| `stdlib/must` | Initialization helpers (Env, Do, OkMsg) |
+| `stdlib/env` | Typed environment access (GetInt, GetBool) |
+| `stdlib/validate` | Input validation (Email, URL, InRange) |
+| `stdlib/result` | Result and Optional types |
+| `stdlib/retry` | Retry patterns (Partial implementation) |
+| `stdlib/datetime` | Named formats, durations (Seconds, Hours) |
+| `stdlib/string` | String utilities (Split, Trim, Join) |
+| `stdlib/parse` | CSV and YAML parsing |
+| `stdlib/template` | Text templating |
 
 Import with: `import "stdlib/slice"`
 

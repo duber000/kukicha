@@ -321,6 +321,8 @@ var keywords = map[string]TokenType{
 	"import":      TOKEN_IMPORT,
 	"type":        TOKEN_TYPE,
 	"interface":   TOKEN_INTERFACE,
+	"variable":    TOKEN_VAR,
+	"function":    TOKEN_FUNC,
 	"var":         TOKEN_VAR,
 	"func":        TOKEN_FUNC,
 	"return":      TOKEN_RETURN,

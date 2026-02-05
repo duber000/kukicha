@@ -94,7 +94,10 @@ Now let's write a function to create a new todo:
 ```kukicha
 # CreateTodo makes a new todo with the given id and title
 func CreateTodo(id int, title string) Todo
-    return Todo{id: id, title: title, completed: false}
+    return Todo
+        id: id
+        title: title
+        completed: false
 ```
 
 This function takes an `id` number and a `title` string, and returns a brand new `Todo` with `completed` set to `false` (because new tasks aren't done yet!).
@@ -292,7 +295,12 @@ name := getUserInput() onerr "Anonymous"
 # Pattern 2: Panic (crash) with a message — good for startup config
 config := loadConfig() onerr panic "Missing config file!"
 
-# Pattern 3: Propagate the error to the caller
+# Pattern 3: Multi-statement block handler — for reporting and recovering
+user := fetchUser(id) onerr
+    log.Printf("Error fetching user {id}: {error}")
+    return empty
+
+# Pattern 4: Propagate the error to the caller
 # error "{error}" wraps the original error in a new one
 func DoWork() (string, error)
     data := loadFile() onerr return empty, error "{error}"

@@ -54,11 +54,11 @@ active := users
     |> slice.Filter(isActive)
     |> slice.Map(getName)
 
-# Method shorthand: pipe into a method of the object
-response |> .JSON()
-
 # Explicit placeholder: use _ to specify argument position
 user |> json.MarshalWrite(w, _)
+
+# Multi-value returns: handle errors from a pipe
+res, err := data |> process()
 ```
 
 ### 4. Error Handling (`onerr`)
@@ -113,6 +113,16 @@ func main()
         print("Inactive")
 ```
 
+### 8. Indented Struct Literals
+For better readability of complex data, you can use indentation instead of braces.
+
+```kukicha
+user := User
+    name: "Alice"
+    age: 25
+    active: true
+```
+
 ### 8. Collection Types
 Construct composite types with a readable syntax.
 
@@ -125,12 +135,26 @@ emptyList := empty list of int
 scores := map of string to int{"Alice": 100}
 emptyMap := empty map of string to int
 
+# Map literal with multiple entries
+config := map of string to string{
+    "host": "localhost",
+    "port": "8080",
+}
+
 # Channels
 ch := make channel of string, 10
 ```
 
+### 10. Top-level Variables
+Declare global state or constants at the top level of a file. You can use the full name `variable` or the abbreviation `var`.
+
+```kukicha
+variable API_URL string = "https://api.example.com"
+var IS_PRODUCTION bool = false
+```
+
 ### 9. Methods
-Methods are defined with an explicit receiver name and the `on` keyword.
+Methods are defined with an explicit receiver name and the `on` keyword. You can use `function` or `func`.
 
 ```kukicha
 type User
@@ -142,6 +166,9 @@ func Greet on u User string
 # Pointer receiver
 func SetName on u reference User, name string
     u.name = name
+
+function Get on s reference Store(id int) Todo
+    return s.todos[id]
 ```
 
 ### 10. Control Flow Variations

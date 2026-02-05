@@ -5,6 +5,8 @@
 Kukicha is a beginner-friendly programming language that transpiles to idiomatic Go code. No runtime overhead. No magic. Just cleaner syntax that becomes real Go.
 
 ```kukicha
+import "stdlib/slice"
+
 func isActive(user User) bool
     return user.active
 
@@ -40,6 +42,7 @@ Kukicha fixes this:
 | `if err != nil { return err }` | `onerr return error "{error}"` |
 | `break`, `continue` | `break`, `continue` |
 | `for { ... }` | `for` |
+| `v.(T)` | `v as T` |
 
 **Learn programming concepts, not symbols.** When you're ready, the generated Go code teaches you Go itself.
 
@@ -48,21 +51,35 @@ Kukicha fixes this:
 **Automate infrastructure with Go's reliability, without Go's verbosity.**
 
 ```kukicha
-# Fetch pod status, filter failures, alert
-func notRunning(p Pod) bool
-    return p.status != "Running"
+import "stdlib/fetch"
+import "stdlib/env"
+import "stdlib/json"
+import "stdlib/retry"
+import "stdlib/slice"
 
-func formatStatus(p Pod) string
-    return "{p.name}: {p.status}"
+# Fetch pod status with retries, filter failures, and alert
+func main()
+    namespace := env.Get("K8S_NAMESPACE") onerr "default"
+    
+    cfg := retry.New() |> retry.Attempts(3)
+    
+    pods := list of Pod{}
+    fetch.Get("https://api.k8s.local/pods/{namespace}")
+        |> fetch.CheckStatus()
+        |> fetch.Bytes()
+        |> json.Unmarshal(reference pods)
+        onerr panic "k8s unavailable"
 
-pods := k8s.ListPods(namespace) onerr panic "k8s unavailable"
+    failing := pods
+        |> slice.Filter(func(p Pod) bool
+            return p.status != "Running"
+        )
+        |> slice.Map(func(p Pod) string
+            return "{p.name}: {p.status}"
+        )
 
-failing := pods
-    |> slice.Filter(notRunning)
-    |> slice.Map(formatStatus)
-
-if len(failing) > 0
-    slack.Alert(slackChannel, "Pods failing:\n" + strings.Join(failing, "\n"))
+    if len(failing) > 0
+        print "Pods failing: {len(failing)}"
 ```
 
 Kukicha compiles to a **single static binary**. No Python dependencies. No Node.js runtime. Just copy and run.
@@ -74,15 +91,18 @@ Kukicha compiles to a **single static binary**. No Python dependencies. No Node.
 - **Zero runtime overhead** - compiles to idiomatic Go
 - **Full Go stdlib access** - import any Go package
 - **Gradual adoption** - mix with existing Go code
-- **Green Tea GC optimized** - designed for Go 1.25+ performance
 
 ```kukicha
 # This IS Go, just friendlier
-import "net/http"
-import "encoding/json/v2"  # Go 1.25+ jsonv2 for 2-10x faster JSON
+import "stdlib/http"
+import "stdlib/json"
 
 func HandleUser(w http.ResponseWriter, r reference http.Request)
-    user := parseUser(r.Body) onerr return
+    user := User{}
+    r.Body |> json.UnmarshalRead(reference user) onerr return
+    
+    # Process user...
+    
     user |> json.MarshalWrite(w, _)
 ```
 
@@ -105,8 +125,6 @@ Kukicha (茎茶) is Japanese green tea made from **stems and leaf veins** - the 
 | **Petiole** | A package (leaf stem) | Go package |
 | **Green Tea GC** | Go 1.25+ garbage collector | 10-40% faster GC |
 
-Kukicha is optimized for Go's **Green Tea GC** - the experimental garbage collector in Go 1.25 that will become default in Go 1.26. Your Kukicha code is ready for the future.
-
 ---
 
 ## Quick Taste
@@ -125,8 +143,14 @@ func Display on todo Todo string
 
 func main()
     todos := list of Todo{
-        Todo{id: 1, title: "Learn Kukicha", done: true},
-        Todo{id: 2, title: "Build something", done: false},
+        Todo
+            id: 1
+            title: "Learn Kukicha"
+            done: true
+        Todo
+            id: 2
+            title: "Build something"
+            done: false
     }
 
     for todo in todos
@@ -299,8 +323,3 @@ See [Contributing Guide](docs/contributing.md) for full details.
 
 See [LICENSE](LICENSE) for details.
 
----
-
-<p align="center">
-  <strong>Kukicha</strong> - Smooth syntax. Go performance. Green tea vibes.
-</p>

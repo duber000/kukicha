@@ -294,17 +294,24 @@ Located in `stdlib/`:
 
 | Package | Purpose |
 |---------|---------|
-| `iter` | Functional iterators with Go 1.25+ generics (Filter, Map, Take, Skip) |
+| `iterator` | Functional iterators with Go 1.25+ generics (Filter, Map, Take, Skip, Reduce) |
 | `slice` | Slice operations with Go 1.25+ generics (First, Last, Reverse, Unique, **GroupBy**) |
-| `string` | String utilities (ToUpper, Split, Contains) |
-| `json` | Pipe-friendly jsonv2 wrapper (Marshal, Unmarshal, MarshalWrite, UnmarshalRead, Encoder/Decoder) |
+| `string` | String utilities (ToUpper, Split, Contains, Join) |
+| `json` | Pipe-friendly jsonv2 wrapper (Marshal, Unmarshal, Encoder/Decoder) |
 | `fetch` | HTTP client with builder pattern (Get, Post, CheckStatus, Text, Bytes) |
-| `files` | File operations (Read, Write, List) |
-| `parse` | Data format parsing (CSV, YAML) - delegates JSON to stdlib/json |
+| `files` | File operations (Read, Write, List, Watch) |
+| `parse` | Data format parsing (CSV, YAML) |
 | `concurrent` | Concurrency helpers (Parallel, ParallelWithLimit, Go) |
-| `http` | HTTP server helpers (WithCSRF, Serve) |
-| `shell` | Command execution with builder pattern (New, Dir, SetTimeout, Env, Execute) |
-| `cli` | CLI argument parsing with builder pattern (New, Arg, AddFlag, Action, RunApp) |
+| `http` | HTTP server helpers (WithCSRF, Serve, JSON) |
+| `shell` | Command execution builder (New, Dir, SetTimeout, Env, Execute) |
+| `cli` | CLI argument parsing builder (New, Arg, AddFlag, Action, RunApp) |
+| `must` | Panic-on-error initialization helpers (Env, Do, OkMsg) |
+| `env` | Typed environment variable access (GetInt, GetBool, GetOr) |
+| `validate` | Input validation (Email, URL, InRange, NotEmpty) |
+| `datetime` | Named formats and durations (Format, Seconds, Days) |
+| `result` | Optional and Result types for explicit error handling |
+| `retry` | Manual retry helpers (Attempts, Delay, Backoff) |
+| `template` | Text templating for code gen or reports |
 
 Example with stdlib:
 ```kukicha
@@ -446,6 +453,36 @@ entries := logs |> slice.GroupBy(getLevel)
 # Result: map[string][]LogEntry with keys "ERROR", "WARN", "INFO", etc.
 
 # GroupBy is Go 1.25+ generic - you write simple Kukicha code, transpiler handles the generics
+```
+
+### DevOps & SRE Patterns
+
+Kukicha excels at infrastructure automation.
+
+```kukicha
+# 1. Resource Validation
+"user@domain.com" |> validate.Email() onerr panic "invalid contact"
+env.GetInt("REPLICA_COUNT") onerr 3 |> validate.InRange(1, 10) onerr panic
+
+# 2. Resilient Retries
+func deploy()
+    cfg := retry.New() |> retry.Attempts(5)
+    attempt := 0
+    for attempt < cfg.MaxAttempts
+        shell.New("kubectl", "apply", "-f", "manifest.yaml") |> shell.Execute() onerr
+            retry.Sleep(cfg, attempt)
+            attempt = attempt + 1
+            continue
+        return
+
+# 3. Concurrent Health Checks
+tasks := list of func(){}
+for url in endpoints
+    u := url
+    tasks = append(tasks, func()
+        fetch.Get(u) |> fetch.CheckStatus() onerr print "FAILED: {u}"
+    )
+concurrent.Parallel(tasks...)
 ```
 
 ## Transparent Go 1.25+ Generics

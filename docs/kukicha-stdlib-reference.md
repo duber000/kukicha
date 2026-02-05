@@ -85,11 +85,13 @@ When using `onerr`, follow these guidelines:
 
 ```kukicha
 # ✅ Use panic only for unrecoverable startup errors
-config := loadConfig() onerr panic "missing config file"
+config := loadConfig() onerr
+    panic "missing config file"
 
 # ✅ Return errors from library functions
-func ProcessFile(path string) (data any, error)
-    return path |> files.Read() onerr return empty, error
+function ProcessFile(path string) (data any, error)
+    return path |> files.Read() onerr
+        return empty, error
 
 # ✅ Log and continue for recoverable errors in scripts
 data := fetch.Get(url) onerr
@@ -97,7 +99,8 @@ data := fetch.Get(url) onerr
     return empty  # or provide a default
 
 # ❌ Don't use panic in production handlers
-result := operation() onerr panic "should not happen"  # BAD!
+result := operation() onerr
+    panic "should not happen"  # BAD!
 ```
 
 **Rule of Thumb:**
@@ -118,13 +121,13 @@ import "stdlib/slice"
 # Pipeline: filter positive numbers, double them, sum
 # Note: iterator provides functional composition; slice provides eager operations
 total := numbers
-    |> slice.Filter(func(n int) bool
+    |> slice.Filter(function(n int) bool
         return n > 0  # Keep only positive numbers
     )
-    |> slice.Map(func(n int) int
+    |> slice.Map(function(n int) int
         return n * 2  # Double each number
     )
-    |> iterator.Reduce(0, func(acc int, n int) int
+    |> iterator.Reduce(0, function(acc int, n int) int
         return acc + n  # Sum all numbers
     )
 
@@ -135,6 +138,15 @@ total := numbers
 # Available iterator operations (functional composition):
 # Filter, Map, FlatMap, Take, Skip, Enumerate, Zip
 # Chunk, Reduce, Collect, Any, All, Find
+
+# DevOps Example: Analyzing high-latency requests from logs
+longRequests := logLines
+    |> iterator.Map(parseLogLine)
+    |> iterator.Filter(func(e LogEntry) bool
+        return e.Duration > 5 * time.Second
+    )
+    |> iterator.Take(10)
+    |> iterator.Collect()
 ```
 
 **Note:** `slice` operations work on entire collections eagerly, while `iterator` provides lazy functional composition. Use `slice` for direct transformations and `iterator` for complex composed workflows.
@@ -156,7 +168,7 @@ cleaned := rawData
 
 # Extract and transform
 ids := users
-    |> slice.Map(func(u User) int
+    |> slice.Map(function(u User) int
         return u.ID
     )
     |> slice.First(10)
@@ -172,7 +184,7 @@ type LogEntry
     Message string
 
 entries := logs
-    |> slice.GroupBy(func(e LogEntry) string
+    |> slice.GroupBy(function(e LogEntry) string
         return e.Level
     )
 # Result: map[string][]LogEntry with keys like "ERROR", "WARN", "INFO"
@@ -180,6 +192,15 @@ entries := logs
 # Available functions:
 # First, Last, Drop, DropLast, Reverse
 # Unique, Chunk, Filter, Map, GroupBy
+
+# DevOps Example: Filtering healthy nodes
+healthyNodes := nodes
+    |> slice.Filter(func(n Node) bool
+        return n.Status == "Ready" and n.CPUUsage < 80.0
+    )
+    |> slice.Map(func(n Node) string
+        return n.ID
+    )
 ```
 
 **Note on GroupBy:** This function uses Go 1.25+ generics with proper type constraints:
@@ -213,6 +234,12 @@ cleanUrl := url
 # Available functions:
 # ToUpper, ToLower, TrimSpace, Trim, TrimPrefix, TrimSuffix
 # Split, Join, Contains, HasPrefix, HasSuffix, Replace, ReplaceAll
+
+# DevOps Example: Parsing resource ARN
+resourceName := "arn:aws:s3:::my-bucket-name"
+    |> string.Split(":")
+    |> slice.Last(1)
+    |> string.Join("") # or just use slice.Last(1) and indexing
 ```
 
 ### Concurrent Package
@@ -250,6 +277,16 @@ concurrent.Go(func()
 
 # Available functions:
 # Parallel, ParallelWithLimit, Go
+
+# DevOps Example: Pinging multiple heartbeat endpoints concurrently
+urls := list of string{"https://api1.status.com", "https://api2.status.com"}
+tasks := list of func(){}
+for u in urls
+    url := u
+    tasks = append(tasks, func()
+        fetch.Get(url) |> fetch.CheckStatus() onerr print "fail: {url}"
+    )
+concurrent.Parallel(tasks...)
 ```
 
 ### HTTP Package
@@ -276,6 +313,12 @@ func handleData(w http.ResponseWriter, r reference http.Request)
 
 # Available functions:
 # WithCSRF, Serve
+
+# DevOps Example: Service health check endpoint
+mux.HandleFunc("/health", func(w http.ResponseWriter, r reference http.Request)
+    w.WriteHeader(200)
+    w.Write(list of byte("OK"))
+)
 ```
 
 ### Fetch Package 
@@ -317,7 +360,8 @@ import "stdlib/slice"
 text := fetch.Get("https://api.example.com/version")
     |> fetch.CheckStatus()
     |> fetch.Text()
-    onerr panic "fetch failed"
+    onerr
+        panic "fetch failed"
 
 # Example 2: Typed JSON with stdlib/json - Simple approach
 type User
@@ -330,7 +374,8 @@ fetch.Get("https://api.github.com/users/golang")
     |> fetch.CheckStatus()
     |> fetch.Bytes()
     |> json.Unmarshal(reference user)
-    onerr panic "fetch failed"
+    onerr
+        panic "fetch failed"
 
 print("User: {user.Name} with {user.Followers} followers")
 
@@ -357,10 +402,24 @@ active := repos
 print("Found {len(active)} active repos")
 
 # Example 4: POST with auto-serialization (uses stdlib/json internally)
-newUser := User{Name: "Alice"}
+newUser := User
+    Name: "Alice"
 resp := fetch.Post(newUser, "https://api.example.com/users")
     |> fetch.CheckStatus()
-    onerr panic "create failed"
+    onerr
+    panic "create failed"
+
+# DevOps Example: Calling AWS MetaData Service or K8s API
+token := fetch.Get("http://169.254.169.254/latest/api/token")
+    |> fetch.Header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+    |> fetch.Method("PUT")
+    |> fetch.Text()
+    onerr ""
+
+instanceId := fetch.Get("http://169.254.169.254/latest/meta-data/instance-id")
+    |> fetch.Header("X-aws-ec2-metadata-token", token)
+    |> fetch.Text()
+    onerr "unknown"
 ```
 
 **Design Philosophy:**
@@ -384,14 +443,18 @@ type Todo
     Completed bool json:"completed"
 
 # Simple encoding with pipes
-func sendTodo(w http.ResponseWriter, r reference http.Request)
-    todo := Todo{ID: 1, Title: "Learn Kukicha", Completed: false}
+function sendTodo(w http.ResponseWriter, r reference http.Request)
+    todo := Todo
+        ID: 1
+        Title: "Learn Kukicha"
+        Completed: false
 
     w.Header().Set("Content-Type", "application/json")
-    w |> json.NewEncoder() |> .Encode(todo) onerr return
+    w |> json.NewEncoder() |> .Encode(todo) onerr
+        return
 
 # Pretty-printed JSON with builder pattern
-func sendPretty(w http.ResponseWriter, r reference http.Request)
+function sendPretty(w http.ResponseWriter, r reference http.Request)
     data := MyData{...}
 
     w
@@ -399,7 +462,8 @@ func sendPretty(w http.ResponseWriter, r reference http.Request)
         |> json.WithDeterministic()
         |> json.WithIndent("  ")
         |> .Encode(data)
-        onerr return
+        onerr
+            return
 
 # Decoding from request
 func createTodo(w http.ResponseWriter, r reference http.Request)
@@ -415,8 +479,14 @@ func createTodo(w http.ResponseWriter, r reference http.Request)
 
 # Convenience functions for simple cases
 jsonBytes := json.Marshal(data) onerr panic
-prettyJson := json.MarshalPretty(config) onerr panic
 json.Unmarshal(jsonBytes, reference result) onerr panic
+
+# DevOps Example: Parsing infrastructure config
+config := DatabaseConfig{}
+"config.json"
+    |> files.Read()
+    |> json.Unmarshal(reference config)
+    onerr panic "invalid config"
 ```
 
 ### Parse Package 
@@ -469,6 +539,13 @@ users := "data.csv"
 settings := config
     |> parse.YamlPretty()
     |> files.Write("config.yaml")
+
+# DevOps Example: Converting K8s JSON to YAML
+"pod.json"
+    |> files.Read()
+    |> json.Unmarshal(reference pod)
+    |> parse.YamlPretty()
+    |> files.Write("pod.yaml")
 ```
 
 **Struct Tags:** JSON and other parsers use struct tags for automatic field mapping:
@@ -507,6 +584,12 @@ func handleCommand(args cli.Args)
     else if command == "process"
         output := cli.GetString(args, "output")
         print("Processing {input} to {output}")
+
+# DevOps Example: Deployment CLI flag
+app := cli.New("deployer")
+    |> cli.AddFlag("env", "Target environment (prod|staging)", "staging")
+    |> cli.AddFlag("dry-run", "Show changes without applying", "true")
+    |> cli.Action(doDeploy)
 ```
 
 **Key Features:**
@@ -561,6 +644,13 @@ files.TempFile("test-") |> files.UseWith(func(path string)
     files.Write(path, data) onerr panic "write failed"
     processFile(path)
 )
+
+# DevOps Example: Cleaning up old logs
+files.List("/var/log/app")
+    |> slice.Filter(func(f string) bool
+        return strings.HasSuffix(f, ".gz") and files.ModTime(f) |> datetime.IsPast()
+    )
+    |> slice.Map(files.Delete)
 ```
 
 ### Shell Package
@@ -605,6 +695,10 @@ cmd := shell.New("grep", searchTerm, filename)  # Direct args, no shell parsing
 # ⚠️ UNSAFE: Don't pass unsanitized user input
 userQuery := getUserInput()  # Could be malicious
 cmd := shell.New("grep", userQuery, file)  # DANGEROUS if userQuery isn't validated
+
+# DevOps Example: Safe service restart
+if shell.Success(shell.New("systemctl", "restart", "nginx") |> shell.Execute())
+    print "Nginx restarted"
 ```
 
 **Key Features:**
@@ -613,6 +707,72 @@ cmd := shell.New("grep", userQuery, file)  # DANGEROUS if userQuery isn't valida
 - Result inspection with `shell.Success()`, `shell.GetOutput()`, `shell.GetError()`, `shell.ExitCode()`
 - Command existence checking with `shell.Which()`
 - Environment variable helpers: `shell.Getenv()`, `shell.Setenv()`, `shell.Environ()`
+
+### Validate Package
+
+Input validation helpers designed for pipes and composability.
+
+```kukicha
+import "stdlib/validate"
+
+# DevOps Example: Validating infrastructure config
+config := map of string to string{
+    "region": "us-east-1",
+    "nodes": "3",
+    "email": "admin@example.com",
+}
+
+# Validation pipeline
+region := config["region"] 
+    |> validate.NotEmpty() 
+    |> validate.OneOf("us-east-1", "us-west-2", "eu-west-1")
+    onerr panic "invalid region"
+
+nodeCount := config["nodes"]
+    |> validate.ParsePositiveInt()
+    |> validate.Max(10)
+    onerr panic "nodes must be 1-10"
+
+adminEmail := config["email"]
+    |> validate.Email()
+    onerr panic "invalid admin email"
+
+# Available functions:
+# NotEmpty, MinLength, MaxLength, Length, LengthBetween, Matches, Email, URL
+# Alpha, Alphanumeric, Numeric, NoWhitespace, StartsWith, EndsWith, Contains, OneOf
+# Positive, Negative, NonNegative, NonZero, InRange, Min, Max
+# ParseInt, ParsePositiveInt, ParseFloat, ParseBool
+# NotEmptyList, ListMinLength, ListMaxLength
+```
+
+### Must Package
+
+Initialization helpers that panic on error. Use these ONLY for startup/initialization code where failure should stop the process immediately (fail-fast).
+
+```kukicha
+import "stdlib/must"
+
+# DevOps Example: CI/CD runner initialization
+# Fail fast if required environment variables or tools are missing
+func init()
+    # Ensure required secrets are set
+    apiKey := must.Env("DEPLOY_KEY")
+    dbPass := must.Env("DB_PASSWORD")
+
+    # Ensure required tools are installed
+    must.Ok(shell.Which("docker") |> boolToError("docker not found"))
+    must.Ok(shell.Which("kubectl") |> boolToError("kubectl not found"))
+
+    # Load config or fail
+    config := must.Do(loadConfig("config.yaml"))
+    
+    print "Runner initialized successfully"
+
+# Available functions:
+# Do, DoMsg, Ok, OkMsg
+# Env, EnvOr, EnvInt, EnvIntOr, EnvBool, EnvBoolOr, EnvList, EnvListOr
+# True, False, NotEmpty, NotNil
+```
 
 ## Additional Scripting Packages
 
@@ -629,7 +789,8 @@ email := template.Render("Hello {{.Name}}, your order #{{.OrderId}} is ready!")
         "Name": user.Name,
         "OrderId": order.Id,
     })
-    onerr panic "template failed"
+    onerr
+        panic "template failed"
 
 # File-based templates
 report := "report.tmpl"
@@ -645,6 +806,11 @@ code := template.New()
     |> template.Data(structDef)
     |> template.Render()
     |> files.Write("generated.go")
+
+# DevOps Example: Generating a Dockerfile
+dockerfile := template.Render(dockerTemplate)
+    |> template.Data(map of string to string{"BaseImage": "alpine:latest", "Port": "8080"})
+    |> files.Write("Dockerfile")
 ```
 
 ### Retry Package
@@ -701,6 +867,19 @@ func processWithRetry() bool
         attempt = attempt + 1
 
     return false
+
+# DevOps Example: Retrying a database migration
+func migrateWithRetry()
+    cfg := retry.New() |> retry.Attempts(10) |> retry.Delay(2000)
+    attempt := 0
+    for attempt < cfg.MaxAttempts
+        shell.New("migrate", "-up") |> shell.Execute() onerr
+            print "Migration failed, retrying..."
+            retry.Sleep(cfg, attempt)
+            attempt = attempt + 1
+            continue
+        print "Migration successful"
+        return
 ```
 
 **Note:** The automatic `retry.Do()` pattern shown in many retry libraries requires passing functions that return `(value, error)` tuples, which conflicts with Kukicha's `onerr` operator. The manual pattern above is the recommended approach.
@@ -754,6 +933,11 @@ if output.IsOk()
 else
     err := output.Err()
     message := "Failed: {err}"
+
+# DevOps Example: Optional deployment metadata
+func getDeploymentTag() result.Optional[string]
+    tag := env.Get("DEPLOY_TAG") onerr return result.None[string]()
+    return result.Some(tag)
 ```
 
 **Type Assertions:** Kukicha supports type assertions using the `as` keyword with multi-value assignment:
@@ -761,6 +945,63 @@ else
 inner, ok := opt.value as Optional
 if ok
     # Type assertion succeeded, inner is of type Optional
+
+### Env Package
+
+Typed access to environment variables with safe defaults and `onerr` support.
+
+```kukicha
+import "stdlib/env"
+
+# DevOps Example: Reading service configuration
+func loadConfig() Config
+    return Config
+        Port: env.GetIntOrDefault("PORT", 8080)
+        Debug: env.GetBoolOrDefault("DEBUG", false)
+        LogFormat: env.GetOr("LOG_FORMAT", "json")
+        AllowedHosts: env.GetListOr("ALLOWED_HOSTS", ",", list of string{"localhost"})
+        ApiKey: env.Get("API_KEY") onerr "temporary-key"
+
+# Check if environment is prepared
+if env.IsSetAndNotEmpty("KUBERNETES_SERVICE_HOST")
+    print "Running in Kubernetes"
+
+# Available functions:
+# Get, GetOr, GetInt, GetIntOr, GetIntOrDefault, GetBool, GetBoolOr, GetBoolOrDefault
+# GetFloat, GetFloatOr, GetList, GetListOr, Set, Unset, IsSet, IsSetAndNotEmpty, All
+```
+
+### DateTime Package
+
+Human-friendly time formatting and duration helpers.
+
+```kukicha
+import "stdlib/datetime"
+
+# DevOps Example: Checking resource expiration
+func checkExpiration(createdAt time.Time)
+    # Use named durations
+    ninetyDays := datetime.Days(90)
+    expirationDate := createdAt |> datetime.AddDays(90)
+
+    if datetime.Now() |> datetime.IsAfter(expirationDate)
+        print "Resource expired on {datetime.Format(expirationDate, "date")}"
+        cleanupResource()
+
+# Formatting examples
+now := datetime.Now()
+print "ISO8601: {datetime.Format(now, "iso8601")}"
+print "Date: {datetime.Format(now, "date")}"
+print "Kitchen: {datetime.Format(now, "kitchen")}"
+
+# Available functions:
+# Format, Parse, ParseInLocation, Now, Today, Tomorrow, Yesterday
+# Nanoseconds, Microseconds, Milliseconds, Seconds, Minutes, Hours, Days, Weeks
+# AddDays, AddWeeks, AddMonths, AddYears, SubDays, SubWeeks, SubMonths, SubYears
+# IsBefore, IsAfter, IsBetween, IsSameDay, IsToday, IsYesterday, IsTomorrow, IsPast, IsFuture
+# Year, Month, Day, Hour, Minute, Second, Weekday, WeekdayName
+# Unix, UnixMilli, FromUnix, FromUnixMilli, Sleep, SleepSeconds, SleepMilliseconds
+# InUTC, InLocal, InLocation
 ```
 
 ---
@@ -799,10 +1040,10 @@ func main()
 
     # Filter and transform using slice helpers
     summaries := repos
-        |> slice.Filter(func(r Repo) bool
+        |> slice.Filter(function(r Repo) bool
             return not r.Archived and r.Stars > 100
         )
-        |> slice.Map(func(r Repo) RepoSummary
+        |> slice.Map(function(r Repo) RepoSummary
             return RepoSummary
                 Name: r.Name
                 Stars: r.Stars
@@ -812,11 +1053,13 @@ func main()
     # Save to file using json.MarshalPretty
     output := summaries
         |> json.MarshalPretty()
-        onerr panic "failed to serialize"
+        onerr
+            panic "failed to serialize"
 
     string(output)
         |> files.Write("active-repos.json")
-        onerr panic "failed to save"
+        onerr
+            panic "failed to save"
 
     print("Saved {len(summaries)} active repositories")
 ```
@@ -827,11 +1070,16 @@ func main()
 import "stdlib/files"
 import "stdlib/cli"
 
-func main()
-    app := cli.New("logparse") |> cli.Arg("logfile", "Path to log file") |> cli.AddFlag("level", "Filter by level (ERROR|WARN|INFO)", "ERROR") |> cli.Action(analyzeLog)
-    cli.RunApp(app) onerr panic "command failed"
+function main()
+    app := cli.New("logparse")
+        |> cli.Arg("logfile", "Path to log file")
+        |> cli.AddFlag("level", "Filter by level (ERROR|WARN|INFO)", "ERROR")
+        |> cli.Action(analyzeLog)
 
-func analyzeLog(args cli.Args)
+    cli.RunApp(app) onerr
+        panic "command failed"
+
+function analyzeLog(args cli.Args)
     logPath := cli.GetString(args, "logfile")
     level := cli.GetString(args, "level")
 
@@ -858,7 +1106,7 @@ import "stdlib/files"
 import "stdlib/template"
 
 # Convert CSV to HTML report
-func main()
+function main()
     report := "sales.csv"
         |> files.Read()
         |> parse.Csv()
@@ -867,7 +1115,8 @@ func main()
         |> calculateTotals()
         |> template.Render(reportTemplate)
         |> files.Write("report.html")
-        onerr panic "report generation failed"
+        onerr
+            panic "report generation failed"
 
     print "Report saved to report.html"
 ```
@@ -878,7 +1127,7 @@ func main()
 import "stdlib/shell"
 import "stdlib/files"
 
-func deploy(version string)
+function deploy(version string)
     print("Building version {version}...")
 
     # Build and test
@@ -891,11 +1140,102 @@ func deploy(version string)
         panic("build failed: {string(shell.GetError(result2))}")
 
     # Create deployment package
-    tmpDir := files.TempDir() onerr panic "temp dir failed"
+    tmpDir := files.TempDir() onerr
+        panic "temp dir failed"
     shell.New("cp", "-r", "dist", tmpDir) |> shell.Execute()
     shell.New("tar", "-czf", "deploy-{version}.tar.gz", tmpDir) |> shell.Execute()
 
     print("Deployment package ready: deploy-{version}.tar.gz")
+```
+
+---
+
+## DevOps & SRE Examples
+
+Kukicha is exceptionally well-suited for infrastructure automation. Below are advanced patterns combining multiple standard library packages.
+
+### Automated SSL Certificate Check
+
+This script checks a list of domains for SSL expiration and sends an alert if any are expiring within 30 days.
+
+```kukicha
+import "stdlib/fetch"
+import "stdlib/datetime"
+import "stdlib/concurrent"
+import "stdlib/env"
+
+func main()
+    domains := env.GetListOr("DOMAINS", ",", list of string{"example.com", "google.com"})
+    webhookUrl := must.Env("SLACK_WEBHOOK")
+
+    tasks := list of func(){}
+    for d in domains
+        domain := d
+        tasks = append(tasks, func()
+            checkDomain(domain, webhookUrl)
+        )
+    
+    concurrent.Parallel(tasks...)
+
+func checkDomain(domain string, webhook string)
+    # Note: Using native Go tls package via interop
+    import "crypto/tls"
+    
+    conn, err := tls.Dial("tcp", "{domain}:443", empty)
+    if err != empty
+        return print "Failed to connect to {domain}: {err}"
+    defer conn.Close()
+
+    # Get expiration from certificate
+    expiry := conn.ConnectionState().PeerCertificates[0].NotAfter
+    
+    # Check if expiring in 30 days
+    if datetime.Now() |> datetime.AddDays(30) |> datetime.IsAfter(expiry)
+        msg := "Alert: Certificate for {domain} expires on {datetime.Format(expiry, "date")}"
+        fetch.Post(msg, webhook) onerr print "Failed to send alert"
+```
+
+### Infrastructure Drift Detector
+
+Compares current local configuration files against a remote state API.
+
+```kukicha
+import "stdlib/files"
+import "stdlib/fetch"
+import "stdlib/json"
+import "stdlib/slice"
+
+type State
+    ResourceId string json:"id"
+    Version    string json:"version"
+
+func main()
+    # 1. Fetch remote state
+    remoteState := list of State{}
+    fetch.Get("https://api.infra.local/state")
+        |> fetch.CheckStatus()
+        |> fetch.Bytes()
+        |> json.Unmarshal(reference remoteState)
+        onerr panic "could not fetch state"
+
+    # 2. Read local state
+    localState := "infra-state.json"
+        |> files.Read()
+        |> json.Unmarshal(reference localState)
+        onerr list of State{}
+
+    # 3. Find missing or changed resources
+    drift := slice.Filter(remoteState, func(r State) bool
+        found := slice.Find(localState, func(l State) bool
+            return l.ResourceId == r.ResourceId
+        )
+        return not found.IsSome() or found.Unwrap().Version != r.Version
+    )
+
+    if len(drift) > 0
+        print "Infrastructure drift detected in {len(drift)} resources!"
+    else
+        print "Infrastructure is in sync."
 ```
 
 ---
@@ -917,13 +1257,14 @@ users := http.Get("https://api.example.com/users")
     |> .Body
     |> io.ReadAll()
     |> json.Unmarshal(_, reference users) as list of User
-    onerr empty list of User
+    onerr
+        empty list of User
 
-func checkStatus(resp reference http.Response, err error) (reference http.Response, error)
+function checkStatus(resp reference http.Response, err error) (reference http.Response, error)
     if err != empty
         return empty, err
     if resp.StatusCode >= 400
-        return empty, error "request failed: {resp.Status}"
+        return empty, error("request failed: {resp.Status}")
     return resp, empty
 ```
 
@@ -941,11 +1282,12 @@ output := "input.txt"
     |> slice.Map(transform)
     |> string.Join("\n")
     |> writeFile("output.txt")
-    onerr panic "processing failed"
+    onerr
+        panic "processing failed"
 
-func readLines(file reference os.File) list of string
+function readLines(file reference os.File) list of string
     defer file.Close()
-    lines := list of string{}
+    variable lines = list of string{}
     scanner := bufio.NewScanner(file)
     for scanner.Scan()
         lines = append(lines, scanner.Text())
