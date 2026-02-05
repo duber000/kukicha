@@ -79,6 +79,19 @@
 (import_declaration
   path: (interpreted_string_literal) @string)
 
+; Built-in expressions (recover, panic, error, empty, make, close)
+(recover_expression) @function.builtin
+(panic_expression) @function.builtin
+(error_expression) @function.builtin
+(empty_expression) @function.builtin
+(make_expression) @function.builtin
+(close_expression) @function.builtin
+(receive_expression) @function.builtin
+
+; Type assertions and casts
+(type_assertion) @keyword.operator
+(type_cast) @keyword.operator
+
 ; Identifiers (general fallback - should be last)
 (identifier) @variable
 

@@ -79,11 +79,33 @@
 (import_declaration
   path: (interpreted_string_literal) @string)
 
+; Built-in expressions (recover, panic, error, empty, make, close)
+(recover_expression) @function.builtin
+(panic_expression) @function.builtin
+(error_expression) @function.builtin
+(empty_expression) @function.builtin
+(make_expression) @function.builtin
+(close_expression) @function.builtin
+(receive_expression) @function.builtin
+
+; Type assertions and casts
+(type_assertion) @keyword.operator
+(type_cast) @keyword.operator
+
 ; Identifiers (general fallback - should be last)
 (identifier) @variable
 
 ; Operators
 [":=" "=" "|>" "==" "!=" "<" ">" "<=" ">=" "+" "-" "*" "/" "%" "++" "--" "&&" "||" "!" "|"] @operator
+
+; Keywords
+["petiole" "import" "as" "type" "interface" "var" "variable" "func" "function" "on" "return" "if" "else" "for" "in" "from" "to" "through" "switch" "case" "default" "go" "defer" "make" "list" "of" "map" "channel" "send" "receive" "close" "panic" "error" "empty" "discard" "many" "true" "false" "equals" "and" "or" "onerr" "not"] @keyword
+
+; Control flow keywords (optional more specific highlighting)
+["if" "else" "for" "switch" "case" "default" "return" "break" "continue" "go" "defer" "onerr"] @keyword.control
+
+; Logical operators as keywords
+["and" "or" "not" "in" "equals"] @keyword.operator
 
 ; Punctuation - Brackets
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket

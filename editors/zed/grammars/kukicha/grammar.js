@@ -54,11 +54,12 @@ module.exports = grammar({
       $.method_declaration,
       $.type_declaration,
       $.interface_declaration,
+      $.var_declaration,
     ),
 
     // Function declaration
     function_declaration: $ => seq(
-      'func',
+      choice('func', 'function'),
       field('name', $.identifier),
       field('parameters', $.parameter_list),
       optional(field('return_type', $.return_type)),
@@ -68,7 +69,7 @@ module.exports = grammar({
 
     // Method declaration: func Name on receiver Type ReturnType
     method_declaration: $ => seq(
-      'func',
+      choice('func', 'function'),
       field('name', $.identifier),
       'on',
       field('receiver', $.identifier),
@@ -205,7 +206,7 @@ module.exports = grammar({
     ),
 
     function_type: $ => prec.right(seq(
-      'func',
+      choice('func', 'function'),
       '(',
       optional(commaSep1($.type)),
       ')',
@@ -222,6 +223,7 @@ module.exports = grammar({
     // Statements
     _statement: $ => choice(
       $.var_declaration,
+      $.short_var_declaration,
       $.assignment_statement,
       $.expression_statement,
       $.return_statement,
@@ -239,22 +241,35 @@ module.exports = grammar({
       $.inc_dec_statement,
     ),
 
-    // Variable declaration with :=
+    // Explicit variable declaration: var x int = 1
     var_declaration: $ => seq(
+      choice('var', 'variable'),
+      field('names', $.identifier_list),
+      choice(
+        seq(field('type', $.type), optional(seq('=', field('values', $.expression_list)))),
+        seq('=', field('values', $.expression_list)),
+      ),
+      optional($.onerr_clause),
+      $._newline,
+    ),
+
+    // Variable declaration with :=
+    short_var_declaration: $ => seq(
       field('names', $.identifier_list),
       ':=',
-      field('value', $._expression),
+      field('values', $.expression_list),
       optional($.onerr_clause),
       $._newline,
     ),
 
     identifier_list: $ => commaSep1($.identifier),
+    expression_list: $ => commaSep1($._expression),
 
     // Assignment with =
     assignment_statement: $ => seq(
       field('left', $._lvalue),
       '=',
-      field('right', $._expression),
+      field('right', $.expression_list),
       optional($.onerr_clause),
       $._newline,
     ),
@@ -386,9 +401,9 @@ module.exports = grammar({
     // Send statement
     send_statement: $ => seq(
       'send',
-      field('channel', $._expression),
-      ',',
       field('value', $._expression),
+      'to',
+      field('channel', $._expression),
       $._newline,
     ),
 
@@ -399,12 +414,15 @@ module.exports = grammar({
     // OnErr clause
     onerr_clause: $ => prec(5, seq(
       'onerr',
-      field('handler', choice(
-        $.panic_expression,
-        $.return_expression,
-        'discard',
-        $._expression,
-      )),
+      choice(
+        field('handler', choice(
+          $.panic_expression,
+          $.return_expression,
+          'discard',
+          $._expression,
+        )),
+        seq($._newline, field('body', $.block)),
+      ),
     )),
 
     // Expressions
@@ -553,7 +571,7 @@ module.exports = grammar({
 
     // Function literal
     function_literal: $ => seq(
-      'func',
+      choice('func', 'function'),
       field('parameters', $.parameter_list),
       optional(field('return_type', $.return_type)),
       $._newline,
