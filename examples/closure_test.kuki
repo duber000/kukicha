@@ -1,0 +1,20 @@
+import "stdlib/slice"
+
+func main()
+    # Test 1: Basic filter with closure
+    numbers := list of int{1, 2, 3, 4, 5}
+    evens := numbers |> slice.Filter(func(n int) bool
+        return n % 2 equals 0
+    )
+    
+    # Test 2: Map with closure
+    doubled := numbers |> slice.Map(func(n int) int
+        return n * 2
+    )
+    
+    # Test 3: Multiple statements in closure
+    processed := numbers |> slice.Map(func(n int) int
+        squared := n * n
+        adjusted := squared + 1
+        return adjusted
+    )

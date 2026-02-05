@@ -40,7 +40,9 @@ type Lexer struct {
 	// the same expression regardless of how it is indented.
 	lastTokenType    TokenType // last emitted token type (TOKEN_COMMENT excluded)
 	continuationLine bool      // true when the next line is a |> continuation
-	braceDepth       int       // current nesting level of (), [], {}
+	braceDepth       int       // current nesting level of [], {} (used for continuations)
+	parenDepth       int       // current nesting level of () (used for closures)
+	inFunctionLiteral bool     // true when we've just seen 'func' and are parsing its body
 }
 
 // NewLexer creates a new lexer for the given source code
@@ -54,6 +56,8 @@ func NewLexer(source string, filename string) *Lexer {
 		atLineStart:        true,
 		indentationHandled: false,
 		braceDepth:         0,
+		parenDepth:         0,
+		inFunctionLiteral:  false,
 	}
 }
 
@@ -132,10 +136,14 @@ func (l *Lexer) scanToken() {
 		}
 	case '\n':
 		// Implicit continuation if:
-		// 1. We are inside braces (braceDepth > 0)
+		// 1. We are inside non-paren braces (braceDepth > 0) AND not in a closure
 		// 2. The *previous* token was a pipe
 		// 3. The *next* token (on the new line) is a pipe
-		if l.braceDepth > 0 || l.lastTokenType == TOKEN_PIPE || l.isPipeAtStartOfNextLine() {
+		//
+		// NOTE: parenDepth > 0 does NOT suppress indentation when we're in a function
+		// literal (closure), because closures need INDENT/DEDENT tokens for their body.
+		isLineContinuation := (l.braceDepth > 0) || l.lastTokenType == TOKEN_PIPE || l.isPipeAtStartOfNextLine()
+		if isLineContinuation {
 			l.continuationLine = true
 		} else {
 			l.addToken(TOKEN_NEWLINE)
@@ -148,7 +156,8 @@ func (l *Lexer) scanToken() {
 		if l.peek() == '\n' {
 			l.advance()
 		}
-		if l.braceDepth > 0 || l.lastTokenType == TOKEN_PIPE || l.isPipeAtStartOfNextLine() {
+		isLineContinuation := (l.braceDepth > 0) || l.lastTokenType == TOKEN_PIPE || l.isPipeAtStartOfNextLine()
+		if isLineContinuation {
 			l.continuationLine = true
 		} else {
 			l.addToken(TOKEN_NEWLINE)
@@ -166,12 +175,15 @@ func (l *Lexer) scanToken() {
 	case '\'':
 		l.scanRune()
 	case '(':
-		l.braceDepth++
+		l.parenDepth++
 		l.addToken(TOKEN_LPAREN)
 	case ')':
-		if l.braceDepth > 0 {
-			l.braceDepth--
+		if l.parenDepth > 0 {
+			l.parenDepth--
 		}
+		// When closing the parameter list of a function literal (parenDepth becomes 0),
+		// we know the next tokens will be the return type annotations and then the body.
+		// Keep inFunctionLiteral true; it will be reset when the body block is done.
 		l.addToken(TOKEN_RPAREN)
 	case '[':
 		l.braceDepth++
@@ -469,6 +481,11 @@ func (l *Lexer) scanIdentifier() {
 	text := string(l.source[l.start:l.current])
 	tokenType := LookupKeyword(text)
 	l.addToken(tokenType)
+	
+	// Track when we enter a function literal context
+	if tokenType == TOKEN_FUNC {
+		l.inFunctionLiteral = true
+	}
 }
 
 // scanComment scans a comment and emits a TOKEN_COMMENT

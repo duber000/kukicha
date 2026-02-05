@@ -154,7 +154,6 @@ docs/                 # Documentation
 ### Parser Constraints (Last Updated: 2026-02-04)
 The following limitations still exist in the compiler:
 
-- **No closures as call arguments** — `f(func(x T) bool\n    return ...\n)` fails because indentation tokens are suppressed inside parentheses. **Workaround:** Extract to a named top-level function and pass by name: `f(myPredicate)`.
 - **Semantic limit on multi-value pipe return** — `return x |> f()` where `f` returns `(T, error)` parses correctly but currently fails semantic analysis/codegen. **Workaround:** Capture to a variable first: `val, err := x |> f() \n return val, err`.
 
 ## Adding Features to the Compiler

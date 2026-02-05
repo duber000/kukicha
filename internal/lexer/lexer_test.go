@@ -584,3 +584,98 @@ func TestKeywordRecognition(t *testing.T) {
 		})
 	}
 }
+
+func TestClosureInFunctionCall(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []TokenType
+	}{
+		{
+			name: "simple closure in function argument",
+			input: `filtered := items |> Filter(func(x int) bool
+    return x > 2
+)`,
+			expected: []TokenType{
+				TOKEN_IDENTIFIER,  // filtered
+				TOKEN_WALRUS,      // :=
+				TOKEN_IDENTIFIER,  // items
+				TOKEN_PIPE,        // |>
+				TOKEN_IDENTIFIER,  // Filter
+				TOKEN_LPAREN,      // (
+				TOKEN_FUNC,        // func
+				TOKEN_LPAREN,      // (
+				TOKEN_IDENTIFIER,  // x
+				TOKEN_IDENTIFIER,  // int
+				TOKEN_RPAREN,      // )
+				TOKEN_IDENTIFIER,  // bool
+				TOKEN_NEWLINE,     // newline after return type
+				TOKEN_INDENT,      // indentation for closure body
+				TOKEN_RETURN,      // return
+				TOKEN_IDENTIFIER,  // x
+				TOKEN_GT,          // >
+				TOKEN_INTEGER,     // 2
+				TOKEN_NEWLINE,     // newline after return
+				TOKEN_DEDENT,      // dedent from closure body
+				TOKEN_RPAREN,      // ) closing function call
+				TOKEN_EOF,
+			},
+		},
+		{
+			name: "closure with multiple lines",
+			input: `result := data |> Map(func(item string) string
+    trimmed := trim(item)
+    return trimmed
+)`,
+			expected: []TokenType{
+				TOKEN_IDENTIFIER,  // result
+				TOKEN_WALRUS,      // :=
+				TOKEN_IDENTIFIER,  // data
+				TOKEN_PIPE,        // |>
+				TOKEN_IDENTIFIER,  // Map
+				TOKEN_LPAREN,      // (
+				TOKEN_FUNC,        // func
+				TOKEN_LPAREN,      // (
+				TOKEN_IDENTIFIER,  // item
+				TOKEN_IDENTIFIER,  // string
+				TOKEN_RPAREN,      // )
+				TOKEN_IDENTIFIER,  // string
+				TOKEN_NEWLINE,
+				TOKEN_INDENT,
+				TOKEN_IDENTIFIER,  // trimmed
+				TOKEN_WALRUS,      // :=
+				TOKEN_IDENTIFIER,  // trim
+				TOKEN_LPAREN,      // (
+				TOKEN_IDENTIFIER,  // item
+				TOKEN_RPAREN,      // )
+				TOKEN_NEWLINE,
+				TOKEN_RETURN,      // return
+				TOKEN_IDENTIFIER,  // trimmed
+				TOKEN_NEWLINE,
+				TOKEN_DEDENT,
+				TOKEN_RPAREN,      // ) closing function call
+				TOKEN_EOF,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lex := NewLexer(tt.input, "test.kuki")
+			tokens, err := lex.ScanTokens()
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if len(tokens) != len(tt.expected) {
+				t.Fatalf("Expected %d tokens, got %d", len(tt.expected), len(tokens))
+			}
+
+			for i, expected := range tt.expected {
+				if tokens[i].Type != expected {
+					t.Errorf("Token %d: expected %s, got %s (lexeme: %q)", i, expected, tokens[i].Type, tokens[i].Lexeme)
+				}
+			}
+		})
+	}
+}
