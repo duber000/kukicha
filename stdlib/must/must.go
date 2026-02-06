@@ -8,9 +8,10 @@ package must
 
 import (
 	"fmt"
-	"os"
 	"strconv"
-	"strings"
+
+	kukienv "github.com/duber000/kukicha/stdlib/env"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 )
 
 func Do(value any, err error) any {
@@ -40,7 +41,7 @@ func OkMsg(err error, message string) {
 }
 
 func Env(key string) string {
-	value := os.Getenv(key)
+	value := kukienv.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
@@ -48,7 +49,7 @@ func Env(key string) string {
 }
 
 func EnvOr(key string, defaultValue string) string {
-	value := os.Getenv(key)
+	value := kukienv.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
@@ -56,7 +57,7 @@ func EnvOr(key string, defaultValue string) string {
 }
 
 func EnvInt(key string) int {
-	value := os.Getenv(key)
+	value := kukienv.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
@@ -68,7 +69,7 @@ func EnvInt(key string) int {
 }
 
 func EnvIntOr(key string, defaultValue int) int {
-	value := os.Getenv(key)
+	value := kukienv.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
@@ -80,7 +81,7 @@ func EnvIntOr(key string, defaultValue int) int {
 }
 
 func EnvBool(key string) bool {
-	value := os.Getenv(key)
+	value := kukienv.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
@@ -88,7 +89,7 @@ func EnvBool(key string) bool {
 }
 
 func EnvBoolOr(key string, defaultValue bool) bool {
-	value := os.Getenv(key)
+	value := kukienv.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
@@ -96,14 +97,14 @@ func EnvBoolOr(key string, defaultValue bool) bool {
 }
 
 func EnvList(key string, separator string) []string {
-	value := os.Getenv(key)
+	value := kukienv.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
-	parts := strings.Split(value, separator)
+	parts := kukistring.Split(value, separator)
 	result := make([]string, 0, len(parts))
 	for _, part := range parts {
-		trimmed := strings.TrimSpace(part)
+		trimmed := kukistring.TrimSpace(part)
 		if trimmed != "" {
 			result = append(result, trimmed)
 		}
@@ -112,14 +113,14 @@ func EnvList(key string, separator string) []string {
 }
 
 func EnvListOr(key string, separator string, defaultValue []string) []string {
-	value := os.Getenv(key)
+	value := kukienv.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
-	parts := strings.Split(value, separator)
+	parts := kukistring.Split(value, separator)
 	result := make([]string, 0, len(parts))
 	for _, part := range parts {
-		trimmed := strings.TrimSpace(part)
+		trimmed := kukistring.TrimSpace(part)
 		if trimmed != "" {
 			result = append(result, trimmed)
 		}
@@ -152,7 +153,7 @@ func NotNil(value any, name string) {
 }
 
 func parseBool(key string, value string) bool {
-	lower := strings.ToLower(strings.TrimSpace(value))
+	lower := kukistring.ToLower(kukistring.TrimSpace(value))
 	if ((lower == "true") || (lower == "1")) || (lower == "yes") {
 		return true
 	}

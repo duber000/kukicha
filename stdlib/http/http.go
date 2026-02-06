@@ -7,12 +7,13 @@
 package http
 
 import (
-	json "encoding/json/v2"
 	"errors"
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
+
+	kukijson "github.com/duber000/kukicha/stdlib/json"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 )
 
 func WithCSRF(handler any) any {
@@ -28,13 +29,13 @@ func Serve(addr string, handler any) error {
 
 func JSON(w http.ResponseWriter, value any) error {
 	w.Header().Set("Content-Type", "application/json")
-	return json.MarshalWrite(w, value)
+	return kukijson.MarshalWrite(w, value)
 }
 
 func JSONStatus(w http.ResponseWriter, value any, status int) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	return json.MarshalWrite(w, value)
+	return kukijson.MarshalWrite(w, value)
 }
 
 func JSONCreated(w http.ResponseWriter, value any) error {
@@ -45,7 +46,7 @@ func JSONError(w http.ResponseWriter, message string, status int) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	errorBody := map[string]string{"error": message}
-	return json.MarshalWrite(w, errorBody)
+	return kukijson.MarshalWrite(w, errorBody)
 }
 
 func JSONBadRequest(w http.ResponseWriter, message string) error {
@@ -69,12 +70,12 @@ func JSONInternalError(w http.ResponseWriter, message string) error {
 }
 
 func ReadJSON(r *http.Request, target any) error {
-	return json.UnmarshalRead(r.Body, target)
+	return kukijson.UnmarshalRead(r.Body, target)
 }
 
 func ReadJSONAndClose(r *http.Request, target any) error {
 	defer r.Body.Close()
-	return json.UnmarshalRead(r.Body, target)
+	return kukijson.UnmarshalRead(r.Body, target)
 }
 
 func GetQueryParam(r *http.Request, key string) string {
@@ -210,7 +211,7 @@ func MethodNotAllowed(w http.ResponseWriter, allowed ...string) {
 	for _, method := range allowed {
 		parts = append(parts, method)
 	}
-	allowHeader := strings.Join(parts, ", ")
+	allowHeader := kukistring.Join(parts, ", ")
 	w.Header().Set("Allow", allowHeader)
 	w.WriteHeader(405)
 }

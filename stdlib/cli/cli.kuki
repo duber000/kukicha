@@ -4,7 +4,7 @@ petiole cli
 
 import "os"
 import "fmt"
-import "strings"
+import "stdlib/string"
 import "strconv"
 
 # ArgDef represents an argument definition
@@ -69,7 +69,7 @@ func RunApp(app App) error
     args := os.Args
     argIndex := 1  # Skip program name
     for _, argDef in app.args
-        if argIndex < len(args) and not strings.HasPrefix(args[argIndex], "--")
+        if argIndex < len(args) and not string.HasPrefix(args[argIndex], "--")
             values[argDef.name] = args[argIndex]
             argIndex = argIndex + 1
 
@@ -77,16 +77,16 @@ func RunApp(app App) error
     i := argIndex
     for i < len(args)
         arg := args[i]
-        if strings.HasPrefix(arg, "--")
+        if string.HasPrefix(arg, "--")
             # Parse flag
-            parts := strings.SplitN(arg, "=", 2)
-            flagName := strings.TrimPrefix(parts[0], "--")
+            parts := string.SplitN(arg, "=", 2)
+            flagName := string.TrimPrefix(parts[0], "--")
             flagValue := ""
             if len(parts) > 1
                 flagValue = parts[1]
             else
                 i = i + 1
-                if i < len(args) and not strings.HasPrefix(args[i], "--")
+                if i < len(args) and not string.HasPrefix(args[i], "--")
                     flagValue = args[i]
                 else
                     i = i - 1

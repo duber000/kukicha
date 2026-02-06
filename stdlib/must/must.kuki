@@ -7,9 +7,9 @@
 
 petiole must
 
-import "os"
+import "stdlib/env"
+import "stdlib/string"
 import "strconv"
-import "strings"
 import "fmt"
 
 # Do executes a function that returns (T, error) and panics if there's an error
@@ -45,7 +45,7 @@ func OkMsg(err error, message string)
 # Env returns the value of an environment variable, panics if not set
 # Example: apiKey := must.Env("API_KEY")
 func Env(key string) string
-    value := os.Getenv(key)
+    value := env.GetOr(key, "")
     if value == ""
         panic("must: environment variable {key} is required but not set")
     return value
@@ -54,7 +54,7 @@ func Env(key string) string
 # This never panics - use when the variable is optional
 # Example: port := must.EnvOr("PORT", "8080")
 func EnvOr(key string, defaultValue string) string
-    value := os.Getenv(key)
+    value := env.GetOr(key, "")
     if value == ""
         return defaultValue
     return value
@@ -62,7 +62,7 @@ func EnvOr(key string, defaultValue string) string
 # EnvInt returns an environment variable as an integer, panics if not set or invalid
 # Example: port := must.EnvInt("PORT")
 func EnvInt(key string) int
-    value := os.Getenv(key)
+    value := env.GetOr(key, "")
     if value == ""
         panic("must: environment variable {key} is required but not set")
     n, err := strconv.Atoi(value)
@@ -74,7 +74,7 @@ func EnvInt(key string) int
 # Panics only if the value is set but not a valid integer
 # Example: port := must.EnvIntOr("PORT", 8080)
 func EnvIntOr(key string, defaultValue int) int
-    value := os.Getenv(key)
+    value := env.GetOr(key, "")
     if value == ""
         return defaultValue
     n, err := strconv.Atoi(value)
@@ -86,7 +86,7 @@ func EnvIntOr(key string, defaultValue int) int
 # Accepts: "true", "false", "1", "0", "yes", "no" (case insensitive)
 # Example: debug := must.EnvBool("DEBUG")
 func EnvBool(key string) bool
-    value := os.Getenv(key)
+    value := env.GetOr(key, "")
     if value == ""
         panic("must: environment variable {key} is required but not set")
     return parseBool(key, value)
@@ -95,7 +95,7 @@ func EnvBool(key string) bool
 # Panics only if the value is set but not a valid boolean
 # Example: debug := must.EnvBoolOr("DEBUG", false)
 func EnvBoolOr(key string, defaultValue bool) bool
-    value := os.Getenv(key)
+    value := env.GetOr(key, "")
     if value == ""
         return defaultValue
     return parseBool(key, value)
@@ -104,13 +104,13 @@ func EnvBoolOr(key string, defaultValue bool) bool
 # Panics if the variable is not set
 # Example: hosts := must.EnvList("ALLOWED_HOSTS", ",")
 func EnvList(key string, separator string) list of string
-    value := os.Getenv(key)
+    value := env.GetOr(key, "")
     if value == ""
         panic("must: environment variable {key} is required but not set")
-    parts := strings.Split(value, separator)
+    parts := string.Split(value, separator)
     result := make(list of string, 0, len(parts))
     for _, part in parts
-        trimmed := strings.TrimSpace(part)
+        trimmed := string.TrimSpace(part)
         if trimmed != ""
             result = append(result, trimmed)
     return result
@@ -118,13 +118,13 @@ func EnvList(key string, separator string) list of string
 # EnvListOr returns an environment variable as a list, or default if not set
 # Example: hosts := must.EnvListOr("ALLOWED_HOSTS", ",", empty list of string)
 func EnvListOr(key string, separator string, defaultValue list of string) list of string
-    value := os.Getenv(key)
+    value := env.GetOr(key, "")
     if value == ""
         return defaultValue
-    parts := strings.Split(value, separator)
+    parts := string.Split(value, separator)
     result := make(list of string, 0, len(parts))
     for _, part in parts
-        trimmed := strings.TrimSpace(part)
+        trimmed := string.TrimSpace(part)
         if trimmed != ""
             result = append(result, trimmed)
     return result
@@ -159,7 +159,7 @@ func NotNil(value any, name string)
 
 # Internal helper function
 func parseBool(key string, value string) bool
-    lower := strings.ToLower(strings.TrimSpace(value))
+    lower := string.ToLower(string.TrimSpace(value))
     if lower == "true" or lower == "1" or lower == "yes"
         return true
     if lower == "false" or lower == "0" or lower == "no"
