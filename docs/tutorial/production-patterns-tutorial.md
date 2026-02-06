@@ -536,12 +536,35 @@ func main()
     port := env.GetOr("PORT", "8080")
     debug := env.GetBoolOrDefault("DEBUG", false)
     timeout := env.GetIntOr("TIMEOUT", 30) onerr 30
+
+    # Parse configuration from other sources (not just environment variables)
+    # These utilities are useful when reading config files, command-line flags, etc.
+
+    # Example: Parsing boolean from a config file value
+    configValue := "yes"  # Could come from a file, database, etc.
+    enabled := env.ParseBool(configValue) onerr false
+    # Accepts: "true", "false", "1", "0", "yes", "no", "on", "off"
+
+    # Example: Parsing a comma-separated list from any source
+    serverList := "prod-1.example.com, prod-2.example.com,  prod-3.example.com"
+    servers := env.SplitAndTrim(serverList, ",")
+    # Returns: ["prod-1.example.com", "prod-2.example.com", "prod-3.example.com"]
+    # Automatically trims whitespace and removes empty entries
+
+    print("Servers: {len(servers)} configured")
 ```
+
+**Why use these utilities?**
+- `env.ParseBool()` handles multiple formats (true/false, yes/no, 1/0, on/off)
+- `env.SplitAndTrim()` combines splitting and trimming in one operation
+- Though they're in the `env` package, they're general-purpose utilities
+- Useful for parsing configuration from any source (files, databases, APIs)
 
 ### Input Validation with `validate`
 
 ```kukicha
 import "stdlib/validate"
+import "stdlib/env"
 
 func CreateUser(email string, age int) (User, error)
     # Chain validations - each returns (value, error) for onerr
@@ -551,7 +574,32 @@ func CreateUser(email string, age int) (User, error)
     age |> validate.InRange(18, 120) onerr return User{}, error "{error}"
 
     return User{email: email, age: age}, empty
+
+# Example: Parsing and validating a boolean setting from user input
+func UpdateSettings(enableNotificationsStr string) (Settings, error)
+    # First parse the boolean string, then use it
+    enableNotifications := env.ParseBool(enableNotificationsStr) onerr
+        return Settings{}, error "enableNotifications must be true/false/yes/no/1/0"
+
+    return Settings{notifications: enableNotifications}, empty
+
+# Example: Parsing and validating a list of email addresses
+func AddAllowedEmails(emailListStr string) error
+    # Split and trim the list
+    emails := env.SplitAndTrim(emailListStr, ",")
+
+    # Validate each email
+    for email in emails
+        email |> validate.Email() onerr
+            return error "invalid email: {email}"
+
+    return empty
 ```
+
+**Combining utilities with validation:**
+- Use `env.ParseBool()` to handle various boolean formats before validation
+- Use `env.SplitAndTrim()` to clean up lists before validating each item
+- These utilities make your validation code more robust and user-friendly
 
 ### HTTP Helpers
 
