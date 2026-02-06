@@ -648,9 +648,10 @@ import "stdlib/string"
 
 # Clean and format a person's name using pipes
 func FormatName(rawName string) string
-    # We take the rawName, trim the space, then convert to Title Case
+    # We take the rawName, trim the space, convert any uppercase to lowercase and then convert to Title Case
     return rawName 
-        |> string.TrimSpace() 
+        |> string.TrimSpace()
+        |> string.ToLower()
         |> string.Title()
 
 # Create a greeting message
