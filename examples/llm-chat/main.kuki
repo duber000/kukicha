@@ -1,0 +1,366 @@
+# Example: LLM Chat Client
+# Demonstrates usage of the stdlib/llm package with all three API formats:
+#   - Chat Completions API (OpenAI-compatible)
+#   - OpenResponses API (https://www.openresponses.org)
+#   - Anthropic Messages API (https://docs.anthropic.com/en/api/messages)
+#
+# Prerequisites:
+#   export OPENAI_API_KEY="sk-..."
+#   export ANTHROPIC_API_KEY="sk-ant-..."
+#
+# Or with any-llm-gateway:
+#   export LLM_API_KEY="your-gateway-key"
+
+import "stdlib/llm"
+import "fmt"
+
+func main()
+    # ═══════════════════════════════════════
+    # CHAT COMPLETIONS API
+    # ═══════════════════════════════════════
+
+    # ──────────────────────────────────────
+    # 1. Quick one-shot completion
+    # ──────────────────────────────────────
+    print("--- Quick completion ---")
+    reply, err := llm.Complete("openai:gpt-4o-mini", "What is Kukicha tea in one sentence?")
+    if err != empty
+        print("Error: {err}")
+        return
+    print("Reply: {reply}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 2. Builder pattern with system prompt
+    # ──────────────────────────────────────
+    print("--- Builder with system prompt ---")
+    answer, err2 := llm.New("gpt-4o-mini")
+        |> llm.Provider("openai")
+        |> llm.System("You are a concise assistant. Reply in one sentence.")
+        |> llm.Temperature(0.3)
+        |> llm.MaxTokens(100)
+        |> llm.Ask("What is the pipe operator?")
+    if err2 != empty
+        print("Error: {err2}")
+        return
+    print("Answer: {answer}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 3. Multi-turn conversation
+    # ──────────────────────────────────────
+    print("--- Multi-turn conversation ---")
+    response, err3 := llm.New("openai:gpt-4o-mini")
+        |> llm.System("You are a friendly tutor.")
+        |> llm.User("What is a goroutine?")
+        |> llm.Assistant("A goroutine is a lightweight thread managed by the Go runtime.")
+        |> llm.User("How do I create one?")
+        |> llm.Send()
+    if err3 != empty
+        print("Error: {err3}")
+        return
+    print("Response: {response}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 4. Streaming response
+    # ──────────────────────────────────────
+    print("--- Streaming ---")
+    streamed, err4 := llm.New("openai:gpt-4o-mini")
+        |> llm.Temperature(0.9)
+        |> llm.Stream(func(chunk string)
+            fmt.Print(chunk)
+        )
+        |> llm.Ask("Write a haiku about programming")
+    if err4 != empty
+        print("\nStream error: {err4}")
+        return
+    print("")
+    print("(Full text: {streamed})")
+    print("")
+
+    # ──────────────────────────────────────
+    # 5. Full response with usage stats
+    # ──────────────────────────────────────
+    print("--- Full response ---")
+    comp, err5 := llm.New("openai:gpt-4o-mini")
+        |> llm.User("Say hello in three languages")
+        |> llm.SendRaw()
+    if err5 != empty
+        print("Error: {err5}")
+        return
+    print("Content: {llm.GetContent(comp)}")
+    print("Model: {comp.Model}")
+    print("Tokens used: {comp.Usage.TotalTokens}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 6. Using any-llm-gateway
+    # ──────────────────────────────────────
+    print("--- Gateway usage ---")
+    gatewayReply, err6 := llm.New("gpt-4o-mini")
+        |> llm.Gateway("http://localhost:8000")
+        |> llm.APIKey("my-gateway-key")
+        |> llm.Ask("Hello from the gateway!")
+    if err6 != empty
+        print("Gateway error (expected if not running): {err6}")
+    else
+        print("Gateway reply: {gatewayReply}")
+    print("")
+
+    # ═══════════════════════════════════════
+    # OPENRESPONSES API (POST /v1/responses)
+    # https://www.openresponses.org/specification
+    # ═══════════════════════════════════════
+
+    # ──────────────────────────────────────
+    # 7. Quick OpenResponses completion
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Quick response ---")
+    orReply, err7 := llm.Respond("openai:gpt-4o", "What is Kukicha tea in one sentence?")
+    if err7 != empty
+        print("Error: {err7}")
+    else
+        print("Reply: {orReply}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 8. OpenResponses with instructions
+    # ──────────────────────────────────────
+    print("--- OpenResponses: With instructions ---")
+    orAnswer, err8 := llm.NewResponse("gpt-4o")
+        |> llm.RProvider("openai")
+        |> llm.Instructions("You are a concise assistant. Reply in one sentence.")
+        |> llm.RTemperature(0.3)
+        |> llm.RMaxOutputTokens(100)
+        |> llm.RAsk("What is the pipe operator?")
+    if err8 != empty
+        print("Error: {err8}")
+    else
+        print("Answer: {orAnswer}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 9. OpenResponses streaming
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Streaming ---")
+    orStreamed, err9 := llm.NewResponse("openai:gpt-4o")
+        |> llm.RTemperature(0.9)
+        |> llm.RStream(func(chunk string)
+            fmt.Print(chunk)
+        )
+        |> llm.RAsk("Write a haiku about programming")
+    if err9 != empty
+        print("\nStream error: {err9}")
+    else
+        print("")
+        print("(Full text: {orStreamed})")
+    print("")
+
+    # ──────────────────────────────────────
+    # 10. OpenResponses with full response
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Full response ---")
+    orResp, err10 := llm.NewResponse("openai:gpt-4o")
+        |> llm.RUserMessage("Say hello in three languages")
+        |> llm.RSendRaw()
+    if err10 != empty
+        print("Error: {err10}")
+    else
+        print("Text: {llm.GetResponseText(orResp)}")
+        print("Model: {orResp.Model}")
+        print("Status: {orResp.Status}")
+        print("Tokens: {orResp.Usage.TotalTokens}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 11. OpenResponses multi-turn with previous_response_id
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Multi-turn ---")
+    firstResp, err11 := llm.NewResponse("openai:gpt-4o")
+        |> llm.RStore()
+        |> llm.RAskRaw("What is a goroutine?")
+    if err11 != empty
+        print("Error: {err11}")
+    else
+        print("First: {llm.GetResponseText(firstResp)}")
+        # Continue the conversation using previous_response_id
+        followUp, err12 := llm.NewResponse("openai:gpt-4o")
+            |> llm.PreviousResponse(firstResp.ID)
+            |> llm.RAsk("How do I create one?")
+        if err12 != empty
+            print("Follow-up error: {err12}")
+        else
+            print("Follow-up: {followUp}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 12. OpenResponses with event handler
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Event handler ---")
+    _, err13 := llm.NewResponse("openai:gpt-4o")
+        |> llm.RStreamEvents(func(evt llm.StreamEvent)
+            if evt.Type == "response.output_text.delta"
+                fmt.Print(evt.Delta)
+            if evt.Type == "response.completed"
+                print("")
+                print("(Response completed)")
+        )
+        |> llm.RAsk("Count to five")
+    if err13 != empty
+        print("Error: {err13}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 13. OpenResponses with custom endpoint
+    # ──────────────────────────────────────
+    print("--- OpenResponses: Custom endpoint ---")
+    customReply, err14 := llm.NewResponse("gpt-4o")
+        |> llm.RBaseURL("https://chat.example.edu")
+        |> llm.RPath("/api/responses")
+        |> llm.RAPIKey("your-key")
+        |> llm.RAsk("Hello from custom endpoint!")
+    if err14 != empty
+        print("Custom endpoint error (expected): {err14}")
+    else
+        print("Custom reply: {customReply}")
+    print("")
+
+    # ═══════════════════════════════════════
+    # ANTHROPIC MESSAGES API (POST /v1/messages)
+    # https://docs.anthropic.com/en/api/messages
+    # ═══════════════════════════════════════
+
+    # ──────────────────────────────────────
+    # 14. Quick Anthropic completion
+    # ──────────────────────────────────────
+    print("--- Anthropic: Quick completion ---")
+    aReply, err15 := llm.AnthropicComplete("claude-opus-4-6", "What is Kukicha tea in one sentence?")
+    if err15 != empty
+        print("Error: {err15}")
+    else
+        print("Reply: {aReply}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 15. Anthropic with system prompt
+    # ──────────────────────────────────────
+    print("--- Anthropic: With system prompt ---")
+    aAnswer, err16 := llm.NewMessages("claude-opus-4-6")
+        |> llm.MSystem("You are a concise assistant. Reply in one sentence.")
+        |> llm.MTemperature(0.3)
+        |> llm.MMaxTokens(100)
+        |> llm.MAsk("What is the pipe operator?")
+    if err16 != empty
+        print("Error: {err16}")
+    else
+        print("Answer: {aAnswer}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 16. Anthropic adaptive thinking (Claude 4.6+)
+    # ──────────────────────────────────────
+    print("--- Anthropic: Adaptive thinking ---")
+    thinkResp, err16b := llm.NewMessages("claude-opus-4-6")
+        |> llm.MAdaptiveThinking()
+        |> llm.MEffort("high")
+        |> llm.MMaxTokens(16000)
+        |> llm.MAskRaw("What is the sum of the first 100 prime numbers?")
+    if err16b != empty
+        print("Error: {err16b}")
+    else
+        thinking := llm.GetThinking(thinkResp)
+        if thinking != ""
+            # Truncate thinking for display
+            if len(thinking) > 200
+                thinking = thinking[:200] + "..."
+            print("Thinking: {thinking}")
+        print("Answer: {llm.GetAnthropicText(thinkResp)}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 17. Anthropic multi-turn conversation
+    # Note: Prefilling assistant messages is not supported on Claude 4.6+
+    # ──────────────────────────────────────
+    print("--- Anthropic: Multi-turn ---")
+    aMulti, err17 := llm.NewMessages("claude-opus-4-6")
+        |> llm.MSystem("You are a friendly tutor.")
+        |> llm.MMaxTokens(500)
+        |> llm.MUser("What is a goroutine?")
+        |> llm.MAssistant("A goroutine is a lightweight thread managed by the Go runtime.")
+        |> llm.MUser("How do I create one?")
+        |> llm.MSend()
+    if err17 != empty
+        print("Error: {err17}")
+    else
+        print("Response: {aMulti}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 18. Anthropic streaming
+    # ──────────────────────────────────────
+    print("--- Anthropic: Streaming ---")
+    aStreamed, err18 := llm.NewMessages("claude-opus-4-6")
+        |> llm.MMaxTokens(200)
+        |> llm.MTemperature(0.9)
+        |> llm.MStream(func(chunk string)
+            fmt.Print(chunk)
+        )
+        |> llm.MAsk("Write a haiku about programming")
+    if err18 != empty
+        print("\nStream error: {err18}")
+    else
+        print("")
+        print("(Full text: {aStreamed})")
+    print("")
+
+    # ──────────────────────────────────────
+    # 19. Anthropic full response with usage
+    # ──────────────────────────────────────
+    print("--- Anthropic: Full response ---")
+    aResp, err19 := llm.NewMessages("claude-opus-4-6")
+        |> llm.MMaxTokens(200)
+        |> llm.MUser("Say hello in three languages")
+        |> llm.MSendRaw()
+    if err19 != empty
+        print("Error: {err19}")
+    else
+        print("Text: {llm.GetAnthropicText(aResp)}")
+        print("Model: {aResp.Model}")
+        print("Stop reason: {aResp.StopReason}")
+        print("Input tokens: {aResp.Usage.InputTokens}")
+        print("Output tokens: {aResp.Usage.OutputTokens}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 20. Anthropic with event handler
+    # ──────────────────────────────────────
+    print("--- Anthropic: Event handler ---")
+    _, err20 := llm.NewMessages("claude-opus-4-6")
+        |> llm.MMaxTokens(200)
+        |> llm.MStreamEvents(func(evt llm.AnthropicStreamEvent)
+            if evt.Type == "content_block_delta" and evt.Delta.Type == "text_delta"
+                fmt.Print(evt.Delta.Text)
+            if evt.Type == "message_stop"
+                print("")
+                print("(Message complete)")
+        )
+        |> llm.MAsk("Count to five")
+    if err20 != empty
+        print("Error: {err20}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 21. Anthropic with custom endpoint (e.g., Dartmouth)
+    # ──────────────────────────────────────
+    print("--- Anthropic: Custom endpoint ---")
+    dartmouthReply, err21 := llm.NewMessages("claude-opus-4-6")
+        |> llm.MBaseURL("https://chat.dartmouth.edu")
+        |> llm.MPath("/api/messages")
+        |> llm.MAPIKey("your-dartmouth-key")
+        |> llm.MMaxTokens(200)
+        |> llm.MAsk("Hello from Dartmouth!")
+    if err21 != empty
+        print("Custom endpoint error (expected): {err21}")
+    else
+        print("Dartmouth reply: {dartmouthReply}")

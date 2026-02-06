@@ -1,0 +1,1972 @@
+# Kukicha Standard Library - LLM Client
+# Unified client supporting three major LLM API formats:
+#   - Chat Completions API (OpenAI, any-llm-gateway, Open WebUI, etc.)
+#   - OpenResponses API (https://www.openresponses.org/specification)
+#   - Anthropic Messages API (https://docs.anthropic.com/en/api/messages)
+#
+# Supports:
+#   - Chat Completions API (OpenAI, any-llm-gateway, Open WebUI, etc.)
+#   - OpenResponses API (POST /v1/responses)
+#   - Anthropic Messages API (POST /v1/messages)
+#   - Multiple providers (OpenAI, Anthropic, Mistral, Ollama, etc.)
+#   - Streaming responses via Server-Sent Events
+#   - Tool/function calling
+#   - Configurable temperature, max tokens, top_p, and more
+#
+# Chat Completions Examples:
+#   # Quick completion
+#   reply, err := llm.Complete("openai:gpt-4o-mini", "What is Go?")
+#
+#   # Builder pattern with provider and options
+#   reply, err := llm.New("gpt-4o-mini")
+#       |> llm.Provider("openai")
+#       |> llm.System("You are a helpful assistant.")
+#       |> llm.Temperature(0.7)
+#       |> llm.MaxTokens(500)
+#       |> llm.Ask("Explain pipes in Kukicha")
+#
+#   # Streaming
+#   llm.New("gpt-4o-mini")
+#       |> llm.Provider("openai")
+#       |> llm.Stream(handleChunk)
+#       |> llm.Ask("Write a poem")
+#
+#   # Using the gateway
+#   reply, err := llm.New("gpt-4o-mini")
+#       |> llm.Gateway("http://localhost:8000")
+#       |> llm.APIKey("my-gateway-key")
+#       |> llm.Ask("Hello!")
+#
+#   # Open WebUI or custom endpoints
+#   reply, err := llm.New("anthropic.claude-opus-4-6")
+#       |> llm.BaseURL("https://chat.example.edu")
+#       |> llm.Path("/api/chat/completions")
+#       |> llm.APIKey("your-key")
+#       |> llm.Ask("Hello!")
+#
+# OpenResponses Examples:
+#   # Quick response
+#   reply, err := llm.Respond("openai:gpt-4o", "What is Go?")
+#
+#   # Builder pattern
+#   resp, err := llm.NewResponse("gpt-4o")
+#       |> llm.RProvider("openai")
+#       |> llm.Instructions("You are a helpful assistant.")
+#       |> llm.RTemperature(0.7)
+#       |> llm.RMaxOutputTokens(500)
+#       |> llm.RStream(handleChunk)
+#       |> llm.RAsk("Explain pipes in Kukicha")
+#
+#   # Multi-turn with previous response
+#   resp2, err := llm.NewResponse("gpt-4o")
+#       |> llm.RProvider("openai")
+#       |> llm.PreviousResponse(resp.ID)
+#       |> llm.RAsk("Tell me more")
+#
+#   # Full response with tool calls
+#   resp, err := llm.NewResponse("gpt-4o")
+#       |> llm.RAddTool("get_weather", "Get current weather", params)
+#       |> llm.RAskRaw("What's the weather in Boston?")
+#
+# Anthropic Messages Examples:
+#   # Quick message
+#   reply, err := llm.AnthropicComplete("claude-opus-4-6", "What is Go?")
+#
+#   # Builder pattern
+#   reply, err := llm.NewMessages("claude-opus-4-6")
+#       |> llm.MSystem("You are a helpful assistant.")
+#       |> llm.MTemperature(0.7)
+#       |> llm.MMaxTokens(1024)
+#       |> llm.MStream(handleChunk)
+#       |> llm.MAsk("Explain pipes in Kukicha")
+#
+#   # Adaptive thinking (Claude 4.6+)
+#   reply, err := llm.NewMessages("claude-opus-4-6")
+#       |> llm.MAdaptiveThinking()
+#       |> llm.MEffort("high")
+#       |> llm.MMaxTokens(16000)
+#       |> llm.MAsk("Solve this complex problem...")
+#
+#   # Multi-turn conversation
+#   reply, err := llm.NewMessages("claude-opus-4-6")
+#       |> llm.MSystem("You are a tutor.")
+#       |> llm.MMaxTokens(1024)
+#       |> llm.MUser("What is a goroutine?")
+#       |> llm.MAssistant("A goroutine is a lightweight thread.")
+#       |> llm.MUser("How do I create one?")
+#       |> llm.MSend()
+#
+#   # Custom endpoint (e.g., Dartmouth Open WebUI Anthropic proxy)
+#   reply, err := llm.NewMessages("claude-opus-4-6")
+#       |> llm.MBaseURL("https://chat.dartmouth.edu")
+#       |> llm.MPath("/api/messages")
+#       |> llm.MAPIKey("your-key")
+#       |> llm.MMaxTokens(1024)
+#       |> llm.MAsk("Hello!")
+
+petiole llm
+
+import "stdlib/fetch"
+import "stdlib/json"
+import "stdlib/env"
+import "bufio"
+import "strings"
+import "fmt"
+import "io"
+
+# Message represents a single message in a chat conversation
+type Message
+    Role string json:"role"
+    Content string json:"content"
+
+# ToolFunction describes a function that the model can call
+type ToolFunction
+    Name string json:"name"
+    Description string json:"description"
+    Parameters any json:"parameters"
+
+# Tool represents a tool available to the model
+type Tool
+    Type string json:"type"
+    Function ToolFunction json:"function"
+
+# ToolCall represents a tool call made by the model
+type ToolCall
+    ID string json:"id"
+    Type string json:"type"
+    Function ToolCallFunction json:"function"
+
+# ToolCallFunction holds the function name and arguments from a tool call
+type ToolCallFunction
+    Name string json:"name"
+    Arguments string json:"arguments"
+
+# Choice represents a single completion choice from the API
+type Choice
+    Index int json:"index"
+    Message ResponseMessage json:"message"
+    FinishReason string json:"finish_reason"
+
+# ResponseMessage is the assistant's response message
+type ResponseMessage
+    Role string json:"role"
+    Content string json:"content"
+    ToolCalls list of ToolCall json:"tool_calls,omitzero"
+
+# Usage holds token usage information
+type Usage
+    PromptTokens int json:"prompt_tokens"
+    CompletionTokens int json:"completion_tokens"
+    TotalTokens int json:"total_tokens"
+
+# Completion is the response from a chat completion request
+type Completion
+    ID string json:"id"
+    Object string json:"object"
+    Created int json:"created"
+    Model string json:"model"
+    Choices list of Choice json:"choices"
+    Usage Usage json:"usage"
+
+# ChunkDelta holds incremental content in a streaming chunk
+type ChunkDelta
+    Role string json:"role,omitzero"
+    Content string json:"content,omitzero"
+
+# ChunkChoice represents a single choice in a streaming chunk
+type ChunkChoice
+    Index int json:"index"
+    Delta ChunkDelta json:"delta"
+    FinishReason string json:"finish_reason,omitzero"
+
+# Chunk is a single Server-Sent Event chunk during streaming
+type Chunk
+    ID string json:"id"
+    Object string json:"object"
+    Created int json:"created"
+    Model string json:"model"
+    Choices list of ChunkChoice json:"choices"
+
+# CompletionRequest is the JSON body sent to the chat completions endpoint
+type CompletionRequest
+    Model string json:"model"
+    Messages list of Message json:"messages"
+    Temperature float64 json:"temperature,omitzero"
+    MaxTokens int json:"max_tokens,omitzero"
+    TopP float64 json:"top_p,omitzero"
+    N int json:"n,omitzero"
+    Stop list of string json:"stop,omitzero"
+    PresencePenalty float64 json:"presence_penalty,omitzero"
+    FrequencyPenalty float64 json:"frequency_penalty,omitzero"
+    Seed int json:"seed,omitzero"
+    User string json:"user,omitzero"
+    Stream bool json:"stream,omitzero"
+    Tools list of Tool json:"tools,omitzero"
+    ToolChoice any json:"tool_choice,omitzero"
+    ResponseFormat any json:"response_format,omitzero"
+
+# Client holds the configuration for an LLM request (builder pattern)
+type Client
+    model string
+    provider string
+    baseURL string
+    path string
+    apiKey string
+    messages list of Message
+    temperature float64
+    maxTokens int
+    topP float64
+    n int
+    stop list of string
+    presencePenalty float64
+    frequencyPenalty float64
+    seed int
+    user string
+    tools list of Tool
+    toolChoice any
+    responseFormat any
+    streamHandler func(string)
+
+# New creates a new LLM client builder for the given model
+# The model can include a provider prefix like "openai:gpt-4o-mini"
+# or be just the model name, with the provider set separately
+# Example: client := llm.New("gpt-4o-mini")
+func New(model string) Client
+    c := Client{}
+    c.messages = empty list of Message
+    c.tools = empty list of Tool
+    c.temperature = 0.0
+    c.maxTokens = 0
+    c.topP = 0.0
+    c.n = 0
+    c.seed = 0
+    c.presencePenalty = 0.0
+    c.frequencyPenalty = 0.0
+
+    # Parse "provider:model" format
+    if strings.Contains(model, ":")
+        parts := strings.SplitN(model, ":", 2)
+        c.provider = parts[0]
+        c.model = parts[1]
+    else
+        c.model = model
+        c.provider = ""
+
+    c.baseURL = ""
+    c.path = ""
+    c.apiKey = ""
+    c.user = ""
+    c.streamHandler = empty
+    c.toolChoice = empty
+    c.responseFormat = empty
+    return c
+
+# Provider sets the LLM provider (e.g., "openai", "anthropic", "mistral", "ollama")
+# Example: client |> llm.Provider("openai")
+func Provider(c Client, provider string) Client
+    c.provider = provider
+    return c
+
+# Gateway sets the base URL to an any-llm-gateway instance
+# Example: client |> llm.Gateway("http://localhost:8000")
+func Gateway(c Client, url string) Client
+    c.baseURL = url
+    return c
+
+# BaseURL sets a custom API base URL (alias for Gateway)
+# Useful for self-hosted or alternative API endpoints
+# Example: client |> llm.BaseURL("http://localhost:11434")
+func BaseURL(c Client, url string) Client
+    c.baseURL = url
+    return c
+
+# Path overrides the default chat completions path ("/v1/chat/completions")
+# Use this for platforms like Open WebUI that use a different path
+# Example: client |> llm.Path("/api/chat/completions")
+func Path(c Client, path string) Client
+    c.path = path
+    return c
+
+# APIKey sets the API key for authentication
+# If not set, the client will look for provider-specific env vars
+# (OPENAI_API_KEY, ANTHROPIC_API_KEY, MISTRAL_API_KEY, etc.)
+# Example: client |> llm.APIKey("sk-...")
+func APIKey(c Client, key string) Client
+    c.apiKey = key
+    return c
+
+# System adds a system message to the conversation
+# Example: client |> llm.System("You are a helpful coding assistant.")
+func System(c Client, content string) Client
+    msg := Message{Role: "system", Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# User adds a user message to the conversation
+# Example: client |> llm.User("Explain monads in simple terms")
+func User(c Client, content string) Client
+    msg := Message{Role: "user", Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# Assistant adds an assistant message to the conversation (for multi-turn)
+# Example: client |> llm.Assistant("Monads are...")
+func Assistant(c Client, content string) Client
+    msg := Message{Role: "assistant", Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# AddMessage adds a message with a custom role to the conversation
+# Example: client |> llm.AddMessage("user", "Hello!")
+func AddMessage(c Client, role string, content string) Client
+    msg := Message{Role: role, Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# Messages sets the full message list (replaces any existing messages)
+# Example: client |> llm.Messages(myMessages)
+func Messages(c Client, msgs list of Message) Client
+    c.messages = msgs
+    return c
+
+# Temperature sets the sampling temperature (0.0 to 2.0)
+# Lower values make output more deterministic, higher values more creative
+# Example: client |> llm.Temperature(0.7)
+func Temperature(c Client, temp float64) Client
+    c.temperature = temp
+    return c
+
+# MaxTokens sets the maximum number of tokens to generate
+# Example: client |> llm.MaxTokens(1000)
+func MaxTokens(c Client, max int) Client
+    c.maxTokens = max
+    return c
+
+# TopP sets nucleus sampling parameter (0.0 to 1.0)
+# Example: client |> llm.TopP(0.9)
+func TopP(c Client, p float64) Client
+    c.topP = p
+    return c
+
+# Stop sets stop sequences that will halt generation
+# Example: client |> llm.Stop(list of string{".", "\n"})
+func Stop(c Client, sequences list of string) Client
+    c.stop = sequences
+    return c
+
+# PresencePenalty sets the presence penalty (-2.0 to 2.0)
+# Positive values penalize tokens that already appeared in the text
+# Example: client |> llm.PresencePenalty(0.6)
+func PresencePenalty(c Client, penalty float64) Client
+    c.presencePenalty = penalty
+    return c
+
+# FrequencyPenalty sets the frequency penalty (-2.0 to 2.0)
+# Positive values penalize tokens based on frequency in the text
+# Example: client |> llm.FrequencyPenalty(0.5)
+func FrequencyPenalty(c Client, penalty float64) Client
+    c.frequencyPenalty = penalty
+    return c
+
+# Seed sets the random seed for deterministic output (if supported)
+# Example: client |> llm.Seed(42)
+func Seed(c Client, seed int) Client
+    c.seed = seed
+    return c
+
+# SetUser sets the end-user identifier for abuse tracking
+# Example: client |> llm.SetUser("user-123")
+func SetUser(c Client, user string) Client
+    c.user = user
+    return c
+
+# AddTool adds a tool (function) the model can call
+# Example:
+#   client |> llm.AddTool("get_weather", "Get current weather", params)
+func AddTool(c Client, name string, description string, parameters any) Client
+    fn := ToolFunction{Name: name, Description: description, Parameters: parameters}
+    tool := Tool{Type: "function", Function: fn}
+    c.tools = append(c.tools, tool)
+    return c
+
+# ToolChoiceAuto lets the model decide whether to use tools
+# Example: client |> llm.ToolChoiceAuto()
+func ToolChoiceAuto(c Client) Client
+    c.toolChoice = "auto"
+    return c
+
+# ToolChoiceRequired forces the model to use a tool
+# Example: client |> llm.ToolChoiceRequired()
+func ToolChoiceRequired(c Client) Client
+    c.toolChoice = "required"
+    return c
+
+# ToolChoiceNone prevents the model from using tools
+# Example: client |> llm.ToolChoiceNone()
+func ToolChoiceNone(c Client) Client
+    c.toolChoice = "none"
+    return c
+
+# JSONMode requests JSON output from the model
+# Example: client |> llm.JSONMode()
+func JSONMode(c Client) Client
+    c.responseFormat = map of string to string{"type": "json_object"}
+    return c
+
+# Stream sets a handler function for streaming responses
+# The handler receives each text chunk as it arrives
+# Example: client |> llm.Stream(func(chunk string) { print(chunk) })
+func Stream(c Client, handler func(string)) Client
+    c.streamHandler = handler
+    return c
+
+# Ask sends a user message and executes the completion request
+# This is the terminal operation that triggers the API call
+# Returns the assistant's response text and any error
+#
+# Example: reply, err := llm.New("openai:gpt-4o-mini") |> llm.Ask("Hello!")
+func Ask(c Client, prompt string) (string, error)
+    c = User(c, prompt)
+    return execute(c)
+
+# Send executes the completion request with the messages already configured
+# Use this when you've already added all messages via User(), System(), etc.
+# Returns the assistant's response text and any error
+#
+# Example:
+#   reply, err := llm.New("openai:gpt-4o-mini")
+#       |> llm.System("You are a poet.")
+#       |> llm.User("Write a haiku about Go")
+#       |> llm.Send()
+func Send(c Client) (string, error)
+    return execute(c)
+
+# SendRaw executes the request and returns the full Completion object
+# Use this when you need access to tool calls, usage stats, or multiple choices
+#
+# Example:
+#   result, err := llm.New("openai:gpt-4o-mini")
+#       |> llm.User("Hello")
+#       |> llm.SendRaw()
+#   print(result.Usage.TotalTokens)
+func SendRaw(c Client) (Completion, error)
+    return executeRaw(c)
+
+# Complete is a quick one-shot completion function
+# Takes a "provider:model" string and a prompt, returns the response text
+# Uses provider-specific env vars for API keys
+#
+# Example: reply, err := llm.Complete("openai:gpt-4o-mini", "What is Go?")
+func Complete(model string, prompt string) (string, error)
+    c := New(model)
+    return Ask(c, prompt)
+
+# CompleteWithSystem is a quick completion with a system prompt
+#
+# Example: reply, err := llm.CompleteWithSystem("openai:gpt-4o-mini", "Be brief.", "What is Go?")
+func CompleteWithSystem(model string, systemPrompt string, prompt string) (string, error)
+    c := New(model)
+    c = System(c, systemPrompt)
+    return Ask(c, prompt)
+
+# GetContent extracts the text content from a Completion response
+# Returns the content of the first choice, or empty string if none
+# Example: text := llm.GetContent(completion)
+func GetContent(comp Completion) string
+    if len(comp.Choices) == 0
+        return ""
+    return comp.Choices[0].Message.Content
+
+# GetToolCalls extracts tool calls from a Completion response
+# Returns the tool calls from the first choice, or empty list if none
+# Example: calls := llm.GetToolCalls(completion)
+func GetToolCalls(comp Completion) list of ToolCall
+    if len(comp.Choices) == 0
+        return empty list of ToolCall
+    return comp.Choices[0].Message.ToolCalls
+
+# HasToolCalls returns true if the completion contains tool calls
+# Example: if llm.HasToolCalls(completion) ...
+func HasToolCalls(comp Completion) bool
+    calls := GetToolCalls(comp)
+    return len(calls) > 0
+
+# Internal: resolve API key from explicit setting or environment
+func resolveAPIKey(c Client) string
+    if c.apiKey != ""
+        return c.apiKey
+
+    # Try provider-specific environment variables
+    if c.provider == "openai"
+        key := env.GetOr("OPENAI_API_KEY", "")
+        return key
+    if c.provider == "anthropic"
+        key := env.GetOr("ANTHROPIC_API_KEY", "")
+        return key
+    if c.provider == "mistral"
+        key := env.GetOr("MISTRAL_API_KEY", "")
+        return key
+    if c.provider == "groq"
+        key := env.GetOr("GROQ_API_KEY", "")
+        return key
+    if c.provider == "together"
+        key := env.GetOr("TOGETHER_API_KEY", "")
+        return key
+    if c.provider == "deepseek"
+        key := env.GetOr("DEEPSEEK_API_KEY", "")
+        return key
+    if c.provider == "xai"
+        key := env.GetOr("XAI_API_KEY", "")
+        return key
+
+    # Fallback: try generic key
+    key := env.GetOr("LLM_API_KEY", "")
+    return key
+
+# Internal: resolve the base URL for the provider
+func resolveBaseURL(c Client) string
+    if c.baseURL != ""
+        return c.baseURL
+
+    # Default provider endpoints
+    if c.provider == "openai"
+        return "https://api.openai.com"
+    if c.provider == "anthropic"
+        return "https://api.anthropic.com"
+    if c.provider == "mistral"
+        return "https://api.mistral.ai"
+    if c.provider == "groq"
+        return "https://api.groq.com/openai"
+    if c.provider == "together"
+        return "https://api.together.xyz"
+    if c.provider == "deepseek"
+        return "https://api.deepseek.com"
+    if c.provider == "xai"
+        return "https://api.x.ai"
+    if c.provider == "ollama"
+        return "http://localhost:11434"
+
+    # Gateway or unknown provider
+    return "http://localhost:8000"
+
+# Internal: resolve the chat completions path
+func resolvePath(c Client) string
+    if c.path != ""
+        return c.path
+    return "/v1/chat/completions"
+
+# Internal: build the request body
+func buildRequest(c Client) CompletionRequest
+    req := CompletionRequest{}
+    req.Model = c.model
+    req.Messages = c.messages
+
+    if c.temperature != 0.0
+        req.Temperature = c.temperature
+    if c.maxTokens != 0
+        req.MaxTokens = c.maxTokens
+    if c.topP != 0.0
+        req.TopP = c.topP
+    if c.n != 0
+        req.N = c.n
+    if c.seed != 0
+        req.Seed = c.seed
+    if c.presencePenalty != 0.0
+        req.PresencePenalty = c.presencePenalty
+    if c.frequencyPenalty != 0.0
+        req.FrequencyPenalty = c.frequencyPenalty
+    if c.user != ""
+        req.User = c.user
+    if len(c.stop) > 0
+        req.Stop = c.stop
+    if len(c.tools) > 0
+        req.Tools = c.tools
+    if c.toolChoice != empty
+        req.ToolChoice = c.toolChoice
+    if c.responseFormat != empty
+        req.ResponseFormat = c.responseFormat
+    if c.streamHandler != empty
+        req.Stream = true
+
+    return req
+
+# Internal: execute a completion and return just the text
+func execute(c Client) (string, error)
+    if c.streamHandler != empty
+        return executeStream(c)
+
+    comp, err := executeRaw(c)
+    if err != empty
+        return "", err
+    return GetContent(comp), empty
+
+# Internal: execute a completion and return the full response
+func executeRaw(c Client) (Completion, error)
+    baseURL := resolveBaseURL(c)
+    apiKey := resolveAPIKey(c)
+    chatPath := resolvePath(c)
+    url := "{baseURL}{chatPath}"
+    body := buildRequest(c)
+
+    req := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Body(body)
+
+    if apiKey != ""
+        req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        return Completion{}, err
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        errBody, readErr := io.ReadAll(resp.Body)
+        if readErr != empty
+            return Completion{}, error("API request failed with status {resp.StatusCode}")
+        return Completion{}, error("API request failed ({resp.StatusCode}): {errBody as string}")
+
+    comp := Completion{}
+    jsonErr := json.UnmarshalRead(resp.Body, reference of comp)
+    if jsonErr != empty
+        return Completion{}, jsonErr
+
+    return comp, empty
+
+# Internal: execute a streaming completion
+func executeStream(c Client) (string, error)
+    baseURL := resolveBaseURL(c)
+    apiKey := resolveAPIKey(c)
+    chatPath := resolvePath(c)
+    url := "{baseURL}{chatPath}"
+    body := buildRequest(c)
+
+    req := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Header("Accept", "text/event-stream")
+        |> fetch.Body(body)
+
+    if apiKey != ""
+        req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        return "", err
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        errBody, readErr := io.ReadAll(resp.Body)
+        if readErr != empty
+            return "", error("API request failed with status {resp.StatusCode}")
+        return "", error("API request failed ({resp.StatusCode}): {errBody as string}")
+
+    # Read SSE stream line by line
+    fullContent := ""
+    scanner := bufio.NewScanner(resp.Body)
+    for scanner.Scan()
+        line := scanner.Text()
+
+        # Skip empty lines and comments
+        if line == "" or strings.HasPrefix(line, ":")
+            continue
+
+        # Check for end of stream
+        if line == "data: [DONE]"
+            break
+
+        # Parse SSE data lines
+        if strings.HasPrefix(line, "data: ")
+            data := strings.TrimPrefix(line, "data: ")
+            chunk := Chunk{}
+            parseErr := json.Unmarshal(data as list of byte, reference of chunk)
+            if parseErr != empty
+                continue
+
+            if len(chunk.Choices) > 0
+                content := chunk.Choices[0].Delta.Content
+                if content != ""
+                    fullContent = fullContent + content
+                    c.streamHandler(content)
+
+    scanErr := scanner.Err()
+    if scanErr != empty
+        return fullContent, scanErr
+
+    return fullContent, empty
+
+# ═══════════════════════════════════════════════════════════════════════
+# OpenResponses API (https://www.openresponses.org/specification)
+# POST /v1/responses - a different API from Chat Completions
+# ═══════════════════════════════════════════════════════════════════════
+
+# InputTextContent represents text content in an input item
+type InputTextContent
+    Type string json:"type"
+    Text string json:"text"
+
+# OutputTextContent represents text content in an output item
+type OutputTextContent
+    Type string json:"type"
+    Text string json:"text"
+    Annotations list of any json:"annotations,omitzero"
+
+# RefusalContent represents a refusal in an output item
+type RefusalContent
+    Type string json:"type"
+    Refusal string json:"refusal"
+
+# InputItem represents an item in the input array for OpenResponses
+# Discriminated by Type field: "message", "function_call", "function_call_output", "item_reference"
+type InputItem
+    Type string json:"type"
+    ID string json:"id,omitzero"
+    Role string json:"role,omitzero"
+    Content any json:"content,omitzero"
+    Status string json:"status,omitzero"
+    CallID string json:"call_id,omitzero"
+    Name string json:"name,omitzero"
+    Arguments string json:"arguments,omitzero"
+    Output string json:"output,omitzero"
+
+# OutputItem represents an item in the output array of a Response
+# Discriminated by Type field: "message", "function_call", "reasoning"
+type OutputItem
+    Type string json:"type"
+    ID string json:"id,omitzero"
+    Role string json:"role,omitzero"
+    Content list of any json:"content,omitzero"
+    Status string json:"status,omitzero"
+    CallID string json:"call_id,omitzero"
+    Name string json:"name,omitzero"
+    Arguments string json:"arguments,omitzero"
+    Summary list of any json:"summary,omitzero"
+
+# ResponseUsage holds token usage information for OpenResponses
+type ResponseUsage
+    InputTokens int json:"input_tokens"
+    OutputTokens int json:"output_tokens"
+    TotalTokens int json:"total_tokens"
+
+# ResponseError holds error details from the API
+type ResponseError
+    Code string json:"code"
+    Message string json:"message"
+
+# Response is the response object from POST /v1/responses
+type Response
+    ID string json:"id"
+    Object string json:"object"
+    CreatedAt int json:"created_at"
+    CompletedAt int json:"completed_at,omitzero"
+    Status string json:"status"
+    Model string json:"model"
+    Output list of OutputItem json:"output"
+    Error ResponseError json:"error,omitzero"
+    PreviousResponseID string json:"previous_response_id,omitzero"
+    Instructions string json:"instructions,omitzero"
+    Temperature float64 json:"temperature,omitzero"
+    TopP float64 json:"top_p,omitzero"
+    MaxOutputTokens int json:"max_output_tokens,omitzero"
+    Usage ResponseUsage json:"usage,omitzero"
+    Tools list of any json:"tools,omitzero"
+    ToolChoice any json:"tool_choice,omitzero"
+    Truncation string json:"truncation,omitzero"
+    Store bool json:"store,omitzero"
+    Metadata map of string to string json:"metadata,omitzero"
+
+# ResponseRequest is the JSON body sent to POST /v1/responses
+type ResponseRequest
+    Model string json:"model"
+    Input any json:"input"
+    Instructions string json:"instructions,omitzero"
+    PreviousResponseID string json:"previous_response_id,omitzero"
+    Temperature float64 json:"temperature,omitzero"
+    TopP float64 json:"top_p,omitzero"
+    MaxOutputTokens int json:"max_output_tokens,omitzero"
+    PresencePenalty float64 json:"presence_penalty,omitzero"
+    FrequencyPenalty float64 json:"frequency_penalty,omitzero"
+    Tools list of Tool json:"tools,omitzero"
+    ToolChoice any json:"tool_choice,omitzero"
+    Stream bool json:"stream,omitzero"
+    Store bool json:"store,omitzero"
+    Truncation string json:"truncation,omitzero"
+    Metadata map of string to string json:"metadata,omitzero"
+    Text any json:"text,omitzero"
+
+# StreamEvent represents a parsed SSE event from OpenResponses streaming
+type StreamEvent
+    Type string json:"type"
+    SequenceNumber int json:"sequence_number"
+    Response Response json:"response,omitzero"
+    OutputIndex int json:"output_index,omitzero"
+    ContentIndex int json:"content_index,omitzero"
+    ItemID string json:"item_id,omitzero"
+    Item OutputItem json:"item,omitzero"
+    Delta string json:"delta,omitzero"
+    Text string json:"text,omitzero"
+    Part any json:"part,omitzero"
+    Name string json:"name,omitzero"
+    Arguments string json:"arguments,omitzero"
+    Code string json:"code,omitzero"
+    Message string json:"message,omitzero"
+
+# ResponseClient holds the configuration for an OpenResponses request (builder pattern)
+type ResponseClient
+    model string
+    provider string
+    baseURL string
+    path string
+    apiKey string
+    input list of InputItem
+    instructions string
+    previousResponseID string
+    temperature float64
+    topP float64
+    maxOutputTokens int
+    presencePenalty float64
+    frequencyPenalty float64
+    tools list of Tool
+    toolChoice any
+    store bool
+    truncation string
+    metadata map of string to string
+    textFormat any
+    streamHandler func(string)
+    eventHandler func(StreamEvent)
+
+# NewResponse creates a new OpenResponses client builder for the given model
+# The model can include a provider prefix like "openai:gpt-4o"
+# Example: client := llm.NewResponse("gpt-4o")
+func NewResponse(model string) ResponseClient
+    c := ResponseClient{}
+    c.input = empty list of InputItem
+    c.tools = empty list of Tool
+    c.temperature = 0.0
+    c.topP = 0.0
+    c.maxOutputTokens = 0
+    c.presencePenalty = 0.0
+    c.frequencyPenalty = 0.0
+    c.store = false
+    c.truncation = ""
+    c.instructions = ""
+    c.previousResponseID = ""
+
+    # Parse "provider:model" format
+    if strings.Contains(model, ":")
+        parts := strings.SplitN(model, ":", 2)
+        c.provider = parts[0]
+        c.model = parts[1]
+    else
+        c.model = model
+        c.provider = ""
+
+    c.baseURL = ""
+    c.path = ""
+    c.apiKey = ""
+    c.streamHandler = empty
+    c.eventHandler = empty
+    c.toolChoice = empty
+    c.textFormat = empty
+    c.metadata = empty map of string to string
+    return c
+
+# RProvider sets the LLM provider for an OpenResponses client
+# Example: client |> llm.RProvider("openai")
+func RProvider(c ResponseClient, provider string) ResponseClient
+    c.provider = provider
+    return c
+
+# RBaseURL sets a custom API base URL
+# Example: client |> llm.RBaseURL("https://api.myhost.com")
+func RBaseURL(c ResponseClient, url string) ResponseClient
+    c.baseURL = url
+    return c
+
+# RPath overrides the default responses path ("/v1/responses")
+# Example: client |> llm.RPath("/api/responses")
+func RPath(c ResponseClient, path string) ResponseClient
+    c.path = path
+    return c
+
+# RAPIKey sets the API key for authentication
+# Example: client |> llm.RAPIKey("sk-...")
+func RAPIKey(c ResponseClient, key string) ResponseClient
+    c.apiKey = key
+    return c
+
+# Instructions sets the system/developer-level instructions
+# Example: client |> llm.Instructions("You are a helpful coding assistant.")
+func Instructions(c ResponseClient, instructions string) ResponseClient
+    c.instructions = instructions
+    return c
+
+# PreviousResponse sets the previous response ID for multi-turn conversations
+# Example: client |> llm.PreviousResponse("resp_abc123")
+func PreviousResponse(c ResponseClient, id string) ResponseClient
+    c.previousResponseID = id
+    return c
+
+# RUserMessage adds a user message input item
+# Example: client |> llm.RUserMessage("Hello!")
+func RUserMessage(c ResponseClient, content string) ResponseClient
+    item := InputItem{}
+    item.Type = "message"
+    item.Role = "user"
+    item.Content = content
+    c.input = append(c.input, item)
+    return c
+
+# RSystemMessage adds a system message input item
+# Example: client |> llm.RSystemMessage("You are a helpful assistant.")
+func RSystemMessage(c ResponseClient, content string) ResponseClient
+    item := InputItem{}
+    item.Type = "message"
+    item.Role = "system"
+    item.Content = content
+    c.input = append(c.input, item)
+    return c
+
+# RDeveloperMessage adds a developer message input item
+# Example: client |> llm.RDeveloperMessage("Follow these rules.")
+func RDeveloperMessage(c ResponseClient, content string) ResponseClient
+    item := InputItem{}
+    item.Type = "message"
+    item.Role = "developer"
+    item.Content = content
+    c.input = append(c.input, item)
+    return c
+
+# RAssistantMessage adds an assistant message input item (for multi-turn)
+# Example: client |> llm.RAssistantMessage("I can help with that.")
+func RAssistantMessage(c ResponseClient, content string) ResponseClient
+    item := InputItem{}
+    item.Type = "message"
+    item.Role = "assistant"
+    item.Content = content
+    c.input = append(c.input, item)
+    return c
+
+# RAddInput adds a raw InputItem to the input array
+# Example: client |> llm.RAddInput(myItem)
+func RAddInput(c ResponseClient, item InputItem) ResponseClient
+    c.input = append(c.input, item)
+    return c
+
+# FunctionCallOutput adds a function call output to the input (for tool result submission)
+# Example: client |> llm.FunctionCallOutput("call_123", "{\"temp\": 72}")
+func FunctionCallOutput(c ResponseClient, callID string, output string) ResponseClient
+    item := InputItem{}
+    item.Type = "function_call_output"
+    item.CallID = callID
+    item.Output = output
+    c.input = append(c.input, item)
+    return c
+
+# RTemperature sets the sampling temperature (0.0 to 2.0)
+# Example: client |> llm.RTemperature(0.7)
+func RTemperature(c ResponseClient, temp float64) ResponseClient
+    c.temperature = temp
+    return c
+
+# RTopP sets nucleus sampling parameter (0.0 to 1.0)
+# Example: client |> llm.RTopP(0.9)
+func RTopP(c ResponseClient, p float64) ResponseClient
+    c.topP = p
+    return c
+
+# RMaxOutputTokens sets the maximum number of output tokens to generate
+# Example: client |> llm.RMaxOutputTokens(1000)
+func RMaxOutputTokens(c ResponseClient, max int) ResponseClient
+    c.maxOutputTokens = max
+    return c
+
+# RPresencePenalty sets the presence penalty (-2.0 to 2.0)
+# Example: client |> llm.RPresencePenalty(0.6)
+func RPresencePenalty(c ResponseClient, penalty float64) ResponseClient
+    c.presencePenalty = penalty
+    return c
+
+# RFrequencyPenalty sets the frequency penalty (-2.0 to 2.0)
+# Example: client |> llm.RFrequencyPenalty(0.5)
+func RFrequencyPenalty(c ResponseClient, penalty float64) ResponseClient
+    c.frequencyPenalty = penalty
+    return c
+
+# RAddTool adds a function tool the model can call
+# Example: client |> llm.RAddTool("get_weather", "Get current weather", params)
+func RAddTool(c ResponseClient, name string, description string, parameters any) ResponseClient
+    fn := ToolFunction{Name: name, Description: description, Parameters: parameters}
+    tool := Tool{Type: "function", Function: fn}
+    c.tools = append(c.tools, tool)
+    return c
+
+# RToolChoiceAuto lets the model decide whether to use tools
+# Example: client |> llm.RToolChoiceAuto()
+func RToolChoiceAuto(c ResponseClient) ResponseClient
+    c.toolChoice = "auto"
+    return c
+
+# RToolChoiceRequired forces the model to use a tool
+# Example: client |> llm.RToolChoiceRequired()
+func RToolChoiceRequired(c ResponseClient) ResponseClient
+    c.toolChoice = "required"
+    return c
+
+# RToolChoiceNone prevents the model from using tools
+# Example: client |> llm.RToolChoiceNone()
+func RToolChoiceNone(c ResponseClient) ResponseClient
+    c.toolChoice = "none"
+    return c
+
+# RJSONMode requests JSON output from the model
+# Example: client |> llm.RJSONMode()
+func RJSONMode(c ResponseClient) ResponseClient
+    c.textFormat = map of string to string{"type": "json_object"}
+    return c
+
+# RJSONSchema requests structured output matching a JSON schema
+# Example: client |> llm.RJSONSchema("person", mySchema)
+func RJSONSchema(c ResponseClient, name string, schema any) ResponseClient
+    c.textFormat = map of string to any{"type": "json_schema", "name": name, "schema": schema, "strict": true}
+    return c
+
+# RStore enables storing the response for later retrieval
+# Example: client |> llm.RStore()
+func RStore(c ResponseClient) ResponseClient
+    c.store = true
+    return c
+
+# RTruncation sets the truncation mode ("auto" or "disabled")
+# Example: client |> llm.RTruncation("auto")
+func RTruncation(c ResponseClient, mode string) ResponseClient
+    c.truncation = mode
+    return c
+
+# RMetadata sets metadata key-value pairs on the request
+# Example: client |> llm.RMetadata(myMeta)
+func RMetadata(c ResponseClient, meta map of string to string) ResponseClient
+    c.metadata = meta
+    return c
+
+# RStream sets a handler function for streaming text deltas
+# The handler receives each text chunk as it arrives
+# Example: client |> llm.RStream(func(chunk string) { print(chunk) })
+func RStream(c ResponseClient, handler func(string)) ResponseClient
+    c.streamHandler = handler
+    return c
+
+# RStreamEvents sets a handler for full streaming events
+# Receives each parsed StreamEvent for fine-grained control
+# Example: client |> llm.RStreamEvents(func(evt llm.StreamEvent) { ... })
+func RStreamEvents(c ResponseClient, handler func(StreamEvent)) ResponseClient
+    c.eventHandler = handler
+    return c
+
+# RAsk sends a user message and executes the OpenResponses request
+# Returns the text content of the first output message and any error
+#
+# Example: reply, err := llm.NewResponse("openai:gpt-4o") |> llm.RAsk("Hello!")
+func RAsk(c ResponseClient, prompt string) (string, error)
+    c = RUserMessage(c, prompt)
+    return rExecute(c)
+
+# RSend executes the OpenResponses request with items already configured
+# Returns the text content of the first output message and any error
+#
+# Example:
+#   reply, err := llm.NewResponse("openai:gpt-4o")
+#       |> llm.Instructions("Be concise.")
+#       |> llm.RUserMessage("Hello")
+#       |> llm.RSend()
+func RSend(c ResponseClient) (string, error)
+    return rExecute(c)
+
+# RAskRaw sends a user message and returns the full Response object
+# Use this when you need access to tool calls, usage stats, or multiple output items
+#
+# Example:
+#   resp, err := llm.NewResponse("openai:gpt-4o") |> llm.RAskRaw("Hello!")
+#   print(resp.Usage.TotalTokens)
+func RAskRaw(c ResponseClient, prompt string) (Response, error)
+    c = RUserMessage(c, prompt)
+    return rExecuteRaw(c)
+
+# RSendRaw executes the request and returns the full Response object
+#
+# Example:
+#   resp, err := llm.NewResponse("openai:gpt-4o")
+#       |> llm.RUserMessage("Hello")
+#       |> llm.RSendRaw()
+func RSendRaw(c ResponseClient) (Response, error)
+    return rExecuteRaw(c)
+
+# Respond is a quick one-shot OpenResponses completion
+# Takes a "provider:model" string and a prompt, returns the response text
+#
+# Example: reply, err := llm.Respond("openai:gpt-4o", "What is Go?")
+func Respond(model string, prompt string) (string, error)
+    c := NewResponse(model)
+    return RAsk(c, prompt)
+
+# RespondWithInstructions is a quick completion with instructions
+#
+# Example: reply, err := llm.RespondWithInstructions("openai:gpt-4o", "Be brief.", "What is Go?")
+func RespondWithInstructions(model string, instructions string, prompt string) (string, error)
+    c := NewResponse(model)
+    c = Instructions(c, instructions)
+    return RAsk(c, prompt)
+
+# GetResponseText extracts the text content from the first output message of a Response
+# Returns the text of the first output_text content part, or empty string if none
+# Example: text := llm.GetResponseText(resp)
+func GetResponseText(resp Response) string
+    for _, item in resp.Output
+        if item.Type == "message"
+            for _, content in item.Content
+                contentMap, ok := content.(map of string to any)
+                if ok
+                    contentType, hasType := contentMap["type"]
+                    if hasType and contentType as string == "output_text"
+                        text, hasText := contentMap["text"]
+                        if hasText
+                            return text as string
+    return ""
+
+# GetFunctionCalls extracts function call output items from a Response
+# Returns all items with type "function_call"
+# Example: calls := llm.GetFunctionCalls(resp)
+func GetFunctionCalls(resp Response) list of OutputItem
+    calls := empty list of OutputItem
+    for _, item in resp.Output
+        if item.Type == "function_call"
+            calls = append(calls, item)
+    return calls
+
+# HasFunctionCalls returns true if the Response contains function calls
+# Example: if llm.HasFunctionCalls(resp) ...
+func HasFunctionCalls(resp Response) bool
+    calls := GetFunctionCalls(resp)
+    return len(calls) > 0
+
+# Internal: resolve API key for ResponseClient
+func rResolveAPIKey(c ResponseClient) string
+    if c.apiKey != ""
+        return c.apiKey
+
+    if c.provider == "openai"
+        return env.GetOr("OPENAI_API_KEY", "")
+    if c.provider == "anthropic"
+        return env.GetOr("ANTHROPIC_API_KEY", "")
+    if c.provider == "mistral"
+        return env.GetOr("MISTRAL_API_KEY", "")
+    if c.provider == "groq"
+        return env.GetOr("GROQ_API_KEY", "")
+    if c.provider == "together"
+        return env.GetOr("TOGETHER_API_KEY", "")
+    if c.provider == "deepseek"
+        return env.GetOr("DEEPSEEK_API_KEY", "")
+    if c.provider == "xai"
+        return env.GetOr("XAI_API_KEY", "")
+
+    return env.GetOr("LLM_API_KEY", "")
+
+# Internal: resolve base URL for ResponseClient
+func rResolveBaseURL(c ResponseClient) string
+    if c.baseURL != ""
+        return c.baseURL
+
+    if c.provider == "openai"
+        return "https://api.openai.com"
+    if c.provider == "anthropic"
+        return "https://api.anthropic.com"
+    if c.provider == "mistral"
+        return "https://api.mistral.ai"
+    if c.provider == "groq"
+        return "https://api.groq.com/openai"
+    if c.provider == "together"
+        return "https://api.together.xyz"
+    if c.provider == "deepseek"
+        return "https://api.deepseek.com"
+    if c.provider == "xai"
+        return "https://api.x.ai"
+    if c.provider == "ollama"
+        return "http://localhost:11434"
+
+    return "http://localhost:8000"
+
+# Internal: resolve the responses path
+func rResolvePath(c ResponseClient) string
+    if c.path != ""
+        return c.path
+    return "/v1/responses"
+
+# Internal: build the OpenResponses request body
+func rBuildRequest(c ResponseClient) ResponseRequest
+    req := ResponseRequest{}
+    req.Model = c.model
+
+    # Input can be a string (for single user message) or array of items
+    if len(c.input) == 1 and c.input[0].Type == "message" and c.input[0].Role == "user"
+        # Single user message - can pass content directly as string
+        req.Input = c.input
+    else
+        req.Input = c.input
+
+    if c.instructions != ""
+        req.Instructions = c.instructions
+    if c.previousResponseID != ""
+        req.PreviousResponseID = c.previousResponseID
+    if c.temperature != 0.0
+        req.Temperature = c.temperature
+    if c.topP != 0.0
+        req.TopP = c.topP
+    if c.maxOutputTokens != 0
+        req.MaxOutputTokens = c.maxOutputTokens
+    if c.presencePenalty != 0.0
+        req.PresencePenalty = c.presencePenalty
+    if c.frequencyPenalty != 0.0
+        req.FrequencyPenalty = c.frequencyPenalty
+    if len(c.tools) > 0
+        req.Tools = c.tools
+    if c.toolChoice != empty
+        req.ToolChoice = c.toolChoice
+    if c.store
+        req.Store = true
+    if c.truncation != ""
+        req.Truncation = c.truncation
+    if len(c.metadata) > 0
+        req.Metadata = c.metadata
+    if c.textFormat != empty
+        req.Text = c.textFormat
+    if c.streamHandler != empty or c.eventHandler != empty
+        req.Stream = true
+
+    return req
+
+# Internal: execute an OpenResponses request and return just the text
+func rExecute(c ResponseClient) (string, error)
+    if c.streamHandler != empty or c.eventHandler != empty
+        return rExecuteStream(c)
+
+    resp, err := rExecuteRaw(c)
+    if err != empty
+        return "", err
+    return GetResponseText(resp), empty
+
+# Internal: execute an OpenResponses request and return the full Response
+func rExecuteRaw(c ResponseClient) (Response, error)
+    baseURL := rResolveBaseURL(c)
+    apiKey := rResolveAPIKey(c)
+    responsePath := rResolvePath(c)
+    url := "{baseURL}{responsePath}"
+    body := rBuildRequest(c)
+
+    req := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Body(body)
+
+    if apiKey != ""
+        req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        return Response{}, err
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        errBody, readErr := io.ReadAll(resp.Body)
+        if readErr != empty
+            return Response{}, error("API request failed with status {resp.StatusCode}")
+        return Response{}, error("API request failed ({resp.StatusCode}): {errBody as string}")
+
+    result := Response{}
+    jsonErr := json.UnmarshalRead(resp.Body, reference of result)
+    if jsonErr != empty
+        return Response{}, jsonErr
+
+    return result, empty
+
+# Internal: execute a streaming OpenResponses request
+func rExecuteStream(c ResponseClient) (string, error)
+    baseURL := rResolveBaseURL(c)
+    apiKey := rResolveAPIKey(c)
+    responsePath := rResolvePath(c)
+    url := "{baseURL}{responsePath}"
+    body := rBuildRequest(c)
+
+    req := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Header("Accept", "text/event-stream")
+        |> fetch.Body(body)
+
+    if apiKey != ""
+        req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        return "", err
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        errBody, readErr := io.ReadAll(resp.Body)
+        if readErr != empty
+            return "", error("API request failed with status {resp.StatusCode}")
+        return "", error("API request failed ({resp.StatusCode}): {errBody as string}")
+
+    # Read SSE stream line by line
+    # OpenResponses uses semantic event types like:
+    #   response.output_text.delta - text chunks
+    #   response.output_text.done - final text
+    #   response.function_call_arguments.delta - tool call args
+    #   response.completed - response complete
+    fullContent := ""
+    scanner := bufio.NewScanner(resp.Body)
+    for scanner.Scan()
+        line := scanner.Text()
+
+        # Skip empty lines and comments
+        if line == "" or strings.HasPrefix(line, ":")
+            continue
+
+        # Check for end of stream
+        if line == "data: [DONE]"
+            break
+
+        # Parse SSE data lines
+        if strings.HasPrefix(line, "data: ")
+            data := strings.TrimPrefix(line, "data: ")
+            evt := StreamEvent{}
+            parseErr := json.Unmarshal(data as list of byte, reference of evt)
+            if parseErr != empty
+                continue
+
+            # Forward event to event handler if set
+            if c.eventHandler != empty
+                c.eventHandler(evt)
+
+            # Handle text deltas for the stream handler
+            if evt.Type == "response.output_text.delta"
+                if evt.Delta != ""
+                    fullContent = fullContent + evt.Delta
+                    if c.streamHandler != empty
+                        c.streamHandler(evt.Delta)
+
+            # Handle error events
+            if evt.Type == "error"
+                errMsg := evt.Message
+                if errMsg == ""
+                    errMsg = "streaming error: {evt.Code}"
+                return fullContent, error(errMsg)
+
+    scanErr := scanner.Err()
+    if scanErr != empty
+        return fullContent, scanErr
+
+    return fullContent, empty
+
+# ═══════════════════════════════════════════════════════════════════════
+# Anthropic Messages API (https://docs.anthropic.com/en/api/messages)
+# POST /v1/messages - Anthropic's native API format
+# ═══════════════════════════════════════════════════════════════════════
+
+# ContentBlock represents a content block in the Anthropic Messages API
+# Discriminated by Type: "text", "thinking", "tool_use", "tool_result", "image"
+type ContentBlock
+    Type string json:"type"
+    Text string json:"text,omitzero"
+    Thinking string json:"thinking,omitzero"
+    ID string json:"id,omitzero"
+    Name string json:"name,omitzero"
+    Input any json:"input,omitzero"
+    ToolUseID string json:"tool_use_id,omitzero"
+    Content any json:"content,omitzero"
+    Source any json:"source,omitzero"
+
+# ThinkingConfig represents the thinking parameter for Claude models
+# Use Type "adaptive" for Claude 4.6+ (recommended)
+# Use Type "enabled" with BudgetTokens for older models (deprecated on 4.6)
+type ThinkingConfig
+    Type string json:"type"
+    BudgetTokens int json:"budget_tokens,omitzero"
+
+# OutputConfig represents output configuration (Claude 4.6+)
+# Replaces the deprecated output_format parameter
+type OutputConfig
+    Format any json:"format,omitzero"
+
+# AnthropicMessage represents a message in the Anthropic format
+# Role is "user" or "assistant" (system is a top-level field, not a message)
+type AnthropicMessage
+    Role string json:"role"
+    Content any json:"content"
+
+# AnthropicTool represents a tool definition in the Anthropic format
+type AnthropicTool
+    Name string json:"name"
+    Description string json:"description,omitzero"
+    InputSchema any json:"input_schema"
+
+# AnthropicToolChoice represents tool selection in the Anthropic format
+type AnthropicToolChoice
+    Type string json:"type"
+    Name string json:"name,omitzero"
+
+# AnthropicUsage holds token usage from the Anthropic API
+type AnthropicUsage
+    InputTokens int json:"input_tokens"
+    OutputTokens int json:"output_tokens"
+    CacheCreationInputTokens int json:"cache_creation_input_tokens,omitzero"
+    CacheReadInputTokens int json:"cache_read_input_tokens,omitzero"
+
+# AnthropicResponse is the response from POST /v1/messages
+type AnthropicResponse
+    ID string json:"id"
+    Type string json:"type"
+    Role string json:"role"
+    Content list of ContentBlock json:"content"
+    Model string json:"model"
+    StopReason string json:"stop_reason"
+    StopSequence string json:"stop_sequence,omitzero"
+    Usage AnthropicUsage json:"usage"
+
+# MessagesRequest is the JSON body sent to POST /v1/messages
+type MessagesRequest
+    Model string json:"model"
+    Messages list of AnthropicMessage json:"messages"
+    MaxTokens int json:"max_tokens"
+    System string json:"system,omitzero"
+    Temperature float64 json:"temperature,omitzero"
+    TopP float64 json:"top_p,omitzero"
+    TopK int json:"top_k,omitzero"
+    StopSequences list of string json:"stop_sequences,omitzero"
+    Stream bool json:"stream,omitzero"
+    Tools list of AnthropicTool json:"tools,omitzero"
+    ToolChoice any json:"tool_choice,omitzero"
+    Metadata any json:"metadata,omitzero"
+    Thinking any json:"thinking,omitzero"
+    Effort string json:"effort,omitzero"
+    OutputConfig any json:"output_config,omitzero"
+    InferenceGeo string json:"inference_geo,omitzero"
+
+# AnthropicStreamEvent represents a parsed SSE event from Anthropic streaming
+# The Anthropic API uses "event:" and "data:" SSE fields
+type AnthropicStreamEvent
+    Type string json:"type"
+    Index int json:"index,omitzero"
+    Message AnthropicResponse json:"message,omitzero"
+    ContentBlock ContentBlock json:"content_block,omitzero"
+    Delta AnthropicDelta json:"delta,omitzero"
+    Usage AnthropicUsage json:"usage,omitzero"
+
+# AnthropicDelta represents an incremental delta in Anthropic streaming
+# Delta types: "text_delta", "input_json_delta", "thinking_delta"
+type AnthropicDelta
+    Type string json:"type,omitzero"
+    Text string json:"text,omitzero"
+    Thinking string json:"thinking,omitzero"
+    PartialJSON string json:"partial_json,omitzero"
+    StopReason string json:"stop_reason,omitzero"
+    StopSequence string json:"stop_sequence,omitzero"
+
+# MessagesClient holds the configuration for an Anthropic Messages request (builder pattern)
+type MessagesClient
+    model string
+    baseURL string
+    path string
+    apiKey string
+    apiVersion string
+    system string
+    messages list of AnthropicMessage
+    maxTokens int
+    temperature float64
+    topP float64
+    topK int
+    stopSequences list of string
+    tools list of AnthropicTool
+    toolChoice any
+    metadata any
+    thinking any
+    effort string
+    outputConfig any
+    inferenceGeo string
+    streamHandler func(string)
+    eventHandler func(AnthropicStreamEvent)
+
+# NewMessages creates a new Anthropic Messages client builder
+# Example: client := llm.NewMessages("claude-opus-4-6")
+func NewMessages(model string) MessagesClient
+    c := MessagesClient{}
+    c.model = model
+    c.baseURL = ""
+    c.path = ""
+    c.apiKey = ""
+    c.apiVersion = "2023-06-01"
+    c.system = ""
+    c.messages = empty list of AnthropicMessage
+    c.maxTokens = 1024
+    c.temperature = 0.0
+    c.topP = 0.0
+    c.topK = 0
+    c.stopSequences = empty list of string
+    c.tools = empty list of AnthropicTool
+    c.toolChoice = empty
+    c.metadata = empty
+    c.thinking = empty
+    c.effort = ""
+    c.outputConfig = empty
+    c.inferenceGeo = ""
+    c.streamHandler = empty
+    c.eventHandler = empty
+    return c
+
+# MBaseURL sets a custom API base URL for the Messages client
+# Example: client |> llm.MBaseURL("https://chat.example.edu")
+func MBaseURL(c MessagesClient, url string) MessagesClient
+    c.baseURL = url
+    return c
+
+# MPath overrides the default messages path ("/v1/messages")
+# Example: client |> llm.MPath("/api/messages")
+func MPath(c MessagesClient, path string) MessagesClient
+    c.path = path
+    return c
+
+# MAPIKey sets the API key for authentication
+# If not set, falls back to ANTHROPIC_API_KEY env var
+# Example: client |> llm.MAPIKey("sk-ant-...")
+func MAPIKey(c MessagesClient, key string) MessagesClient
+    c.apiKey = key
+    return c
+
+# MAPIVersion sets the Anthropic API version header
+# Default is "2023-06-01"
+# Example: client |> llm.MAPIVersion("2024-01-01")
+func MAPIVersion(c MessagesClient, version string) MessagesClient
+    c.apiVersion = version
+    return c
+
+# MSystem sets the system prompt (top-level field in Anthropic API, not a message)
+# Example: client |> llm.MSystem("You are a helpful coding assistant.")
+func MSystem(c MessagesClient, system string) MessagesClient
+    c.system = system
+    return c
+
+# MUser adds a user message with text content
+# Example: client |> llm.MUser("Hello!")
+func MUser(c MessagesClient, content string) MessagesClient
+    msg := AnthropicMessage{Role: "user", Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# MAssistant adds an assistant message with text content (for multi-turn)
+# Note: Prefilling (assistant message as the last message) is not supported on Claude 4.6+
+# Example: client |> llm.MAssistant("I can help with that.")
+func MAssistant(c MessagesClient, content string) MessagesClient
+    msg := AnthropicMessage{Role: "assistant", Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# MAddMessage adds a message with content blocks (for tool results, images, etc.)
+# Example: client |> llm.MAddMessage("user", blocks)
+func MAddMessage(c MessagesClient, role string, content any) MessagesClient
+    msg := AnthropicMessage{Role: role, Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# MToolResult adds a tool result message to the conversation
+# This is a user message containing a tool_result content block
+# Example: client |> llm.MToolResult("toolu_123", "{\"temp\": 72}")
+func MToolResult(c MessagesClient, toolUseID string, result string) MessagesClient
+    block := ContentBlock{}
+    block.Type = "tool_result"
+    block.ToolUseID = toolUseID
+    block.Content = result
+    blocks := list of ContentBlock{block}
+    msg := AnthropicMessage{Role: "user", Content: blocks}
+    c.messages = append(c.messages, msg)
+    return c
+
+# MMaxTokens sets the maximum number of tokens to generate (required by Anthropic)
+# Default is 1024
+# Example: client |> llm.MMaxTokens(4096)
+func MMaxTokens(c MessagesClient, max int) MessagesClient
+    c.maxTokens = max
+    return c
+
+# MTemperature sets the sampling temperature (0.0 to 1.0)
+# Example: client |> llm.MTemperature(0.7)
+func MTemperature(c MessagesClient, temp float64) MessagesClient
+    c.temperature = temp
+    return c
+
+# MTopP sets nucleus sampling parameter (0.0 to 1.0)
+# Example: client |> llm.MTopP(0.9)
+func MTopP(c MessagesClient, p float64) MessagesClient
+    c.topP = p
+    return c
+
+# MTopK sets top-K sampling parameter (Anthropic-specific)
+# Example: client |> llm.MTopK(40)
+func MTopK(c MessagesClient, k int) MessagesClient
+    c.topK = k
+    return c
+
+# MStopSequences sets stop sequences that will halt generation
+# Example: client |> llm.MStopSequences(list of string{"\n\nHuman:"})
+func MStopSequences(c MessagesClient, sequences list of string) MessagesClient
+    c.stopSequences = sequences
+    return c
+
+# MAdaptiveThinking enables adaptive thinking mode (recommended for Claude 4.6+)
+# Claude dynamically decides when and how much to think
+# Example: client |> llm.MAdaptiveThinking()
+func MAdaptiveThinking(c MessagesClient) MessagesClient
+    c.thinking = ThinkingConfig{Type: "adaptive"}
+    return c
+
+# MThinking enables extended thinking with a budget (deprecated on Claude 4.6+, use MAdaptiveThinking)
+# Example: client |> llm.MThinking(10000)
+func MThinking(c MessagesClient, budgetTokens int) MessagesClient
+    c.thinking = ThinkingConfig{Type: "enabled", BudgetTokens: budgetTokens}
+    return c
+
+# MEffort sets the thinking effort level (GA on Claude 4.6+)
+# Valid values: "low", "medium", "high", "max"
+# "max" is only available on Claude Opus 4.6
+# Best combined with MAdaptiveThinking for cost-quality tradeoffs
+# Example: client |> llm.MAdaptiveThinking() |> llm.MEffort("high")
+func MEffort(c MessagesClient, effort string) MessagesClient
+    c.effort = effort
+    return c
+
+# MOutputFormat sets structured output format via output_config (Claude 4.6+)
+# Replaces the deprecated output_format parameter
+# Pass a format object like {"type": "json_schema", "schema": {...}}
+# Example: client |> llm.MOutputFormat(map of string to any{"type": "json_schema", "schema": mySchema})
+func MOutputFormat(c MessagesClient, format any) MessagesClient
+    c.outputConfig = OutputConfig{Format: format}
+    return c
+
+# MInferenceGeo sets data residency control for where inference runs
+# Valid values: "global" (default), "us"
+# US-only inference is priced at 1.1x on Claude 4.6+
+# Example: client |> llm.MInferenceGeo("us")
+func MInferenceGeo(c MessagesClient, geo string) MessagesClient
+    c.inferenceGeo = geo
+    return c
+
+# MAddTool adds a tool the model can call (Anthropic format uses input_schema)
+# Example: client |> llm.MAddTool("get_weather", "Get current weather", schema)
+func MAddTool(c MessagesClient, name string, description string, inputSchema any) MessagesClient
+    tool := AnthropicTool{Name: name, Description: description, InputSchema: inputSchema}
+    c.tools = append(c.tools, tool)
+    return c
+
+# MToolChoiceAuto lets the model decide whether to use tools
+# Example: client |> llm.MToolChoiceAuto()
+func MToolChoiceAuto(c MessagesClient) MessagesClient
+    c.toolChoice = AnthropicToolChoice{Type: "auto"}
+    return c
+
+# MToolChoiceAny forces the model to use a tool (any tool)
+# Example: client |> llm.MToolChoiceAny()
+func MToolChoiceAny(c MessagesClient) MessagesClient
+    c.toolChoice = AnthropicToolChoice{Type: "any"}
+    return c
+
+# MToolChoiceTool forces the model to use a specific tool
+# Example: client |> llm.MToolChoiceTool("get_weather")
+func MToolChoiceTool(c MessagesClient, name string) MessagesClient
+    c.toolChoice = AnthropicToolChoice{Type: "tool", Name: name}
+    return c
+
+# MStream sets a handler function for streaming text deltas
+# The handler receives each text chunk as it arrives
+# Example: client |> llm.MStream(func(chunk string) { print(chunk) })
+func MStream(c MessagesClient, handler func(string)) MessagesClient
+    c.streamHandler = handler
+    return c
+
+# MStreamEvents sets a handler for full Anthropic streaming events
+# Receives each parsed AnthropicStreamEvent for fine-grained control
+# Example: client |> llm.MStreamEvents(func(evt llm.AnthropicStreamEvent) { ... })
+func MStreamEvents(c MessagesClient, handler func(AnthropicStreamEvent)) MessagesClient
+    c.eventHandler = handler
+    return c
+
+# MAsk sends a user message and executes the Anthropic Messages request
+# Returns the text content and any error
+#
+# Example: reply, err := llm.NewMessages("claude-opus-4-6") |> llm.MAsk("Hello!")
+func MAsk(c MessagesClient, prompt string) (string, error)
+    c = MUser(c, prompt)
+    return mExecute(c)
+
+# MSend executes the request with messages already configured
+# Returns the text content and any error
+#
+# Example:
+#   reply, err := llm.NewMessages("claude-opus-4-6")
+#       |> llm.MSystem("Be concise.")
+#       |> llm.MUser("Hello")
+#       |> llm.MSend()
+func MSend(c MessagesClient) (string, error)
+    return mExecute(c)
+
+# MAskRaw sends a user message and returns the full AnthropicResponse
+# Use this when you need access to tool calls, usage stats, or content blocks
+#
+# Example:
+#   resp, err := llm.NewMessages("claude-opus-4-6") |> llm.MAskRaw("Hello!")
+#   print(resp.Usage.OutputTokens)
+func MAskRaw(c MessagesClient, prompt string) (AnthropicResponse, error)
+    c = MUser(c, prompt)
+    return mExecuteRaw(c)
+
+# MSendRaw executes the request and returns the full AnthropicResponse
+#
+# Example:
+#   resp, err := llm.NewMessages("claude-opus-4-6")
+#       |> llm.MUser("Hello")
+#       |> llm.MSendRaw()
+func MSendRaw(c MessagesClient) (AnthropicResponse, error)
+    return mExecuteRaw(c)
+
+# AnthropicComplete is a quick one-shot completion using the Anthropic Messages API
+# Example: reply, err := llm.AnthropicComplete("claude-opus-4-6", "What is Go?")
+func AnthropicComplete(model string, prompt string) (string, error)
+    c := NewMessages(model)
+    return MAsk(c, prompt)
+
+# AnthropicCompleteWithSystem is a quick completion with a system prompt
+# Example: reply, err := llm.AnthropicCompleteWithSystem("claude-opus-4-6", "Be brief.", "What is Go?")
+func AnthropicCompleteWithSystem(model string, system string, prompt string) (string, error)
+    c := NewMessages(model)
+    c = MSystem(c, system)
+    return MAsk(c, prompt)
+
+# GetAnthropicText extracts the text content from an AnthropicResponse
+# Returns the concatenated text of all "text" content blocks
+# Example: text := llm.GetAnthropicText(resp)
+func GetAnthropicText(resp AnthropicResponse) string
+    result := ""
+    for _, block in resp.Content
+        if block.Type == "text"
+            result = result + block.Text
+    return result
+
+# GetThinking extracts the thinking content from an AnthropicResponse
+# Returns the concatenated text of all "thinking" content blocks
+# Requires adaptive thinking or extended thinking to be enabled
+# Example: thought := llm.GetThinking(resp)
+func GetThinking(resp AnthropicResponse) string
+    result := ""
+    for _, block in resp.Content
+        if block.Type == "thinking"
+            result = result + block.Thinking
+    return result
+
+# GetToolUses extracts tool use blocks from an AnthropicResponse
+# Returns all content blocks with type "tool_use"
+# Example: tools := llm.GetToolUses(resp)
+func GetToolUses(resp AnthropicResponse) list of ContentBlock
+    uses := empty list of ContentBlock
+    for _, block in resp.Content
+        if block.Type == "tool_use"
+            uses = append(uses, block)
+    return uses
+
+# HasToolUses returns true if the response contains tool use blocks
+# Example: if llm.HasToolUses(resp) ...
+func HasToolUses(resp AnthropicResponse) bool
+    return resp.StopReason == "tool_use"
+
+# Internal: resolve API key for MessagesClient
+func mResolveAPIKey(c MessagesClient) string
+    if c.apiKey != ""
+        return c.apiKey
+    return env.GetOr("ANTHROPIC_API_KEY", "")
+
+# Internal: resolve base URL for MessagesClient
+func mResolveBaseURL(c MessagesClient) string
+    if c.baseURL != ""
+        return c.baseURL
+    return "https://api.anthropic.com"
+
+# Internal: resolve the messages path
+func mResolvePath(c MessagesClient) string
+    if c.path != ""
+        return c.path
+    return "/v1/messages"
+
+# Internal: build the Anthropic Messages request body
+func mBuildRequest(c MessagesClient) MessagesRequest
+    req := MessagesRequest{}
+    req.Model = c.model
+    req.Messages = c.messages
+    req.MaxTokens = c.maxTokens
+
+    if c.system != ""
+        req.System = c.system
+    if c.temperature != 0.0
+        req.Temperature = c.temperature
+    if c.topP != 0.0
+        req.TopP = c.topP
+    if c.topK != 0
+        req.TopK = c.topK
+    if len(c.stopSequences) > 0
+        req.StopSequences = c.stopSequences
+    if len(c.tools) > 0
+        req.Tools = c.tools
+    if c.toolChoice != empty
+        req.ToolChoice = c.toolChoice
+    if c.metadata != empty
+        req.Metadata = c.metadata
+    if c.thinking != empty
+        req.Thinking = c.thinking
+    if c.effort != ""
+        req.Effort = c.effort
+    if c.outputConfig != empty
+        req.OutputConfig = c.outputConfig
+    if c.inferenceGeo != ""
+        req.InferenceGeo = c.inferenceGeo
+    if c.streamHandler != empty or c.eventHandler != empty
+        req.Stream = true
+
+    return req
+
+# Internal: execute an Anthropic Messages request and return just the text
+func mExecute(c MessagesClient) (string, error)
+    if c.streamHandler != empty or c.eventHandler != empty
+        return mExecuteStream(c)
+
+    resp, err := mExecuteRaw(c)
+    if err != empty
+        return "", err
+    return GetAnthropicText(resp), empty
+
+# Internal: execute an Anthropic Messages request and return the full response
+func mExecuteRaw(c MessagesClient) (AnthropicResponse, error)
+    baseURL := mResolveBaseURL(c)
+    apiKey := mResolveAPIKey(c)
+    msgPath := mResolvePath(c)
+    url := "{baseURL}{msgPath}"
+    body := mBuildRequest(c)
+
+    # Anthropic uses x-api-key header, not Bearer token
+    req := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Header("anthropic-version", c.apiVersion)
+
+    if apiKey != ""
+        req = fetch.Header(req, "x-api-key", apiKey)
+
+    req = fetch.Body(req, body)
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        return AnthropicResponse{}, err
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        errBody, readErr := io.ReadAll(resp.Body)
+        if readErr != empty
+            return AnthropicResponse{}, error("Anthropic API request failed with status {resp.StatusCode}")
+        return AnthropicResponse{}, error("Anthropic API request failed ({resp.StatusCode}): {errBody as string}")
+
+    result := AnthropicResponse{}
+    jsonErr := json.UnmarshalRead(resp.Body, reference of result)
+    if jsonErr != empty
+        return AnthropicResponse{}, jsonErr
+
+    return result, empty
+
+# Internal: execute a streaming Anthropic Messages request
+# Anthropic SSE uses "event:" and "data:" lines:
+#   event: message_start
+#   data: {"type":"message_start","message":{...}}
+#
+#   event: content_block_delta
+#   data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hello"}}
+#
+#   event: message_stop
+#   data: {"type":"message_stop"}
+func mExecuteStream(c MessagesClient) (string, error)
+    baseURL := mResolveBaseURL(c)
+    apiKey := mResolveAPIKey(c)
+    msgPath := mResolvePath(c)
+    url := "{baseURL}{msgPath}"
+    body := mBuildRequest(c)
+
+    req := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Header("Accept", "text/event-stream")
+        |> fetch.Header("anthropic-version", c.apiVersion)
+
+    if apiKey != ""
+        req = fetch.Header(req, "x-api-key", apiKey)
+
+    req = fetch.Body(req, body)
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        return "", err
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        errBody, readErr := io.ReadAll(resp.Body)
+        if readErr != empty
+            return "", error("Anthropic API request failed with status {resp.StatusCode}")
+        return "", error("Anthropic API request failed ({resp.StatusCode}): {errBody as string}")
+
+    # Read Anthropic SSE stream
+    # Format: "event: <type>\ndata: <json>\n\n"
+    fullContent := ""
+    scanner := bufio.NewScanner(resp.Body)
+    for scanner.Scan()
+        line := scanner.Text()
+
+        # Skip empty lines, event type lines, and comments
+        if line == "" or strings.HasPrefix(line, "event:") or strings.HasPrefix(line, ":")
+            continue
+
+        # Parse data lines
+        if strings.HasPrefix(line, "data: ")
+            data := strings.TrimPrefix(line, "data: ")
+            evt := AnthropicStreamEvent{}
+            parseErr := json.Unmarshal(data as list of byte, reference of evt)
+            if parseErr != empty
+                continue
+
+            # Forward event to event handler if set
+            if c.eventHandler != empty
+                c.eventHandler(evt)
+
+            # Handle content_block_delta with text_delta
+            if evt.Type == "content_block_delta"
+                if evt.Delta.Type == "text_delta" and evt.Delta.Text != ""
+                    fullContent = fullContent + evt.Delta.Text
+                    if c.streamHandler != empty
+                        c.streamHandler(evt.Delta.Text)
+
+            # Handle error events
+            if evt.Type == "error"
+                return fullContent, error("Anthropic streaming error")
+
+    scanErr := scanner.Err()
+    if scanErr != empty
+        return fullContent, scanErr
+
+    return fullContent, empty
