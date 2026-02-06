@@ -616,39 +616,7 @@ func main()
 
 You already saw `string.Contains` earlier — it's your go-to for this kind of check.
 
-### Finding Positions
 
-Find where a substring appears:
-
-```kukicha
-import "stdlib/string"
-
-func main()
-    text := "Hello, World!"
-
-    # Find the position of "World"
-    position := string.Index(text, "World")
-    print(position)  # Prints: 7
-
-    # If not found, returns -1
-    notFound := string.Index(text, "Kukicha")
-    print(notFound)  # Prints: -1
-```
-
-### Counting Occurrences
-
-Count how many times a substring appears:
-
-```kukicha
-import "stdlib/string"
-
-func main()
-    text := "apple banana apple cherry apple"
-
-    count := string.Count(text, "apple")
-    print("The word 'apple' appears {count} times")
-    # Prints: The word 'apple' appears 3 times
-```
 
 ### Replacing Text
 
@@ -773,7 +741,7 @@ Ready for the next step? Follow this learning path:
 ### Additional Resources
 
 - **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** - Complete language grammar reference
-- **[Stdlib Reference](../kukicha-stdlib-reference.md)** - Standard library documentation
+- **[Stdlib Reference](../kukicha-stdlib-reference.md)** - Standard library documentation - additional functions to make your life easier!
 - **[Examples](../../examples/)** directory - More example programs
 
 ### Practice Exercises
@@ -781,7 +749,7 @@ Ready for the next step? Follow this learning path:
 Try building these programs to practice your skills:
 
 1. **Email Validator** - Check if an email contains "@" and ends with a domain
-   - Bonus: Try using `validate.Email()` from `stdlib/validate`!
+   - Bonus: Try using `validate.Email()` from `stdlib/validate` (don't forget to import it first)!
 2. **Word Counter** - Count how many words are in a sentence (hint: use `string.Fields`)
 3. **URL Parser** - Extract the domain from a URL (hint: use `string.TrimPrefix` and `string.Split`)
    - Bonus: Validate with `validate.URL()` first!
