@@ -61,7 +61,7 @@ Kukicha combines two powerful ideas:
 | **result** | Optional/Result types | ✅ Ready | Some, None, Ok, Err, Map, UnwrapOr, AndThen, Match, ToOptional, FromOptional, Flatten, FlattenResult, All, Any |
 | **validate** | Input validation helpers | ✅ Ready | NotEmpty, MinLength, MaxLength, LengthBetween, Matches, Email, URL, Alpha, Alphanumeric, Numeric, StartsWith, EndsWith, Contains, OneOf, Positive, Negative, InRange, Min, Max, ParseInt, ParseFloat, ParseBool, NotEmptyList |
 | **must** | Initialization helpers (panic on error) | ✅ Ready | Do, DoMsg, Ok, OkMsg, Env, EnvOr, EnvInt, EnvIntOr, EnvBool, EnvBoolOr, EnvList, EnvListOr, True, False, NotEmpty, NotNil |
-| **env** | Typed environment variable access | ✅ Ready | Get, GetOr, GetInt, GetIntOr, GetIntOrDefault, GetBool, GetBoolOr, GetBoolOrDefault, GetFloat, GetFloatOr, GetList, GetListOr, Set, Unset, IsSet, IsSetAndNotEmpty, All |
+| **env** | Typed environment variable access | ✅ Ready | Get, GetOr, GetInt, GetIntOr, GetIntOrDefault, GetBool, GetBoolOr, GetBoolOrDefault, GetFloat, GetFloatOr, GetList, GetListOr, Set, Unset, IsSet, IsSetAndNotEmpty, All, ParseBool, SplitAndTrim |
 | **datetime** | Time helpers with named formats | ✅ Ready | Format, Parse, Now, Today, Tomorrow, Yesterday, Seconds, Minutes, Hours, Days, Weeks, AddDays, SubDays, IsBefore, IsAfter, IsBetween, IsToday, IsPast, IsFuture, Unix, FromUnix, Sleep, InUTC, InLocal |
 
 ### Partially Implemented
@@ -968,9 +968,20 @@ func loadConfig() Config
 if env.IsSetAndNotEmpty("KUBERNETES_SERVICE_HOST")
     print "Running in Kubernetes"
 
+# Utility functions for parsing (can also use standalone)
+# Parse boolean value from any string
+enabled := env.ParseBool("true") onerr false  # Returns true
+debug := env.ParseBool("yes") onerr false     # Returns true
+flag := env.ParseBool("1") onerr false        # Returns true
+
+# Split and trim string list
+hosts := env.SplitAndTrim("api1.com, api2.com,  api3.com ", ",")
+# Returns: ["api1.com", "api2.com", "api3.com"]
+
 # Available functions:
 # Get, GetOr, GetInt, GetIntOr, GetIntOrDefault, GetBool, GetBoolOr, GetBoolOrDefault
 # GetFloat, GetFloatOr, GetList, GetListOr, Set, Unset, IsSet, IsSetAndNotEmpty, All
+# ParseBool, SplitAndTrim (utility functions - can be used standalone or internally)
 ```
 
 ### DateTime Package

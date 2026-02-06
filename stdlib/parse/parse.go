@@ -8,8 +8,9 @@ package parse
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"errors"
+	"github.com/duber000/kukicha/stdlib/json"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"gopkg.in/yaml.v3"
 	"strings"
 )
@@ -19,10 +20,10 @@ func Json(data string) ([]byte, error) {
 }
 
 func JsonLines(data string) ([]string, error) {
-	lines := strings.Split(data, "\n")
+	lines := kukistring.Split(data, "\n")
 	result := make([]string, 0, len(lines))
 	for _, line := range lines {
-		line = strings.TrimSpace(line)
+		line = kukistring.TrimSpace(line)
 		if len(line) > 0 {
 			result = append(result, line)
 		}
@@ -31,7 +32,7 @@ func JsonLines(data string) ([]string, error) {
 }
 
 func JsonPretty(value any) ([]byte, error) {
-	bytes, err := json.MarshalIndent(value, "", "  ")
+	bytes, err := json.MarshalPretty(value)
 	return bytes, err
 }
 

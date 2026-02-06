@@ -9,9 +9,9 @@ package env
 import (
 	"errors"
 	"fmt"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"os"
 	"strconv"
-	"strings"
 )
 
 func Get(key string) (string, error) {
@@ -158,7 +158,7 @@ func IsSetAndNotEmpty(key string) bool {
 func All() map[string]string {
 	result := make(map[string]string)
 	for _, e := range os.Environ() {
-		parts := strings.SplitN(e, "=", 2)
+		parts := kukistring.SplitN(e, "=", 2)
 		if len(parts) == 2 {
 			result[parts[0]] = parts[1]
 		}
@@ -166,25 +166,37 @@ func All() map[string]string {
 	return result
 }
 
-func parseBool(key string, value string) (bool, error) {
-	lower := strings.ToLower(strings.TrimSpace(value))
+func ParseBool(value string) (bool, error) {
+	lower := kukistring.ToLower(kukistring.TrimSpace(value))
 	if (((lower == "true") || (lower == "1")) || (lower == "yes")) || (lower == "on") {
 		return true, nil
 	}
 	if (((lower == "false") || (lower == "0")) || (lower == "no")) || (lower == "off") {
 		return false, nil
 	}
-	return false, errors.New(fmt.Sprintf("environment variable %v is not a valid boolean: %v", key, value))
+	return false, errors.New(fmt.Sprintf("not a valid boolean: %v", value))
 }
 
-func splitAndTrim(value string, separator string) []string {
-	parts := strings.Split(value, separator)
+func SplitAndTrim(value string, separator string) []string {
+	parts := kukistring.Split(value, separator)
 	result := make([]string, 0, len(parts))
 	for _, part := range parts {
-		trimmed := strings.TrimSpace(part)
+		trimmed := kukistring.TrimSpace(part)
 		if trimmed != "" {
 			result = append(result, trimmed)
 		}
 	}
 	return result
+}
+
+func parseBool(key string, value string) (bool, error) {
+	result, err := ParseBool(value)
+	if err != nil {
+		return false, errors.New(fmt.Sprintf("environment variable %v is not a valid boolean: %v", key, value))
+	}
+	return result, nil
+}
+
+func splitAndTrim(value string, separator string) []string {
+	return SplitAndTrim(value, separator)
 }

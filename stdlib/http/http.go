@@ -7,12 +7,13 @@
 package http
 
 import (
-	json "encoding/json/v2"
 	"errors"
+	"fmt"
+	"github.com/duber000/kukicha/stdlib/json"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 func WithCSRF(handler any) any {
@@ -210,7 +211,7 @@ func MethodNotAllowed(w http.ResponseWriter, allowed ...string) {
 	for _, method := range allowed {
 		parts = append(parts, method)
 	}
-	allowHeader := strings.Join(parts, ", ")
+	allowHeader := kukistring.Join(parts, ", ")
 	w.Header().Set("Allow", allowHeader)
 	w.WriteHeader(405)
 }

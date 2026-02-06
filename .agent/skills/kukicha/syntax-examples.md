@@ -139,6 +139,10 @@ func main()
     port := env.GetIntOr("PORT", 8080) onerr 8080
     debug := env.GetBoolOrDefault("DEBUG", false)
     hosts := env.GetListOr("ALLOWED_HOSTS", ",", empty list of string)
+
+    # Utility functions for parsing (can use standalone)
+    enabled := env.ParseBool("true") onerr false      # Parse boolean from string
+    servers := env.SplitAndTrim("api1, api2, api3", ",")  # Split and trim whitespace
 ```
 
 ### HTTP Helpers with stdlib/http

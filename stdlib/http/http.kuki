@@ -4,10 +4,11 @@
 petiole http
 
 import "net/http"
-import "encoding/json/v2" as json
+import "stdlib/json"
+import "stdlib/string"
 import "io"
 import "strconv"
-import "strings"
+import "fmt"
 
 # WithCSRF wraps a handler with Cross-Origin protection
 # Uses Fetch metadata headers (modern browsers)
@@ -252,6 +253,6 @@ func MethodNotAllowed(w http.ResponseWriter, many allowed string)
     parts := list of string{}
     for method in allowed
         parts = append(parts, method)
-    allowHeader := strings.Join(parts, ", ")
+    allowHeader := string.Join(parts, ", ")
     w.Header().Set("Allow", allowHeader)
     w.WriteHeader(405)

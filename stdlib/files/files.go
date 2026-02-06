@@ -7,7 +7,7 @@
 package files
 
 import (
-	"encoding/json"
+	"github.com/duber000/kukicha/stdlib/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -28,7 +28,7 @@ func ReadBytes(path string) ([]byte, error) {
 }
 
 func Write(data any, path string) error {
-	jsonData, err := json.MarshalIndent(data, "", "  ")
+	jsonData, err := json.MarshalPretty(data)
 	if err != nil {
 		return err
 	}

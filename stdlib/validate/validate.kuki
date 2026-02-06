@@ -6,7 +6,7 @@ petiole validate
 
 import "errors"
 import "regexp"
-import "strings"
+import "stdlib/string"
 import "unicode"
 import "net/url"
 import "strconv"
@@ -17,7 +17,7 @@ import "strconv"
 # Returns an error if the string is empty or contains only whitespace
 # Example: name := input |> validate.NotEmpty() onerr return error
 func NotEmpty(s string) (string, error)
-    if strings.TrimSpace(s) == ""
+    if string.TrimSpace(s) == ""
         return "", errors.New("value cannot be empty")
     return s, empty
 
@@ -116,21 +116,21 @@ func NoWhitespace(s string) (string, error)
 # StartsWith checks that a string starts with the given prefix
 # Example: id |> validate.StartsWith("usr_") onerr return error
 func StartsWith(s string, prefix string) (string, error)
-    if not strings.HasPrefix(s, prefix)
+    if not string.HasPrefix(s, prefix)
         return s, errors.New("value must start with '{prefix}'")
     return s, empty
 
 # EndsWith checks that a string ends with the given suffix
 # Example: filename |> validate.EndsWith(".json") onerr return error
 func EndsWith(s string, suffix string) (string, error)
-    if not strings.HasSuffix(s, suffix)
+    if not string.HasSuffix(s, suffix)
         return s, errors.New("value must end with '{suffix}'")
     return s, empty
 
 # Contains checks that a string contains the given substring
 # Example: description |> validate.Contains("important") onerr return error
 func Contains(s string, substr string) (string, error)
-    if not strings.Contains(s, substr)
+    if not string.Contains(s, substr)
         return s, errors.New("value must contain '{substr}'")
     return s, empty
 
@@ -241,7 +241,7 @@ func ParseFloat(s string) (float64, error)
 # Accepts: "true", "false", "1", "0", "yes", "no" (case insensitive)
 # Example: enabled := input |> validate.ParseBool() onerr return error
 func ParseBool(s string) (bool, error)
-    lower := strings.ToLower(strings.TrimSpace(s))
+    lower := string.ToLower(string.TrimSpace(s))
     if lower == "true" or lower == "1" or lower == "yes"
         return true, empty
     if lower == "false" or lower == "0" or lower == "no"
@@ -284,6 +284,6 @@ func WithMessage(value string, err error, message string) (string, error)
 # Require is an alias for NotEmpty with a custom field name
 # Example: validate.Require(name, "name") onerr return error
 func Require(s string, fieldName string) (string, error)
-    if strings.TrimSpace(s) == ""
+    if string.TrimSpace(s) == ""
         return "", errors.New("{fieldName} is required")
     return s, empty

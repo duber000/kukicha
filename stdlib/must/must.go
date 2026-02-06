@@ -8,9 +8,8 @@ package must
 
 import (
 	"fmt"
-	"os"
+	"github.com/duber000/kukicha/stdlib/env"
 	"strconv"
-	"strings"
 )
 
 func Do(value any, err error) any {
@@ -40,7 +39,7 @@ func OkMsg(err error, message string) {
 }
 
 func Env(key string) string {
-	value := os.Getenv(key)
+	value := env.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
@@ -48,7 +47,7 @@ func Env(key string) string {
 }
 
 func EnvOr(key string, defaultValue string) string {
-	value := os.Getenv(key)
+	value := env.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
@@ -56,7 +55,7 @@ func EnvOr(key string, defaultValue string) string {
 }
 
 func EnvInt(key string) int {
-	value := os.Getenv(key)
+	value := env.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
@@ -68,7 +67,7 @@ func EnvInt(key string) int {
 }
 
 func EnvIntOr(key string, defaultValue int) int {
-	value := os.Getenv(key)
+	value := env.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
@@ -80,51 +79,43 @@ func EnvIntOr(key string, defaultValue int) int {
 }
 
 func EnvBool(key string) bool {
-	value := os.Getenv(key)
+	value := env.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
-	return parseBool(key, value)
+	result, err := env.ParseBool(value)
+	if err != nil {
+		panic(fmt.Sprintf("must: environment variable %v must be a valid boolean, got '%v'", key, value))
+	}
+	return result
 }
 
 func EnvBoolOr(key string, defaultValue bool) bool {
-	value := os.Getenv(key)
+	value := env.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
-	return parseBool(key, value)
+	result, err := env.ParseBool(value)
+	if err != nil {
+		panic(fmt.Sprintf("must: environment variable %v must be a valid boolean, got '%v'", key, value))
+	}
+	return result
 }
 
 func EnvList(key string, separator string) []string {
-	value := os.Getenv(key)
+	value := env.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
-	parts := strings.Split(value, separator)
-	result := make([]string, 0, len(parts))
-	for _, part := range parts {
-		trimmed := strings.TrimSpace(part)
-		if trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-	return result
+	return env.SplitAndTrim(value, separator)
 }
 
 func EnvListOr(key string, separator string, defaultValue []string) []string {
-	value := os.Getenv(key)
+	value := env.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
-	parts := strings.Split(value, separator)
-	result := make([]string, 0, len(parts))
-	for _, part := range parts {
-		trimmed := strings.TrimSpace(part)
-		if trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-	return result
+	return env.SplitAndTrim(value, separator)
 }
 
 func True(condition bool, message string) {
@@ -149,15 +140,4 @@ func NotNil(value any, name string) {
 	if value == nil {
 		panic(fmt.Sprintf("%v cannot be nil", name))
 	}
-}
-
-func parseBool(key string, value string) bool {
-	lower := strings.ToLower(strings.TrimSpace(value))
-	if ((lower == "true") || (lower == "1")) || (lower == "yes") {
-		return true
-	}
-	if ((lower == "false") || (lower == "0")) || (lower == "no") {
-		return false
-	}
-	panic(fmt.Sprintf("must: environment variable %v must be a valid boolean, got '%v'", key, value))
 }

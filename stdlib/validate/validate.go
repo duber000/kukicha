@@ -9,15 +9,15 @@ package validate
 import (
 	"errors"
 	"fmt"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"net/url"
 	"regexp"
 	"strconv"
-	"strings"
 	"unicode"
 )
 
 func NotEmpty(s string) (string, error) {
-	if strings.TrimSpace(s) == "" {
+	if kukistring.TrimSpace(s) == "" {
 		return "", errors.New("value cannot be empty")
 	}
 	return s, nil
@@ -120,21 +120,21 @@ func NoWhitespace(s string) (string, error) {
 }
 
 func StartsWith(s string, prefix string) (string, error) {
-	if !strings.HasPrefix(s, prefix) {
+	if !kukistring.HasPrefix(s, prefix) {
 		return s, errors.New(fmt.Sprintf("value must start with '%v'", prefix))
 	}
 	return s, nil
 }
 
 func EndsWith(s string, suffix string) (string, error) {
-	if !strings.HasSuffix(s, suffix) {
+	if !kukistring.HasSuffix(s, suffix) {
 		return s, errors.New(fmt.Sprintf("value must end with '%v'", suffix))
 	}
 	return s, nil
 }
 
 func Contains(s string, substr string) (string, error) {
-	if !strings.Contains(s, substr) {
+	if !kukistring.Contains(s, substr) {
 		return s, errors.New(fmt.Sprintf("value must contain '%v'", substr))
 	}
 	return s, nil
@@ -240,7 +240,7 @@ func ParseFloat(s string) (float64, error) {
 }
 
 func ParseBool(s string) (bool, error) {
-	lower := strings.ToLower(strings.TrimSpace(s))
+	lower := kukistring.ToLower(kukistring.TrimSpace(s))
 	if ((lower == "true") || (lower == "1")) || (lower == "yes") {
 		return true, nil
 	}
@@ -279,7 +279,7 @@ func WithMessage(value string, err error, message string) (string, error) {
 }
 
 func Require(s string, fieldName string) (string, error) {
-	if strings.TrimSpace(s) == "" {
+	if kukistring.TrimSpace(s) == "" {
 		return "", errors.New(fmt.Sprintf("%v is required", fieldName))
 	}
 	return s, nil

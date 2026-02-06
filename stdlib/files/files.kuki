@@ -6,7 +6,7 @@ petiole files
 import "os"
 import "io"
 import "path/filepath"
-import "encoding/json"
+import "stdlib/json"
 import "time"
 
 # Read reads the entire contents of a file as bytes
@@ -30,7 +30,7 @@ func ReadBytes(path string) (list of byte, error)
 # Returns any error that occurred
 # Example: data |> files.Write("output.json")
 func Write(data any, path string) error
-    jsonData, err := json.MarshalIndent(data, "", "  ")
+    jsonData, err := json.MarshalPretty(data)
     if err != empty
         return err
     writeErr := os.WriteFile(path, jsonData, 0644)

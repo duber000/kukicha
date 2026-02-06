@@ -9,9 +9,9 @@ package cli
 import (
 	"errors"
 	"fmt"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"os"
 	"strconv"
-	"strings"
 )
 
 type ArgDef struct {
@@ -64,7 +64,7 @@ func RunApp(app App) error {
 	args := os.Args
 	argIndex := 1
 	for _, argDef := range app.args {
-		if (argIndex < len(args)) && !strings.HasPrefix(args[argIndex], "--") {
+		if (argIndex < len(args)) && !kukistring.HasPrefix(args[argIndex], "--") {
 			values[argDef.name] = args[argIndex]
 			argIndex = (argIndex + 1)
 		}
@@ -72,15 +72,15 @@ func RunApp(app App) error {
 	i := argIndex
 	for i < len(args) {
 		arg := args[i]
-		if strings.HasPrefix(arg, "--") {
-			parts := strings.SplitN(arg, "=", 2)
-			flagName := strings.TrimPrefix(parts[0], "--")
+		if kukistring.HasPrefix(arg, "--") {
+			parts := kukistring.SplitN(arg, "=", 2)
+			flagName := kukistring.TrimPrefix(parts[0], "--")
 			flagValue := ""
 			if len(parts) > 1 {
 				flagValue = parts[1]
 			} else {
 				i = (i + 1)
-				if (i < len(args)) && !strings.HasPrefix(args[i], "--") {
+				if (i < len(args)) && !kukistring.HasPrefix(args[i], "--") {
 					flagValue = args[i]
 				} else {
 					i = (i - 1)

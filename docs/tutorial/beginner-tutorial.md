@@ -672,6 +672,14 @@ func main()
     print(parts[0])  # Prints: red
     print(parts[1])  # Prints: green
     print(parts[2])  # Prints: blue
+
+    # Often when splitting strings, you have extra spaces
+    # Let's see a messier example
+    servers := "api1.example.com,  api2.example.com  , api3.example.com "
+    serverList := string.Split(servers, ",")
+
+    print(serverList[0])  # Prints: api1.example.com
+    print(serverList[1])  # Prints:   api2.example.com   (with spaces!)
 ```
 
 **Try it yourself:**
@@ -681,6 +689,45 @@ kukicha run string_petiole.kuki
 ```
 
 **Real-world use case:** Parsing CSV data or command-line arguments.
+
+### Advanced: Splitting AND Trimming
+
+When you split strings with messy spacing, you often need to trim each piece. Kukicha provides a utility function that does both in one step! Add this to `string_petiole.kuki`:
+
+```kukicha
+import "stdlib/string"
+import "stdlib/env"
+
+func main()
+    # Messy comma-separated list with inconsistent spacing
+    servers := "api1.example.com,  api2.example.com  , api3.example.com "
+
+    # env.SplitAndTrim does split + trim in one operation!
+    clean := env.SplitAndTrim(servers, ",")
+
+    print(clean[0])  # Prints: api1.example.com (no spaces!)
+    print(clean[1])  # Prints: api2.example.com (no spaces!)
+    print(clean[2])  # Prints: api3.example.com (no spaces!)
+
+    # It also skips empty parts - useful for trailing commas
+    messy := "one, two, , three,  "
+    cleaned := env.SplitAndTrim(messy, ",")
+    # Result: ["one", "two", "three"] - empty part removed!
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run string_petiole.kuki
+```
+
+**Why is this useful?**
+- Handles messy user input gracefully
+- Saves you from writing loops to trim each piece
+- Automatically removes empty entries
+- Though it's in the `env` package, it's a general-purpose utility you can use anywhere!
+
+**Real-world use case:** Parsing comma-separated lists from config files, user input, or database fields.
 
 ### Joining Strings
 
