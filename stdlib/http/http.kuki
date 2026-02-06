@@ -8,6 +8,7 @@ import "stdlib/json"
 import "stdlib/string"
 import "io"
 import "strconv"
+import "fmt"
 
 # WithCSRF wraps a handler with Cross-Origin protection
 # Uses Fetch metadata headers (modern browsers)

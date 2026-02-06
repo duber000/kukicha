@@ -9,10 +9,10 @@ package validate
 import (
 	"errors"
 	"fmt"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"net/url"
 	"regexp"
 	"strconv"
-	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"unicode"
 )
 

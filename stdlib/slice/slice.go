@@ -8,6 +8,7 @@ package slice
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 )
 

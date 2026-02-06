@@ -3,6 +3,7 @@
 petiole slice
 
 import "slices"
+import "fmt"
 
 # First returns a slice of the first n elements
 # Returns the whole slice if n is greater than length

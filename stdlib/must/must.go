@@ -8,10 +8,9 @@ package must
 
 import (
 	"fmt"
-	"strconv"
-
-	kukienv "github.com/duber000/kukicha/stdlib/env"
+	"github.com/duber000/kukicha/stdlib/env"
 	kukistring "github.com/duber000/kukicha/stdlib/string"
+	"strconv"
 )
 
 func Do(value any, err error) any {
@@ -41,7 +40,7 @@ func OkMsg(err error, message string) {
 }
 
 func Env(key string) string {
-	value := kukienv.GetOr(key, "")
+	value := env.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
@@ -49,7 +48,7 @@ func Env(key string) string {
 }
 
 func EnvOr(key string, defaultValue string) string {
-	value := kukienv.GetOr(key, "")
+	value := env.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
@@ -57,7 +56,7 @@ func EnvOr(key string, defaultValue string) string {
 }
 
 func EnvInt(key string) int {
-	value := kukienv.GetOr(key, "")
+	value := env.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
@@ -69,7 +68,7 @@ func EnvInt(key string) int {
 }
 
 func EnvIntOr(key string, defaultValue int) int {
-	value := kukienv.GetOr(key, "")
+	value := env.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
@@ -81,7 +80,7 @@ func EnvIntOr(key string, defaultValue int) int {
 }
 
 func EnvBool(key string) bool {
-	value := kukienv.GetOr(key, "")
+	value := env.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
@@ -89,7 +88,7 @@ func EnvBool(key string) bool {
 }
 
 func EnvBoolOr(key string, defaultValue bool) bool {
-	value := kukienv.GetOr(key, "")
+	value := env.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}
@@ -97,7 +96,7 @@ func EnvBoolOr(key string, defaultValue bool) bool {
 }
 
 func EnvList(key string, separator string) []string {
-	value := kukienv.GetOr(key, "")
+	value := env.GetOr(key, "")
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
@@ -113,7 +112,7 @@ func EnvList(key string, separator string) []string {
 }
 
 func EnvListOr(key string, separator string, defaultValue []string) []string {
-	value := kukienv.GetOr(key, "")
+	value := env.GetOr(key, "")
 	if value == "" {
 		return defaultValue
 	}

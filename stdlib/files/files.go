@@ -7,7 +7,7 @@
 package files
 
 import (
-	kukijson "github.com/duber000/kukicha/stdlib/json"
+	"github.com/duber000/kukicha/stdlib/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -28,7 +28,7 @@ func ReadBytes(path string) ([]byte, error) {
 }
 
 func Write(data any, path string) error {
-	jsonData, err := kukijson.MarshalPretty(data)
+	jsonData, err := json.MarshalPretty(data)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func Append(data any, path string) error {
 		return err
 	}
 	defer file.Close()
-	jsonData, jsonErr := kukijson.Marshal(data)
+	jsonData, jsonErr := json.Marshal(data)
 	if jsonErr != nil {
 		return jsonErr
 	}
