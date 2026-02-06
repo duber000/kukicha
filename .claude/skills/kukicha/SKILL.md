@@ -306,7 +306,7 @@ Located in `stdlib/`:
 | `shell` | Command execution builder (New, Dir, SetTimeout, Env, Execute) |
 | `cli` | CLI argument parsing builder (New, Arg, AddFlag, Action, RunApp) |
 | `must` | Panic-on-error initialization helpers (Env, Do, OkMsg) |
-| `env` | Typed environment variable access (GetInt, GetBool, GetOr) |
+| `env` | Typed environment variable access (GetInt, GetBool, GetOr, ParseBool, SplitAndTrim) |
 | `validate` | Input validation (Email, URL, InRange, NotEmpty) |
 | `datetime` | Named formats and durations (Format, Seconds, Days) |
 | `result` | Optional and Result types for explicit error handling |
