@@ -316,6 +316,8 @@ func (g *Generator) generateDeclaration(decl ast.Declaration) {
 		g.generateInterfaceDecl(d)
 	case *ast.FunctionDecl:
 		g.generateFunctionDecl(d)
+	case *ast.VarDeclStmt:
+		g.generateGlobalVarDecl(d)
 	}
 }
 
@@ -356,6 +358,48 @@ func (g *Generator) generateInterfaceDecl(decl *ast.InterfaceDecl) {
 
 	g.indent--
 	g.writeLine("}")
+}
+
+func (g *Generator) generateGlobalVarDecl(stmt *ast.VarDeclStmt) {
+	if len(stmt.Names) == 0 {
+		return
+	}
+
+	// Build comma-separated list of names
+	names := make([]string, len(stmt.Names))
+	for i, n := range stmt.Names {
+		names[i] = n.Value
+	}
+	namesStr := strings.Join(names, ", ")
+
+	// Generate type if present
+	if stmt.Type != nil {
+		varType := g.generateTypeAnnotation(stmt.Type)
+		if len(stmt.Values) > 0 {
+			// With initializer
+			values := make([]string, len(stmt.Values))
+			for i, v := range stmt.Values {
+				values[i] = g.exprToString(v)
+			}
+			valuesStr := strings.Join(values, ", ")
+			g.writeLine(fmt.Sprintf("var %s %s = %s", namesStr, varType, valuesStr))
+		} else {
+			// Without initializer
+			g.writeLine(fmt.Sprintf("var %s %s", namesStr, varType))
+		}
+	} else if len(stmt.Values) > 0 {
+		// No explicit type, but with initializer
+		values := make([]string, len(stmt.Values))
+		for i, v := range stmt.Values {
+			values[i] = g.exprToString(v)
+		}
+		valuesStr := strings.Join(values, ", ")
+		g.writeLine(fmt.Sprintf("var %s = %s", namesStr, valuesStr))
+	} else {
+		// No type, no initializer - this is unusual for a global variable
+		// but we'll generate it anyway (will be zero-valued)
+		g.writeLine(fmt.Sprintf("var %s interface{}", namesStr))
+	}
 }
 
 // generateFunctionDecl generates a Go function from a Kukicha function declaration.

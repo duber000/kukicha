@@ -195,6 +195,8 @@ func (a *Analyzer) analyzeDeclarations() {
 			a.analyzeInterfaceDecl(d)
 		case *ast.FunctionDecl:
 			a.analyzeFunctionDecl(d)
+		case *ast.VarDeclStmt:
+			a.analyzeGlobalVarDecl(d)
 		}
 	}
 }
@@ -226,6 +228,43 @@ func (a *Analyzer) analyzeInterfaceDecl(decl *ast.InterfaceDecl) {
 		// Validate return types
 		for _, ret := range method.Returns {
 			a.validateTypeAnnotation(ret)
+		}
+	}
+}
+
+func (a *Analyzer) analyzeGlobalVarDecl(stmt *ast.VarDeclStmt) {
+	// Analyze values
+	for _, val := range stmt.Values {
+		a.analyzeExpression(val)
+	}
+
+	// Register each name in the global scope
+	for _, name := range stmt.Names {
+		if !isValidIdentifier(name.Value) {
+			a.error(name.Pos(), fmt.Sprintf("invalid variable name '%s'", name.Value))
+			continue
+		}
+
+		// Infer type from values or use explicit type
+		var varType *TypeInfo
+		if stmt.Type != nil {
+			varType = a.typeAnnotationToTypeInfo(stmt.Type)
+		} else if len(stmt.Values) > 0 {
+			varType = a.analyzeExpression(stmt.Values[0])
+		} else {
+			varType = &TypeInfo{Kind: TypeKindUnknown}
+		}
+
+		symbol := &Symbol{
+			Name:     name.Value,
+			Kind:     SymbolVariable,
+			Type:     varType,
+			Defined:  name.Pos(),
+			Exported: isExported(name.Value),
+		}
+
+		if err := a.symbolTable.Define(symbol); err != nil {
+			a.error(name.Pos(), err.Error())
 		}
 	}
 }

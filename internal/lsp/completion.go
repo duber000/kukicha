@@ -53,12 +53,14 @@ func (s *Server) getCompletions(doc *Document, pos lsp.Position) []lsp.Completio
 
 	// Add keywords
 	keywords := []string{
-		"func", "type", "interface", "petiole", "import",
+		"func", "function", "type", "interface", "petiole", "import",
 		"if", "else", "for", "in", "from", "to", "through",
+		"switch", "case", "default",
 		"return", "break", "continue", "defer", "go",
 		"true", "false", "empty", "make", "onerr",
 		"and", "or", "not", "equals", "reference", "dereference",
-		"send", "receive", "many", "channel", "list", "map",
+		"send", "receive", "many", "channel", "list", "map", "of", "as",
+		"variable", "var", "on", "close", "panic", "error", "discard",
 	}
 	for _, kw := range keywords {
 		items = append(items, lsp.CompletionItem{
@@ -93,7 +95,7 @@ func (s *Server) getCompletions(doc *Document, pos lsp.Position) []lsp.Completio
 	types := []string{
 		"int", "int8", "int16", "int32", "int64",
 		"uint", "uint8", "uint16", "uint32", "uint64",
-		"float32", "float64", "string", "bool", "byte", "rune",
+		"float32", "float64", "string", "bool", "byte", "rune", "any",
 	}
 	for _, t := range types {
 		items = append(items, lsp.CompletionItem{
