@@ -109,10 +109,8 @@ petiole llm
 import "stdlib/fetch"
 import "stdlib/json"
 import "stdlib/env"
+import "stdlib/string"
 import "bufio"
-import "strings"
-import "fmt"
-import "io"
 
 # Message represents a single message in a chat conversation
 type Message
@@ -244,8 +242,8 @@ func New(model string) Client
     c.frequencyPenalty = 0.0
 
     # Parse "provider:model" format
-    if strings.Contains(model, ":")
-        parts := strings.SplitN(model, ":", 2)
+    if string.Contains(model, ":")
+        parts := string.SplitN(model, ":", 2)
         c.provider = parts[0]
         c.model = parts[1]
     else
@@ -623,7 +621,7 @@ func executeRaw(c Client) (Completion, error)
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := io.ReadAll(resp.Body)
+        errBody, readErr := fetch.Bytes(resp)
         if readErr != empty
             return Completion{}, error("API request failed with status {resp.StatusCode}")
         return Completion{}, error("API request failed ({resp.StatusCode}): {errBody as string}")
@@ -659,7 +657,7 @@ func executeStream(c Client) (string, error)
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := io.ReadAll(resp.Body)
+        errBody, readErr := fetch.Bytes(resp)
         if readErr != empty
             return "", error("API request failed with status {resp.StatusCode}")
         return "", error("API request failed ({resp.StatusCode}): {errBody as string}")
@@ -671,7 +669,7 @@ func executeStream(c Client) (string, error)
         line := scanner.Text()
 
         # Skip empty lines and comments
-        if line == "" or strings.HasPrefix(line, ":")
+        if line == "" or string.HasPrefix(line, ":")
             continue
 
         # Check for end of stream
@@ -679,8 +677,8 @@ func executeStream(c Client) (string, error)
             break
 
         # Parse SSE data lines
-        if strings.HasPrefix(line, "data: ")
-            data := strings.TrimPrefix(line, "data: ")
+        if string.HasPrefix(line, "data: ")
+            data := string.TrimPrefix(line, "data: ")
             chunk := Chunk{}
             parseErr := json.Unmarshal(data as list of byte, reference of chunk)
             if parseErr != empty
@@ -856,8 +854,8 @@ func NewResponse(model string) ResponseClient
     c.previousResponseID = ""
 
     # Parse "provider:model" format
-    if strings.Contains(model, ":")
-        parts := strings.SplitN(model, ":", 2)
+    if string.Contains(model, ":")
+        parts := string.SplitN(model, ":", 2)
         c.provider = parts[0]
         c.model = parts[1]
     else
@@ -1130,10 +1128,13 @@ func GetResponseText(resp Response) string
                 contentMap, ok := content.(map of string to any)
                 if ok
                     contentType, hasType := contentMap["type"]
-                    if hasType and contentType as string == "output_text"
-                        text, hasText := contentMap["text"]
-                        if hasText
-                            return text as string
+                    if hasType
+                        contentTypeStr, isStr := contentType as string
+                        if isStr and contentTypeStr == "output_text"
+                            text, hasText := contentMap["text"]
+                            if hasText
+                                textStr, _ := text as string
+                                return textStr
     return ""
 
 # GetFunctionCalls extracts function call output items from a Response
@@ -1280,7 +1281,7 @@ func rExecuteRaw(c ResponseClient) (Response, error)
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := io.ReadAll(resp.Body)
+        errBody, readErr := fetch.Bytes(resp)
         if readErr != empty
             return Response{}, error("API request failed with status {resp.StatusCode}")
         return Response{}, error("API request failed ({resp.StatusCode}): {errBody as string}")
@@ -1316,7 +1317,7 @@ func rExecuteStream(c ResponseClient) (string, error)
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := io.ReadAll(resp.Body)
+        errBody, readErr := fetch.Bytes(resp)
         if readErr != empty
             return "", error("API request failed with status {resp.StatusCode}")
         return "", error("API request failed ({resp.StatusCode}): {errBody as string}")
@@ -1333,7 +1334,7 @@ func rExecuteStream(c ResponseClient) (string, error)
         line := scanner.Text()
 
         # Skip empty lines and comments
-        if line == "" or strings.HasPrefix(line, ":")
+        if line == "" or string.HasPrefix(line, ":")
             continue
 
         # Check for end of stream
@@ -1341,8 +1342,8 @@ func rExecuteStream(c ResponseClient) (string, error)
             break
 
         # Parse SSE data lines
-        if strings.HasPrefix(line, "data: ")
-            data := strings.TrimPrefix(line, "data: ")
+        if string.HasPrefix(line, "data: ")
+            data := string.TrimPrefix(line, "data: ")
             evt := StreamEvent{}
             parseErr := json.Unmarshal(data as list of byte, reference of evt)
             if parseErr != empty
@@ -1879,7 +1880,7 @@ func mExecuteRaw(c MessagesClient) (AnthropicResponse, error)
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := io.ReadAll(resp.Body)
+        errBody, readErr := fetch.Bytes(resp)
         if readErr != empty
             return AnthropicResponse{}, error("Anthropic API request failed with status {resp.StatusCode}")
         return AnthropicResponse{}, error("Anthropic API request failed ({resp.StatusCode}): {errBody as string}")
@@ -1926,7 +1927,7 @@ func mExecuteStream(c MessagesClient) (string, error)
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := io.ReadAll(resp.Body)
+        errBody, readErr := fetch.Bytes(resp)
         if readErr != empty
             return "", error("Anthropic API request failed with status {resp.StatusCode}")
         return "", error("Anthropic API request failed ({resp.StatusCode}): {errBody as string}")
@@ -1939,12 +1940,12 @@ func mExecuteStream(c MessagesClient) (string, error)
         line := scanner.Text()
 
         # Skip empty lines, event type lines, and comments
-        if line == "" or strings.HasPrefix(line, "event:") or strings.HasPrefix(line, ":")
+        if line == "" or string.HasPrefix(line, "event:") or string.HasPrefix(line, ":")
             continue
 
         # Parse data lines
-        if strings.HasPrefix(line, "data: ")
-            data := strings.TrimPrefix(line, "data: ")
+        if string.HasPrefix(line, "data: ")
+            data := string.TrimPrefix(line, "data: ")
             evt := AnthropicStreamEvent{}
             parseErr := json.Unmarshal(data as list of byte, reference of evt)
             if parseErr != empty

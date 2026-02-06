@@ -42,15 +42,16 @@ type Generator struct {
 	program              *ast.Program
 	output               strings.Builder
 	indent               int
-	placeholderMap       map[string]string       // Maps placeholder names to type param names (e.g., "any" -> "T", "any2" -> "K")
-	autoImports          map[string]bool         // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
-	pkgAliases           map[string]string       // Maps original package name -> alias when collision detected (e.g., "json" -> "kukijson")
+	placeholderMap       map[string]string        // Maps placeholder names to type param names (e.g., "any" -> "T", "any2" -> "K")
+	autoImports          map[string]bool          // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
+	pkgAliases           map[string]string        // Maps original package name -> alias when collision detected (e.g., "json" -> "kukijson")
 	funcDefaults         map[string]*FuncDefaults // Maps function names to their default parameter info
-	isStdlibIter         bool                    // True if generating stdlib/iterator or stdlib/slice code (enables generic transpilation)
-	sourceFile           string                  // Source file path for detecting stdlib
-	currentFuncName      string                  // Current function being generated (for context-aware decisions)
-	processingReturnType bool                    // Whether we are currently generating return types
-	tempCounter          int                     // Counter for generating unique temporary variable names
+	isStdlibIter         bool                     // True if generating stdlib/iterator or stdlib/slice code (enables generic transpilation)
+	sourceFile           string                   // Source file path for detecting stdlib
+	currentFuncName      string                   // Current function being generated (for context-aware decisions)
+	currentReturnTypes   []ast.TypeAnnotation     // Return types of current function (for type coercion in returns)
+	processingReturnType bool                     // Whether we are currently generating return types
+	tempCounter          int                      // Counter for generating unique temporary variable names
 }
 
 // New creates a new code generator
@@ -476,6 +477,9 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	g.write(signature + " {")
 	g.writeLine("")
 
+	// Set return types for type coercion in return statements
+	g.currentReturnTypes = decl.Returns
+
 	// Generate body
 	if decl.Body != nil {
 		g.indent++
@@ -485,9 +489,10 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 
 	g.writeLine("}")
 
-	// Clear placeholder mapping
+	// Clear function context
 	g.placeholderMap = nil
 	g.currentFuncName = ""
+	g.currentReturnTypes = nil
 }
 
 func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
@@ -1283,10 +1288,68 @@ func (g *Generator) generateReturnStmt(stmt *ast.ReturnStmt) {
 
 	values := make([]string, len(stmt.Values))
 	for i, val := range stmt.Values {
-		values[i] = g.exprToString(val)
+		valStr := g.exprToString(val)
+
+		// Apply type coercion if we have matching return types
+		// This handles cases like: return n * 1000 -> return time.Duration(n * 1000)
+		if i < len(g.currentReturnTypes) {
+			valStr = g.coerceReturnValue(valStr, val, g.currentReturnTypes[i])
+		}
+
+		values[i] = valStr
 	}
 
 	g.writeLine(fmt.Sprintf("return %s", strings.Join(values, ", ")))
+}
+
+// coerceReturnValue wraps a return value in a type conversion if needed
+// This handles cases where Go requires explicit conversion to named types
+func (g *Generator) coerceReturnValue(valStr string, val ast.Expression, returnType ast.TypeAnnotation) string {
+	// Only coerce for named types (like time.Duration)
+	namedType, ok := returnType.(*ast.NamedType)
+	if !ok {
+		return valStr
+	}
+
+	typeName := g.generateTypeAnnotation(returnType)
+
+	// Don't wrap if it's already a type cast to this type
+	if cast, ok := val.(*ast.TypeCastExpr); ok {
+		castType := g.generateTypeAnnotation(cast.TargetType)
+		if castType == typeName {
+			return valStr
+		}
+	}
+
+	// Don't wrap if it's a function call that likely returns the right type
+	// (the function's return type should match)
+	if _, ok := val.(*ast.CallExpr); ok {
+		return valStr
+	}
+	if _, ok := val.(*ast.MethodCallExpr); ok {
+		return valStr
+	}
+
+	// Don't wrap identifiers - they might already be the right type
+	if _, ok := val.(*ast.Identifier); ok {
+		return valStr
+	}
+
+	// Don't wrap if it's an empty expression (like time.Time{})
+	if _, ok := val.(*ast.EmptyExpr); ok {
+		return valStr
+	}
+
+	// For arithmetic expressions on numeric types returning a named numeric type,
+	// wrap in the type conversion (e.g., time.Duration)
+	if _, ok := val.(*ast.BinaryExpr); ok {
+		// Check if this is a stdlib named type that needs wrapping
+		if strings.Contains(namedType.Name, ".") {
+			return fmt.Sprintf("%s(%s)", typeName, valStr)
+		}
+	}
+
+	return valStr
 }
 
 func (g *Generator) generateIfStmt(stmt *ast.IfStmt) {
@@ -1615,8 +1678,9 @@ func (g *Generator) parseStringInterpolation(str string) (string, []string) {
 		// Add format specifier
 		format.WriteString("%v")
 
-		// Extract expression
+		// Extract expression and transform Kukicha syntax to Go
 		expr := str[match[2]:match[3]]
+		expr = g.transformInterpolatedExpr(expr)
 		args = append(args, expr)
 
 		lastIndex = match[1]
@@ -1628,6 +1692,20 @@ func (g *Generator) parseStringInterpolation(str string) (string, []string) {
 	}
 
 	return format.String(), args
+}
+
+// transformInterpolatedExpr converts Kukicha expression syntax in string
+// interpolation to valid Go syntax.
+func (g *Generator) transformInterpolatedExpr(expr string) string {
+	// Handle "X as Type" -> "Type(X)" for type conversions
+	// This is a simple string-based transformation for common cases
+	asRe := regexp.MustCompile(`^(.+)\s+as\s+(\w+)$`)
+	if matches := asRe.FindStringSubmatch(strings.TrimSpace(expr)); matches != nil {
+		value := strings.TrimSpace(matches[1])
+		targetType := matches[2]
+		return fmt.Sprintf("%s(%s)", targetType, value)
+	}
+	return expr
 }
 
 func (g *Generator) generateBinaryExpr(expr *ast.BinaryExpr) string {
@@ -2500,12 +2578,11 @@ func (g *Generator) scanExprForAutoImports(expr ast.Expression) {
 		return
 	}
 
-	// Check for multi-return function usage that triggers wrapper generation
-	if typeName, isMulti := g.getMultiReturnType(expr); isMulti {
-		if strings.Contains(typeName, "http.") {
-			g.addImport("net/http")
-		}
-	}
+	// Note: We don't auto-import http here for multi-return functions.
+	// The import is added in getMultiReturnType only when actually generating
+	// a wrapper that references the type (e.g., in pipe expressions).
+	// For simple assignments like `resp, err := fetch.Do(req)`, no import is needed
+	// since type inference is used.
 
 	switch e := expr.(type) {
 	case *ast.BinaryExpr:

@@ -6,10 +6,7 @@
 
 package datetime
 
-import (
-	"errors"
-	"time"
-)
+import "time"
 
 func Format(t time.Time, format string) string {
 	layout := getLayout(format)
@@ -48,35 +45,35 @@ func Yesterday() time.Time {
 }
 
 func Nanoseconds(n int64) time.Duration {
-	return (n * 1)
+	return time.Duration((n * 1))
 }
 
 func Microseconds(n int64) time.Duration {
-	return (n * 1000)
+	return time.Duration((n * 1000))
 }
 
 func Milliseconds(n int64) time.Duration {
-	return (n * 1000000)
+	return time.Duration((n * 1000000))
 }
 
 func Seconds(n int64) time.Duration {
-	return (n * 1000000000)
+	return time.Duration((n * 1000000000))
 }
 
 func Minutes(n int64) time.Duration {
-	return (n * 60000000000)
+	return time.Duration((n * 60000000000))
 }
 
 func Hours(n int64) time.Duration {
-	return (n * 3600000000000)
+	return time.Duration((n * 3600000000000))
 }
 
 func Days(n int64) time.Duration {
-	return (n * 86400000000000)
+	return time.Duration((n * 86400000000000))
 }
 
 func Weeks(n int64) time.Duration {
-	return (n * 604800000000000)
+	return time.Duration((n * 604800000000000))
 }
 
 func AddDays(t time.Time, days int) time.Time {

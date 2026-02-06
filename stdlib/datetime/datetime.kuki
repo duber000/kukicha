@@ -5,7 +5,6 @@
 petiole datetime
 
 import "time"
-import "errors"
 
 # Named Format Constants
 # These are the Go reference time layouts for common formats

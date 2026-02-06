@@ -888,8 +888,10 @@ func (a *Analyzer) analyzeBinaryExpr(expr *ast.BinaryExpr) *TypeInfo {
 
 	switch expr.Operator {
 	case "+":
-		// String concatenation
-		if leftType.Kind == TypeKindString && rightType.Kind == TypeKindString {
+		// String concatenation - allow Unknown on either side
+		if (leftType.Kind == TypeKindString || leftType.Kind == TypeKindUnknown) &&
+			(rightType.Kind == TypeKindString || rightType.Kind == TypeKindUnknown) &&
+			(leftType.Kind == TypeKindString || rightType.Kind == TypeKindString) {
 			return &TypeInfo{Kind: TypeKindString}
 		}
 		// Numeric addition
@@ -929,8 +931,10 @@ func (a *Analyzer) analyzeBinaryExpr(expr *ast.BinaryExpr) *TypeInfo {
 		return &TypeInfo{Kind: TypeKindBool}
 
 	case "and", "or":
-		// Logical operators
-		if leftType.Kind != TypeKindBool || rightType.Kind != TypeKindBool {
+		// Logical operators - allow Unknown on either side (like 'not' operator does)
+		leftOk := leftType.Kind == TypeKindBool || leftType.Kind == TypeKindUnknown
+		rightOk := rightType.Kind == TypeKindBool || rightType.Kind == TypeKindUnknown
+		if !leftOk || !rightOk {
 			a.error(expr.Pos(), fmt.Sprintf("logical operator requires boolean operands, got %s and %s", leftType, rightType))
 		}
 		return &TypeInfo{Kind: TypeKindBool}
@@ -1035,6 +1039,9 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 					{Kind: TypeKindString},
 					{Kind: TypeKindBool},
 				}
+			// bufio package functions
+			case "bufio.NewScanner":
+				return []*TypeInfo{{Kind: TypeKindNamed, Name: "bufio.Scanner"}}
 			}
 		}
 	}
@@ -1145,7 +1152,7 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 
 	// Handle known stdlib method return types
 	methodName := expr.Method.Value
-	
+
 	// time.Time methods with known return types
 	if objType != nil && objType.Kind == TypeKindNamed && objType.Name == "time.Time" {
 		switch methodName {
@@ -1159,6 +1166,22 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 			return []*TypeInfo{{Kind: TypeKindInt}}
 		case "Weekday":
 			return []*TypeInfo{{Kind: TypeKindNamed, Name: "time.Weekday"}}
+		}
+	}
+
+	// bufio.Scanner methods (needed for SSE streaming in llm.kuki)
+	if objType != nil && objType.Kind == TypeKindNamed {
+		if objType.Name == "bufio.Scanner" || objType.Name == "*bufio.Scanner" {
+			switch methodName {
+			case "Scan":
+				return []*TypeInfo{{Kind: TypeKindBool}}
+			case "Text":
+				return []*TypeInfo{{Kind: TypeKindString}}
+			case "Bytes":
+				return []*TypeInfo{{Kind: TypeKindList, ElementType: &TypeInfo{Kind: TypeKindNamed, Name: "byte"}}}
+			case "Err":
+				return []*TypeInfo{{Kind: TypeKindNamed, Name: "error"}}
+			}
 		}
 	}
 
