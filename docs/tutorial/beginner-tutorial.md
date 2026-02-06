@@ -75,15 +75,15 @@ The `kukicha init` command sets up the Kukicha standard library in your project.
 Create a file called `hello.kuki` with this content:
 
 ```kukicha
-func main()
+function main()
     print("Hello, World!")
 ```
 
 **What's happening here?**
 
-1. `func main()` - This defines a function named "main". Every Kukicha program starts by running the `main` function
-2. `print("Hello, World!")` - This built-in function prints the text "Hello, World!" to the screen (and automatically imports `fmt` for you)
-3. Notice: **No semicolons!** Kukicha uses indentation (spaces) to understand where code blocks begin and end
+1. `function main()` - This defines a function named "main". Every Kukicha program starts by running the `main` function
+2. `print("Hello, World!")` - This built-in function prints the text "Hello, World!" to the screen 
+3. Kukicha uses indentation (spaces) to understand where code blocks begin and end
 
 **Try it yourself:**
 ```bash
@@ -109,7 +109,7 @@ In Kukicha, any line starting with `#` is a comment - the computer ignores it co
 # This is a comment - the computer skips this line
 
 # Comments help you remember what your code does
-func main()
+function main()
     # Print a greeting to the screen
     print("Hello!")
 ```
@@ -132,7 +132,7 @@ A **variable** is like a labeled box where you store information. You give it a 
 Use the **walrus operator** `:=` to create a new variable:
 
 ```kukicha
-func main()
+function main()
     # Create a variable named 'age' and store 25 in it
     age := 25
 
@@ -155,7 +155,7 @@ Alice
 Once a variable exists, use a single `=` to change its value:
 
 ```kukicha
-func main()
+function main()
     score := 0          # Create score, set to 0
     print(score)  # Prints: 0
 
