@@ -1,9 +1,12 @@
 # Example: LLM Chat Client
-# Demonstrates usage of the stdlib/llm package with both Chat Completions
-# and OpenResponses APIs
+# Demonstrates usage of the stdlib/llm package with all three API formats:
+#   - Chat Completions API (OpenAI-compatible)
+#   - OpenResponses API (https://www.openresponses.org)
+#   - Anthropic Messages API (https://docs.anthropic.com/en/api/messages)
 #
 # Prerequisites:
 #   export OPENAI_API_KEY="sk-..."
+#   export ANTHROPIC_API_KEY="sk-ant-..."
 #
 # Or with any-llm-gateway:
 #   export LLM_API_KEY="your-gateway-key"
@@ -221,3 +224,121 @@ func main()
         print("Custom endpoint error (expected): {err14}")
     else
         print("Custom reply: {customReply}")
+    print("")
+
+    # ═══════════════════════════════════════
+    # ANTHROPIC MESSAGES API (POST /v1/messages)
+    # https://docs.anthropic.com/en/api/messages
+    # ═══════════════════════════════════════
+
+    # ──────────────────────────────────────
+    # 14. Quick Anthropic completion
+    # ──────────────────────────────────────
+    print("--- Anthropic: Quick completion ---")
+    aReply, err15 := llm.AnthropicComplete("claude-sonnet-4-20250514", "What is Kukicha tea in one sentence?")
+    if err15 != empty
+        print("Error: {err15}")
+    else
+        print("Reply: {aReply}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 15. Anthropic with system prompt
+    # ──────────────────────────────────────
+    print("--- Anthropic: With system prompt ---")
+    aAnswer, err16 := llm.NewMessages("claude-sonnet-4-20250514")
+        |> llm.MSystem("You are a concise assistant. Reply in one sentence.")
+        |> llm.MTemperature(0.3)
+        |> llm.MMaxTokens(100)
+        |> llm.MAsk("What is the pipe operator?")
+    if err16 != empty
+        print("Error: {err16}")
+    else
+        print("Answer: {aAnswer}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 16. Anthropic multi-turn conversation
+    # ──────────────────────────────────────
+    print("--- Anthropic: Multi-turn ---")
+    aMulti, err17 := llm.NewMessages("claude-sonnet-4-20250514")
+        |> llm.MSystem("You are a friendly tutor.")
+        |> llm.MMaxTokens(500)
+        |> llm.MUser("What is a goroutine?")
+        |> llm.MAssistant("A goroutine is a lightweight thread managed by the Go runtime.")
+        |> llm.MUser("How do I create one?")
+        |> llm.MSend()
+    if err17 != empty
+        print("Error: {err17}")
+    else
+        print("Response: {aMulti}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 17. Anthropic streaming
+    # ──────────────────────────────────────
+    print("--- Anthropic: Streaming ---")
+    aStreamed, err18 := llm.NewMessages("claude-sonnet-4-20250514")
+        |> llm.MMaxTokens(200)
+        |> llm.MTemperature(0.9)
+        |> llm.MStream(func(chunk string)
+            fmt.Print(chunk)
+        )
+        |> llm.MAsk("Write a haiku about programming")
+    if err18 != empty
+        print("\nStream error: {err18}")
+    else
+        print("")
+        print("(Full text: {aStreamed})")
+    print("")
+
+    # ──────────────────────────────────────
+    # 18. Anthropic full response with usage
+    # ──────────────────────────────────────
+    print("--- Anthropic: Full response ---")
+    aResp, err19 := llm.NewMessages("claude-sonnet-4-20250514")
+        |> llm.MMaxTokens(200)
+        |> llm.MUser("Say hello in three languages")
+        |> llm.MSendRaw()
+    if err19 != empty
+        print("Error: {err19}")
+    else
+        print("Text: {llm.GetAnthropicText(aResp)}")
+        print("Model: {aResp.Model}")
+        print("Stop reason: {aResp.StopReason}")
+        print("Input tokens: {aResp.Usage.InputTokens}")
+        print("Output tokens: {aResp.Usage.OutputTokens}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 19. Anthropic with event handler
+    # ──────────────────────────────────────
+    print("--- Anthropic: Event handler ---")
+    _, err20 := llm.NewMessages("claude-sonnet-4-20250514")
+        |> llm.MMaxTokens(200)
+        |> llm.MStreamEvents(func(evt llm.AnthropicStreamEvent)
+            if evt.Type == "content_block_delta" and evt.Delta.Type == "text_delta"
+                fmt.Print(evt.Delta.Text)
+            if evt.Type == "message_stop"
+                print("")
+                print("(Message complete)")
+        )
+        |> llm.MAsk("Count to five")
+    if err20 != empty
+        print("Error: {err20}")
+    print("")
+
+    # ──────────────────────────────────────
+    # 20. Anthropic with custom endpoint (e.g., Dartmouth)
+    # ──────────────────────────────────────
+    print("--- Anthropic: Custom endpoint ---")
+    dartmouthReply, err21 := llm.NewMessages("claude-sonnet-4-20250514")
+        |> llm.MBaseURL("https://chat.dartmouth.edu")
+        |> llm.MPath("/api/messages")
+        |> llm.MAPIKey("your-dartmouth-key")
+        |> llm.MMaxTokens(200)
+        |> llm.MAsk("Hello from Dartmouth!")
+    if err21 != empty
+        print("Custom endpoint error (expected): {err21}")
+    else
+        print("Dartmouth reply: {dartmouthReply}")

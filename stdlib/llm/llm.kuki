@@ -1,10 +1,13 @@
 # Kukicha Standard Library - LLM Client
-# Unified client supporting both Chat Completions API and OpenResponses API
-# (https://www.openresponses.org/specification)
+# Unified client supporting three major LLM API formats:
+#   - Chat Completions API (OpenAI, any-llm-gateway, Open WebUI, etc.)
+#   - OpenResponses API (https://www.openresponses.org/specification)
+#   - Anthropic Messages API (https://docs.anthropic.com/en/api/messages)
 #
 # Supports:
 #   - Chat Completions API (OpenAI, any-llm-gateway, Open WebUI, etc.)
 #   - OpenResponses API (POST /v1/responses)
+#   - Anthropic Messages API (POST /v1/messages)
 #   - Multiple providers (OpenAI, Anthropic, Mistral, Ollama, etc.)
 #   - Streaming responses via Server-Sent Events
 #   - Tool/function calling
@@ -64,6 +67,35 @@
 #   resp, err := llm.NewResponse("gpt-4o")
 #       |> llm.RAddTool("get_weather", "Get current weather", params)
 #       |> llm.RAskRaw("What's the weather in Boston?")
+#
+# Anthropic Messages Examples:
+#   # Quick message
+#   reply, err := llm.AnthropicComplete("claude-sonnet-4-20250514", "What is Go?")
+#
+#   # Builder pattern
+#   reply, err := llm.NewMessages("claude-sonnet-4-20250514")
+#       |> llm.MSystem("You are a helpful assistant.")
+#       |> llm.MTemperature(0.7)
+#       |> llm.MMaxTokens(1024)
+#       |> llm.MStream(handleChunk)
+#       |> llm.MAsk("Explain pipes in Kukicha")
+#
+#   # Multi-turn conversation
+#   reply, err := llm.NewMessages("claude-sonnet-4-20250514")
+#       |> llm.MSystem("You are a tutor.")
+#       |> llm.MMaxTokens(1024)
+#       |> llm.MUser("What is a goroutine?")
+#       |> llm.MAssistant("A goroutine is a lightweight thread.")
+#       |> llm.MUser("How do I create one?")
+#       |> llm.MSend()
+#
+#   # Custom endpoint (e.g., Dartmouth Open WebUI Anthropic proxy)
+#   reply, err := llm.NewMessages("claude-sonnet-4-20250514")
+#       |> llm.MBaseURL("https://chat.dartmouth.edu")
+#       |> llm.MPath("/api/messages")
+#       |> llm.MAPIKey("your-key")
+#       |> llm.MMaxTokens(1024)
+#       |> llm.MAsk("Hello!")
 
 petiole llm
 
@@ -1326,6 +1358,520 @@ func rExecuteStream(c ResponseClient) (string, error)
                 if errMsg == ""
                     errMsg = "streaming error: {evt.Code}"
                 return fullContent, error(errMsg)
+
+    scanErr := scanner.Err()
+    if scanErr != empty
+        return fullContent, scanErr
+
+    return fullContent, empty
+
+# ═══════════════════════════════════════════════════════════════════════
+# Anthropic Messages API (https://docs.anthropic.com/en/api/messages)
+# POST /v1/messages - Anthropic's native API format
+# ═══════════════════════════════════════════════════════════════════════
+
+# ContentBlock represents a content block in the Anthropic Messages API
+# Discriminated by Type: "text", "tool_use", "tool_result", "image"
+type ContentBlock
+    Type string json:"type"
+    Text string json:"text,omitzero"
+    ID string json:"id,omitzero"
+    Name string json:"name,omitzero"
+    Input any json:"input,omitzero"
+    ToolUseID string json:"tool_use_id,omitzero"
+    Content any json:"content,omitzero"
+    Source any json:"source,omitzero"
+
+# AnthropicMessage represents a message in the Anthropic format
+# Role is "user" or "assistant" (system is a top-level field, not a message)
+type AnthropicMessage
+    Role string json:"role"
+    Content any json:"content"
+
+# AnthropicTool represents a tool definition in the Anthropic format
+type AnthropicTool
+    Name string json:"name"
+    Description string json:"description,omitzero"
+    InputSchema any json:"input_schema"
+
+# AnthropicToolChoice represents tool selection in the Anthropic format
+type AnthropicToolChoice
+    Type string json:"type"
+    Name string json:"name,omitzero"
+
+# AnthropicUsage holds token usage from the Anthropic API
+type AnthropicUsage
+    InputTokens int json:"input_tokens"
+    OutputTokens int json:"output_tokens"
+    CacheCreationInputTokens int json:"cache_creation_input_tokens,omitzero"
+    CacheReadInputTokens int json:"cache_read_input_tokens,omitzero"
+
+# AnthropicResponse is the response from POST /v1/messages
+type AnthropicResponse
+    ID string json:"id"
+    Type string json:"type"
+    Role string json:"role"
+    Content list of ContentBlock json:"content"
+    Model string json:"model"
+    StopReason string json:"stop_reason"
+    StopSequence string json:"stop_sequence,omitzero"
+    Usage AnthropicUsage json:"usage"
+
+# MessagesRequest is the JSON body sent to POST /v1/messages
+type MessagesRequest
+    Model string json:"model"
+    Messages list of AnthropicMessage json:"messages"
+    MaxTokens int json:"max_tokens"
+    System string json:"system,omitzero"
+    Temperature float64 json:"temperature,omitzero"
+    TopP float64 json:"top_p,omitzero"
+    TopK int json:"top_k,omitzero"
+    StopSequences list of string json:"stop_sequences,omitzero"
+    Stream bool json:"stream,omitzero"
+    Tools list of AnthropicTool json:"tools,omitzero"
+    ToolChoice any json:"tool_choice,omitzero"
+    Metadata any json:"metadata,omitzero"
+
+# AnthropicStreamEvent represents a parsed SSE event from Anthropic streaming
+# The Anthropic API uses "event:" and "data:" SSE fields
+type AnthropicStreamEvent
+    Type string json:"type"
+    Index int json:"index,omitzero"
+    Message AnthropicResponse json:"message,omitzero"
+    ContentBlock ContentBlock json:"content_block,omitzero"
+    Delta AnthropicDelta json:"delta,omitzero"
+    Usage AnthropicUsage json:"usage,omitzero"
+
+# AnthropicDelta represents an incremental delta in Anthropic streaming
+type AnthropicDelta
+    Type string json:"type,omitzero"
+    Text string json:"text,omitzero"
+    PartialJSON string json:"partial_json,omitzero"
+    StopReason string json:"stop_reason,omitzero"
+    StopSequence string json:"stop_sequence,omitzero"
+
+# MessagesClient holds the configuration for an Anthropic Messages request (builder pattern)
+type MessagesClient
+    model string
+    baseURL string
+    path string
+    apiKey string
+    apiVersion string
+    system string
+    messages list of AnthropicMessage
+    maxTokens int
+    temperature float64
+    topP float64
+    topK int
+    stopSequences list of string
+    tools list of AnthropicTool
+    toolChoice any
+    metadata any
+    streamHandler func(string)
+    eventHandler func(AnthropicStreamEvent)
+
+# NewMessages creates a new Anthropic Messages client builder
+# Example: client := llm.NewMessages("claude-sonnet-4-20250514")
+func NewMessages(model string) MessagesClient
+    c := MessagesClient{}
+    c.model = model
+    c.baseURL = ""
+    c.path = ""
+    c.apiKey = ""
+    c.apiVersion = "2023-06-01"
+    c.system = ""
+    c.messages = empty list of AnthropicMessage
+    c.maxTokens = 1024
+    c.temperature = 0.0
+    c.topP = 0.0
+    c.topK = 0
+    c.stopSequences = empty list of string
+    c.tools = empty list of AnthropicTool
+    c.toolChoice = empty
+    c.metadata = empty
+    c.streamHandler = empty
+    c.eventHandler = empty
+    return c
+
+# MBaseURL sets a custom API base URL for the Messages client
+# Example: client |> llm.MBaseURL("https://chat.example.edu")
+func MBaseURL(c MessagesClient, url string) MessagesClient
+    c.baseURL = url
+    return c
+
+# MPath overrides the default messages path ("/v1/messages")
+# Example: client |> llm.MPath("/api/messages")
+func MPath(c MessagesClient, path string) MessagesClient
+    c.path = path
+    return c
+
+# MAPIKey sets the API key for authentication
+# If not set, falls back to ANTHROPIC_API_KEY env var
+# Example: client |> llm.MAPIKey("sk-ant-...")
+func MAPIKey(c MessagesClient, key string) MessagesClient
+    c.apiKey = key
+    return c
+
+# MAPIVersion sets the Anthropic API version header
+# Default is "2023-06-01"
+# Example: client |> llm.MAPIVersion("2024-01-01")
+func MAPIVersion(c MessagesClient, version string) MessagesClient
+    c.apiVersion = version
+    return c
+
+# MSystem sets the system prompt (top-level field in Anthropic API, not a message)
+# Example: client |> llm.MSystem("You are a helpful coding assistant.")
+func MSystem(c MessagesClient, system string) MessagesClient
+    c.system = system
+    return c
+
+# MUser adds a user message with text content
+# Example: client |> llm.MUser("Hello!")
+func MUser(c MessagesClient, content string) MessagesClient
+    msg := AnthropicMessage{Role: "user", Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# MAssistant adds an assistant message with text content (for multi-turn)
+# Example: client |> llm.MAssistant("I can help with that.")
+func MAssistant(c MessagesClient, content string) MessagesClient
+    msg := AnthropicMessage{Role: "assistant", Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# MAddMessage adds a message with content blocks (for tool results, images, etc.)
+# Example: client |> llm.MAddMessage("user", blocks)
+func MAddMessage(c MessagesClient, role string, content any) MessagesClient
+    msg := AnthropicMessage{Role: role, Content: content}
+    c.messages = append(c.messages, msg)
+    return c
+
+# MToolResult adds a tool result message to the conversation
+# This is a user message containing a tool_result content block
+# Example: client |> llm.MToolResult("toolu_123", "{\"temp\": 72}")
+func MToolResult(c MessagesClient, toolUseID string, result string) MessagesClient
+    block := ContentBlock{}
+    block.Type = "tool_result"
+    block.ToolUseID = toolUseID
+    block.Content = result
+    blocks := list of ContentBlock{block}
+    msg := AnthropicMessage{Role: "user", Content: blocks}
+    c.messages = append(c.messages, msg)
+    return c
+
+# MMaxTokens sets the maximum number of tokens to generate (required by Anthropic)
+# Default is 1024
+# Example: client |> llm.MMaxTokens(4096)
+func MMaxTokens(c MessagesClient, max int) MessagesClient
+    c.maxTokens = max
+    return c
+
+# MTemperature sets the sampling temperature (0.0 to 1.0)
+# Example: client |> llm.MTemperature(0.7)
+func MTemperature(c MessagesClient, temp float64) MessagesClient
+    c.temperature = temp
+    return c
+
+# MTopP sets nucleus sampling parameter (0.0 to 1.0)
+# Example: client |> llm.MTopP(0.9)
+func MTopP(c MessagesClient, p float64) MessagesClient
+    c.topP = p
+    return c
+
+# MTopK sets top-K sampling parameter (Anthropic-specific)
+# Example: client |> llm.MTopK(40)
+func MTopK(c MessagesClient, k int) MessagesClient
+    c.topK = k
+    return c
+
+# MStopSequences sets stop sequences that will halt generation
+# Example: client |> llm.MStopSequences(list of string{"\n\nHuman:"})
+func MStopSequences(c MessagesClient, sequences list of string) MessagesClient
+    c.stopSequences = sequences
+    return c
+
+# MAddTool adds a tool the model can call (Anthropic format uses input_schema)
+# Example: client |> llm.MAddTool("get_weather", "Get current weather", schema)
+func MAddTool(c MessagesClient, name string, description string, inputSchema any) MessagesClient
+    tool := AnthropicTool{Name: name, Description: description, InputSchema: inputSchema}
+    c.tools = append(c.tools, tool)
+    return c
+
+# MToolChoiceAuto lets the model decide whether to use tools
+# Example: client |> llm.MToolChoiceAuto()
+func MToolChoiceAuto(c MessagesClient) MessagesClient
+    c.toolChoice = AnthropicToolChoice{Type: "auto"}
+    return c
+
+# MToolChoiceAny forces the model to use a tool (any tool)
+# Example: client |> llm.MToolChoiceAny()
+func MToolChoiceAny(c MessagesClient) MessagesClient
+    c.toolChoice = AnthropicToolChoice{Type: "any"}
+    return c
+
+# MToolChoiceTool forces the model to use a specific tool
+# Example: client |> llm.MToolChoiceTool("get_weather")
+func MToolChoiceTool(c MessagesClient, name string) MessagesClient
+    c.toolChoice = AnthropicToolChoice{Type: "tool", Name: name}
+    return c
+
+# MStream sets a handler function for streaming text deltas
+# The handler receives each text chunk as it arrives
+# Example: client |> llm.MStream(func(chunk string) { print(chunk) })
+func MStream(c MessagesClient, handler func(string)) MessagesClient
+    c.streamHandler = handler
+    return c
+
+# MStreamEvents sets a handler for full Anthropic streaming events
+# Receives each parsed AnthropicStreamEvent for fine-grained control
+# Example: client |> llm.MStreamEvents(func(evt llm.AnthropicStreamEvent) { ... })
+func MStreamEvents(c MessagesClient, handler func(AnthropicStreamEvent)) MessagesClient
+    c.eventHandler = handler
+    return c
+
+# MAsk sends a user message and executes the Anthropic Messages request
+# Returns the text content and any error
+#
+# Example: reply, err := llm.NewMessages("claude-sonnet-4-20250514") |> llm.MAsk("Hello!")
+func MAsk(c MessagesClient, prompt string) (string, error)
+    c = MUser(c, prompt)
+    return mExecute(c)
+
+# MSend executes the request with messages already configured
+# Returns the text content and any error
+#
+# Example:
+#   reply, err := llm.NewMessages("claude-sonnet-4-20250514")
+#       |> llm.MSystem("Be concise.")
+#       |> llm.MUser("Hello")
+#       |> llm.MSend()
+func MSend(c MessagesClient) (string, error)
+    return mExecute(c)
+
+# MAskRaw sends a user message and returns the full AnthropicResponse
+# Use this when you need access to tool calls, usage stats, or content blocks
+#
+# Example:
+#   resp, err := llm.NewMessages("claude-sonnet-4-20250514") |> llm.MAskRaw("Hello!")
+#   print(resp.Usage.OutputTokens)
+func MAskRaw(c MessagesClient, prompt string) (AnthropicResponse, error)
+    c = MUser(c, prompt)
+    return mExecuteRaw(c)
+
+# MSendRaw executes the request and returns the full AnthropicResponse
+#
+# Example:
+#   resp, err := llm.NewMessages("claude-sonnet-4-20250514")
+#       |> llm.MUser("Hello")
+#       |> llm.MSendRaw()
+func MSendRaw(c MessagesClient) (AnthropicResponse, error)
+    return mExecuteRaw(c)
+
+# AnthropicComplete is a quick one-shot completion using the Anthropic Messages API
+# Example: reply, err := llm.AnthropicComplete("claude-sonnet-4-20250514", "What is Go?")
+func AnthropicComplete(model string, prompt string) (string, error)
+    c := NewMessages(model)
+    return MAsk(c, prompt)
+
+# AnthropicCompleteWithSystem is a quick completion with a system prompt
+# Example: reply, err := llm.AnthropicCompleteWithSystem("claude-sonnet-4-20250514", "Be brief.", "What is Go?")
+func AnthropicCompleteWithSystem(model string, system string, prompt string) (string, error)
+    c := NewMessages(model)
+    c = MSystem(c, system)
+    return MAsk(c, prompt)
+
+# GetAnthropicText extracts the text content from an AnthropicResponse
+# Returns the concatenated text of all "text" content blocks
+# Example: text := llm.GetAnthropicText(resp)
+func GetAnthropicText(resp AnthropicResponse) string
+    result := ""
+    for _, block in resp.Content
+        if block.Type == "text"
+            result = result + block.Text
+    return result
+
+# GetToolUses extracts tool use blocks from an AnthropicResponse
+# Returns all content blocks with type "tool_use"
+# Example: tools := llm.GetToolUses(resp)
+func GetToolUses(resp AnthropicResponse) list of ContentBlock
+    uses := empty list of ContentBlock
+    for _, block in resp.Content
+        if block.Type == "tool_use"
+            uses = append(uses, block)
+    return uses
+
+# HasToolUses returns true if the response contains tool use blocks
+# Example: if llm.HasToolUses(resp) ...
+func HasToolUses(resp AnthropicResponse) bool
+    return resp.StopReason == "tool_use"
+
+# Internal: resolve API key for MessagesClient
+func mResolveAPIKey(c MessagesClient) string
+    if c.apiKey != ""
+        return c.apiKey
+    return env.GetOr("ANTHROPIC_API_KEY", "")
+
+# Internal: resolve base URL for MessagesClient
+func mResolveBaseURL(c MessagesClient) string
+    if c.baseURL != ""
+        return c.baseURL
+    return "https://api.anthropic.com"
+
+# Internal: resolve the messages path
+func mResolvePath(c MessagesClient) string
+    if c.path != ""
+        return c.path
+    return "/v1/messages"
+
+# Internal: build the Anthropic Messages request body
+func mBuildRequest(c MessagesClient) MessagesRequest
+    req := MessagesRequest{}
+    req.Model = c.model
+    req.Messages = c.messages
+    req.MaxTokens = c.maxTokens
+
+    if c.system != ""
+        req.System = c.system
+    if c.temperature != 0.0
+        req.Temperature = c.temperature
+    if c.topP != 0.0
+        req.TopP = c.topP
+    if c.topK != 0
+        req.TopK = c.topK
+    if len(c.stopSequences) > 0
+        req.StopSequences = c.stopSequences
+    if len(c.tools) > 0
+        req.Tools = c.tools
+    if c.toolChoice != empty
+        req.ToolChoice = c.toolChoice
+    if c.metadata != empty
+        req.Metadata = c.metadata
+    if c.streamHandler != empty or c.eventHandler != empty
+        req.Stream = true
+
+    return req
+
+# Internal: execute an Anthropic Messages request and return just the text
+func mExecute(c MessagesClient) (string, error)
+    if c.streamHandler != empty or c.eventHandler != empty
+        return mExecuteStream(c)
+
+    resp, err := mExecuteRaw(c)
+    if err != empty
+        return "", err
+    return GetAnthropicText(resp), empty
+
+# Internal: execute an Anthropic Messages request and return the full response
+func mExecuteRaw(c MessagesClient) (AnthropicResponse, error)
+    baseURL := mResolveBaseURL(c)
+    apiKey := mResolveAPIKey(c)
+    msgPath := mResolvePath(c)
+    url := "{baseURL}{msgPath}"
+    body := mBuildRequest(c)
+
+    # Anthropic uses x-api-key header, not Bearer token
+    req := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Header("anthropic-version", c.apiVersion)
+
+    if apiKey != ""
+        req = fetch.Header(req, "x-api-key", apiKey)
+
+    req = fetch.Body(req, body)
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        return AnthropicResponse{}, err
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        errBody, readErr := io.ReadAll(resp.Body)
+        if readErr != empty
+            return AnthropicResponse{}, error("Anthropic API request failed with status {resp.StatusCode}")
+        return AnthropicResponse{}, error("Anthropic API request failed ({resp.StatusCode}): {errBody as string}")
+
+    result := AnthropicResponse{}
+    jsonErr := json.UnmarshalRead(resp.Body, reference of result)
+    if jsonErr != empty
+        return AnthropicResponse{}, jsonErr
+
+    return result, empty
+
+# Internal: execute a streaming Anthropic Messages request
+# Anthropic SSE uses "event:" and "data:" lines:
+#   event: message_start
+#   data: {"type":"message_start","message":{...}}
+#
+#   event: content_block_delta
+#   data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hello"}}
+#
+#   event: message_stop
+#   data: {"type":"message_stop"}
+func mExecuteStream(c MessagesClient) (string, error)
+    baseURL := mResolveBaseURL(c)
+    apiKey := mResolveAPIKey(c)
+    msgPath := mResolvePath(c)
+    url := "{baseURL}{msgPath}"
+    body := mBuildRequest(c)
+
+    req := fetch.New(url)
+        |> fetch.Method("POST")
+        |> fetch.Header("Content-Type", "application/json")
+        |> fetch.Header("Accept", "text/event-stream")
+        |> fetch.Header("anthropic-version", c.apiVersion)
+
+    if apiKey != ""
+        req = fetch.Header(req, "x-api-key", apiKey)
+
+    req = fetch.Body(req, body)
+
+    resp, err := fetch.Do(req)
+    if err != empty
+        return "", err
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400
+        errBody, readErr := io.ReadAll(resp.Body)
+        if readErr != empty
+            return "", error("Anthropic API request failed with status {resp.StatusCode}")
+        return "", error("Anthropic API request failed ({resp.StatusCode}): {errBody as string}")
+
+    # Read Anthropic SSE stream
+    # Format: "event: <type>\ndata: <json>\n\n"
+    fullContent := ""
+    scanner := bufio.NewScanner(resp.Body)
+    for scanner.Scan()
+        line := scanner.Text()
+
+        # Skip empty lines, event type lines, and comments
+        if line == "" or strings.HasPrefix(line, "event:") or strings.HasPrefix(line, ":")
+            continue
+
+        # Parse data lines
+        if strings.HasPrefix(line, "data: ")
+            data := strings.TrimPrefix(line, "data: ")
+            evt := AnthropicStreamEvent{}
+            parseErr := json.Unmarshal(data as list of byte, reference of evt)
+            if parseErr != empty
+                continue
+
+            # Forward event to event handler if set
+            if c.eventHandler != empty
+                c.eventHandler(evt)
+
+            # Handle content_block_delta with text_delta
+            if evt.Type == "content_block_delta"
+                if evt.Delta.Type == "text_delta" and evt.Delta.Text != ""
+                    fullContent = fullContent + evt.Delta.Text
+                    if c.streamHandler != empty
+                        c.streamHandler(evt.Delta.Text)
+
+            # Handle error events
+            if evt.Type == "error"
+                return fullContent, error("Anthropic streaming error")
 
     scanErr := scanner.Err()
     if scanErr != empty
