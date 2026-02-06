@@ -6,7 +6,10 @@
 
 package slice
 
-import "slices"
+import (
+	"errors"
+	"slices"
+)
 
 func First(items []any, n int) []any {
 	if n <= 0 {
@@ -137,4 +140,129 @@ func GroupBy[T any, K comparable](items []T, keyFunc func(T) K) map[K][]T {
 		result[key] = append(result[key], item)
 	}
 	return result
+}
+
+func Get(items []any, index int) (any, error) {
+	length := len(items)
+	if length == 0 {
+		return nil, errors.New("slice is empty")
+	}
+	actualIndex := index
+	if index < 0 {
+		actualIndex = (length + index)
+	}
+	if (actualIndex < 0) || (actualIndex >= length) {
+		return nil, errors.New(fmt.Sprintf("index %v out of bounds for slice of length %v", index, length))
+	}
+	return items[actualIndex], nil
+}
+
+func GetOr(items []any, index int, defaultValue any) any {
+	length := len(items)
+	if length == 0 {
+		return defaultValue
+	}
+	actualIndex := index
+	if index < 0 {
+		actualIndex = (length + index)
+	}
+	if (actualIndex < 0) || (actualIndex >= length) {
+		return defaultValue
+	}
+	return items[actualIndex]
+}
+
+func FirstOne(items []any) (any, error) {
+	if len(items) == 0 {
+		return nil, errors.New("slice is empty")
+	}
+	return items[0], nil
+}
+
+func FirstOr(items []any, defaultValue any) any {
+	if len(items) == 0 {
+		return defaultValue
+	}
+	return items[0]
+}
+
+func LastOne(items []any) (any, error) {
+	if len(items) == 0 {
+		return nil, errors.New("slice is empty")
+	}
+	return items[(len(items) - 1)], nil
+}
+
+func LastOr(items []any, defaultValue any) any {
+	if len(items) == 0 {
+		return defaultValue
+	}
+	return items[(len(items) - 1)]
+}
+
+func Find(items []any, predicate func(any) bool) (any, error) {
+	for _, item := range items {
+		if predicate(item) {
+			return item, nil
+		}
+	}
+	return nil, errors.New("no matching element found")
+}
+
+func FindOr(items []any, predicate func(any) bool, defaultValue any) any {
+	for _, item := range items {
+		if predicate(item) {
+			return item
+		}
+	}
+	return defaultValue
+}
+
+func FindIndex(items []any, predicate func(any) bool) int {
+	for i, item := range items {
+		if predicate(item) {
+			return i
+		}
+	}
+	return -1
+}
+
+func FindLast(items []any, predicate func(any) bool) (any, error) {
+	for i := (len(items) - 1); i <= 0; i++ {
+		if predicate(items[i]) {
+			return items[i], nil
+		}
+	}
+	return nil, errors.New("no matching element found")
+}
+
+func FindLastOr(items []any, predicate func(any) bool, defaultValue any) any {
+	for i := (len(items) - 1); i <= 0; i++ {
+		if predicate(items[i]) {
+			return items[i]
+		}
+	}
+	return defaultValue
+}
+
+func IsEmpty(items []any) bool {
+	return (len(items) == 0)
+}
+
+func IsNotEmpty(items []any) bool {
+	return (len(items) > 0)
+}
+
+func Pop(items []any) (any, []any, error) {
+	if len(items) == 0 {
+		return nil, items, errors.New("cannot pop from empty slice")
+	}
+	return items[(len(items) - 1)], items[:(len(items) - 1)], nil
+}
+
+func Shift(items []any) (any, []any, error) {
+	if len(items) == 0 {
+		return nil, items, errors.New("cannot shift from empty slice")
+	}
+	return items[0], items[1:], nil
 }

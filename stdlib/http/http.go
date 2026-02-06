@@ -6,7 +6,14 @@
 
 package http
 
-import "net/http"
+import (
+	json "encoding/json/v2"
+	"errors"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
+)
 
 func WithCSRF(handler any) any {
 	protection := http.NewCrossOriginProtection()
@@ -17,4 +24,193 @@ func WithCSRF(handler any) any {
 func Serve(addr string, handler any) error {
 	h := handler.(http.Handler)
 	return http.ListenAndServe(addr, h)
+}
+
+func JSON(w http.ResponseWriter, value any) error {
+	w.Header().Set("Content-Type", "application/json")
+	return json.MarshalWrite(w, value)
+}
+
+func JSONStatus(w http.ResponseWriter, value any, status int) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	return json.MarshalWrite(w, value)
+}
+
+func JSONCreated(w http.ResponseWriter, value any) error {
+	return JSONStatus(w, value, 201)
+}
+
+func JSONError(w http.ResponseWriter, message string, status int) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	errorBody := map[string]string{"error": message}
+	return json.MarshalWrite(w, errorBody)
+}
+
+func JSONBadRequest(w http.ResponseWriter, message string) error {
+	return JSONError(w, message, 400)
+}
+
+func JSONUnauthorized(w http.ResponseWriter, message string) error {
+	return JSONError(w, message, 401)
+}
+
+func JSONForbidden(w http.ResponseWriter, message string) error {
+	return JSONError(w, message, 403)
+}
+
+func JSONNotFound(w http.ResponseWriter, message string) error {
+	return JSONError(w, message, 404)
+}
+
+func JSONInternalError(w http.ResponseWriter, message string) error {
+	return JSONError(w, message, 500)
+}
+
+func ReadJSON(r *http.Request, target any) error {
+	return json.UnmarshalRead(r.Body, target)
+}
+
+func ReadJSONAndClose(r *http.Request, target any) error {
+	defer r.Body.Close()
+	return json.UnmarshalRead(r.Body, target)
+}
+
+func GetQueryParam(r *http.Request, key string) string {
+	return r.URL.Query().Get(key)
+}
+
+func GetQueryParamOr(r *http.Request, key string, defaultValue string) string {
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+func GetQueryInt(r *http.Request, key string) (int, error) {
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return 0, errors.New(fmt.Sprintf("query parameter '%v' is required", key))
+	}
+	n, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, errors.New(fmt.Sprintf("query parameter '%v' must be an integer", key))
+	}
+	return n, nil
+}
+
+func GetQueryIntOr(r *http.Request, key string, defaultValue int) int {
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return defaultValue
+	}
+	n, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return n
+}
+
+func GetQueryBool(r *http.Request, key string) (bool, error) {
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return false, errors.New(fmt.Sprintf("query parameter '%v' is required", key))
+	}
+	lower := value
+	if ((lower == "true") || (lower == "1")) || (lower == "yes") {
+		return true, nil
+	}
+	if ((lower == "false") || (lower == "0")) || (lower == "no") {
+		return false, nil
+	}
+	return false, errors.New(fmt.Sprintf("query parameter '%v' must be a boolean", key))
+}
+
+func GetQueryBoolOr(r *http.Request, key string, defaultValue bool) bool {
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return defaultValue
+	}
+	if ((value == "true") || (value == "1")) || (value == "yes") {
+		return true
+	}
+	if ((value == "false") || (value == "0")) || (value == "no") {
+		return false
+	}
+	return defaultValue
+}
+
+func GetHeader(r *http.Request, key string) string {
+	return r.Header.Get(key)
+}
+
+func GetHeaderOr(r *http.Request, key string, defaultValue string) string {
+	value := r.Header.Get(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+func NoContent(w http.ResponseWriter) {
+	w.WriteHeader(204)
+}
+
+func Redirect(w http.ResponseWriter, r *http.Request, url string) {
+	http.Redirect(w, r, url, 302)
+}
+
+func RedirectPermanent(w http.ResponseWriter, r *http.Request, url string) {
+	http.Redirect(w, r, url, 301)
+}
+
+func Text(w http.ResponseWriter, content string) error {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, err := io.WriteString(w, content)
+	return err
+}
+
+func TextStatus(w http.ResponseWriter, content string, status int) error {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(status)
+	_, err := io.WriteString(w, content)
+	return err
+}
+
+func HTML(w http.ResponseWriter, content string) error {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, err := io.WriteString(w, content)
+	return err
+}
+
+func IsGet(r *http.Request) bool {
+	return (r.Method == "GET")
+}
+
+func IsPost(r *http.Request) bool {
+	return (r.Method == "POST")
+}
+
+func IsPut(r *http.Request) bool {
+	return (r.Method == "PUT")
+}
+
+func IsDelete(r *http.Request) bool {
+	return (r.Method == "DELETE")
+}
+
+func IsPatch(r *http.Request) bool {
+	return (r.Method == "PATCH")
+}
+
+func MethodNotAllowed(w http.ResponseWriter, allowed ...string) {
+	parts := []string{}
+	for _, method := range allowed {
+		parts = append(parts, method)
+	}
+	allowHeader := strings.Join(parts, ", ")
+	w.Header().Set("Allow", allowHeader)
+	w.WriteHeader(405)
 }
