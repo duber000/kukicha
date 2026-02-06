@@ -9,7 +9,6 @@ package must
 import (
 	"fmt"
 	"github.com/duber000/kukicha/stdlib/env"
-	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"strconv"
 )
 
@@ -84,7 +83,11 @@ func EnvBool(key string) bool {
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
-	return parseBool(key, value)
+	result, err := env.ParseBool(value)
+	if err != nil {
+		panic(fmt.Sprintf("must: environment variable %v must be a valid boolean, got '%v'", key, value))
+	}
+	return result
 }
 
 func EnvBoolOr(key string, defaultValue bool) bool {
@@ -92,7 +95,11 @@ func EnvBoolOr(key string, defaultValue bool) bool {
 	if value == "" {
 		return defaultValue
 	}
-	return parseBool(key, value)
+	result, err := env.ParseBool(value)
+	if err != nil {
+		panic(fmt.Sprintf("must: environment variable %v must be a valid boolean, got '%v'", key, value))
+	}
+	return result
 }
 
 func EnvList(key string, separator string) []string {
@@ -100,15 +107,7 @@ func EnvList(key string, separator string) []string {
 	if value == "" {
 		panic(fmt.Sprintf("must: environment variable %v is required but not set", key))
 	}
-	parts := kukistring.Split(value, separator)
-	result := make([]string, 0, len(parts))
-	for _, part := range parts {
-		trimmed := kukistring.TrimSpace(part)
-		if trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-	return result
+	return env.SplitAndTrim(value, separator)
 }
 
 func EnvListOr(key string, separator string, defaultValue []string) []string {
@@ -116,15 +115,7 @@ func EnvListOr(key string, separator string, defaultValue []string) []string {
 	if value == "" {
 		return defaultValue
 	}
-	parts := kukistring.Split(value, separator)
-	result := make([]string, 0, len(parts))
-	for _, part := range parts {
-		trimmed := kukistring.TrimSpace(part)
-		if trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-	return result
+	return env.SplitAndTrim(value, separator)
 }
 
 func True(condition bool, message string) {
@@ -149,15 +140,4 @@ func NotNil(value any, name string) {
 	if value == nil {
 		panic(fmt.Sprintf("%v cannot be nil", name))
 	}
-}
-
-func parseBool(key string, value string) bool {
-	lower := kukistring.ToLower(kukistring.TrimSpace(value))
-	if ((lower == "true") || (lower == "1")) || (lower == "yes") {
-		return true
-	}
-	if ((lower == "false") || (lower == "0")) || (lower == "no") {
-		return false
-	}
-	panic(fmt.Sprintf("must: environment variable %v must be a valid boolean, got '%v'", key, value))
 }

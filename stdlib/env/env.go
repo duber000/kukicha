@@ -166,7 +166,7 @@ func All() map[string]string {
 	return result
 }
 
-func parseBool(key string, value string) (bool, error) {
+func ParseBool(value string) (bool, error) {
 	lower := kukistring.ToLower(kukistring.TrimSpace(value))
 	if (((lower == "true") || (lower == "1")) || (lower == "yes")) || (lower == "on") {
 		return true, nil
@@ -174,10 +174,10 @@ func parseBool(key string, value string) (bool, error) {
 	if (((lower == "false") || (lower == "0")) || (lower == "no")) || (lower == "off") {
 		return false, nil
 	}
-	return false, errors.New(fmt.Sprintf("environment variable %v is not a valid boolean: %v", key, value))
+	return false, errors.New(fmt.Sprintf("not a valid boolean: %v", value))
 }
 
-func splitAndTrim(value string, separator string) []string {
+func SplitAndTrim(value string, separator string) []string {
 	parts := kukistring.Split(value, separator)
 	result := make([]string, 0, len(parts))
 	for _, part := range parts {
@@ -187,4 +187,16 @@ func splitAndTrim(value string, separator string) []string {
 		}
 	}
 	return result
+}
+
+func parseBool(key string, value string) (bool, error) {
+	result, err := ParseBool(value)
+	if err != nil {
+		return false, errors.New(fmt.Sprintf("environment variable %v is not a valid boolean: %v", key, value))
+	}
+	return result, nil
+}
+
+func splitAndTrim(value string, separator string) []string {
+	return SplitAndTrim(value, separator)
 }

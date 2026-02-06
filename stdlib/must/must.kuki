@@ -8,7 +8,6 @@
 petiole must
 
 import "stdlib/env"
-import "stdlib/string"
 import "strconv"
 import "fmt"
 
@@ -89,7 +88,10 @@ func EnvBool(key string) bool
     value := env.GetOr(key, "")
     if value == ""
         panic("must: environment variable {key} is required but not set")
-    return parseBool(key, value)
+    result, err := env.ParseBool(value)
+    if err != empty
+        panic("must: environment variable {key} must be a valid boolean, got '{value}'")
+    return result
 
 # EnvBoolOr returns an environment variable as a boolean, or default if not set
 # Panics only if the value is set but not a valid boolean
@@ -98,7 +100,10 @@ func EnvBoolOr(key string, defaultValue bool) bool
     value := env.GetOr(key, "")
     if value == ""
         return defaultValue
-    return parseBool(key, value)
+    result, err := env.ParseBool(value)
+    if err != empty
+        panic("must: environment variable {key} must be a valid boolean, got '{value}'")
+    return result
 
 # EnvList returns an environment variable as a list split by separator
 # Panics if the variable is not set
@@ -107,13 +112,7 @@ func EnvList(key string, separator string) list of string
     value := env.GetOr(key, "")
     if value == ""
         panic("must: environment variable {key} is required but not set")
-    parts := string.Split(value, separator)
-    result := make(list of string, 0, len(parts))
-    for _, part in parts
-        trimmed := string.TrimSpace(part)
-        if trimmed != ""
-            result = append(result, trimmed)
-    return result
+    return env.SplitAndTrim(value, separator)
 
 # EnvListOr returns an environment variable as a list, or default if not set
 # Example: hosts := must.EnvListOr("ALLOWED_HOSTS", ",", empty list of string)
@@ -121,13 +120,7 @@ func EnvListOr(key string, separator string, defaultValue list of string) list o
     value := env.GetOr(key, "")
     if value == ""
         return defaultValue
-    parts := string.Split(value, separator)
-    result := make(list of string, 0, len(parts))
-    for _, part in parts
-        trimmed := string.TrimSpace(part)
-        if trimmed != ""
-            result = append(result, trimmed)
-    return result
+    return env.SplitAndTrim(value, separator)
 
 # Assertion Helpers (for invariants)
 
@@ -156,12 +149,3 @@ func NotEmpty(s string, name string)
 func NotNil(value any, name string)
     if value == empty
         panic("{name} cannot be nil")
-
-# Internal helper function
-func parseBool(key string, value string) bool
-    lower := string.ToLower(string.TrimSpace(value))
-    if lower == "true" or lower == "1" or lower == "yes"
-        return true
-    if lower == "false" or lower == "0" or lower == "no"
-        return false
-    panic("must: environment variable {key} must be a valid boolean, got '{value}'")
