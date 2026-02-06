@@ -61,7 +61,19 @@ user |> json.MarshalWrite(w, _)
 res, err := data |> process()
 ```
 
-### 4. Error Handling (`onerr`)
+### 4. Dot Shorthand
+When piping into a method that belongs to the value itself, use the dot shorthand.
+
+```kukicha
+# Calling directly:
+message := todo.Display()
+
+# Same thing, using pipe:
+message := todo |> .Display()
+```
+This is particularly useful when chaining methods onto a value while maintaining a left-to-right flow.
+
+### 5. Error Handling (`onerr`)
 Inline error handling for functions that return `(T, error)`.
 
 ```kukicha

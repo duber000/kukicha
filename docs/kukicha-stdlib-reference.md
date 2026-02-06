@@ -453,6 +453,8 @@ function sendTodo(w http.ResponseWriter, r reference http.Request)
     w |> json.NewEncoder() |> .Encode(todo) onerr
         return
 
+> **💡 Note:** Examples above use the **dot shorthand** (e.g., `|> .Encode(todo)`). This makes it clear that the method belongs to the value returned by the previous step in the pipe.
+
 # Pretty-printed JSON with builder pattern
 function sendPretty(w http.ResponseWriter, r reference http.Request)
     data := MyData{...}

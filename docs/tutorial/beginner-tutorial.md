@@ -86,6 +86,7 @@ function main()
 3. Kukicha uses indentation (spaces) to understand where code blocks begin and end
 
 **Try it yourself:**
+
 ```bash
 kukicha run hello.kuki
 ```
@@ -103,7 +104,9 @@ Congratulations! You're now a programmer! 🎉
 
 As you write programs, you'll want to leave notes explaining what your code does. These notes are called **comments**.
 
-In Kukicha, any line starting with `#` is a comment - the computer ignores it completely:
+In Kukicha, any line starting with `#` is a comment - the computer ignores it completely.
+
+Let's update our `hello.kuki` file to include some comments:
 
 ```kukicha
 # This is a comment - the computer skips this line
@@ -112,6 +115,12 @@ In Kukicha, any line starting with `#` is a comment - the computer ignores it co
 function main()
     # Print a greeting to the screen
     print("Hello!")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run hello.kuki
 ```
 
 **When to use comments:**
@@ -129,7 +138,7 @@ A **variable** is like a labeled box where you store information. You give it a 
 
 ### Creating Variables
 
-Use the **walrus operator** `:=` to create a new variable:
+Create a file called `variables.kuki`:
 
 ```kukicha
 function main()
@@ -144,6 +153,12 @@ function main()
     print(age)
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run variables.kuki
+```
+
 **Output:**
 ```
 Alice
@@ -152,7 +167,7 @@ Alice
 
 ### Updating Variables
 
-Once a variable exists, use a single `=` to change its value:
+Once a variable exists, use a single `=` to change its value. Let's update `variables.kuki`:
 
 ```kukicha
 function main()
@@ -166,12 +181,18 @@ function main()
     print(score)  # Prints: 15
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run variables.kuki
+```
+
 **Key difference:**
 - `:=` creates a **new** variable
 - `=` updates an **existing** variable
 
 ### Top-level Variables
-Sometimes you want a variable to be accessible throughout your whole file, like a configuration setting. For this, you use the `variable` keyword at the top level (outside of any function):
+Sometimes you want a variable to be accessible throughout your whole file, like a configuration setting. For this, you use the `variable` keyword at the top level. Let's update `variables.kuki` again:
 
 ```kukicha
 variable APP_NAME string = "My Awesome App"
@@ -180,6 +201,12 @@ variable MAX_STRENGTH int = 100
 function main()
     print("Welcome to {APP_NAME}!")
     print("Max strength is {MAX_STRENGTH}")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run variables.kuki
 ```
 
 > **💡 Note on Abbreviations:** Because we use these so often, Kukicha also lets you use abbreviations: `var` instead of `variable`, and `func` instead of `function`. You'll see both in the documentation!
@@ -201,7 +228,7 @@ Every piece of data has a **type** - it tells the computer what kind of informat
 
 ### Type Inference
 
-Kukicha is smart - when you create a local variable, it figures out the type automatically:
+Kukicha is smart - when you create a local variable, it figures out the type automatically. Let's create a new file `functions.kuki` to see this:
 
 ```kukicha
 func main()
@@ -209,6 +236,12 @@ func main()
     price := 19.99         # Kukicha knows this is float64
     name := "Bob"          # Kukicha knows this is string
     isStudent := true      # Kukicha knows this is bool
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run functions.kuki
 ```
 
 ### Why Types Matter
@@ -226,6 +259,8 @@ This tells Kukicha we are starting a new function.
 
 ### Basic Function
 
+Update `functions.kuki`:
+
 ```kukicha
 # Define a function named Greet
 function Greet()
@@ -237,6 +272,12 @@ func main()
     Greet()  # Call it again!
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run functions.kuki
+```
+
 **Output:**
 ```
 Hello!
@@ -245,7 +286,7 @@ Hello!
 
 ### Functions with Parameters
 
-Functions can accept **parameters** (inputs):
+Functions can accept **parameters** (inputs). Update `functions.kuki`:
 
 ```kukicha
 # This function takes one parameter: a string named 'name'
@@ -257,11 +298,17 @@ func main()
     Greet("Bob")    # Prints: Hello, Bob!
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run functions.kuki
+```
+
 **Important:** For function parameters, you **must** specify the type. Here, `name string` means "name is a string".
 
 ### Functions that Return Values
 
-Functions can give back (return) a value:
+Functions can give back (return) a value. Update `functions.kuki`:
 
 ```kukicha
 # This function takes two ints and returns their sum (also an int)
@@ -273,6 +320,12 @@ func main()
     print(result)  # Prints: 8
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run functions.kuki
+```
+
 **Key points:**
 - The type after the parentheses (`int`) is the **return type**
 - `return` sends a value back to whoever called the function
@@ -281,7 +334,7 @@ func main()
 
 ### Functions with Default Parameters
 
-Sometimes you want a function that works with or without certain parameters. Kukicha lets you set **default values**:
+Sometimes you want a function that works with or without certain parameters. Kukicha lets you set **default values**. Update `functions.kuki`:
 
 ```kukicha
 # greeting has a default value of "Hello"
@@ -294,17 +347,24 @@ func main()
     Greet("Charlie", "Welcome")  # "Welcome, Charlie!"
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run functions.kuki
+```
+
 **Rules for defaults:**
 - Parameters with defaults must come **after** regular parameters
 - You can have multiple defaults: `func F(a int, b int = 5, c int = 10)`
 
-### Named Arguments for Clarity
-
-When calling functions, you can name your arguments to make the code clearer:
+When calling functions, you can name your arguments to make the code clearer. Update `functions.kuki` one last time:
 
 ```kukicha
 func CreateUser(name string, age int, active bool = true)
     # ...
+
+func Connect(host string, port int = 8080, timeout int = 30)
+    print("Connecting to {host}:{port} with {timeout}s timeout")
 
 func main()
     # Without named arguments - what does 'true' mean?
@@ -312,17 +372,15 @@ func main()
 
     # With named arguments - crystal clear!
     CreateUser("Alice", age: 25, active: true)
-```
 
-Named arguments are especially helpful when you skip some defaults:
-
-```kukicha
-func Connect(host string, port int = 8080, timeout int = 30)
-    print("Connecting to {host}:{port} with {timeout}s timeout")
-
-func main()
     # Just specify timeout, use default port
     Connect("localhost", timeout: 60)
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run functions.kuki
 ```
 
 ---
@@ -332,6 +390,8 @@ func main()
 A **string** is text - any sequence of characters. Strings are surrounded by double quotes.
 
 ### Creating Strings
+
+Create a file called `strings.kuki`:
 
 ```kukicha
 func main()
@@ -344,9 +404,15 @@ func main()
     print(sentence)
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run strings.kuki
+```
+
 ### Combining Strings
 
-Use the `+` operator to join (concatenate) strings:
+Use the `+` operator to join (concatenate) strings. Update `strings.kuki`:
 
 ```kukicha
 func main()
@@ -359,9 +425,15 @@ func main()
     print(fullName)  # Prints: Alice Johnson
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run strings.kuki
+```
+
 ### String Comparisons
 
-Compare strings using English words:
+Compare strings using English words. Update `strings.kuki`:
 
 ```kukicha
 func main()
@@ -371,6 +443,12 @@ func main()
         print("Access granted!")
     else
         print("Access denied!")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run strings.kuki
 ```
 
 **String comparison operators:**
@@ -385,6 +463,8 @@ func main()
 
 ### Basic Interpolation
 
+Update `strings.kuki`:
+
 ```kukicha
 func main()
     name := "Alice"
@@ -397,18 +477,36 @@ func main()
     # Prints: My name is Alice and I am 25 years old
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run strings.kuki
+```
+
 ### Why Interpolation is Awesome
 
 **Without interpolation (the old way):**
 ```kukicha
-message := "My name is " + name + " and I am " + age + " years old"
-# Messy! Hard to read!
+func main()
+    name := "Alice"
+    age := 25
+    message := "My name is " + name + " and I am " + age + " years old"
+    print(message)
 ```
 
 **With interpolation (the Kukicha way):**
 ```kukicha
-message := "My name is {name} and I am {age} years old"
-# Clean! Easy to read!
+func main()
+    name := "Alice"
+    age := 25
+    message := "My name is {name} and I am {age} years old"
+    print(message)
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run strings.kuki
 ```
 
 ### Interpolation in Functions
@@ -427,7 +525,7 @@ func main()
 
 ### Interpolation with Expressions
 
-You can put more than just variables in `{}`!
+You can put more than just variables in `{}`! Update `strings.kuki` one last time:
 
 ```kukicha
 func main()
@@ -439,6 +537,12 @@ func main()
 
     print(result)
     # Prints: The sum of 5 and 3 is 8
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run strings.kuki
 ```
 
 ---
@@ -461,7 +565,7 @@ Now you have access to the essential string functions covered in this tutorial!
 
 ### Converting Case
 
-Change text to lowercase or Title Case:
+Change text to lowercase or Title Case. Create a file called `string_petiole.kuki`:
 
 ```kukicha
 import "stdlib/string"
@@ -474,6 +578,12 @@ func main()
 
     print(lower)  # Prints: hello world
     print(title)  # Prints: Hello World
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run string_petiole.kuki
 ```
 
 **Real-world use case:** Converting user input to a consistent format before comparing it.
@@ -497,7 +607,7 @@ It's called a "pipe" because it acts like a pipe at a construction site - data g
 
 ### Trimming Whitespace
 
-Remove extra spaces from the beginning and end of strings. This is a perfect job for the pipe we just learned — trim the whitespace, then normalize the case, all in one line:
+Remove extra spaces from the beginning and end of strings. This is a perfect job for the pipe we just learned — trim the whitespace, then normalize the case, all in one line. Update `string_petiole.kuki`:
 
 ```kukicha
 import "stdlib/string"
@@ -512,9 +622,17 @@ func main()
     print("Clean: [{clean}]")   # Prints: Clean: [hello]
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run string_petiole.kuki
+```
+
 **Real-world use case:** Cleaning up user input from forms.
 
 ### Removing Prefixes and Suffixes
+
+Update `string_petiole.kuki`:
 
 ```kukicha
 import "stdlib/string"
@@ -532,9 +650,15 @@ func main()
     print(name)  # Prints: document
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run string_petiole.kuki
+```
+
 ### Splitting Strings
 
-Break a string into pieces:
+Break a string into pieces. Update `string_petiole.kuki`:
 
 ```kukicha
 import "stdlib/string"
@@ -550,11 +674,17 @@ func main()
     print(parts[2])  # Prints: blue
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run string_petiole.kuki
+```
+
 **Real-world use case:** Parsing CSV data or command-line arguments.
 
 ### Joining Strings
 
-Combine a list of strings into one string:
+Combine a list of strings into one string. Update `string_petiole.kuki`:
 
 ```kukicha
 import "stdlib/string"
@@ -571,9 +701,15 @@ func main()
     print(dashed)  # Prints: Hello-World-from-Kukicha
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run string_petiole.kuki
+```
+
 ### Searching Within Strings
 
-Check if a string contains another string:
+Check if a string contains another string. Update `string_petiole.kuki`:
 
 ```kukicha
 import "stdlib/string"
@@ -593,6 +729,12 @@ func main()
     filename := "data.txt"
     if string.HasSuffix(filename, ".txt")
         print("This is a text file!")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run string_petiole.kuki
 ```
 
 ### Membership Testing with Contains
@@ -620,7 +762,7 @@ You already saw `string.Contains` earlier — it's your go-to for this kind of c
 
 ### Replacing Text
 
-Replace parts of a string. Need to make multiple replacements? Pipe them, one step per line:
+Replace parts of a string. Need to make multiple replacements? Pipe them, one step per line. Update `string_petiole.kuki` one last time:
 
 ```kukicha
 import "stdlib/string"
@@ -637,11 +779,19 @@ func main()
     # Prints: I love kittens and puppies
 ```
 
+**Try it yourself:**
+
+```bash
+kukicha run string_petiole.kuki
+```
+
 ---
 
 ## Building Your First Real Program
 
 Let's combine everything we've learned to build a practical program: a **name formatter** that takes messy user input and formats it nicely.
+
+Create a file called `name_formatter.kuki`:
 
 ```kukicha
 import "stdlib/string"
@@ -690,6 +840,12 @@ func main()
 
     if string.Contains(name2, "Bob")
         print("Found Bob!")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run name_formatter.kuki
 ```
 
 **Output:**
@@ -744,18 +900,6 @@ Ready for the next step? Follow this learning path:
 - **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** - Complete language grammar reference
 - **[Stdlib Reference](../kukicha-stdlib-reference.md)** - Standard library documentation - additional functions to make your life easier!
 - **[Examples](../../examples/)** directory - More example programs
-
-### Practice Exercises
-
-Try building these programs to practice your skills:
-
-1. **Email Validator** - Check if an email contains "@" and ends with a domain
-   - Bonus: Try using `validate.Email()` from `stdlib/validate` (don't forget to import it first)!
-2. **Word Counter** - Count how many words are in a sentence (hint: use `string.Fields`)
-3. **URL Parser** - Extract the domain from a URL (hint: use `string.TrimPrefix` and `string.Split`)
-   - Bonus: Validate with `validate.URL()` first!
-4. **Password Checker** - Verify a password is at least 8 characters and contains both letters and numbers
-   - Bonus: Use `validate.MinLength()` and `validate.Alphanumeric()`!
 
 ---
 

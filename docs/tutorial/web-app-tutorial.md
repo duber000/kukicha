@@ -171,6 +171,16 @@ func sendTodo(response http.ResponseWriter, request reference http.Request)
     response |> json.NewEncoder() |> .Encode(todo) onerr return
 ```
 
+**💡 Tip:** When piping into a method that belongs to the value itself, use the dot shorthand:
+```kukicha
+# Calling directly:
+response.Header().Set(...)
+
+# Same thing, using pipe:
+response |> .Header() |> .Set(...)
+```
+This keeps the left-to-right data flow when chaining — and makes it clear the method belongs to the piped value, not an imported package.
+
 When someone visits this endpoint, they'll receive:
 ```json
 {"id":1,"title":"Learn Kukicha","completed":false}

@@ -419,6 +419,8 @@ func sendJSON on s reference Server(w http.ResponseWriter, status int, data any)
     w.WriteHeader(status)
     w |> json.NewEncoder() |> .Encode(data) onerr return
 
+**💡 Tip:** Note the use of `.Encode(data)` above. The dot shorthand keeps the focus on the data being piped — even when calling methods!
+
 func sendError on s reference Server(w http.ResponseWriter, status int, message string)
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(status)
