@@ -38,7 +38,7 @@
 #       |> llm.Ask("Hello!")
 #
 #   # Open WebUI or custom endpoints
-#   reply, err := llm.New("anthropic.claude-sonnet-4-20250514")
+#   reply, err := llm.New("anthropic.claude-opus-4-6")
 #       |> llm.BaseURL("https://chat.example.edu")
 #       |> llm.Path("/api/chat/completions")
 #       |> llm.APIKey("your-key")
@@ -70,18 +70,25 @@
 #
 # Anthropic Messages Examples:
 #   # Quick message
-#   reply, err := llm.AnthropicComplete("claude-sonnet-4-20250514", "What is Go?")
+#   reply, err := llm.AnthropicComplete("claude-opus-4-6", "What is Go?")
 #
 #   # Builder pattern
-#   reply, err := llm.NewMessages("claude-sonnet-4-20250514")
+#   reply, err := llm.NewMessages("claude-opus-4-6")
 #       |> llm.MSystem("You are a helpful assistant.")
 #       |> llm.MTemperature(0.7)
 #       |> llm.MMaxTokens(1024)
 #       |> llm.MStream(handleChunk)
 #       |> llm.MAsk("Explain pipes in Kukicha")
 #
+#   # Adaptive thinking (Claude 4.6+)
+#   reply, err := llm.NewMessages("claude-opus-4-6")
+#       |> llm.MAdaptiveThinking()
+#       |> llm.MEffort("high")
+#       |> llm.MMaxTokens(16000)
+#       |> llm.MAsk("Solve this complex problem...")
+#
 #   # Multi-turn conversation
-#   reply, err := llm.NewMessages("claude-sonnet-4-20250514")
+#   reply, err := llm.NewMessages("claude-opus-4-6")
 #       |> llm.MSystem("You are a tutor.")
 #       |> llm.MMaxTokens(1024)
 #       |> llm.MUser("What is a goroutine?")
@@ -90,7 +97,7 @@
 #       |> llm.MSend()
 #
 #   # Custom endpoint (e.g., Dartmouth Open WebUI Anthropic proxy)
-#   reply, err := llm.NewMessages("claude-sonnet-4-20250514")
+#   reply, err := llm.NewMessages("claude-opus-4-6")
 #       |> llm.MBaseURL("https://chat.dartmouth.edu")
 #       |> llm.MPath("/api/messages")
 #       |> llm.MAPIKey("your-key")
@@ -1371,16 +1378,29 @@ func rExecuteStream(c ResponseClient) (string, error)
 # ═══════════════════════════════════════════════════════════════════════
 
 # ContentBlock represents a content block in the Anthropic Messages API
-# Discriminated by Type: "text", "tool_use", "tool_result", "image"
+# Discriminated by Type: "text", "thinking", "tool_use", "tool_result", "image"
 type ContentBlock
     Type string json:"type"
     Text string json:"text,omitzero"
+    Thinking string json:"thinking,omitzero"
     ID string json:"id,omitzero"
     Name string json:"name,omitzero"
     Input any json:"input,omitzero"
     ToolUseID string json:"tool_use_id,omitzero"
     Content any json:"content,omitzero"
     Source any json:"source,omitzero"
+
+# ThinkingConfig represents the thinking parameter for Claude models
+# Use Type "adaptive" for Claude 4.6+ (recommended)
+# Use Type "enabled" with BudgetTokens for older models (deprecated on 4.6)
+type ThinkingConfig
+    Type string json:"type"
+    BudgetTokens int json:"budget_tokens,omitzero"
+
+# OutputConfig represents output configuration (Claude 4.6+)
+# Replaces the deprecated output_format parameter
+type OutputConfig
+    Format any json:"format,omitzero"
 
 # AnthropicMessage represents a message in the Anthropic format
 # Role is "user" or "assistant" (system is a top-level field, not a message)
@@ -1431,6 +1451,10 @@ type MessagesRequest
     Tools list of AnthropicTool json:"tools,omitzero"
     ToolChoice any json:"tool_choice,omitzero"
     Metadata any json:"metadata,omitzero"
+    Thinking any json:"thinking,omitzero"
+    Effort string json:"effort,omitzero"
+    OutputConfig any json:"output_config,omitzero"
+    InferenceGeo string json:"inference_geo,omitzero"
 
 # AnthropicStreamEvent represents a parsed SSE event from Anthropic streaming
 # The Anthropic API uses "event:" and "data:" SSE fields
@@ -1443,9 +1467,11 @@ type AnthropicStreamEvent
     Usage AnthropicUsage json:"usage,omitzero"
 
 # AnthropicDelta represents an incremental delta in Anthropic streaming
+# Delta types: "text_delta", "input_json_delta", "thinking_delta"
 type AnthropicDelta
     Type string json:"type,omitzero"
     Text string json:"text,omitzero"
+    Thinking string json:"thinking,omitzero"
     PartialJSON string json:"partial_json,omitzero"
     StopReason string json:"stop_reason,omitzero"
     StopSequence string json:"stop_sequence,omitzero"
@@ -1467,11 +1493,15 @@ type MessagesClient
     tools list of AnthropicTool
     toolChoice any
     metadata any
+    thinking any
+    effort string
+    outputConfig any
+    inferenceGeo string
     streamHandler func(string)
     eventHandler func(AnthropicStreamEvent)
 
 # NewMessages creates a new Anthropic Messages client builder
-# Example: client := llm.NewMessages("claude-sonnet-4-20250514")
+# Example: client := llm.NewMessages("claude-opus-4-6")
 func NewMessages(model string) MessagesClient
     c := MessagesClient{}
     c.model = model
@@ -1489,6 +1519,10 @@ func NewMessages(model string) MessagesClient
     c.tools = empty list of AnthropicTool
     c.toolChoice = empty
     c.metadata = empty
+    c.thinking = empty
+    c.effort = ""
+    c.outputConfig = empty
+    c.inferenceGeo = ""
     c.streamHandler = empty
     c.eventHandler = empty
     return c
@@ -1533,6 +1567,7 @@ func MUser(c MessagesClient, content string) MessagesClient
     return c
 
 # MAssistant adds an assistant message with text content (for multi-turn)
+# Note: Prefilling (assistant message as the last message) is not supported on Claude 4.6+
 # Example: client |> llm.MAssistant("I can help with that.")
 func MAssistant(c MessagesClient, content string) MessagesClient
     msg := AnthropicMessage{Role: "assistant", Content: content}
@@ -1590,6 +1625,44 @@ func MStopSequences(c MessagesClient, sequences list of string) MessagesClient
     c.stopSequences = sequences
     return c
 
+# MAdaptiveThinking enables adaptive thinking mode (recommended for Claude 4.6+)
+# Claude dynamically decides when and how much to think
+# Example: client |> llm.MAdaptiveThinking()
+func MAdaptiveThinking(c MessagesClient) MessagesClient
+    c.thinking = ThinkingConfig{Type: "adaptive"}
+    return c
+
+# MThinking enables extended thinking with a budget (deprecated on Claude 4.6+, use MAdaptiveThinking)
+# Example: client |> llm.MThinking(10000)
+func MThinking(c MessagesClient, budgetTokens int) MessagesClient
+    c.thinking = ThinkingConfig{Type: "enabled", BudgetTokens: budgetTokens}
+    return c
+
+# MEffort sets the thinking effort level (GA on Claude 4.6+)
+# Valid values: "low", "medium", "high", "max"
+# "max" is only available on Claude Opus 4.6
+# Best combined with MAdaptiveThinking for cost-quality tradeoffs
+# Example: client |> llm.MAdaptiveThinking() |> llm.MEffort("high")
+func MEffort(c MessagesClient, effort string) MessagesClient
+    c.effort = effort
+    return c
+
+# MOutputFormat sets structured output format via output_config (Claude 4.6+)
+# Replaces the deprecated output_format parameter
+# Pass a format object like {"type": "json_schema", "schema": {...}}
+# Example: client |> llm.MOutputFormat(map of string to any{"type": "json_schema", "schema": mySchema})
+func MOutputFormat(c MessagesClient, format any) MessagesClient
+    c.outputConfig = OutputConfig{Format: format}
+    return c
+
+# MInferenceGeo sets data residency control for where inference runs
+# Valid values: "global" (default), "us"
+# US-only inference is priced at 1.1x on Claude 4.6+
+# Example: client |> llm.MInferenceGeo("us")
+func MInferenceGeo(c MessagesClient, geo string) MessagesClient
+    c.inferenceGeo = geo
+    return c
+
 # MAddTool adds a tool the model can call (Anthropic format uses input_schema)
 # Example: client |> llm.MAddTool("get_weather", "Get current weather", schema)
 func MAddTool(c MessagesClient, name string, description string, inputSchema any) MessagesClient
@@ -1632,7 +1705,7 @@ func MStreamEvents(c MessagesClient, handler func(AnthropicStreamEvent)) Message
 # MAsk sends a user message and executes the Anthropic Messages request
 # Returns the text content and any error
 #
-# Example: reply, err := llm.NewMessages("claude-sonnet-4-20250514") |> llm.MAsk("Hello!")
+# Example: reply, err := llm.NewMessages("claude-opus-4-6") |> llm.MAsk("Hello!")
 func MAsk(c MessagesClient, prompt string) (string, error)
     c = MUser(c, prompt)
     return mExecute(c)
@@ -1641,7 +1714,7 @@ func MAsk(c MessagesClient, prompt string) (string, error)
 # Returns the text content and any error
 #
 # Example:
-#   reply, err := llm.NewMessages("claude-sonnet-4-20250514")
+#   reply, err := llm.NewMessages("claude-opus-4-6")
 #       |> llm.MSystem("Be concise.")
 #       |> llm.MUser("Hello")
 #       |> llm.MSend()
@@ -1652,7 +1725,7 @@ func MSend(c MessagesClient) (string, error)
 # Use this when you need access to tool calls, usage stats, or content blocks
 #
 # Example:
-#   resp, err := llm.NewMessages("claude-sonnet-4-20250514") |> llm.MAskRaw("Hello!")
+#   resp, err := llm.NewMessages("claude-opus-4-6") |> llm.MAskRaw("Hello!")
 #   print(resp.Usage.OutputTokens)
 func MAskRaw(c MessagesClient, prompt string) (AnthropicResponse, error)
     c = MUser(c, prompt)
@@ -1661,20 +1734,20 @@ func MAskRaw(c MessagesClient, prompt string) (AnthropicResponse, error)
 # MSendRaw executes the request and returns the full AnthropicResponse
 #
 # Example:
-#   resp, err := llm.NewMessages("claude-sonnet-4-20250514")
+#   resp, err := llm.NewMessages("claude-opus-4-6")
 #       |> llm.MUser("Hello")
 #       |> llm.MSendRaw()
 func MSendRaw(c MessagesClient) (AnthropicResponse, error)
     return mExecuteRaw(c)
 
 # AnthropicComplete is a quick one-shot completion using the Anthropic Messages API
-# Example: reply, err := llm.AnthropicComplete("claude-sonnet-4-20250514", "What is Go?")
+# Example: reply, err := llm.AnthropicComplete("claude-opus-4-6", "What is Go?")
 func AnthropicComplete(model string, prompt string) (string, error)
     c := NewMessages(model)
     return MAsk(c, prompt)
 
 # AnthropicCompleteWithSystem is a quick completion with a system prompt
-# Example: reply, err := llm.AnthropicCompleteWithSystem("claude-sonnet-4-20250514", "Be brief.", "What is Go?")
+# Example: reply, err := llm.AnthropicCompleteWithSystem("claude-opus-4-6", "Be brief.", "What is Go?")
 func AnthropicCompleteWithSystem(model string, system string, prompt string) (string, error)
     c := NewMessages(model)
     c = MSystem(c, system)
@@ -1688,6 +1761,17 @@ func GetAnthropicText(resp AnthropicResponse) string
     for _, block in resp.Content
         if block.Type == "text"
             result = result + block.Text
+    return result
+
+# GetThinking extracts the thinking content from an AnthropicResponse
+# Returns the concatenated text of all "thinking" content blocks
+# Requires adaptive thinking or extended thinking to be enabled
+# Example: thought := llm.GetThinking(resp)
+func GetThinking(resp AnthropicResponse) string
+    result := ""
+    for _, block in resp.Content
+        if block.Type == "thinking"
+            result = result + block.Thinking
     return result
 
 # GetToolUses extracts tool use blocks from an AnthropicResponse
@@ -1746,6 +1830,14 @@ func mBuildRequest(c MessagesClient) MessagesRequest
         req.ToolChoice = c.toolChoice
     if c.metadata != empty
         req.Metadata = c.metadata
+    if c.thinking != empty
+        req.Thinking = c.thinking
+    if c.effort != ""
+        req.Effort = c.effort
+    if c.outputConfig != empty
+        req.OutputConfig = c.outputConfig
+    if c.inferenceGeo != ""
+        req.InferenceGeo = c.inferenceGeo
     if c.streamHandler != empty or c.eventHandler != empty
         req.Stream = true
 
