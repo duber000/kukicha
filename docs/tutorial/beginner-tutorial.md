@@ -661,6 +661,7 @@ func main()
     # It also skips empty parts - useful for trailing commas
     messy := "one, two, , three,  "
     cleaned := env.SplitAndTrim(messy, ",")
+    print(cleaned)
     # Result: ["one", "two", "three"] - empty part removed!
 ```
 
