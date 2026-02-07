@@ -135,7 +135,7 @@ internal/
 stdlib/               # Standard library (.kuki source files)
   slice/              # Filter, Map, GroupBy, etc.
   json/               # jsonv2 wrapper
-  fetch/              # HTTP client
+  fetch/              # HTTP client (Auth, Sessions)
   files/              # File I/O
   shell/              # Command execution
   ...
@@ -166,7 +166,7 @@ Typical workflow for new syntax:
 |---------|---------|
 | `stdlib/slice` | Filter, Map, GroupBy, GetOr, FirstOr, Find, Pop |
 | `stdlib/json` | jsonv2 wrapper (Marshal, Unmarshal, streaming) |
-| `stdlib/fetch` | HTTP client with builder pattern |
+| `stdlib/fetch` | HTTP client (Builder, Auth, Forms, Sessions) |
 | `stdlib/files` | Read, Write, Watch file operations |
 | `stdlib/shell` | Safe command execution |
 | `stdlib/cli` | CLI argument parsing |

@@ -8,11 +8,14 @@ package fetch
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/duber000/kukicha/stdlib/json"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"time"
 )
 
@@ -59,11 +62,16 @@ func Do(req Request) (*http.Response, error) {
 	client.Timeout = time.Duration(req.timeoutNs)
 	var bodyData interface{}
 	if req.body != nil {
-		jsonBytes, marshalErr := json.Marshal(req.body)
-		if marshalErr != nil {
-			return nil, marshalErr
+		bodyStr, isString := req.body.(string)
+		if isString {
+			bodyData = []byte(bodyStr)
+		} else {
+			jsonBytes, marshalErr := json.Marshal(req.body)
+			if marshalErr != nil {
+				return nil, marshalErr
+			}
+			bodyData = jsonBytes
 		}
-		bodyData = jsonBytes
 	}
 	httpReq, reqErr := createHTTPRequest(req.method, req.url, bodyData)
 	if reqErr != nil {
@@ -140,4 +148,103 @@ func Json(resp *http.Response) (any, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+func BearerAuth(req Request, token string) Request {
+	return Header(req, "Authorization", fmt.Sprintf("Bearer %v", token))
+}
+
+func BasicAuth(req Request, username string, password string) Request {
+	credentials := fmt.Sprintf("%v:%v", username, password)
+	encoded := base64.StdEncoding.EncodeToString([]byte(credentials))
+	return Header(req, "Authorization", fmt.Sprintf("Basic %v", encoded))
+}
+
+func FormData(req Request, data map[string]string) Request {
+	values := url.Values{}
+	for key, value := range data {
+		values.Set(key, value)
+	}
+	req.body = values.Encode()
+	req = Header(req, "Content-Type", "application/x-www-form-urlencoded")
+	return req
+}
+
+type Session struct {
+	client    http.Client
+	headers   map[string]string
+	timeoutNs int64
+}
+
+func NewSession() Session {
+	jar, _ := cookiejar.New(nil)
+	client := http.Client{Jar: jar}
+	s := Session{}
+	s.client = client
+	s.headers = make(map[string]string)
+	s.timeoutNs = 30000000000
+	return s
+}
+
+func SessionHeader(s Session, name string, value string) Session {
+	s.headers[name] = value
+	return s
+}
+
+func SessionTimeout(s Session, durationNs int64) Session {
+	s.timeoutNs = durationNs
+	return s
+}
+
+func SessionDo(s Session, req Request) (*http.Response, error) {
+	for name, value := range s.headers {
+		_, exists := req.headers[name]
+		if !exists {
+			req.headers[name] = value
+		}
+	}
+	if req.timeoutNs == 30000000000 {
+		req.timeoutNs = s.timeoutNs
+	}
+	s.client.Timeout = time.Duration(req.timeoutNs)
+	var bodyData interface{}
+	if req.body != nil {
+		bodyStr, isString := req.body.(string)
+		if isString {
+			bodyData = []byte(bodyStr)
+		} else {
+			jsonBytes, marshalErr := json.Marshal(req.body)
+			if marshalErr != nil {
+				return nil, marshalErr
+			}
+			bodyData = jsonBytes
+		}
+	}
+	httpReq, reqErr := createHTTPRequest(req.method, req.url, bodyData)
+	if reqErr != nil {
+		return nil, reqErr
+	}
+	for name, value := range req.headers {
+		httpReq.Header.Set(name, value)
+	}
+	if req.body != nil {
+		contentType := httpReq.Header.Get("Content-Type")
+		if contentType == "" {
+			httpReq.Header.Set("Content-Type", "application/json")
+		}
+	}
+	resp, doErr := s.client.Do(httpReq)
+	return resp, doErr
+}
+
+func SessionGet(s Session, url string) (*http.Response, error) {
+	req := New(url)
+	return SessionDo(s, req)
+}
+
+func SessionPost(s Session, data any, url string) (*http.Response, error) {
+	req := New(url)
+	req = Method(req, "POST")
+	req.body = data
+	return SessionDo(s, req)
 }

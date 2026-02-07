@@ -165,3 +165,98 @@ func TestRequestBuilder(t reference testing.T)
         t.Errorf("Expected status 200, got {resp.StatusCode}")
 
     resp.Body.Close()
+
+# TestAuthHelpers verifies Bearer and Basic auth helpers
+func TestAuthHelpers(t reference testing.T)
+    # Test Bearer Auth
+    serverBearer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+        auth := r.Header.Get("Authorization")
+        if auth != "Bearer my-token"
+            t.Errorf("Expected Bearer token, got '{auth}'")
+        w.WriteHeader(http.StatusOK)
+    ))
+    defer serverBearer.Close()
+
+    reqBearer := fetch.New(serverBearer.URL) |> fetch.BearerAuth("my-token")
+    respBearer, errBearer := fetch.Do(reqBearer)
+    if errBearer != empty
+        t.Fatalf("BearerAuth request failed: {errBearer}")
+    respBearer.Body.Close()
+
+    # Test Basic Auth
+    serverBasic := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+        auth := r.Header.Get("Authorization")
+        # "user:pass" base64 encoded is "dXNlcjpwYXNz"
+        expected := "Basic dXNlcjpwYXNz"
+        if auth != expected
+            t.Errorf("Expected Basic auth '{expected}', got '{auth}'")
+        w.WriteHeader(http.StatusOK)
+    ))
+    defer serverBasic.Close()
+
+    reqBasic := fetch.New(serverBasic.URL) |> fetch.BasicAuth("user", "pass")
+    respBasic, errBasic := fetch.Do(reqBasic)
+    if errBasic != empty
+        t.Fatalf("BasicAuth request failed: {errBasic}")
+    respBasic.Body.Close()
+
+# TestFormData verifies form data submission
+func TestFormData(t reference testing.T)
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+        contentType := r.Header.Get("Content-Type")
+        if contentType != "application/x-www-form-urlencoded"
+            t.Errorf("Expected form content type, got '{contentType}'")
+
+        r.ParseForm()
+        val := r.Form.Get("key")
+        if val != "value"
+            t.Errorf("Expected form value 'value', got '{val}'")
+
+        w.WriteHeader(http.StatusOK)
+    ))
+    defer server.Close()
+
+    data := map of string to string{"key": "value"}
+    req := fetch.New(server.URL) |> fetch.FormData(data) |> fetch.Method("POST")
+    resp, err := fetch.Do(req)
+    if err != empty
+        t.Fatalf("FormData request failed: {err}")
+    resp.Body.Close()
+
+# TestSession verifies session cookie persistence
+func TestSession(t reference testing.T)
+    # Server that sets a cookie on first request and checks it on second
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+        cookie, err := r.Cookie("session_id")
+        if err == empty
+            # Cookie present
+            if cookie.Value != "12345"
+                t.Errorf("Expected cookie value 12345, got {cookie.Value}")
+            w.WriteHeader(http.StatusOK)
+            w.Write("logged in" as list of byte)
+        else
+            # No cookie, set it
+            http.SetCookie(w, reference of http.Cookie{Name: "session_id", Value: "12345"})
+            w.WriteHeader(http.StatusOK)
+            w.Write("cookie set" as list of byte)
+    ))
+    defer server.Close()
+
+    session := fetch.NewSession()
+
+    # First request: gets cookie
+    resp1, err1 := fetch.SessionGet(session, server.URL)
+    if err1 != empty
+        t.Fatalf("First session request failed: {err1}")
+    resp1.Body.Close()
+
+    # Second request: sends cookie
+    resp2, err2 := fetch.SessionGet(session, server.URL)
+    if err2 != empty
+        t.Fatalf("Second session request failed: {err2}")
+
+    text, errText := fetch.Text(resp2)
+    if errText != empty
+        t.Fatalf("Text read failed: {errText}")
+    if text != "logged in"
+        t.Errorf("Expected 'logged in', got '{text}'")

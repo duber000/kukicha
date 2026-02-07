@@ -348,6 +348,32 @@ resp, err := fetch.New("https://api.example.com/data")
     |> fetch.Timeout(60 * time.Second)
     |> fetch.Method("POST")
     |> fetch.Do()
+
+# Authentication Helpers
+resp, err := fetch.New("https://api.example.com/secure")
+    |> fetch.BearerAuth("my-token")
+    |> fetch.Do()
+
+resp, err := fetch.New("https://api.example.com/admin")
+    |> fetch.BasicAuth("username", "password")
+    |> fetch.Do()
+
+# Form Data (automatically sets Content-Type)
+formData := map of string to string{"key": "value"}
+resp, err := fetch.New("https://api.example.com/submit")
+    |> fetch.FormData(formData)
+    |> fetch.Method("POST")
+    |> fetch.Do()
+
+# Sessions (Maintains Cookies)
+session := fetch.NewSession()
+    |> fetch.SessionHeader("User-Agent", "KukichaBot")
+
+# First request sets cookies
+fetch.SessionPost(session, loginData, "https://api.example.com/login")
+
+# Subsequent requests send cookies
+fetch.SessionGet(session, "https://api.example.com/dashboard")
 ```
 
 **response parsing:**
@@ -424,10 +450,10 @@ instanceId := fetch.Get("http://169.254.169.254/latest/meta-data/instance-id")
 
 **Design Philosophy:**
 
-- Use `fetch.Bytes()` + `json.Unmarshal()` for simple cases
+- Use `fetch.Bytes()` + `json.Unmarshal()` for typed parsing
+- Use `fetch.Json()` for quick untyped parsing (returns map of string to any)
 - Use streaming with `json.NewDecoder()` for large responses
 - `fetch.Post()` auto-serializes request body using stdlib/json
-- No `fetch.Json()` helper - Go's type system requires knowing the target type at compile time, so we provide `Bytes()` for use with `stdlib/json` instead
 
 ### JSON Package 
 

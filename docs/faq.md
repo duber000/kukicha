@@ -2,17 +2,68 @@
 
 1. Why use Kukicha instead of just using Python?
 
-It’s a common question! While Kukicha looks like Python, the underlying "soul" is entirely different. Python is an interpreted, dynamic language, whereas Kukicha is a statically-typed, compiled language that transpiles directly to Go.
+Great question! While Kukicha was designed to feel familiar to Python developers, the underlying "soul" is entirely different. Python is an interpreted, dynamic language, whereas Kukicha is a statically-typed, compiled language that transpiles directly to Go.
 
-    Deployment: Python requires an interpreter and virtual environments. Kukicha compiles to a single, static binary with no dependencies.
+### What Feels Familiar
 
-    Performance: Kukicha is typically 10x to 100x faster than Python because it runs at machine speed.
+If you know Python, you already know a lot of Kukicha:
 
-    Concurrency: Kukicha uses Go’s Goroutines, allowing you to handle millions of simultaneous tasks far more efficiently than Python’s GIL-limited threads.
+| Python | Kukicha | Notes |
+|--------|---------|-------|
+| `and`, `or`, `not` | `and`, `or`, `not` | Identical! |
+| `if x == y:` | `if x equals y` | English keyword |
+| `for x in items:` | `for x in items` | Same iteration style |
+| `# comment` | `# comment` | Identical! |
+| Indentation (4 spaces) | Indentation (4 spaces) | Identical! |
+| f-strings `f"{name}"` | `"{name}"` | No prefix needed |
+| `def greet(name):` | `func Greet(name string)` | Types required |
+| Default params | `func F(x int = 10)` | Same concept |
+| `**kwargs` / named args | `F(x: 10)` | Clean syntax |
 
-    Type Safety: Kukicha catches errors at compile-time that Python only finds at runtime.
+### Key Differences to Learn
 
-2. Doesn’t XGo (formerly Go+) already do this?
+Python developers should be aware of these key distinctions:
+
+1. **Static Types**: Function parameters require explicit types. Local variables are inferred.
+   ```kukicha
+   func Greet(name string)      # 'name' must specify type
+       message := "Hi"          # 'message' type is inferred
+   ```
+
+2. **No Implicit Returns**: Use `return` explicitly.
+
+3. **Error Handling**: Python uses exceptions; Kukicha uses `onerr` for explicit handling.
+   ```kukicha
+   data := files.Read("config.json") onerr panic "failed"
+   ```
+
+4. **The Pipe Operator**: Chain operations in a data-flow style (think `|` in shell).
+   ```kukicha
+   result := text |> string.TrimSpace() |> string.ToLower()
+   ```
+
+### Why Make the Switch?
+
+Python is improving rapidly — Python 3.13+ has experimental free-threading (no GIL), and tools like **uv** make dependency management much smoother. So why Kukicha?
+
+| Consideration | Python (2024+) | Kukicha |
+|---------------|----------------|---------|
+| **Deployment** | Much better with `uv` + containers | Single static binary, truly zero dependencies |
+| **Concurrency** | Free-threading is experimental; async still has limits | Goroutines are production-proven, trivial to use |
+| **Type Safety** | Optional (mypy, pyright) — runtime errors still possible | Mandatory compile-time checking |
+| **Performance** | Slow for CPU-bound tasks even without GIL | 10-100x faster, compiles to native code |
+| **Ecosystem** | Massive, unparalleled for ML/data science | Full access to Go ecosystem + any Go library |
+
+**Bottom line**: If you're happy with Python and your workloads are I/O-bound or ML-focused, stay with Python! Kukicha shines for **systems programming, DevOps, CLI tools, and high-performance services** where you want Go's speed and deployment story with a friendlier syntax.
+
+### Transition Tips
+
+1. **Start with the [Beginner Tutorial](tutorial/beginner-tutorial.md)** — it's written for Python developers.
+2. **Use `kukicha run`** to iterate quickly, just like running `python script.py`.
+3. **Embrace the pipe operator** — it replaces many for-loops and makes data transformations readable.
+4. **Don't fight the types** — they catch bugs before runtime.
+
+2. Doesn't XGo (formerly Go+) already do this?
 
 XGo is an excellent project, but it serves a different niche. 
 
@@ -20,9 +71,9 @@ XGo is an excellent project, but it serves a different niche.
 
     The Pipe Operator: Kukicha is built around a "Data-Flow" philosophy. Our Smart Pipe (|>) logic allows you to chain complex operations with placeholders (_), making it significantly more readable for DevOps and API logic.
 
-    Error Handling: Kukicha’s onerr keyword is a unique middle ground—it removes the "if err != nil" boilerplate without hiding errors behind magic exceptions.
+    Error Handling: Kukicha's onerr keyword is a unique middle ground—it removes the "if err != nil" boilerplate without hiding errors behind magic exceptions.
 
-3. How do pipes handle Go’s "Writer-First" or "Context-First" APIs?
+3. How do pipes handle Go's "Writer-First" or "Context-First" APIs?
 
 Standard Go often places a `context.Context` or an `io.Writer` as the first argument. Kukicha handles this with **Smart Pipe Logic**:
 

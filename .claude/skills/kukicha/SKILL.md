@@ -298,7 +298,7 @@ Located in `stdlib/`:
 | `slice` | Slice operations with Go 1.25+ generics (First, Last, Reverse, Unique, **GroupBy**) |
 | `string` | String utilities (ToUpper, Split, Contains, Join) |
 | `json` | Pipe-friendly jsonv2 wrapper (Marshal, Unmarshal, Encoder/Decoder) |
-| `fetch` | HTTP client with builder pattern (Get, Post, CheckStatus, Text, Bytes) |
+| `fetch` | HTTP client (Builder, Auth, Forms, Sessions) |
 | `files` | File operations (Read, Write, List, Watch) |
 | `parse` | Data format parsing (CSV, YAML) |
 | `concurrent` | Concurrency helpers (Parallel, ParallelWithLimit, Go) |

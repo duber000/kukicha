@@ -14,6 +14,9 @@
 petiole fetch
 
 import "net/http"
+import "net/http/cookiejar"
+import "net/url"
+import "encoding/base64"
 import "time"
 import "io"
 import "bytes"
@@ -77,11 +80,16 @@ func Do(req Request) (reference http.Response, error)
     # Use a conditional approach to handle nil vs non-nil io.Reader
     bodyData := empty
     if req.body != empty
-        # Marshal body to JSON (stdlib/json uses jsonv2 for performance)
-        jsonBytes, marshalErr := json.Marshal(req.body)
-        if marshalErr != empty
-            return empty, marshalErr
-        bodyData = jsonBytes
+        # Check if body is already a string (form data) or needs JSON marshaling
+        bodyStr, isString := req.body.(string)
+        if isString
+            bodyData = bodyStr as list of byte
+        else
+            # Marshal body to JSON (stdlib/json uses jsonv2 for performance)
+            jsonBytes, marshalErr := json.Marshal(req.body)
+            if marshalErr != empty
+                return empty, marshalErr
+            bodyData = jsonBytes
 
     httpReq, reqErr := createHTTPRequest(req.method, req.url, bodyData)
     if reqErr != empty
@@ -167,3 +175,127 @@ func Json(resp reference http.Response) (any, error)
     if err != empty
         return empty, err
     return data, empty
+
+# ============================================================================
+# P1: Auth Helpers
+# ============================================================================
+
+# BearerAuth adds Bearer token authentication to the request
+# Example: req |> fetch.BearerAuth(token)
+func BearerAuth(req Request, token string) Request
+    return Header(req, "Authorization", "Bearer {token}")
+
+# BasicAuth adds HTTP Basic authentication to the request
+# Example: req |> fetch.BasicAuth("user", "pass")
+func BasicAuth(req Request, username string, password string) Request
+    credentials := "{username}:{password}"
+    encoded := base64.StdEncoding.EncodeToString(credentials as list of byte)
+    return Header(req, "Authorization", "Basic {encoded}")
+
+# ============================================================================
+# P2: Form Data Support
+# ============================================================================
+
+# FormData sets URL-encoded form data as the request body
+# Automatically sets Content-Type to application/x-www-form-urlencoded
+# Example: req |> fetch.FormData(map of string to string{"grant_type": "client_credentials"})
+func FormData(req Request, data map of string to string) Request
+    values := url.Values{}
+    for key, value in data
+        values.Set(key, value)
+    req.body = values.Encode()
+    req = Header(req, "Content-Type", "application/x-www-form-urlencoded")
+    return req
+
+# ============================================================================
+# P3: Sessions with Cookie Jar
+# ============================================================================
+
+# Session represents an HTTP client with persistent cookies and default headers
+type Session
+    client http.Client
+    headers map of string to string
+    timeoutNs int64
+
+# NewSession creates a new session with a cookie jar for maintaining state
+# Example: session := fetch.NewSession()
+func NewSession() Session
+    jar, _ := cookiejar.New(empty)
+    client := http.Client{Jar: jar}
+    s := Session{}
+    s.client = client
+    s.headers = make(map of string to string)
+    s.timeoutNs = 30000000000
+    return s
+
+# SessionHeader adds a default header to all requests made with this session
+# Example: session |> fetch.SessionHeader("Authorization", "Bearer token")
+func SessionHeader(s Session, name string, value string) Session
+    s.headers[name] = value
+    return s
+
+# SessionTimeout sets the default timeout for all requests made with this session
+# Example: session |> fetch.SessionTimeout(60 * time.Second)
+func SessionTimeout(s Session, durationNs int64) Session
+    s.timeoutNs = durationNs
+    return s
+
+# SessionDo executes a request using the session's client and default headers
+# Maintains cookies across requests automatically
+# Example: resp := fetch.SessionDo(session, req)
+func SessionDo(s Session, req Request) (reference http.Response, error)
+    # Apply session headers to request (request headers override session headers)
+    for name, value in s.headers
+        _, exists := req.headers[name]
+        if not exists
+            req.headers[name] = value
+
+    # Use session timeout if request doesn't have custom timeout
+    if req.timeoutNs == 30000000000
+        req.timeoutNs = s.timeoutNs
+
+    # Set client timeout
+    s.client.Timeout = time.Duration(req.timeoutNs)
+
+    # Create HTTP request
+    bodyData := empty
+    if req.body != empty
+        # Check if body is already a string (form data) or needs JSON marshaling
+        bodyStr, isString := req.body.(string)
+        if isString
+            bodyData = bodyStr as list of byte
+        else
+            jsonBytes, marshalErr := json.Marshal(req.body)
+            if marshalErr != empty
+                return empty, marshalErr
+            bodyData = jsonBytes
+
+    httpReq, reqErr := createHTTPRequest(req.method, req.url, bodyData)
+    if reqErr != empty
+        return empty, reqErr
+
+    for name, value in req.headers
+        httpReq.Header.Set(name, value)
+
+    # Set Content-Type if body is provided and not already set
+    if req.body != empty
+        contentType := httpReq.Header.Get("Content-Type")
+        if contentType == ""
+            httpReq.Header.Set("Content-Type", "application/json")
+
+    resp, doErr := s.client.Do(httpReq)
+    return resp, doErr
+
+# SessionGet performs an HTTP GET request using the session
+# Example: resp := fetch.SessionGet(session, "https://api.example.com/data")
+func SessionGet(s Session, url string) (reference http.Response, error)
+    req := New(url)
+    return SessionDo(s, req)
+
+# SessionPost performs an HTTP POST request using the session
+# Example: resp := fetch.SessionPost(session, data, "https://api.example.com/users")
+func SessionPost(s Session, data any, url string) (reference http.Response, error)
+    req := New(url)
+    req = Method(req, "POST")
+    req.body = data
+    return SessionDo(s, req)

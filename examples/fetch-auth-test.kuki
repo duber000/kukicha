@@ -1,0 +1,139 @@
+import "fmt"
+import "time"
+import "net/http"
+import "stdlib/fetch"
+
+# Start a local server to test against
+func startServer()
+    http.HandleFunc("/bearer", func(w http.ResponseWriter, r reference http.Request)
+        auth := r.Header.Get("Authorization")
+        if auth == "Bearer my-secret-token"
+            w.Write("OK" as list of byte)
+        else
+            w.WriteHeader(401)
+            w.Write("Unauthorized" as list of byte)
+    )
+
+    http.HandleFunc("/basic", func(w http.ResponseWriter, r reference http.Request)
+        auth := r.Header.Get("Authorization")
+        # "user:pass" base64 encoded is "dXNlcjpwYXNz"
+        if auth == "Basic dXNlcjpwYXNz"
+            w.Write("OK" as list of byte)
+        else
+            w.WriteHeader(401)
+            w.Write("Unauthorized" as list of byte)
+    )
+
+    http.HandleFunc("/form", func(w http.ResponseWriter, r reference http.Request)
+        if r.Method != "POST"
+            w.WriteHeader(405)
+            return
+
+        ct := r.Header.Get("Content-Type")
+        if ct != "application/x-www-form-urlencoded"
+            w.WriteHeader(400)
+            w.Write("Bad Content-Type" as list of byte)
+            return
+
+        r.ParseForm()
+        val := r.Form.Get("hello")
+        if val == "world"
+            w.Write("OK" as list of byte)
+        else
+            w.WriteHeader(400)
+            w.Write("Bad Form Value" as list of byte)
+    )
+
+    http.HandleFunc("/session", func(w http.ResponseWriter, r reference http.Request)
+        cookie, err := r.Cookie("mysession")
+        if err != empty
+            # Cookie is not present, set it
+            http.SetCookie(w, reference of http.Cookie{Name: "mysession", Value: "active"})
+            w.Write("Cookie Set" as list of byte)
+        else
+            # Cookie is present
+            if cookie.Value == "active"
+                w.Write("Cookie Present" as list of byte)
+            else
+                w.WriteHeader(400)
+                w.Write("Bad Cookie" as list of byte)
+    )
+
+    fmt.Println("Server listening on :8099")
+    http.ListenAndServe(":8099", empty)
+
+func main()
+    # Start server in background
+    go startServer()
+
+    # Wait for server to start
+    time.Sleep(200 * time.Millisecond)
+
+    baseUrl := "http://localhost:8099"
+
+    # 1. Test Bearer Auth
+    fmt.Println("\n--- Testing Bearer Auth ---")
+    req1 := fetch.New("{baseUrl}/bearer") |> fetch.BearerAuth("my-secret-token")
+    resp1, err1 := fetch.Do(req1)
+    if err1 != empty
+        panic("Bearer request failed: {err1}")
+    text1, errText1 := fetch.Text(resp1)
+    if errText1 != empty
+        panic("Text read failed: {errText1}")
+    fmt.Println("Response: {text1}")
+    if text1 != "OK"
+        panic("Bearer auth failed")
+
+    # 2. Test Basic Auth
+    fmt.Println("\n--- Testing Basic Auth ---")
+    req2 := fetch.New("{baseUrl}/basic") |> fetch.BasicAuth("user", "pass")
+    resp2, err2 := fetch.Do(req2)
+    if err2 != empty
+        panic("Basic request failed: {err2}")
+    text2, errText2 := fetch.Text(resp2)
+    if errText2 != empty
+        panic("Text read failed: {errText2}")
+    fmt.Println("Response: {text2}")
+    if text2 != "OK"
+        panic("Basic auth failed")
+
+    # 3. Test Form Data
+    fmt.Println("\n--- Testing Form Data ---")
+    data := map of string to string{"hello": "world"}
+    req3 := fetch.New("{baseUrl}/form") |> fetch.FormData(data) |> fetch.Method("POST")
+    resp3, err3 := fetch.Do(req3)
+    if err3 != empty
+        panic("Form request failed: {err3}")
+    text3, errText3 := fetch.Text(resp3)
+    if errText3 != empty
+        panic("Text read failed: {errText3}")
+    fmt.Println("Response: {text3}")
+    if text3 != "OK"
+        panic("Form data failed")
+
+    # 4. Test Session
+    fmt.Println("\n--- Testing Session ---")
+    session := fetch.NewSession()
+
+    # First request: should set cookie
+    resp4a, err4a := fetch.SessionGet(session, "{baseUrl}/session")
+    if err4a != empty
+        panic("Session request 1 failed: {err4a}")
+    text4a, errText4a := fetch.Text(resp4a)
+    if errText4a != empty
+        panic("Text read failed: {errText4a}")
+    fmt.Println("Request 1: {text4a}")
+
+    # Second request: should send cookie
+    resp4b, err4b := fetch.SessionGet(session, "{baseUrl}/session")
+    if err4b != empty
+        panic("Session request 2 failed: {err4b}")
+    text4b, errText4b := fetch.Text(resp4b)
+    if errText4b != empty
+        panic("Text read failed: {errText4b}")
+    fmt.Println("Request 2: {text4b}")
+
+    if text4b != "Cookie Present"
+        panic("Session cookie persistence failed")
+
+    fmt.Println("\nAll tests passed successfully!")
