@@ -1839,6 +1839,10 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 
 	if call, ok := expr.Right.(*ast.CallExpr); ok {
 		funcName = g.exprToString(call.Function)
+		// Check if this is a print() builtin - transpile to fmt.Println()
+		if id, ok := call.Function.(*ast.Identifier); ok && id.Value == "print" {
+			funcName = "fmt.Println"
+		}
 		arguments = call.Arguments
 		isVariadic = call.Variadic
 	} else if method, ok := expr.Right.(*ast.MethodCallExpr); ok {

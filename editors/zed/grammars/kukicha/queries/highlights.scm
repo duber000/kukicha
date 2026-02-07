@@ -88,6 +88,12 @@
 (close_expression) @function.builtin
 (receive_expression) @function.builtin
 
+; print builtin (parsed as a regular call, not a dedicated grammar node)
+(call_expression
+  function: (primary_expression
+    (identifier) @function.builtin
+    (#eq? @function.builtin "print")))
+
 ; Type assertions and casts
 (type_assertion) @keyword.operator
 (type_cast) @keyword.operator
