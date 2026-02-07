@@ -267,7 +267,8 @@ func FindTodo(todos list of Todo, id int) (Todo, bool)
     for todo in todos
         if todo.id equals id
             return todo, true
-    return empty, false
+    # empty needs the type here so Kukicha knows to return a blank Todo
+    return empty Todo, false
 ```
 
 Notice the **two return values**: the todo (if found) and a `bool` indicating success. This is a common pattern in Kukicha for operations that might fail.
