@@ -632,8 +632,8 @@ You've completed the full Kukicha tutorial series!
 
 | Tutorial | What You Learned |
 |----------|-----------------|
-| ✅ **1. Beginner** | Variables, functions, strings, string petiole, named arguments |
-| ✅ **2. Console Todo** | Types, methods (`on`), lists, `onerr`, file I/O |
+| ✅ **1. Beginner** | Variables, functions, strings, string petiole |
+| ✅ **2. Console Todo** | Types, methods (`on`), default parameters, named arguments, lists, `onerr`, file I/O |
 | ✅ **3. Web Todo** | HTTP servers, JSON, REST APIs |
 | ✅ **4. Production** | Databases, Go conventions, validation, env config |
 

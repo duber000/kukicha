@@ -154,6 +154,65 @@ Without `reference`, the method would get a **copy** of the todo. Any changes wo
 
 ---
 
+## Step 2.5: Functions with Default Parameters
+
+Now that you've seen basic functions and methods, let's learn a handy trick: **default parameters**. Sometimes a function has a parameter that's usually the same value, but you want callers to be able to override it when needed.
+
+### Adding a Default
+
+Remember our `CreateTodo` function? New todos almost always start as incomplete. But what if we want to import old todos that are already done? Default parameters make this easy:
+
+```kukicha
+# completed defaults to false — callers can omit it
+func CreateTodo(id int, title string, completed bool = false) Todo
+    return Todo
+        id: id
+        title: title
+        completed: completed
+```
+
+Now you can call it either way:
+
+```kukicha
+# New todo — completed defaults to false
+todo1 := CreateTodo(1, "Buy groceries")
+
+# Imported todo — override the default
+todo2 := CreateTodo(2, "Old task", true)
+```
+
+### Named Arguments
+
+When a function has several parameters, it can be hard to remember what each value means. Kukicha lets you **name your arguments** to make the code clearer:
+
+```kukicha
+# What does 'true' mean here? Hard to tell at a glance
+todo := CreateTodo(3, "Old task", true)
+
+# Named argument — crystal clear!
+todo := CreateTodo(3, "Old task", completed: true)
+```
+
+Named arguments are especially useful when you want to skip to a specific default parameter:
+
+```kukicha
+func Connect(host string, port int = 8080, timeout int = 30)
+    print("Connecting to {host}:{port} with {timeout}s timeout")
+
+func main()
+    Connect("localhost")                  # port=8080, timeout=30
+    Connect("localhost", 3000)            # port=3000, timeout=30
+    Connect("localhost", timeout: 60)     # port=8080, timeout=60
+```
+
+**Rules for defaults:**
+- Parameters with defaults must come **after** regular parameters
+- You can have multiple defaults: `func F(a int, b int = 5, c int = 10)`
+
+For the rest of this tutorial, we'll keep using the simpler `CreateTodo(id, title)` form since our todos always start incomplete.
+
+---
+
 ## Step 3: Working with Lists
 
 One todo is nice, but a todo **list** is what we really want! In Kukicha, we use `list of Type` to create a collection:

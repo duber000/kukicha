@@ -332,57 +332,6 @@ kukicha run functions.kuki
 - Parameters and return types must have **explicit types** (you write them out)
 - Local variables inside functions use **type inference** (Kukicha figures it out)
 
-### Functions with Default Parameters
-
-Sometimes you want a function that works with or without certain parameters. Kukicha lets you set **default values**. Update `functions.kuki`:
-
-```kukicha
-# greeting has a default value of "Hello"
-func Greet(name string, greeting string = "Hello")
-    print("{greeting}, {name}!")
-
-func main()
-    Greet("Alice")           # Uses default: "Hello, Alice!"
-    Greet("Bob", "Hi")       # Override: "Hi, Bob!"
-    Greet("Charlie", "Welcome")  # "Welcome, Charlie!"
-```
-
-**Try it yourself:**
-
-```bash
-kukicha run functions.kuki
-```
-
-**Rules for defaults:**
-- Parameters with defaults must come **after** regular parameters
-- You can have multiple defaults: `func F(a int, b int = 5, c int = 10)`
-
-When calling functions, you can name your arguments to make the code clearer. Update `functions.kuki` one last time:
-
-```kukicha
-func CreateUser(name string, age int, active bool = true)
-    # ...
-
-func Connect(host string, port int = 8080, timeout int = 30)
-    print("Connecting to {host}:{port} with {timeout}s timeout")
-
-func main()
-    # Without named arguments - what does 'true' mean?
-    CreateUser("Alice", 25, true)
-
-    # With named arguments - crystal clear!
-    CreateUser("Alice", age: 25, active: true)
-
-    # Just specify timeout, use default port
-    Connect("localhost", timeout: 60)
-```
-
-**Try it yourself:**
-
-```bash
-kukicha run functions.kuki
-```
-
 ---
 
 ## Strings - Working with Text
@@ -938,7 +887,7 @@ Ready for the next step? Follow this learning path:
 | # | Tutorial | What You'll Learn |
 |---|----------|-------------------|
 | 1 | ✅ *You are here* | Variables, functions, strings, pipes, shorthands |
-| 2 | **[Console Todo](console-todo-tutorial.md)** ← Next! | Types, methods, lists, file I/O, more pipes, error handling |
+| 2 | **[Console Todo](console-todo-tutorial.md)** ← Next! | Types, methods, default parameters, named arguments, lists, file I/O, more pipes, error handling |
 | 3 | **[Web Todo](web-app-tutorial.md)** | HTTP servers, JSON, REST APIs, expert piping |
 | 4 | **[Production Patterns](production-patterns-tutorial.md)** | Databases, Go conventions |
 
