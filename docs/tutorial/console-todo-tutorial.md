@@ -306,7 +306,15 @@ All todos:
 3. [ ] Call mom
 ```
 
-**Wait — todo #2 still shows unchecked in the full list!** That's because `FindTodo` returns a *copy* of the todo. Marking the copy as done doesn't affect the original in the list. This is exactly the kind of problem we'll solve next.
+**Wait — todo #2 still shows unchecked in the full list!** Here's what happened:
+
+1. `FindTodo` loops through the list. When it finds a match, it returns that `todo` — but this is a **copy** of the data, not the original item sitting inside the list.
+2. When we call `todo.MarkDone()`, we're marking the *copy* as done. The copy shows `[✓]`, but the original todo inside `todos` is untouched.
+3. When we loop through `todos` again to print everything, we're looking at the originals — which were never modified.
+
+This is the same copy behavior we saw in Step 2: without `reference`, you're always working with a copy. The `for todo in todos` loop gives you a copy of each item, and `return todo` passes that copy to the caller. There's no connection back to the list.
+
+This is exactly the kind of problem we'll solve next.
 
 ---
 
