@@ -288,9 +288,9 @@ func main()
         print("Marked done:")
         todo |> .Display() |> print()
 
-    print("\nAll todos:")
-    for t in todos
-        t |> .Display() |> print()
+    print("All todos:")
+    for todo in todos
+        todo |> .Display() |> print()
 ```
 
 Run it:
