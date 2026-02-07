@@ -1,0 +1,89 @@
+# DuckDB Sales Analytics Example
+# Demonstrates using DuckDB's in-memory analytical engine with Kukicha
+
+import "database/sql"
+import "github.com/marcboeker/go-duckdb" as _
+
+# Helper to execute SQL and panic on failure
+func mustExec(db reference sql.DB, query string, many args) sql.Result
+    result := db.Exec(query, many args) onerr panic "exec failed: {error}"
+    return result
+
+func main()
+    # Open an in-memory DuckDB database
+    db := sql.Open("duckdb", "") onerr panic "failed to open DuckDB: {error}"
+    defer db.Close()
+
+    # Create a sales table
+    mustExec(db, "CREATE TABLE sales (product VARCHAR, region VARCHAR, quantity INTEGER, price DOUBLE, sale_date DATE)")
+
+    # Insert sample sales data
+    ins := "INSERT INTO sales VALUES (?, ?, ?, ?, ?)"
+    mustExec(db, ins, "Widget", "North", 100, 9.99, "2024-01-15")
+    mustExec(db, ins, "Gadget", "South", 50, 24.99, "2024-01-20")
+    mustExec(db, ins, "Widget", "South", 75, 9.99, "2024-02-10")
+    mustExec(db, ins, "Gizmo", "North", 200, 4.99, "2024-02-14")
+    mustExec(db, ins, "Gadget", "North", 30, 24.99, "2024-03-01")
+    mustExec(db, ins, "Widget", "East", 120, 9.99, "2024-03-05")
+    mustExec(db, ins, "Gizmo", "South", 180, 4.99, "2024-03-10")
+    mustExec(db, ins, "Gadget", "East", 65, 24.99, "2024-03-15")
+
+    print("=== DuckDB Sales Analytics ===")
+    print("")
+
+    # Revenue by product using GROUP BY
+    print("--- Revenue by Product ---")
+    rows := db.Query("SELECT product, SUM(quantity) as total_qty, ROUND(SUM(quantity * price), 2) as revenue FROM sales GROUP BY product ORDER BY revenue DESC") onerr panic "query failed: {error}"
+
+    for rows.Next()
+        product := ""
+        totalQty := 0
+        revenue := 0.0
+        rows.Scan(reference of product, reference of totalQty, reference of revenue) onerr panic "scan failed: {error}"
+        print("  {product}: {totalQty} units, ${revenue}")
+
+    rows.Close()
+
+    # Regional performance with aggregations
+    print("")
+    print("--- Sales by Region ---")
+    rows = db.Query("SELECT region, COUNT(*) as num_sales, ROUND(SUM(quantity * price), 2) as total_revenue FROM sales GROUP BY region ORDER BY total_revenue DESC") onerr panic "query failed: {error}"
+
+    for rows.Next()
+        region := ""
+        numSales := 0
+        totalRevenue := 0.0
+        rows.Scan(reference of region, reference of numSales, reference of totalRevenue) onerr panic "scan failed: {error}"
+        print("  {region}: {numSales} sales, ${totalRevenue}")
+
+    rows.Close()
+
+    # Monthly trend using DuckDB date functions
+    print("")
+    print("--- Monthly Revenue Trend ---")
+    rows = db.Query("SELECT STRFTIME(sale_date, '%Y-%m') as month, ROUND(SUM(quantity * price), 2) as revenue FROM sales GROUP BY month ORDER BY month") onerr panic "query failed: {error}"
+
+    for rows.Next()
+        month := ""
+        revenue := 0.0
+        rows.Scan(reference of month, reference of revenue) onerr panic "scan failed: {error}"
+        print("  {month}: ${revenue}")
+
+    rows.Close()
+
+    # Top sale per region using DuckDB's QUALIFY clause with window functions
+    print("")
+    print("--- Top Sale per Region (Window Function) ---")
+    rows = db.Query("SELECT product, region, ROUND(quantity * price, 2) as sale_value FROM sales QUALIFY ROW_NUMBER() OVER (PARTITION BY region ORDER BY quantity * price DESC) = 1 ORDER BY sale_value DESC") onerr panic "query failed: {error}"
+
+    for rows.Next()
+        product := ""
+        region := ""
+        saleValue := 0.0
+        rows.Scan(reference of product, reference of region, reference of saleValue) onerr panic "scan failed: {error}"
+        print("  {region}: {product} (${saleValue})")
+
+    rows.Close()
+
+    print("")
+    print("Analytics complete!")
