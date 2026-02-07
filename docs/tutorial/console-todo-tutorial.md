@@ -169,7 +169,7 @@ Run it with `kukicha run todo.kuki`:
 1. [✓] Learn Kukicha
 ```
 
-**💡 Pipe Dot Shorthand:** When piping into a method that belongs to the value itself, use `.Method()`. This keeps the left-to-right data flow and makes it clear the method belongs to the piped value, not an imported package.
+**💡 Pipe Dot Shorthand:** When piping into a method that belongs to the value itself, use `.Method()`. Like we did in .Display() above. This keeps the left-to-right data flow and makes it clear the method belongs to the piped value, not an imported package.
 
 ---
 
