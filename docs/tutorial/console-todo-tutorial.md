@@ -127,16 +127,6 @@ func Display on todo Todo string
 
 The method checks if the todo is completed. If so, it shows a checkmark. Otherwise, it shows empty brackets.
 
-**💡 Tip:** When piping into a method that belongs to the value itself, use the dot shorthand:
-```kukicha
-# Calling directly:
-message := todo.Display()
-
-# Same thing, using pipe:
-message := todo |> .Display()
-```
-This keeps the left-to-right data flow when chaining — and makes it clear the method belongs to the piped value, not an imported package.
-
 ### A Method That Changes Things
 
 What if we want to mark a todo as done? We need a method that can **modify** the todo. For that, we use `reference`:
@@ -152,6 +142,35 @@ func MarkDone on todo reference Todo
 
 Without `reference`, the method would get a **copy** of the todo. Any changes would only affect the copy, not the original. Using `reference` means we're working with the **actual** todo, so our changes stick.
 
+### Let's Try It
+
+Add a `main` function to `todo.kuki` so we can run what we've built so far:
+
+```kukicha
+func main()
+    todo := CreateTodo(1, "Learn Kukicha")
+
+    # Call Display directly
+    print(todo.Display())
+
+    # Or use the pipe operator — data flows left to right
+    todo |> .Display() |> print()
+
+    # Mark it done and display again
+    todo.MarkDone()
+    todo |> .Display() |> print()
+```
+
+Run it with `kukicha run todo.kuki`:
+
+```
+1. [ ] Learn Kukicha
+1. [ ] Learn Kukicha
+1. [✓] Learn Kukicha
+```
+
+**💡 Pipe Dot Shorthand:** When piping into a method that belongs to the value itself, use `.Method()`. This keeps the left-to-right data flow and makes it clear the method belongs to the piped value, not an imported package.
+
 ---
 
 ## Step 2.5: Functions with Default Parameters
@@ -160,7 +179,7 @@ Now that you've seen basic functions and methods, let's learn a handy trick: **d
 
 ### Adding a Default
 
-Remember our `CreateTodo` function? New todos almost always start as incomplete. But what if we want to import old todos that are already done? Default parameters make this easy:
+Remember our `CreateTodo` function? New todos almost always start as incomplete. But what if we want to import old todos that are already done? Default parameters make this easy. Update `CreateTodo` in `todo.kuki`:
 
 ```kukicha
 # completed defaults to false — callers can omit it
@@ -171,39 +190,34 @@ func CreateTodo(id int, title string, completed bool = false) Todo
         completed: completed
 ```
 
-Now you can call it either way:
-
-```kukicha
-# New todo — completed defaults to false
-todo1 := CreateTodo(1, "Buy groceries")
-
-# Imported todo — override the default
-todo2 := CreateTodo(2, "Old task", true)
-```
-
 ### Named Arguments
 
-When a function has several parameters, it can be hard to remember what each value means. Kukicha lets you **name your arguments** to make the code clearer:
+When a function has several parameters, it can be hard to remember what each value means. Kukicha lets you **name your arguments** for clarity. Update your `main` function to try both styles:
 
 ```kukicha
-# What does 'true' mean here? Hard to tell at a glance
-todo := CreateTodo(3, "Old task", true)
-
-# Named argument — crystal clear!
-todo := CreateTodo(3, "Old task", completed: true)
-```
-
-Named arguments are especially useful when you want to skip to a specific default parameter:
-
-```kukicha
-func Connect(host string, port int = 8080, timeout int = 30)
-    print("Connecting to {host}:{port} with {timeout}s timeout")
-
 func main()
-    Connect("localhost")                  # port=8080, timeout=30
-    Connect("localhost", 3000)            # port=3000, timeout=30
-    Connect("localhost", timeout: 60)     # port=8080, timeout=60
+    # New todo — completed defaults to false
+    todo1 := CreateTodo(1, "Buy groceries")
+    todo1 |> .Display() |> print()
+
+    # What does 'true' mean here? Hard to tell at a glance
+    todo2 := CreateTodo(2, "Old task", true)
+    todo2 |> .Display() |> print()
+
+    # Named argument — crystal clear!
+    todo3 := CreateTodo(3, "Another old task", completed: true)
+    todo3 |> .Display() |> print()
 ```
+
+Run it:
+
+```
+1. [ ] Buy groceries
+2. [✓] Old task
+3. [✓] Another old task
+```
+
+Named arguments are especially useful when skipping to a specific default parameter in functions with multiple defaults — for example, `Connect("localhost", timeout: 60)` to override just the timeout while keeping the default port.
 
 **Rules for defaults:**
 - Parameters with defaults must come **after** regular parameters
@@ -215,35 +229,27 @@ For the rest of this tutorial, we'll keep using the simpler `CreateTodo(id, titl
 
 ## Step 3: Working with Lists
 
-One todo is nice, but a todo **list** is what we really want! In Kukicha, we use `list of Type` to create a collection:
+One todo is nice, but a todo **list** is what we really want! In Kukicha, we use `list of Type` to create a collection.
+
+Update your `main` function in `todo.kuki` to work with a list of todos:
 
 ```kukicha
-# Create an empty list of todos
-todos := empty list of Todo
+func main()
+    # Create an empty list of todos
+    todos := empty list of Todo
 
-# Create some todos
-todo1 := CreateTodo(1, "Buy groceries")
-todo2 := CreateTodo(2, "Learn Kukicha")
-todo3 := CreateTodo(3, "Call mom")
+    # Create some todos and add them to the list
+    todos = append(todos, CreateTodo(1, "Buy groceries"))
+    todos = append(todos, CreateTodo(2, "Learn Kukicha"))
+    todos = append(todos, CreateTodo(3, "Call mom"))
 
-# Add them to the list
-todos = append(todos, todo1)
-todos = append(todos, todo2)
-todos = append(todos, todo3)
+    # Loop through and display each one
+    for todo in todos
+        todo |> .Display() |> print()
 ```
 
-### Looping Through a List
+Run it:
 
-To go through each item in a list, use `for item in list`:
-
-```kukicha
-# Print all todos
-for todo in todos
-    message := todo.Display()
-    print(message)
-```
-
-**Output:**
 ```
 1. [ ] Buy groceries
 2. [ ] Learn Kukicha
@@ -252,7 +258,7 @@ for todo in todos
 
 ### Finding Items in a List
 
-Let's write a function to find a todo by its id:
+Let's add a function to find a todo by its id. Add this above `main` in `todo.kuki`:
 
 ```kukicha
 # FindTodo searches for a todo by id
@@ -266,11 +272,46 @@ func FindTodo(todos list of Todo, id int) (Todo, bool)
 
 Notice the **two return values**: the todo (if found) and a `bool` indicating success. This is a common pattern in Kukicha for operations that might fail.
 
+Now update `main` to try finding and marking a todo:
+
+```kukicha
+func main()
+    todos := empty list of Todo
+    todos = append(todos, CreateTodo(1, "Buy groceries"))
+    todos = append(todos, CreateTodo(2, "Learn Kukicha"))
+    todos = append(todos, CreateTodo(3, "Call mom"))
+
+    # Find a todo and mark it done
+    todo, found := FindTodo(todos, 2)
+    if found
+        todo.MarkDone()
+        print("Marked done:")
+        todo |> .Display() |> print()
+
+    print("\nAll todos:")
+    for t in todos
+        t |> .Display() |> print()
+```
+
+Run it:
+
+```
+Marked done:
+2. [✓] Learn Kukicha
+
+All todos:
+1. [ ] Buy groceries
+2. [ ] Learn Kukicha
+3. [ ] Call mom
+```
+
+**Wait — todo #2 still shows unchecked in the full list!** That's because `FindTodo` returns a *copy* of the todo. Marking the copy as done doesn't affect the original in the list. This is exactly the kind of problem we'll solve next.
+
 ---
 
 ## Step 4: Building the Todo List Type
 
-Let's create a type to manage our entire todo list:
+The copy problem shows we need a type that manages the list and modifies items in place. Add a `TodoList` type to `todo.kuki`, above `main`:
 
 ```kukicha
 # TodoList manages a collection of todos
@@ -279,7 +320,7 @@ type TodoList
     nextId int
 ```
 
-Now let's add methods to this type:
+Now add methods for it:
 
 ```kukicha
 # Add creates a new todo and adds it to the list
@@ -303,7 +344,7 @@ func ShowAll on tl TodoList
 
     print("\n=== Your Todos ===")
     for todo in tl.items
-        print(todo.Display())
+        todo |> .Display() |> print()
     print("")
 ```
 
@@ -316,6 +357,44 @@ func Complete on tl reference TodoList(id int)
             print("Completed: {todo.title}")
             return
     print("Todo #{id} not found")
+```
+
+Notice `Complete` modifies items by index (`tl.items[i].completed = true`) — this changes the actual item in the list, solving the copy problem from the previous step.
+
+Update `main` to use the new `TodoList`:
+
+```kukicha
+func main()
+    tl := TodoList{items: empty list of Todo, nextId: 1}
+
+    tl.Add("Buy groceries")
+    tl.Add("Learn Kukicha")
+    tl.Add("Call mom")
+
+    tl.ShowAll()
+
+    tl.Complete(2)
+    tl.ShowAll()
+```
+
+Run it:
+
+```
+Added: Buy groceries
+Added: Learn Kukicha
+Added: Call mom
+
+=== Your Todos ===
+1. [ ] Buy groceries
+2. [ ] Learn Kukicha
+3. [ ] Call mom
+
+Completed: Learn Kukicha
+
+=== Your Todos ===
+1. [ ] Buy groceries
+2. [✓] Learn Kukicha
+3. [ ] Call mom
 ```
 
 ---
