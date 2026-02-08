@@ -615,7 +615,7 @@ module.exports = grammar({
 
     // Special expressions
     empty_expression: $ => seq(
-      'empty',
+      choice('empty', 'nil'),
       optional(field('type', $.type)),
     ),
 
