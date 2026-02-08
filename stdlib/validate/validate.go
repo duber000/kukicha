@@ -64,7 +64,7 @@ func Matches(s string, pattern string) (string, error) {
 }
 
 func Email(s string) (string, error) {
-	pattern := fmt.Sprintf("^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]%v$", 2)
+	pattern := "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$"
 	matched, _ := regexp.MatchString(pattern, s)
 	if !matched {
 		return s, errors.New("invalid email address")

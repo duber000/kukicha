@@ -1660,8 +1660,9 @@ func (g *Generator) generateStringInterpolation(str string) string {
 // a Kukicha string with {expr} interpolation patterns.
 // Returns the format string (with %v placeholders) and the list of argument expressions.
 func (g *Generator) parseStringInterpolation(str string) (string, []string) {
-	// Find all {expr} patterns
-	re := regexp.MustCompile(`\{([^}]+)\}`)
+	// Find all {expr} patterns where expr starts with an identifier character.
+	// This avoids matching regex quantifiers like {2,} or {3,5}.
+	re := regexp.MustCompile(`\{([a-zA-Z_][^}]*)\}`)
 	matches := re.FindAllStringSubmatchIndex(str, -1)
 
 	if len(matches) == 0 {

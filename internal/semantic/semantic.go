@@ -1272,7 +1272,7 @@ func (a *Analyzer) analyzeListLiteral(expr *ast.ListLiteralExpr) *TypeInfo {
 
 func (a *Analyzer) analyzeStringInterpolation(lit *ast.StringLiteral) {
 	// Parse string interpolations and validate expressions
-	re := regexp.MustCompile(`\{([^}]+)\}`)
+	re := regexp.MustCompile(`\{([a-zA-Z_][^}]*)\}`)
 	matches := re.FindAllStringSubmatch(lit.Value, -1)
 
 	for _, match := range matches {
