@@ -36,6 +36,7 @@ type TypeParameter struct {
 type FuncDefaults struct {
 	ParamNames    []string         // Parameter names in order
 	DefaultValues []ast.Expression // Default values (nil if no default)
+	HasVariadic   bool             // Whether the last parameter is variadic
 }
 
 type Generator struct {
@@ -1257,6 +1258,9 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 	// Generate unique error variable name for single-return-value cases
 	errVar := g.uniqueId("err")
 
+	// Declare the error variable before assignment (since = requires prior declaration)
+	g.writeLine(fmt.Sprintf("var %s error", errVar))
+
 	// Build the LHS: targets + error variable
 	var lhsParts []string
 	for _, t := range stmt.Targets {
@@ -2017,6 +2021,10 @@ func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 		} else if funcDef.DefaultValues[i] != nil {
 			// Use default value
 			args[i] = g.exprToString(funcDef.DefaultValues[i])
+		} else if i == len(funcDef.ParamNames)-1 && funcDef.HasVariadic {
+			// Last parameter is variadic with no args provided - omit it
+			args = args[:i]
+			break
 		} else {
 			// Missing argument - this should be caught by semantic analysis
 			// For safety, use empty placeholder
@@ -2493,6 +2501,7 @@ func (g *Generator) scanForFunctionDefaults() {
 			defaults := &FuncDefaults{
 				ParamNames:    make([]string, len(fn.Parameters)),
 				DefaultValues: make([]ast.Expression, len(fn.Parameters)),
+				HasVariadic:   len(fn.Parameters) > 0 && fn.Parameters[len(fn.Parameters)-1].Variadic,
 			}
 
 			for i, param := range fn.Parameters {
