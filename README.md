@@ -162,7 +162,7 @@ See [Contributing Guide](docs/contributing.md) for development setup, tests, and
 - [Beginner Tutorial](docs/tutorial/beginner-tutorial.md)
 - [FAQ](docs/faq.md)
 - [Quick Reference](docs/kukicha-quick-reference.md)
-- [stdlib Roadmap](docs/kukicha-stdlib-reference.md)
+- [Stdlib Reference](docs/kukicha-stdlib-reference.md)
 
 ---
 

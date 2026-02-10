@@ -1,4 +1,4 @@
-# Kukicha Standard Library Roadmap
+# Kukicha Standard Library Reference
 
 **Version:** 3.0.0
 **Status:** Scripting-Focused
@@ -70,9 +70,9 @@ Kukicha combines two powerful ideas:
 |---------|---------|--------|-------|
 | **retry** | Full retry logic with automatic error handling | ⚠️ Partial | Manual retry helpers available (recommended approach). Automatic retry.Do() not available yet due to language design constraints. See stdlib/retry/retry.kuki for examples. |
 
-### Known Limitations
+### Planned (Not Yet Implemented)
 
-Some roadmap examples use aspirational syntax not yet supported:
+Short list of features that are planned but not available yet:
 
 | Feature | What's Not Supported | Workaround |
 |---------|---------------------|------------|
