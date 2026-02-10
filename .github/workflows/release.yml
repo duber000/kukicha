@@ -11,10 +11,8 @@ on:
         required: true
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -76,11 +74,49 @@ jobs:
           GOARCH="${{ matrix.goarch }}"
           (cd dist && sha256sum "kukicha_${VERSION}_${GOOS}_${GOARCH}."* > "checksums_${VERSION}_${GOOS}_${GOARCH}.txt")
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kukicha_${{ steps.vars.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums_${{ steps.vars.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}.txt
+          if-no-files-found: error
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - name: Set version
+        id: vars
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo "version=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Combine checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.vars.outputs.version }}"
+          find dist -type f -name "checksums_${VERSION}_*.txt" -print0 | sort -z | xargs -0 cat > "dist/checksums_${VERSION}.txt"
+
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.vars.outputs.version }}
           files: |
-            dist/*.tar.gz
-            dist/*.zip
-            dist/checksums_${{ steps.vars.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}.txt
+            dist/**/kukicha_*.tar.gz
+            dist/**/kukicha_*.zip
+            dist/**/checksums_*.txt
