@@ -28,6 +28,10 @@ func New(program *ast.Program) *Analyzer {
 
 // Analyze performs semantic analysis on the program
 func (a *Analyzer) Analyze() []error {
+	if a.program.ExprReturnCounts == nil {
+		a.program.ExprReturnCounts = make(map[ast.Expression]int)
+	}
+
 	// Check package name for collisions with Go stdlib
 	a.checkPackageName()
 
@@ -38,6 +42,16 @@ func (a *Analyzer) Analyze() []error {
 	a.analyzeDeclarations()
 
 	return a.errors
+}
+
+func (a *Analyzer) recordReturnCount(expr ast.Expression, count int) {
+	if expr == nil || count < 0 {
+		return
+	}
+	if a.program.ExprReturnCounts == nil {
+		a.program.ExprReturnCounts = make(map[ast.Expression]int)
+	}
+	a.program.ExprReturnCounts[expr] = count
 }
 
 func (a *Analyzer) checkPackageName() {
@@ -964,27 +978,12 @@ func (a *Analyzer) analyzeUnaryExpr(expr *ast.UnaryExpr) *TypeInfo {
 }
 
 func (a *Analyzer) analyzePipeExpr(expr *ast.PipeExpr) *TypeInfo {
-	// Left side is piped as first argument to right side
-	leftType := a.analyzeExpression(expr.Left)
-
-	// Pass left type as piped argument to right side
-	switch right := expr.Right.(type) {
-	case *ast.CallExpr:
-		types := a.analyzeCallExpr(right, leftType)
-		if len(types) > 0 {
-			return types[0]
-		}
-		return &TypeInfo{Kind: TypeKindUnknown}
-	case *ast.MethodCallExpr:
-		types := a.analyzeMethodCallExpr(right, leftType)
-		if len(types) > 0 {
-			return types[0]
-		}
-		return &TypeInfo{Kind: TypeKindUnknown}
-	default:
-		// Fallback for other expressions (e.g. valid chains)
-		return a.analyzeExpression(expr.Right)
+	types := a.analyzePipeExprMulti(expr)
+	a.recordReturnCount(expr, len(types))
+	if len(types) > 0 {
+		return types[0]
 	}
+	return &TypeInfo{Kind: TypeKindUnknown}
 }
 
 // analyzePipeExprMulti analyzes a pipe expression and returns all its values
@@ -996,15 +995,23 @@ func (a *Analyzer) analyzePipeExprMulti(expr *ast.PipeExpr) []*TypeInfo {
 	// Pass left type as piped argument to right side
 	switch right := expr.Right.(type) {
 	case *ast.CallExpr:
-		return a.analyzeCallExpr(right, leftType)
+		types := a.analyzeCallExpr(right, leftType)
+		a.recordReturnCount(expr, len(types))
+		return types
 	case *ast.MethodCallExpr:
-		return a.analyzeMethodCallExpr(right, leftType)
+		types := a.analyzeMethodCallExpr(right, leftType)
+		a.recordReturnCount(expr, len(types))
+		return types
 	case *ast.PipeExpr:
 		// Nested pipe: analyze recursively
-		return a.analyzePipeExprMulti(right)
+		types := a.analyzePipeExprMulti(right)
+		a.recordReturnCount(expr, len(types))
+		return types
 	default:
 		// Fallback for other expressions
-		return []*TypeInfo{a.analyzeExpression(expr.Right)}
+		types := []*TypeInfo{a.analyzeExpression(expr.Right)}
+		a.recordReturnCount(expr, len(types))
+		return types
 	}
 }
 
@@ -1020,10 +1027,12 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 	if id, ok := expr.Function.(*ast.Identifier); ok {
 		switch id.Value {
 		case "os.LookupEnv":
-			return []*TypeInfo{
+			types := []*TypeInfo{
 				{Kind: TypeKindString},
 				{Kind: TypeKindBool},
 			}
+			a.recordReturnCount(expr, len(types))
+			return types
 		}
 	}
 	
@@ -1035,13 +1044,17 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 			qualifiedName := objID.Value + "." + methodName
 			switch qualifiedName {
 			case "os.LookupEnv":
-				return []*TypeInfo{
+				types := []*TypeInfo{
 					{Kind: TypeKindString},
 					{Kind: TypeKindBool},
 				}
+				a.recordReturnCount(expr, len(types))
+				return types
 			// bufio package functions
 			case "bufio.NewScanner":
-				return []*TypeInfo{{Kind: TypeKindNamed, Name: "bufio.Scanner"}}
+				types := []*TypeInfo{{Kind: TypeKindNamed, Name: "bufio.Scanner"}}
+				a.recordReturnCount(expr, len(types))
+				return types
 			}
 		}
 	}
@@ -1129,8 +1142,10 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 
 		// Return all return types
 		if len(funcType.Returns) > 0 {
+			a.recordReturnCount(expr, len(funcType.Returns))
 			return funcType.Returns
 		}
+		a.recordReturnCount(expr, 0)
 	}
 
 	return []*TypeInfo{{Kind: TypeKindUnknown}}
@@ -1153,19 +1168,43 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 	// Handle known stdlib method return types
 	methodName := expr.Method.Value
 
+	// Known package-level functions parsed as MethodCallExpr (e.g., os.LookupEnv)
+	if objID, ok := expr.Object.(*ast.Identifier); ok {
+		qualifiedName := objID.Value + "." + methodName
+		switch qualifiedName {
+		case "os.LookupEnv":
+			types := []*TypeInfo{
+				{Kind: TypeKindString},
+				{Kind: TypeKindBool},
+			}
+			a.recordReturnCount(expr, len(types))
+			return types
+		}
+	}
+
 	// time.Time methods with known return types
 	if objType != nil && objType.Kind == TypeKindNamed && objType.Name == "time.Time" {
 		switch methodName {
 		case "Equal", "Before", "After":
-			return []*TypeInfo{{Kind: TypeKindBool}}
+			types := []*TypeInfo{{Kind: TypeKindBool}}
+			a.recordReturnCount(expr, len(types))
+			return types
 		case "Year":
-			return []*TypeInfo{{Kind: TypeKindInt}}
+			types := []*TypeInfo{{Kind: TypeKindInt}}
+			a.recordReturnCount(expr, len(types))
+			return types
 		case "Month":
-			return []*TypeInfo{{Kind: TypeKindNamed, Name: "time.Month"}}
+			types := []*TypeInfo{{Kind: TypeKindNamed, Name: "time.Month"}}
+			a.recordReturnCount(expr, len(types))
+			return types
 		case "Day", "Hour", "Minute", "Second":
-			return []*TypeInfo{{Kind: TypeKindInt}}
+			types := []*TypeInfo{{Kind: TypeKindInt}}
+			a.recordReturnCount(expr, len(types))
+			return types
 		case "Weekday":
-			return []*TypeInfo{{Kind: TypeKindNamed, Name: "time.Weekday"}}
+			types := []*TypeInfo{{Kind: TypeKindNamed, Name: "time.Weekday"}}
+			a.recordReturnCount(expr, len(types))
+			return types
 		}
 	}
 
@@ -1174,13 +1213,21 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 		if objType.Name == "bufio.Scanner" || objType.Name == "*bufio.Scanner" {
 			switch methodName {
 			case "Scan":
-				return []*TypeInfo{{Kind: TypeKindBool}}
+				types := []*TypeInfo{{Kind: TypeKindBool}}
+				a.recordReturnCount(expr, len(types))
+				return types
 			case "Text":
-				return []*TypeInfo{{Kind: TypeKindString}}
+				types := []*TypeInfo{{Kind: TypeKindString}}
+				a.recordReturnCount(expr, len(types))
+				return types
 			case "Bytes":
-				return []*TypeInfo{{Kind: TypeKindList, ElementType: &TypeInfo{Kind: TypeKindNamed, Name: "byte"}}}
+				types := []*TypeInfo{{Kind: TypeKindList, ElementType: &TypeInfo{Kind: TypeKindNamed, Name: "byte"}}}
+				a.recordReturnCount(expr, len(types))
+				return types
 			case "Err":
-				return []*TypeInfo{{Kind: TypeKindNamed, Name: "error"}}
+				types := []*TypeInfo{{Kind: TypeKindNamed, Name: "error"}}
+				a.recordReturnCount(expr, len(types))
+				return types
 			}
 		}
 	}

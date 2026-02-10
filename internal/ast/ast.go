@@ -23,6 +23,8 @@ type Program struct {
 	PetioleDecl  *PetioleDecl  // Optional petiole declaration
 	Imports      []*ImportDecl // Import declarations
 	Declarations []Declaration // Top-level declarations (types, interfaces, functions)
+	// ExprReturnCounts stores inferred return counts for expressions (used by codegen).
+	ExprReturnCounts map[Expression]int
 }
 
 func (p *Program) TokenLiteral() string {

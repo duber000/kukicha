@@ -6,6 +6,7 @@ import (
 	"testing/synctest"
 
 	"github.com/duber000/kukicha/internal/parser"
+	"github.com/duber000/kukicha/internal/semantic"
 )
 
 func TestSimpleFunction(t *testing.T) {
@@ -178,6 +179,139 @@ func TestNumericForLoop(t *testing.T) {
 
 	if !strings.Contains(output, "for i := 0; i < 10; i++") {
 		t.Errorf("expected numeric for loop with <, got: %s", output)
+	}
+}
+
+func TestEmptyTypedZeroValues(t *testing.T) {
+	input := `func ZeroInt() int
+    return empty int
+
+func ZeroDuration() time.Duration
+    return empty time.Duration
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "return 0") {
+		t.Errorf("expected zero int return, got: %s", output)
+	}
+	if !strings.Contains(output, "return *new(time.Duration)") {
+		t.Errorf("expected zero time.Duration return, got: %s", output)
+	}
+}
+
+func TestOnErrErrorMessageUsesProvidedString(t *testing.T) {
+	input := `func bar() (int, error)
+    return 0, error "nope"
+
+func Foo() (int, error)
+    x := 0
+    x = bar() onerr error "bad: {error}"
+    return x, empty
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "errors.New") || !strings.Contains(output, "bad: %v") {
+		t.Errorf("expected errors.New with interpolated message, got: %s", output)
+	}
+}
+
+func TestOnErrDiscardStatementUsesReturnCount(t *testing.T) {
+	input := `func One() error
+    return empty
+
+func Two() (int, error)
+    return 0, empty
+
+func Use()
+    One() onerr discard
+    Two() onerr discard
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "_ = One()") {
+		t.Errorf("expected single-value discard, got: %s", output)
+	}
+	if !strings.Contains(output, "_, _ = Two()") {
+		t.Errorf("expected two-value discard, got: %s", output)
+	}
+}
+
+func TestOnErrDiscardUsesSemanticReturnCounts(t *testing.T) {
+	input := `import "os"
+
+func Use()
+    os.LookupEnv("X") onerr discard
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.New(program)
+	semanticErrors := analyzer.Analyze()
+	if len(semanticErrors) > 0 {
+		t.Fatalf("semantic errors: %v", semanticErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "_, _ = os.LookupEnv(\"X\")") {
+		t.Errorf("expected two-value discard using semantic return counts, got: %s", output)
 	}
 }
 

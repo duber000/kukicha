@@ -736,6 +736,76 @@ func (g *Generator) isLikelyInterfaceType(typeName string) bool {
 	return knownInterfaces[typeName]
 }
 
+// zeroValueForType returns a Go expression for the zero value of a type annotation.
+func (g *Generator) zeroValueForType(typeAnn ast.TypeAnnotation) string {
+	switch t := typeAnn.(type) {
+	case *ast.PrimitiveType:
+		switch t.Name {
+		case "string":
+			return "\"\""
+		case "bool":
+			return "false"
+		default:
+			return "0"
+		}
+	case *ast.ListType, *ast.MapType, *ast.ReferenceType, *ast.ChannelType, *ast.FunctionType:
+		return "nil"
+	case *ast.NamedType:
+		typeName := g.generateTypeAnnotation(t)
+		if g.isLikelyInterfaceType(typeName) {
+			return "nil"
+		}
+		return fmt.Sprintf("*new(%s)", typeName)
+	default:
+		return "nil"
+	}
+}
+
+func (g *Generator) errorValueExpr(expr ast.Expression, errVar string) string {
+	if id, ok := expr.(*ast.Identifier); ok && id.Value == "error" {
+		return errVar
+	}
+	if strLit, ok := expr.(*ast.StringLiteral); ok {
+		msg := strLit.Value
+		if strings.Contains(msg, "{error}") {
+			msg = strings.ReplaceAll(msg, "{error}", fmt.Sprintf("{%s}", errVar))
+		}
+		return fmt.Sprintf("errors.New(%s)", g.generateStringInterpolation(msg))
+	}
+	return fmt.Sprintf("errors.New(%s)", g.exprToString(expr))
+}
+
+func (g *Generator) inferReturnCount(expr ast.Expression) (int, bool) {
+	if g.program != nil && g.program.ExprReturnCounts != nil {
+		if count, ok := g.program.ExprReturnCounts[expr]; ok {
+			return count, true
+		}
+	}
+	switch e := expr.(type) {
+	case *ast.PipeExpr:
+		return g.inferReturnCount(e.Right)
+	case *ast.CallExpr:
+		if id, ok := e.Function.(*ast.Identifier); ok {
+			return g.returnCountForFunctionName(id.Value)
+		}
+	case *ast.MethodCallExpr:
+		// Method return counts require type info; skip for now.
+		return 0, false
+	}
+	return 0, false
+}
+
+func (g *Generator) returnCountForFunctionName(name string) (int, bool) {
+	for _, decl := range g.program.Declarations {
+		if fn, ok := decl.(*ast.FunctionDecl); ok {
+			if fn.Receiver == nil && fn.Name.Value == name {
+				return len(fn.Returns), true
+			}
+		}
+	}
+	return 0, false
+}
+
 // generateTypeParameters generates Go generic type parameter list
 func (g *Generator) generateTypeParameters(typeParams []*TypeParameter) string {
 	if len(typeParams) == 0 {
@@ -1098,11 +1168,12 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 	case *ast.ErrorExpr:
 		// onerr return empty, error - generate return with error
 		// This assumes the function returns (T, error)
+		errExpr := g.errorValueExpr(h.Message, errVar)
 		if len(names) > 0 {
-			// Return zero value for first var and the error
-			g.writeLine(fmt.Sprintf("return %s, %s", names[0].Value, errVar))
+			// Return the first value and the error
+			g.writeLine(fmt.Sprintf("return %s, %s", names[0].Value, errExpr))
 		} else {
-			g.writeLine(fmt.Sprintf("return %s", errVar))
+			g.writeLine(fmt.Sprintf("return %s", errExpr))
 		}
 	case *ast.ReturnExpr:
 		// onerr return empty, error
@@ -1135,8 +1206,22 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClause) {
 	// Check for discard case - just execute and ignore error
 	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
-		// Generate: _, _ = expression (or just call it if it returns nothing)
-		g.writeLine(fmt.Sprintf("_, _ = %s", g.exprToString(expr)))
+		if count, ok := g.inferReturnCount(expr); ok {
+			switch count {
+			case 0:
+				g.writeLine(g.exprToString(expr))
+			case 1:
+				g.writeLine(fmt.Sprintf("_ = %s", g.exprToString(expr)))
+			default:
+				blanks := make([]string, count)
+				for i := range blanks {
+					blanks[i] = "_"
+				}
+				g.writeLine(fmt.Sprintf("%s = %s", strings.Join(blanks, ", "), g.exprToString(expr)))
+			}
+		} else {
+			g.writeLine(fmt.Sprintf("_ = %s", g.exprToString(expr)))
+		}
 		return
 	}
 
@@ -1539,22 +1624,19 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 			return fmt.Sprintf("%s.(%s)", expr, targetType)
 		}
 		return fmt.Sprintf("%s(%s)", targetType, expr)
-	case *ast.EmptyExpr:
-		if e.Type != nil {
-			targetType := g.generateTypeAnnotation(e.Type)
-			if g.isLikelyInterfaceType(targetType) {
-				return "nil"
-			}
-			// Check if targetType is a generic type parameter (T, U, K)
-			if g.isStdlibIter && g.placeholderMap != nil {
-				for _, typeParam := range g.placeholderMap {
-					if targetType == typeParam {
-						return fmt.Sprintf("*new(%s)", targetType)
+		case *ast.EmptyExpr:
+			if e.Type != nil {
+				targetType := g.generateTypeAnnotation(e.Type)
+				// Check if targetType is a generic type parameter (T, U, K)
+				if g.isStdlibIter && g.placeholderMap != nil {
+					for _, typeParam := range g.placeholderMap {
+						if targetType == typeParam {
+							return fmt.Sprintf("*new(%s)", targetType)
+						}
 					}
 				}
+				return g.zeroValueForType(e.Type)
 			}
-			return fmt.Sprintf("%s{}", targetType)
-		}
 		// In generic stdlib/iter context, use *new(T) for zero value instead of nil
 		if g.isStdlibIter && g.placeholderMap != nil {
 			if _, hasT := g.placeholderMap["any"]; hasT {
