@@ -305,6 +305,7 @@ func Use()
 	}
 
 	gen := New(program)
+	gen.SetExprReturnCounts(analyzer.ReturnCounts())
 	output, err := gen.Generate()
 	if err != nil {
 		t.Fatalf("codegen error: %v", err)

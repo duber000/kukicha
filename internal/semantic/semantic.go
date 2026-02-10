@@ -10,11 +10,12 @@ import (
 
 // Analyzer performs semantic analysis on the AST
 type Analyzer struct {
-	program     *ast.Program
-	symbolTable *SymbolTable
-	errors      []error
-	currentFunc *ast.FunctionDecl // Track current function for return type checking
-	loopDepth   int               // Track loop nesting for break/continue
+	program          *ast.Program
+	symbolTable      *SymbolTable
+	errors           []error
+	currentFunc      *ast.FunctionDecl    // Track current function for return type checking
+	loopDepth        int                  // Track loop nesting for break/continue
+	exprReturnCounts map[ast.Expression]int // Inferred return counts for expressions (used by codegen)
 }
 
 // New creates a new semantic analyzer
@@ -26,11 +27,15 @@ func New(program *ast.Program) *Analyzer {
 	}
 }
 
+// ReturnCounts returns the inferred return counts for expressions.
+// Call after Analyze() to pass these to codegen.
+func (a *Analyzer) ReturnCounts() map[ast.Expression]int {
+	return a.exprReturnCounts
+}
+
 // Analyze performs semantic analysis on the program
 func (a *Analyzer) Analyze() []error {
-	if a.program.ExprReturnCounts == nil {
-		a.program.ExprReturnCounts = make(map[ast.Expression]int)
-	}
+	a.exprReturnCounts = make(map[ast.Expression]int)
 
 	// Check package name for collisions with Go stdlib
 	a.checkPackageName()
@@ -48,10 +53,7 @@ func (a *Analyzer) recordReturnCount(expr ast.Expression, count int) {
 	if expr == nil || count < 0 {
 		return
 	}
-	if a.program.ExprReturnCounts == nil {
-		a.program.ExprReturnCounts = make(map[ast.Expression]int)
-	}
-	a.program.ExprReturnCounts[expr] = count
+	a.exprReturnCounts[expr] = count
 }
 
 func (a *Analyzer) checkPackageName() {
@@ -979,7 +981,6 @@ func (a *Analyzer) analyzeUnaryExpr(expr *ast.UnaryExpr) *TypeInfo {
 
 func (a *Analyzer) analyzePipeExpr(expr *ast.PipeExpr) *TypeInfo {
 	types := a.analyzePipeExprMulti(expr)
-	a.recordReturnCount(expr, len(types))
 	if len(types) > 0 {
 		return types[0]
 	}

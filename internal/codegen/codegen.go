@@ -53,6 +53,7 @@ type Generator struct {
 	currentReturnTypes   []ast.TypeAnnotation     // Return types of current function (for type coercion in returns)
 	processingReturnType bool                     // Whether we are currently generating return types
 	tempCounter          int                      // Counter for generating unique temporary variable names
+	exprReturnCounts     map[ast.Expression]int   // Semantic return counts passed from analyzer
 }
 
 // New creates a new code generator
@@ -72,6 +73,11 @@ func (g *Generator) SetSourceFile(path string) {
 	// Enable special transpilation for stdlib/iterator files
 	g.isStdlibIter = strings.Contains(path, "stdlib/iterator/") || strings.Contains(path, "stdlib\\iterator\\")
 	// Note: stdlib/slice uses a different approach - type parameters are detected per-function
+}
+
+// SetExprReturnCounts passes semantic analysis return counts to the generator.
+func (g *Generator) SetExprReturnCounts(counts map[ast.Expression]int) {
+	g.exprReturnCounts = counts
 }
 
 // addImport adds an auto-import
@@ -762,6 +768,8 @@ func (g *Generator) zeroValueForType(typeAnn ast.TypeAnnotation) string {
 }
 
 func (g *Generator) errorValueExpr(expr ast.Expression, errVar string) string {
+	// Defensive guard: the parser lexes `error` as TOKEN_ERROR, not TOKEN_IDENTIFIER,
+	// so this branch is currently unreachable. Kept as documentation of intent.
 	if id, ok := expr.(*ast.Identifier); ok && id.Value == "error" {
 		return errVar
 	}
@@ -776,8 +784,8 @@ func (g *Generator) errorValueExpr(expr ast.Expression, errVar string) string {
 }
 
 func (g *Generator) inferReturnCount(expr ast.Expression) (int, bool) {
-	if g.program != nil && g.program.ExprReturnCounts != nil {
-		if count, ok := g.program.ExprReturnCounts[expr]; ok {
+	if g.exprReturnCounts != nil {
+		if count, ok := g.exprReturnCounts[expr]; ok {
 			return count, true
 		}
 	}
@@ -1220,6 +1228,8 @@ func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClau
 				g.writeLine(fmt.Sprintf("%s = %s", strings.Join(blanks, ", "), g.exprToString(expr)))
 			}
 		} else {
+			// Fallback: when return count inference fails (e.g. external multi-return
+			// functions not yet modeled), default to a single blank assignment.
 			g.writeLine(fmt.Sprintf("_ = %s", g.exprToString(expr)))
 		}
 		return
@@ -1624,19 +1634,19 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 			return fmt.Sprintf("%s.(%s)", expr, targetType)
 		}
 		return fmt.Sprintf("%s(%s)", targetType, expr)
-		case *ast.EmptyExpr:
-			if e.Type != nil {
-				targetType := g.generateTypeAnnotation(e.Type)
-				// Check if targetType is a generic type parameter (T, U, K)
-				if g.isStdlibIter && g.placeholderMap != nil {
-					for _, typeParam := range g.placeholderMap {
-						if targetType == typeParam {
-							return fmt.Sprintf("*new(%s)", targetType)
-						}
+	case *ast.EmptyExpr:
+		if e.Type != nil {
+			targetType := g.generateTypeAnnotation(e.Type)
+			// Check if targetType is a generic type parameter (T, U, K)
+			if g.isStdlibIter && g.placeholderMap != nil {
+				for _, typeParam := range g.placeholderMap {
+					if targetType == typeParam {
+						return fmt.Sprintf("*new(%s)", targetType)
 					}
 				}
-				return g.zeroValueForType(e.Type)
 			}
+			return g.zeroValueForType(e.Type)
+		}
 		// In generic stdlib/iter context, use *new(T) for zero value instead of nil
 		if g.isStdlibIter && g.placeholderMap != nil {
 			if _, hasT := g.placeholderMap["any"]; hasT {
