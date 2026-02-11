@@ -1,7 +1,7 @@
 # Building a Console Todo App with Kukicha
 
 **Level:** Intermediate  
-**Time:** 25 minutes  
+**Time:** 15-18 minutes  
 **Prerequisite:** [Beginner Tutorial](beginner-tutorial.md)
 
 Welcome back! In the beginner tutorial, you learned about variables, functions, and strings. Now we're going to build something real: a **todo list application** that runs in your terminal.
@@ -13,8 +13,7 @@ In this tutorial, you'll discover how to:
 - Create **types** to organize related data
 - Write **methods** that belong to types
 - Use the **Pipe Operator (`|>`)** for clean data flow
-- Handle **errors** gracefully with `onerr`
-- **Save and load** data from files
+- Build a simple **command loop** for a console app
 
 Let's build something useful!
 
@@ -26,8 +25,6 @@ Our todo app will let you:
 - **Add** new tasks
 - **View** all your tasks
 - **Mark** tasks as done
-- **Save** your tasks to a file
-- **Load** them when you restart
 
 Here's what it will look like when running:
 
@@ -37,7 +34,7 @@ Here's what it will look like when running:
 2. [✓] Learn Kukicha
 3. [ ] Call mom
 
-Commands: add, done, list, save, quit
+Commands: add, done, list, help, quit
 > 
 ```
 
@@ -50,7 +47,7 @@ If you haven't already, set up your project:
 ```bash
 mkdir todo-app && cd todo-app
 go mod init todo-app
-kukicha init    # Extracts stdlib for imports like "stdlib/json"
+kukicha init    # Extracts stdlib for imports like "stdlib/string"
 ```
 
 ---
@@ -61,7 +58,7 @@ kukicha init    # Extracts stdlib for imports like "stdlib/json"
 > - **`:=`** creates a new variable, **`=`** updates an existing one
 > - **String interpolation:** Use `{variable}` inside strings to insert values
 > - **`print()`** outputs to the console
-> - **Functions** take parameters and can return values
+> - **Functions** (starting with `function`) take parameters and can return values
 > - **Comments** start with `#`
 >
 > If you need a refresher, [revisit the beginner tutorial](beginner-tutorial.md)!
@@ -93,7 +90,7 @@ Now let's write a function to create a new todo:
 
 ```kukicha
 # CreateTodo makes a new todo with the given id and title
-func CreateTodo(id int, title string) Todo
+function CreateTodo(id int, title string) Todo
     return Todo
         id: id
         title: title
@@ -113,7 +110,7 @@ In Kukicha, we use the `on` keyword to attach a method to a type:
 ```kukicha
 # Display shows the todo in a nice format
 # This method works "on" a Todo
-func Display on todo Todo string
+function Display on todo Todo string
     status := "[ ]"
     if todo.completed
         status = "[✓]"
@@ -121,7 +118,7 @@ func Display on todo Todo string
 ```
 
 **Reading this method:**
-- `func Display` - We're creating a method called "Display"
+- `function Display` - We're creating a method called "Display"
 - `on todo Todo` - This method works on a `Todo` (syntax: receiver name first, then the type). Inside the method, we call it `todo`
 - `string` - The method returns a string
 
@@ -134,7 +131,7 @@ What if we want to mark a todo as done? We need a method that can **modify** the
 ```kukicha
 # MarkDone sets the todo as completed
 # We use "reference" because we're changing the todo
-func MarkDone on todo reference Todo
+function MarkDone on todo reference Todo
     todo.completed = true
 ```
 
@@ -147,7 +144,7 @@ Without `reference`, the method would get a **copy** of the todo. Any changes wo
 Add a `main` function to `todo.kuki` so we can run what we've built so far:
 
 ```kukicha
-func main()
+function main()
     todo := CreateTodo(1, "Learn Kukicha")
 
     # Call Display directly
@@ -173,154 +170,9 @@ Run it with `kukicha run todo.kuki`:
 
 ---
 
-## Step 2.5: Functions with Default Parameters
+## Step 3: Building the Todo List Type
 
-Now that you've seen basic functions and methods, let's learn a handy trick: **default parameters**. Sometimes a function has a parameter that's usually the same value, but you want callers to be able to override it when needed.
-
-### Adding a Default
-
-Remember our `CreateTodo` function? New todos almost always start as incomplete. But what if we want to import old todos that are already done? Default parameters make this easy. Update `CreateTodo` in `todo.kuki`:
-
-```kukicha
-# completed defaults to false — callers can omit it
-func CreateTodo(id int, title string, completed bool = false) Todo
-    return Todo
-        id: id
-        title: title
-        completed: completed
-```
-
-### Named Arguments
-
-When a function has several parameters, it can be hard to remember what each value means. Kukicha lets you **name your arguments** for clarity. Update your `main` function to try both styles:
-
-```kukicha
-func main()
-    # New todo — completed defaults to false
-    todo1 := CreateTodo(1, "Buy groceries")
-    todo1 |> .Display() |> print()
-
-    # What does 'true' mean here? Hard to tell at a glance
-    todo2 := CreateTodo(2, "Old task", true)
-    todo2 |> .Display() |> print()
-
-    # Named argument — crystal clear!
-    todo3 := CreateTodo(3, "Another old task", completed: true)
-    todo3 |> .Display() |> print()
-```
-
-Run it:
-
-```
-1. [ ] Buy groceries
-2. [✓] Old task
-3. [✓] Another old task
-```
-
-Named arguments are especially useful when skipping to a specific default parameter in functions with multiple defaults — for example, `Connect("localhost", timeout: 60)` to override just the timeout while keeping the default port.
-
-**Rules for defaults:**
-- Parameters with defaults must come **after** regular parameters
-- You can have multiple defaults: `func F(a int, b int = 5, c int = 10)`
-
-For the rest of this tutorial, we'll keep using the simpler `CreateTodo(id, title)` form since our todos always start incomplete.
-
----
-
-## Step 3: Working with Lists
-
-One todo is nice, but a todo **list** is what we really want! In Kukicha, we use `list of Type` to create a collection.
-
-Update your `main` function in `todo.kuki` to work with a list of todos:
-
-```kukicha
-func main()
-    # Create an empty list of todos
-    todos := empty list of Todo
-
-    # Create some todos and add them to the list
-    todos = append(todos, CreateTodo(1, "Buy groceries"))
-    todos = append(todos, CreateTodo(2, "Learn Kukicha"))
-    todos = append(todos, CreateTodo(3, "Call mom"))
-
-    # Loop through and display each one
-    for todo in todos
-        todo |> .Display() |> print()
-```
-
-Run it:
-
-```
-1. [ ] Buy groceries
-2. [ ] Learn Kukicha
-3. [ ] Call mom
-```
-
-### Finding Items in a List
-
-Let's add a function to find a todo by its id. Add this above `main` in `todo.kuki`:
-
-```kukicha
-# FindTodo searches for a todo by id
-# Returns the todo and true if found, or empty and false if not
-func FindTodo(todos list of Todo, id int) (Todo, bool)
-    for todo in todos
-        if todo.id equals id
-            return todo, true
-    # empty needs the type here so Kukicha knows to return a blank Todo
-    return empty Todo, false
-```
-
-Notice the **two return values**: the todo (if found) and a `bool` indicating success. This is a common pattern in Kukicha for operations that might fail.
-
-Now update `main` to try finding and marking a todo:
-
-```kukicha
-func main()
-    todos := empty list of Todo
-    todos = append(todos, CreateTodo(1, "Buy groceries"))
-    todos = append(todos, CreateTodo(2, "Learn Kukicha"))
-    todos = append(todos, CreateTodo(3, "Call mom"))
-
-    # Find a todo and mark it done
-    todo, found := FindTodo(todos, 2)
-    if found
-        todo.MarkDone()
-        print("Marked done:")
-        todo |> .Display() |> print()
-
-    print("All todos:")
-    for todo in todos
-        todo |> .Display() |> print()
-```
-
-Run it:
-
-```
-Marked done:
-2. [✓] Learn Kukicha
-
-All todos:
-1. [ ] Buy groceries
-2. [ ] Learn Kukicha
-3. [ ] Call mom
-```
-
-**Wait — todo #2 still shows unchecked in the full list!** Here's what happened:
-
-1. `FindTodo` loops through the list. When it finds a match, it returns that `todo` — but this is a **copy** of the data, not the original item sitting inside the list.
-2. When we call `todo.MarkDone()`, we're marking the *copy* as done. The copy shows `[✓]`, but the original todo inside `todos` is untouched.
-3. When we loop through `todos` again to print everything, we're looking at the originals — which were never modified.
-
-This is the same copy behavior we saw in Step 2: without `reference`, you're always working with a copy. The `for todo in todos` loop gives you a copy of each item, and `return todo` passes that copy to the caller. There's no connection back to the list.
-
-This is exactly the kind of problem we'll solve next.
-
----
-
-## Step 4: Building the Todo List Type
-
-The copy problem shows we need a type that manages the list and modifies items in place. Add a `TodoList` type to `todo.kuki`, above `main`:
+Next, we'll create a type that manages a list of todos and provides methods to add, complete, and display items. Add a `TodoList` type to `todo.kuki`, above `main`:
 
 ```kukicha
 # TodoList manages a collection of todos
@@ -335,7 +187,7 @@ Now add methods for it:
 # Add creates a new todo and adds it to the list
 # 'tl' is the receiver (the TodoList instance we're working on)
 # Extra parameters go in parentheses after the receiver type
-func Add on tl reference TodoList(title string)
+function Add on tl reference TodoList(title string)
     todo := CreateTodo(tl.nextId, title)
     tl.items = append(tl.items, todo)
     tl.nextId = tl.nextId + 1
@@ -346,7 +198,7 @@ func Add on tl reference TodoList(title string)
 
 ```kukicha
 # ShowAll displays all todos in the list
-func ShowAll on tl TodoList
+function ShowAll on tl TodoList
     if len(tl.items) equals 0
         print("No todos yet! Use 'add' to create one.")
         return
@@ -357,15 +209,29 @@ func ShowAll on tl TodoList
     print("")
 ```
 
+### Finding and Modifying Items
+
+To complete a todo, we need to find it in our list. List items are accessed by their **index** (their position in the list, starting at 0).
+
+We can get the index in a loop by adding a variable for it: `for i, todo in tl.items`.
+
 ```kukicha
-# Complete marks a todo as done by its id
-func Complete on tl reference TodoList(id int)
+# FindIndex returns the invalid index -1 if not found
+function FindIndex on tl TodoList(id int) int
     for i, todo in tl.items
         if todo.id equals id
-            tl.items[i].completed = true
-            print("Completed: {todo.title}")
-            return
-    print("Todo #{id} not found")
+            return i
+    return -1
+
+# Complete marks a todo as done by its id
+function Complete on tl reference TodoList(id int)
+    index := tl.FindIndex(id)
+    if index equals -1
+        print("Todo #{id} not found")
+        return
+
+    tl.items[index].completed = true
+    print("Completed: {tl.items[index].title}")
 ```
 
 Notice `Complete` modifies items by index (`tl.items[i].completed = true`) — this changes the actual item in the list, solving the copy problem from the previous step.
@@ -373,7 +239,7 @@ Notice `Complete` modifies items by index (`tl.items[i].completed = true`) — t
 Update `main` to use the new `TodoList`:
 
 ```kukicha
-func main()
+function main()
     tl := TodoList{items: empty list of Todo, nextId: 1}
 
     tl.Add("Buy groceries")
@@ -408,156 +274,17 @@ Completed: Learn Kukicha
 
 ---
 
-## Step 5: Error Handling with `onerr`
-
-Real programs need to handle errors. What if the user types something that isn't a number? What if a file doesn't exist?
-
-Kukicha makes error handling readable with the `onerr` keyword.
-
-### Without `onerr`
-
-```kukicha
-# Manual error check - explicit but verbose
-result, err := somethingThatMightFail()
-if err not equals empty
-    print("Something went wrong!")
-    return
-```
-
-### With `onerr` (single expression)
-
-```kukicha
-# onerr handles the error in one line — best for simple cases
-result := somethingThatMightFail() onerr "default value"
-```
-
-For multi-statement error handlers (like logging + returning), use the manual check above. `onerr` shines when the handler is a single expression: a default value, a `panic`, or a `return`.
-
-### Common `onerr` Patterns
-
-```kukicha
-# Pattern 1: Provide a default value
-name := getUserInput() onerr "Anonymous"
-
-# Pattern 2: Panic (crash) with a message — good for startup config
-config := loadConfig() onerr panic "Missing config file!"
-
-# Pattern 3: Multi-statement block handler — for reporting and recovering
-user := fetchUser(id) onerr
-    log.Printf("Error fetching user {id}: {error}")
-    return empty
-
-# Pattern 4: Propagate the error to the caller
-# error "{error}" wraps the original error in a new one
-func DoWork() (string, error)
-    data := loadFile() onerr return empty, error "{error}"
-    return data, empty
-
-# Pattern 4: When you need to do something before returning,
-# use a manual error check instead:
-func DoWorkVerbose() (string, error)
-    data, err := loadFile()
-    if err not equals empty
-        print("Could not load file")
-        return empty, err
-    return data, empty
-```
-
----
-
-## Step 6: Saving and Loading from Files
-
-Let's add the ability to save our todos to a file and load them back!
-
-We'll use the `files` package from Kukicha's stdlib for easy file operations.
-
-```kukicha
-import "stdlib/files"
-import "stdlib/string"
-import "strconv"
-
-# Save writes all todos to a file
-func Save on tl TodoList(filename string) error
-    lines := empty list of string
-
-    for todo in tl.items
-        # Format: id|title|completed
-        # We use pipe (|) as a delimiter because titles can contain commas or spaces
-        completed := "false"
-        if todo.completed
-            completed = "true"
-        line := "{todo.id}|{todo.title}|{completed}"
-        lines = append(lines, line)
-
-    # Join all lines and write to file — pipe the data left to right
-    lines
-        |> string.Join("\n")
-        |> files.WriteString(filename) onerr return error "{error}"
-
-    print("Saved {len(tl.items)} todos to {filename}")
-    return empty
-```
-
-**Pipe Operator:** Notice the clean pipeline: join the lines, then write to file, with each step on its own line. The `onerr return error "{error}"` propagates any write failure to the caller.
-
-```kukicha
-# Load reads todos from a file
-func Load(filename string) (TodoList, error)
-    tl := TodoList{items: empty list of Todo, nextId: 1}
-
-    # Read the file content as bytes, convert to string, and split into lines
-    data, err := files.Read(filename)
-    if err != empty
-        return tl, err
-    lines := string.Split(string(data), "\n")
-
-    # Skip if file is empty
-    if len(lines) equals 0 or (len(lines) equals 1 and lines[0] equals "")
-        return tl, empty
-    maxId := 0
-
-    for line in lines
-        if line equals ""
-            continue
-
-        parts := string.Split(line, "|")
-        if len(parts) not equals 3
-            continue
-
-        # strconv.Atoi can fail on bad data — skip the line if so
-        id, parseErr := strconv.Atoi(parts[0])
-        if parseErr not equals empty
-            continue
-        title := parts[1]
-        completed := parts[2] equals "true"
-
-        tl.items = append(tl.items, Todo{id: id, title: title, completed: completed})
-
-        if id > maxId
-            maxId = id
-
-    tl.nextId = maxId + 1
-    print("Loaded {len(tl.items)} todos from {filename}")
-    return tl, empty
-```
-
-Notice the error handling approaches:
-- `onerr return error "{error}"` (in Save) — propagates the error to the caller in one line
-- Manual `if err not equals empty` (in Load) — use this when you need to do something other than return before continuing
-
----
-
-## Step 7: The Complete Program
+## Step 4: The Complete Program
 
 Now let's put it all together into a working application!
+
+> **Note:** The final program imports `bufio` and `os` only for reading console input. Everything else is pure Kukicha and its standard library.
 
 Create a file called `main.kuki`:
 
 ```kukicha
-import "fmt"
-import "os"
 import "bufio"
-import "stdlib/files"
+import "os"
 import "stdlib/string"
 import "strconv"
 
@@ -574,7 +301,7 @@ type TodoList
 
 # --- Todo Methods ---
 
-func Display on todo Todo string
+function Display on todo Todo string
     status := "[ ]"
     if todo.completed
         status = "[✓]"
@@ -582,13 +309,13 @@ func Display on todo Todo string
 
 # --- TodoList Methods ---
 
-func Add on tl reference TodoList(title string)
+function Add on tl reference TodoList(title string)
     todo := Todo{id: tl.nextId, title: title, completed: false}
     tl.items = append(tl.items, todo)
     tl.nextId = tl.nextId + 1
     print("Added: {title}")
 
-func ShowAll on tl TodoList
+function ShowAll on tl TodoList
     if len(tl.items) equals 0
         print("\nNo todos yet! Use 'add <task>' to create one.\n")
         return
@@ -598,95 +325,43 @@ func ShowAll on tl TodoList
         print(todo.Display())
     print("")
 
-func Complete on tl reference TodoList(id int)
+function FindIndex on tl TodoList(id int) int
     for i, todo in tl.items
         if todo.id equals id
-            tl.items[i].completed = true
-            print("Completed: {todo.title}")
-            return
-    print("Todo #{id} not found")
+            return i
+    return -1
 
-func Save on tl TodoList(filename string)
-    lines := empty list of string
+function Complete on tl reference TodoList(id int)
+    index := tl.FindIndex(id)
+    if index equals -1
+        print("Todo #{id} not found")
+        return
 
-    for todo in tl.items
-        completed := "false"
-        if todo.completed
-            completed = "true"
-        lines = append(lines, "{todo.id}|{todo.title}|{completed}")
+    tl.items[index].completed = true
+    print("Completed: {tl.items[index].title}")
 
-    # Join lines and write to file — pipe the data left to right
-    lines
-        |> string.Join("\n")
-        |> files.WriteString(filename) onerr return
-
-    print("Saved {len(tl.items)} todos to {filename}")
-
-# --- Helper Functions ---
-
-func LoadTodos(filename string) TodoList
-    tl := TodoList{items: empty list of Todo, nextId: 1}
-
-    data, err := files.Read(filename)
-    if err != empty
-        return tl
-    lines := string.Split(string(data), "\n")
-
-    maxId := 0
-    for line in lines
-        if line equals ""
-            continue
-
-        parts := string.Split(line, "|")
-        if len(parts) not equals 3
-            continue
-
-        # Atoi can fail on bad data — skip the line
-        id, parseErr := strconv.Atoi(parts[0])
-        if parseErr not equals empty
-            continue
-        title := parts[1]
-        completed := parts[2] equals "true"
-
-        tl.items = append(tl.items, Todo{id: id, title: title, completed: completed})
-
-        if id > maxId
-            maxId = id
-
-    tl.nextId = maxId + 1
-    return tl
-
-func PrintHelp()
+function PrintHelp()
     print("Commands:")
     print("  add <task>  - Add a new todo")
     print("  done <id>   - Mark a todo as complete")
     print("  list        - Show all todos")
-    print("  save        - Save todos to file")
     print("  help        - Show this help")
     print("  quit        - Exit the app")
 
 # --- Main Program ---
 
-func main()
-    filename := "todos.txt"
-    # Note: This file will be created in the current working directory
-
-    # Try to load existing todos
-    tl := LoadTodos(filename)
+function main()
+    tl := TodoList{items: empty list of Todo, nextId: 1}
 
     print("=== Kukicha Todo App ===")
     print("Type 'help' for commands\n")
-
-    # Show existing todos if any
-    if len(tl.items) > 0
-        tl.ShowAll()
 
     # Create a reader for user input
     reader := bufio.NewReader(os.Stdin)
 
     # Main loop
     for
-        fmt.Print("> ")
+        print("> ")
 
         # Read user input — default to empty string on error
         input := reader.ReadString('\n') onerr ""
@@ -728,9 +403,6 @@ func main()
                 continue
             tl.Complete(id)
 
-        else if command equals "save"
-            tl.Save(filename)
-
         else
             print("Unknown command: {command}")
             print("Type 'help' for available commands")
@@ -738,7 +410,7 @@ func main()
 
 ---
 
-## Step 8: Running Your App
+## Step 5: Running Your App
 
 Build and run your todo app:
 
@@ -775,14 +447,9 @@ Completed: Learn Kukicha
 2. [✓] Learn Kukicha
 3. [ ] Call mom
 
-> save
-Saved 3 todos to todos.txt
-
 > quit
 Goodbye!
 ```
-
-If you run the app again, your todos will be loaded from the file!
 
 ---
 
@@ -793,12 +460,11 @@ Congratulations! You've built a real, working application. Let's review what you
 | Concept | What It Does |
 |---------|--------------|
 | **Custom Types** | Define your own data structures with `type Name` |
-| **Methods** | Attach functions to types with `func Name on receiver Type` |
+| **Methods** | Attach functions to types with `function Name on receiver Type` |
 | **Pipe Operator** | Cleanly chain functions together with `|>` |
 | **Lists** | Store multiple items with `list of Type` |
 | **Loops** | Process each item with `for item in list` |
-| **Error Handling** | Handle failures gracefully with `onerr` |
-| **File I/O** | Save and load data with `files.Read()` and `files.WriteString()` |
+| **Command Loop** | Read input and respond to simple commands |
 
 ---
 
@@ -808,9 +474,8 @@ Ready for a challenge? Try these enhancements:
 
 1. **Delete Command** - Add a `delete <id>` command to remove todos
 2. **Priority Levels** - Add a `priority` field (high, medium, low) to todos
-3. **Due Dates** - Add a `due` field and show overdue items
-4. **Categories** - Add tags or categories to organize todos
-5. **Search** - Add a `find <text>` command to search todos
+3. **Categories** - Add tags or categories to organize todos
+4. **Search** - Add a `find <text>` command to search todos
 
 ---
 

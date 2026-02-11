@@ -4,7 +4,7 @@
 **Time:** 30 minutes  
 **Prerequisite:** [Console Todo Tutorial](console-todo-tutorial.md)
 
-Welcome! You've built a console app that saves to files. Now let's build something even cooler: a **web application** that you can access from a browser!
+Welcome! You've built a console app that manages todos in memory. Now let's build something even cooler: a **web application** that you can access from a browser!
 
 ## What You'll Learn
 
@@ -56,7 +56,7 @@ Let's start with the simplest possible web server:
 import "fmt"
 import "net/http"
 
-func main()
+function main()
     # When someone visits the homepage, say hello
     http.HandleFunc("/", sayHello)
     
@@ -64,8 +64,9 @@ func main()
     http.ListenAndServe(":8080", empty) onerr panic "server failed to start"
 
 # This function handles requests to "/"
-func sayHello(response http.ResponseWriter, request reference http.Request)
-    fmt.Fprintln(response, "Hello from Kukicha!")
+function sayHello(response http.ResponseWriter, request reference http.Request)
+    # Use pipe to send response!
+    response |> fmt.Fprintln("Hello from Kukicha!")
 ```
 
 **What's happening here?**
@@ -92,7 +93,7 @@ Then open your browser to `http://localhost:8080` - you should see "Hello from K
 A **handler** is a function that responds to web requests. Every handler receives:
 
 ```kukicha
-func myHandler(response http.ResponseWriter, request reference http.Request)
+function myHandler(response http.ResponseWriter, request reference http.Request)
     # response - write your reply here
     # request - contains info about the incoming request
 ```
@@ -100,13 +101,13 @@ func myHandler(response http.ResponseWriter, request reference http.Request)
 We can check what **method** (GET, POST, etc.) the user is using:
 
 ```kukicha
-func myHandler(response http.ResponseWriter, request reference http.Request)
+function myHandler(response http.ResponseWriter, request reference http.Request)
     if request.Method equals "GET"
-        fmt.Fprintln(response, "You used GET!")
+        response |> fmt.Fprintln("You used GET!")
     else if request.Method equals "POST"
-        fmt.Fprintln(response, "You used POST!")
+        response |> fmt.Fprintln("You used POST!")
     else
-        fmt.Fprintln(response, "You used something else!")
+        response |> fmt.Fprintln("You used something else!")
 ```
 
 ---
@@ -157,15 +158,15 @@ type Todo
     title string
     completed bool
 
-func sendTodo(response http.ResponseWriter, request reference http.Request)
+function sendTodo(response http.ResponseWriter, request reference http.Request)
     # Create a todo with indented syntax
     todo := Todo
         id: 1
         title: "Learn Kukicha"
         completed: false
     
-    # Tell the browser we're sending JSON
-    response.Header().Set("Content-Type", "application/json")
+    # Tell the browser we're sending JSON using pipe chaining
+    response |> .Header() |> .Set("Content-Type", "application/json")
     
     # Convert the todo to JSON and send it using pipe
     response |> json.NewEncoder() |> .Encode(todo) onerr return
@@ -193,7 +194,7 @@ When someone visits this endpoint, they'll receive:
 When creating a new todo, the user sends JSON data to us. We need to read and parse it:
 
 ```kukicha
-func createTodo(response http.ResponseWriter, request reference http.Request)
+function createTodo(response http.ResponseWriter, request reference http.Request)
     # Create an empty todo to fill with the incoming data
     todo := Todo{}
 
@@ -203,22 +204,24 @@ func createTodo(response http.ResponseWriter, request reference http.Request)
         |> json.NewDecoder()
         |> json.Decode(_, reference of todo)
     if decodeErr not equals empty
-        response.WriteHeader(400)
-        fmt.Fprintln(response, "Invalid JSON")
+        response |> .WriteHeader(400)
+        response |> fmt.Fprintln("Invalid JSON")
         return
 
     # Now 'todo' contains the data the user sent!
     print("Received todo: {todo.title}")
 
     # Send back a success response
-    response.Header().Set("Content-Type", "application/json")
-    response.WriteHeader(201)  # 201 = Created
-    json.NewEncoder(response) |> .Encode(todo) onerr return
+    response |> .Header() |> .Set("Content-Type", "application/json")
+    response |> .WriteHeader(201)  # 201 = Created
+    response |> json.NewEncoder() |> .Encode(todo) onerr return
 ```
 
 **What's `reference of`?**
 
 When we write `reference of todo`, we're giving the JSON decoder a way to **fill in** our todo variable. Without it, the decoder would only have a copy and couldn't modify our actual todo.
+
+This same idea shows up when you work with lists: looping over items gives you **copies**, so updating a todo requires mutating by index (or using a reference) rather than changing a loop variable. You'll see us find a todo's index and update it directly in later steps.
 
 > **💡 Tip: The `_` placeholder.** By default, the piped value becomes the first argument. Use `_` to place it elsewhere:
 > ```kukicha
@@ -270,7 +273,7 @@ type ErrorResponse
     err string json:"error"
 
 # Metadata can be used to store extra info (demonstrating map literals)
-var API_METADATA = map of string to string{
+variable API_METADATA = map of string to string{
     "version": "1.0",
     "environment": "development",
 }
@@ -284,32 +287,32 @@ type TodoStore
 
 # --- Helper Functions ---
 
-func findTodoIndex on store reference TodoStore(id int) int
+function findTodoIndex on store reference TodoStore(id int) int
     # Walk the list to find the matching ID
     for i, todo in store.todos
         if todo.id equals id
             return i
     return -1
 
-func getIdFromPath(path string, prefix string) (int, bool)
+function getIdFromPath(path string, prefix string) (int, bool)
     # Extract "1" from "/todos/1"
-    idStr := string.TrimPrefix(path, prefix)
+    idStr := path |> string.TrimPrefix(prefix)
     if idStr equals "" or idStr equals path
         return 0, false
 
     id := idStr |> strconv.Atoi() onerr return 0, false
     return id, true
 
-func sendJSON on store reference TodoStore(response http.ResponseWriter, data any)
+function sendJSON on store reference TodoStore(response http.ResponseWriter, data any)
     # Helper to send any data as JSON with correct content-type header
-    response.Header().Set("Content-Type", "application/json")
+    response |> .Header() |> .Set("Content-Type", "application/json")
     response |> json.NewEncoder() |> .Encode(data) onerr return
 
-func sendError on store reference TodoStore(response http.ResponseWriter, status int, message string)
+function sendError on store reference TodoStore(response http.ResponseWriter, status int, message string)
     # Helper to send error responses as JSON
     # The client will receive a JSON object like {"error":"message"} with the given status code
-    response.Header().Set("Content-Type", "application/json")
-    response.WriteHeader(status)
+    response |> .Header() |> .Set("Content-Type", "application/json")
+    response |> .WriteHeader(status)
     response |> json.NewEncoder() |> .Encode(ErrorResponse{err: message}) onerr return
 ```
 
@@ -326,7 +329,7 @@ func sendError on store reference TodoStore(response http.ResponseWriter, status
 # --- API Handlers ---
 
 # GET /todos - List all todos (with optional search)
-func handleListTodos on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
+function handleListTodos on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Note: In production, you'd add limit/offset query parameters for pagination
     # to handle large datasets efficiently
     search := request.URL.Query().Get("search")
@@ -339,13 +342,13 @@ func handleListTodos on store reference TodoStore(response http.ResponseWriter, 
     # For production, regex or full-text search would be better for larger datasets
     filtered := empty list of Todo
     for todo in store.todos
-        if string.Contains(string.ToLower(todo.title), string.ToLower(search))
+        if todo.title |> string.ToLower() |> string.Contains(search |> string.ToLower())
             filtered = append(filtered, todo)
 
     store.sendJSON(response, filtered)
 
 # POST /todos - Create a new todo
-func handleCreateTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
+function handleCreateTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Parse the incoming JSON — pipe through decoder
     # reference of todo gives the decoder a pointer so it can fill in the struct
     todo := Todo{}
@@ -367,11 +370,11 @@ func handleCreateTodo on store reference TodoStore(response http.ResponseWriter,
     store.todos = append(store.todos, todo)
 
     # Send back the created todo
-    response.WriteHeader(201)
+    response |> .WriteHeader(201)
     store.sendJSON(response, todo)
 
 # GET /todos/{id} - Get a specific todo
-func handleGetTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
+function handleGetTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Get the ID from the URL
     id, ok := getIdFromPath(request.URL.Path, "/todos/")
     if not ok
@@ -387,7 +390,7 @@ func handleGetTodo on store reference TodoStore(response http.ResponseWriter, re
     store.sendJSON(response, store.todos[index])
 
 # PUT /todos/{id} - Update a todo
-func handleUpdateTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
+function handleUpdateTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Get the ID from the URL
     id, ok := getIdFromPath(request.URL.Path, "/todos/")
     if not ok
@@ -416,7 +419,7 @@ func handleUpdateTodo on store reference TodoStore(response http.ResponseWriter,
     store.sendJSON(response, updated)
 
 # DELETE /todos/{id} - Delete a todo
-func handleDeleteTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
+function handleDeleteTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Get the ID from the URL
     id, ok := getIdFromPath(request.URL.Path, "/todos/")
     if not ok
@@ -433,11 +436,11 @@ func handleDeleteTodo on store reference TodoStore(response http.ResponseWriter,
     # 'many' unpacks the second slice so append sees individual elements
     store.todos = append(store.todos[:index], many store.todos[index+1:])
 
-    response.WriteHeader(204)  # 204 = No Content (success, nothing to return)
+    response |> .WriteHeader(204)  # 204 = No Content (success, nothing to return)
 
 # --- Route Handler ---
 
-func handleTodos on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
+function handleTodos on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
     # Route to the right handler based on the path and method
 
     if request.URL.Path equals "/todos"
@@ -461,7 +464,7 @@ func handleTodos on store reference TodoStore(response http.ResponseWriter, requ
 
 # --- Main Entry Point ---
 
-func main()
+function main()
     # Create the store with an empty todo list using indented literal
     store := TodoStore
         todos: empty list of Todo

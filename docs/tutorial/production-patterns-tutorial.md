@@ -29,13 +29,45 @@ Let's fix all three!
 
 ---
 
+## Optional: File Persistence (Stepping Stone)
+
+If you want a quick way to persist data without a database, you can save todos to a file. This is fine for small, single-user tools, but it's **not safe** for concurrent web requests and doesn't scale well. That's why this tutorial moves to a database.
+
+```kukicha
+import "stdlib/files"
+import "stdlib/json"
+
+function SaveTodos(todos list of Todo, filename string) error
+    # Use pipe for marshalling
+    data := todos |> json.Marshal() onerr return error "{error}"
+    files.Write(filename, data) onerr return error "{error}"
+    return empty
+
+function LoadTodos(filename string) (list of Todo, error)
+    data := files.Read(filename) onerr return empty list of Todo, error "{error}"
+    todos := empty list of Todo
+    # Use pipe for unmarshalling - note the _ placeholder
+    data |> json.Unmarshal(_, reference of todos) onerr return empty list of Todo, error "{error}"
+    return todos, empty
+```
+
+**Why not use this for production?**
+- File writes aren't atomic across concurrent requests
+- No locking or transactions
+- Slow for large datasets
+- Hard to query or filter efficiently
+
+We'll use SQLite next because it solves these problems and teaches real-world patterns.
+
+---
+
 ## Part 1: Method Receivers
 
 In the previous tutorials, we used Kukicha's `on` syntax for methods:
 
 ```kukicha
 # Kukicha style - English-like
-func Display on todo Todo() string
+function Display on todo Todo() string
     return "{todo.id}. {todo.title}"
 ```
 
@@ -93,7 +125,7 @@ Now let's write methods that use locking:
 
 ```kukicha
 # Get all todos - uses a read lock
-func GetAllTodos on s reference Server() list of Todo
+function GetAllTodos on s reference Server() list of Todo
     s.mu.RLock()           # Start reading
     defer s.mu.RUnlock()   # Unlock when done (even if there's an error)
 
@@ -101,7 +133,7 @@ func GetAllTodos on s reference Server() list of Todo
     return slices.Clone(s.todos)
 
 # Create a new todo - uses a write lock
-func CreateTodo on s reference Server(title string) Todo
+function CreateTodo on s reference Server(title string) Todo
     s.mu.Lock()           # Start writing (exclusive access)
     defer s.mu.Unlock()   # Unlock when done
 
@@ -142,7 +174,7 @@ type Database
     db reference sql.DB
 
 # Open the database and create the table if needed
-func OpenDatabase(filename string) (Database, error)
+function OpenDatabase(filename string) (Database, error)
     db, err := sql.Open("sqlite3", filename)
     if err not equals empty
         return empty, err
@@ -155,12 +187,13 @@ func OpenDatabase(filename string) (Database, error)
             completed BOOLEAN DEFAULT FALSE
         )
     `
-    db.Exec(createTable) onerr return empty, error "{error}"
+    # Pipe the query into Exec
+    createTable |> db.Exec() onerr return empty, error "{error}"
 
     return Database{db: db}, empty
 
 # Close the database
-func Close on d Database()
+function Close on d Database()
     # empty is equivalent to nil in Go
     if d.db not equals empty
         d.db.Close()
@@ -170,7 +203,7 @@ func Close on d Database()
 
 ```kukicha
 # Create a new todo
-func CreateTodo on d Database(title string) (Todo, error)
+function CreateTodo on d Database(title string) (Todo, error)
     result, execErr := d.db.Exec("INSERT INTO todos (title, completed) VALUES (?, FALSE)", title)
     if execErr not equals empty
         return Todo{}, execErr
@@ -185,10 +218,11 @@ func CreateTodo on d Database(title string) (Todo, error)
     return Todo{id: int(id), title: title, completed: false}, empty
 
 # Get all todos
-func GetAllTodos on d Database() (list of Todo, error)
+function GetAllTodos on d Database() (list of Todo, error)
     # Returns a cloned slice to prevent external mutations
     # Note: This is a shallow copy; deep copy needed if fields become reference types
-    rows, queryErr := d.db.Query("SELECT id, title, completed FROM todos")
+    # Pipe the query string into Query
+    rows, queryErr := "SELECT id, title, completed FROM todos" |> d.db.Query()
     if queryErr not equals empty
         return empty, queryErr
     defer rows.Close()
@@ -205,8 +239,9 @@ func GetAllTodos on d Database() (list of Todo, error)
     return todos, empty
 
 # Get a single todo by ID
-func GetTodo on d Database(id int) (Todo, error)
-    row := d.db.QueryRow("SELECT id, title, completed FROM todos WHERE id = ?", id)
+function GetTodo on d Database(id int) (Todo, error)
+    # Pipe the query string into QueryRow
+    row := "SELECT id, title, completed FROM todos WHERE id = ?" |> d.db.QueryRow(id)
 
     todo := Todo{}
     scanErr := row.Scan(reference of todo.id, reference of todo.title, reference of todo.completed)
@@ -216,13 +251,14 @@ func GetTodo on d Database(id int) (Todo, error)
     return todo, empty
 
 # Update a todo
-func UpdateTodo on d Database(id int, title string, completed bool) error
-    d.db.Exec("UPDATE todos SET title = ?, completed = ? WHERE id = ?", title, completed, id) onerr return error "{error}"
+function UpdateTodo on d Database(id int, title string, completed bool) error
+    "UPDATE todos SET title = ?, completed = ? WHERE id = ?" 
+        |> d.db.Exec(title, completed, id) onerr return error "{error}"
     return empty
 
 # Delete a todo
-func DeleteTodo on d Database(id int) error
-    d.db.Exec("DELETE FROM todos WHERE id = ?", id) onerr return error "{error}"
+function DeleteTodo on d Database(id int) error
+    "DELETE FROM todos WHERE id = ?" |> d.db.Exec(id) onerr return error "{error}"
     return empty
 ```
 
@@ -277,7 +313,9 @@ type UpdateTodoInput
 
 # --- Server Constructor ---
 
-func NewServer(dbPath string) (reference Server, error)
+# --- Server Constructor ---
+
+function NewServer(dbPath string) (reference Server, error)
     db, dbErr := OpenDatabase(dbPath)
     if dbErr not equals empty
         return empty, dbErr
@@ -288,7 +326,7 @@ func NewServer(dbPath string) (reference Server, error)
 
 # --- HTTP Handlers ---
 
-func HandleTodos on s reference Server(w http.ResponseWriter, r reference http.Request)
+function HandleTodos on s reference Server(w http.ResponseWriter, r reference http.Request)
     if r.URL.Path equals "/todos"
         if r.Method equals "GET"
             s.handleListTodos(w, r)
@@ -306,7 +344,7 @@ func HandleTodos on s reference Server(w http.ResponseWriter, r reference http.R
         else
             s.sendError(w, 405, "Method not allowed")
 
-func handleListTodos on s reference Server(w http.ResponseWriter, r reference http.Request)
+function handleListTodos on s reference Server(w http.ResponseWriter, r reference http.Request)
     todos, err := s.db.GetAllTodos()
     if err not equals empty
         log.Printf("Error fetching todos: %v", err)
@@ -315,10 +353,11 @@ func handleListTodos on s reference Server(w http.ResponseWriter, r reference ht
 
     s.sendJSON(w, 200, todos)
 
-func handleCreateTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
+function handleCreateTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
     # Parse request body using the http helper
     input := CreateTodoInput{}
-    readErr := httphelper.ReadJSON(r, reference of input)
+    # Pipe request into ReadJSON
+    readErr := r |> httphelper.ReadJSON(reference of input)
     if readErr not equals empty
         httphelper.JSONBadRequest(w, "Invalid JSON")
         return
@@ -342,7 +381,7 @@ func handleCreateTodo on s reference Server(w http.ResponseWriter, r reference h
 
     httphelper.JSONCreated(w, todo)
 
-func handleGetTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
+function handleGetTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
     id, idErr := s.getIdFromPath(r.URL.Path, "/todos/")
     if idErr not equals empty
         s.sendError(w, 400, "Invalid ID")
@@ -355,7 +394,7 @@ func handleGetTodo on s reference Server(w http.ResponseWriter, r reference http
 
     s.sendJSON(w, 200, todo)
 
-func handleUpdateTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
+function handleUpdateTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
     id, idErr := s.getIdFromPath(r.URL.Path, "/todos/")
     if idErr not equals empty
         s.sendError(w, 400, "Invalid ID")
@@ -385,7 +424,7 @@ func handleUpdateTodo on s reference Server(w http.ResponseWriter, r reference h
 
     s.sendJSON(w, 200, todo)
 
-func handleDeleteTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
+function handleDeleteTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
     id, idErr := s.getIdFromPath(r.URL.Path, "/todos/")
     if idErr not equals empty
         s.sendError(w, 400, "Invalid ID")
@@ -399,11 +438,11 @@ func handleDeleteTodo on s reference Server(w http.ResponseWriter, r reference h
         s.sendError(w, 500, "Failed to delete todo")
         return
 
-    w.WriteHeader(204)
+    w |> .WriteHeader(204)
 
 # --- Helper Methods ---
 
-func getIdFromPath on s reference Server(path string, prefix string) (int, error)
+function getIdFromPath on s reference Server(path string, prefix string) (int, error)
     # When called with manual error check, any error returned lets the caller decide
     # what to do — e.g., send a 400 response if path is invalid
     idStr := path |> string.TrimPrefix(prefix)
@@ -412,23 +451,23 @@ func getIdFromPath on s reference Server(path string, prefix string) (int, error
     id := idStr |> strconv.Atoi() onerr return 0, error "{error}"
     return id, empty
 
-func sendJSON on s reference Server(w http.ResponseWriter, status int, data any)
+function sendJSON on s reference Server(w http.ResponseWriter, status int, data any)
     # Set header before WriteHeader; after WriteHeader, header changes are ignored
     # The Encode call writes the response body; any error after WriteHeader can't change status
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(status)
+    w |> .Header() |> .Set("Content-Type", "application/json")
+    w |> .WriteHeader(status)
     w |> json.NewEncoder() |> .Encode(data) onerr return
 
-**💡 Tip:** Note the use of `.Encode(data)` above. The dot shorthand keeps the focus on the data being piped — even when calling methods!
+# 💡 Tip: Note the use of `.Encode(data)` above. The dot shorthand keeps the focus on the data being piped — even when calling methods!
 
-func sendError on s reference Server(w http.ResponseWriter, status int, message string)
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(status)
+function sendError on s reference Server(w http.ResponseWriter, status int, message string)
+    w |> .Header() |> .Set("Content-Type", "application/json")
+    w |> .WriteHeader(status)
     w |> json.NewEncoder() |> .Encode(ErrorResponse{err: message}) onerr return
 
 # --- Main Entry Point ---
 
-func main()
+function main()
     # Configuration from environment variables (production best practice)
     # Using the 'must' package for startup config - panic is acceptable here
 
@@ -494,14 +533,14 @@ Use pointer receivers when:
 Go doesn't have constructors, so we use functions named `New<Type>`:
 
 ```kukicha
-func NewServer(config string) (reference Server, error)
+function NewServer(config string) (reference Server, error)
     # Initialize and return
 ```
 
 ### Defer for Cleanup
 
 ```kukicha
-func DoWork() error
+function DoWork() error
     resource := Acquire() onerr return error "{error}"
     defer resource.Close()  # Guaranteed to run when function exits
 
@@ -528,7 +567,7 @@ Kukicha includes several packages designed for production code:
 import "stdlib/env"
 import "stdlib/must"
 
-func main()
+function main()
     # Required config (panic if missing)
     apiKey := must.Env("API_KEY")
 
@@ -566,7 +605,7 @@ func main()
 import "stdlib/validate"
 import "stdlib/env"
 
-func CreateUser(email string, age int) (User, error)
+function CreateUser(email string, age int) (User, error)
     # Chain validations - each returns (value, error) for onerr
     email |> validate.NotEmpty() onerr return User{}, error "{error}"
     email |> validate.Email() onerr return User{}, error "{error}"
@@ -576,7 +615,7 @@ func CreateUser(email string, age int) (User, error)
     return User{email: email, age: age}, empty
 
 # Example: Parsing and validating a boolean setting from user input
-func UpdateSettings(enableNotificationsStr string) (Settings, error)
+function UpdateSettings(enableNotificationsStr string) (Settings, error)
     # First parse the boolean string, then use it
     enableNotifications := env.ParseBool(enableNotificationsStr) onerr
         return Settings{}, error "enableNotifications must be true/false/yes/no/1/0"
@@ -584,9 +623,9 @@ func UpdateSettings(enableNotificationsStr string) (Settings, error)
     return Settings{notifications: enableNotifications}, empty
 
 # Example: Parsing and validating a list of email addresses
-func AddAllowedEmails(emailListStr string) error
+function AddAllowedEmails(emailListStr string) error
     # Split and trim the list
-    emails := env.SplitAndTrim(emailListStr, ",")
+    emails := emailListStr |> env.SplitAndTrim(",")
 
     # Validate each email
     for email in emails
@@ -606,10 +645,11 @@ func AddAllowedEmails(emailListStr string) error
 ```kukicha
 import "stdlib/http" as httphelper
 
-func HandleUser(w http.ResponseWriter, r reference http.Request)
+function HandleUser(w http.ResponseWriter, r reference http.Request)
     # Read JSON body
     input := UserInput{}
-    readErr := httphelper.ReadJSON(r, reference of input)
+    # Pipe request into ReadJSON
+    readErr := r |> httphelper.ReadJSON(reference of input)
     if readErr not equals empty
         httphelper.JSONBadRequest(w, "Invalid JSON")
         return
@@ -633,7 +673,7 @@ You've completed the full Kukicha tutorial series!
 | Tutorial | What You Learned |
 |----------|-----------------|
 | ✅ **1. Beginner** | Variables, functions, strings, string petiole |
-| ✅ **2. Console Todo** | Types, methods (`on`), default parameters, named arguments, lists, `onerr`, file I/O |
+| ✅ **2. Console Todo** | Types, methods (`on`), lists, command loops, simple parsing |
 | ✅ **3. Web Todo** | HTTP servers, JSON, REST APIs |
 | ✅ **4. Production** | Databases, Go conventions, validation, env config |
 
@@ -680,7 +720,7 @@ Here's a quick reference for translating between Kukicha and Go:
 | `or` | `\|\|` |
 | `not` | `!` |
 | `for item in list` | `for _, item := range list` |
-| `func Name on x Type` | `func (x Type) Name()` |
+| `function Name on x Type` | `func (x Type) Name()` |
 | `result onerr default` | `if err != nil { ... }` |
 | `a \|> f(b)` | `f(a, b)` |
 | `a \|> f(b, _)` | `f(b, a)` (placeholder) |

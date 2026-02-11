@@ -42,6 +42,11 @@ Computers are very literal - they do exactly what you tell them, nothing more, n
 - Instead of `||`, we write `or`
 - Instead of `!`, we write `not`
 
+We also prefer full English words for definitions:
+- `function` (instead of `func`)
+- `variable` (instead of `var`)
+- `reference` (instead of pointers)
+
 Kukicha compiles to Go (another programming language), which means your Kukicha programs run fast and can use Go's huge ecosystem of tools.
 
 **The Botanical Metaphor:**
@@ -209,7 +214,7 @@ function main()
 kukicha run variables.kuki
 ```
 
-> **💡 Note on Abbreviations:** Because we use these so often, Kukicha also lets you use abbreviations: `var` instead of `variable`, and `func` instead of `function`. You'll see both in the documentation!
+> **💡 Note:** Kukicha is designed to read like English. While you might see `func` or `var` in some advanced code (shortcuts), we recommend using `function` and `variable` to keep your code readable and friendly.
 
 ---
 
@@ -231,7 +236,7 @@ Every piece of data has a **type** - it tells the computer what kind of informat
 Kukicha is smart - when you create a local variable, it figures out the type automatically. Let's create a new file `functions.kuki` to see this:
 
 ```kukicha
-func main()
+function main()
     age := 25              # Kukicha knows this is int
     price := 19.99         # Kukicha knows this is float64
     name := "Bob"          # Kukicha knows this is string
@@ -267,7 +272,7 @@ function Greet()
     print("Hello!")
 
 # The main function - where your program starts
-func main()
+function main()
     Greet()  # Call the Greet function
     Greet()  # Call it again!
 ```
@@ -293,7 +298,7 @@ Functions can accept **parameters** (inputs). Update `functions.kuki`:
 function Greet(name string)
     print("Hello, {name}!")
 
-func main()
+function main()
     Greet("Alice")  # Prints: Hello, Alice!
     Greet("Bob")    # Prints: Hello, Bob!
 ```
@@ -312,10 +317,10 @@ Functions can give back (return) a value. Update `functions.kuki`:
 
 ```kukicha
 # This function takes two ints and returns their sum (also an int)
-func Add(a int, b int) int
+function Add(a int, b int) int
     return a + b
 
-func main()
+function main()
     result := Add(5, 3)
     print(result)  # Prints: 8
 ```
@@ -343,7 +348,7 @@ A **string** is text - any sequence of characters. Strings are surrounded by dou
 Create a file called `strings.kuki`:
 
 ```kukicha
-func main()
+function main()
     greeting := "Hello"
     name := "World"
     sentence := "Programming is fun!"
@@ -364,7 +369,7 @@ kukicha run strings.kuki
 Use the `+` operator to join (concatenate) strings. Update `strings.kuki`:
 
 ```kukicha
-func main()
+function main()
     firstName := "Alice"
     lastName := "Johnson"
 
@@ -385,7 +390,7 @@ kukicha run strings.kuki
 Compare strings using English words. Update `strings.kuki`:
 
 ```kukicha
-func main()
+function main()
     password := "secret123"
 
     if password equals "secret123"
@@ -415,7 +420,7 @@ kukicha run strings.kuki
 Update `strings.kuki`:
 
 ```kukicha
-func main()
+function main()
     name := "Alice"
     age := 25
 
@@ -436,7 +441,7 @@ kukicha run strings.kuki
 
 **Without interpolation (the old way):**
 ```kukicha
-func main()
+function main()
     name := "Alice"
     age := 25
     message := "My name is " + name + " and I am " + age + " years old"
@@ -445,7 +450,7 @@ func main()
 
 **With interpolation (the Kukicha way):**
 ```kukicha
-func main()
+function main()
     name := "Alice"
     age := 25
     message := "My name is {name} and I am {age} years old"
@@ -461,10 +466,10 @@ kukicha run strings.kuki
 ### Interpolation in Functions
 
 ```kukicha
-func Greet(name string, time string) string
+function Greet(name string, time string) string
     return "Good {time}, {name}!"
 
-func main()
+function main()
     morning := Greet("Alice", "morning")
     evening := Greet("Bob", "evening")
 
@@ -477,7 +482,7 @@ func main()
 You can put more than just variables in `{}`! Update `strings.kuki` one last time:
 
 ```kukicha
-func main()
+function main()
     x := 5
     y := 3
 
@@ -519,11 +524,13 @@ Change text to lowercase or Title Case. Create a file called `string_petiole.kuk
 ```kukicha
 import "stdlib/string"
 
-func main()
+function main()
     text := "hello world"
 
-    lower := string.ToLower(text)
-    title := string.Title(text)
+    # Pipe syntax: value |> function
+    # It reads like: "take text, then convert to lower case"
+    lower := text |> string.ToLower()
+    title := text |> string.Title()
 
     print(lower)  # Prints: hello world
     print(title)  # Prints: Hello World
@@ -561,7 +568,7 @@ Remove extra spaces from the beginning and end of strings. This is a perfect job
 ```kukicha
 import "stdlib/string"
 
-func main()
+function main()
     messy := "  HELLO  "
 
     # Pipe: trim whitespace, then lowercase — no temp variable needed
@@ -586,7 +593,7 @@ Update `string_petiole.kuki`:
 ```kukicha
 import "stdlib/string"
 
-func main()
+function main()
     url := "https://example.com/"
     filename := "document.pdf"
 
@@ -594,8 +601,8 @@ func main()
     domain := url |> string.TrimPrefix("https://") |> string.TrimSuffix("/")
     print(domain)  # Prints: example.com
 
-    # Single operation — no pipe needed
-    name := string.TrimSuffix(filename, ".pdf")
+    # Single operation — Use pipe for consistency!
+    name := filename |> string.TrimSuffix(".pdf")
     print(name)  # Prints: document
 ```
 
@@ -612,10 +619,12 @@ Break a string into pieces. Update `string_petiole.kuki`:
 ```kukicha
 import "stdlib/string"
 
-func main()
+function main()
     # Split a comma-separated list
     colors := "red,green,blue"
-    parts := string.Split(colors, ",")
+    
+    # Use pipe to split
+    parts := colors |> string.Split(",")
 
     # parts is now a list: ["red", "green", "blue"]
     print(parts[0])  # Prints: red
@@ -625,7 +634,7 @@ func main()
     # Often when splitting strings, you have extra spaces
     # Let's see a messier example
     servers := "api1.example.com,  api2.example.com  , api3.example.com "
-    serverList := string.Split(servers, ",")
+    serverList := servers |> string.Split(",")
 
     print(serverList[0])  # Prints: api1.example.com
     print(serverList[1])  # Prints:   api2.example.com   (with spaces!)
@@ -647,12 +656,13 @@ When you split strings with messy spacing, you often need to trim each piece. Ku
 import "stdlib/string"
 import "stdlib/env"
 
-func main()
+function main()
     # Messy comma-separated list with inconsistent spacing
     servers := "api1.example.com,  api2.example.com  , api3.example.com "
 
     # env.SplitAndTrim does split + trim in one operation!
-    clean := env.SplitAndTrim(servers, ",")
+    # Pipes make it readable: 
+    clean := servers |> env.SplitAndTrim(",")
 
     print(clean[0])  # Prints: api1.example.com (no spaces!)
     print(clean[1])  # Prints: api2.example.com (no spaces!)
@@ -660,7 +670,7 @@ func main()
 
     # It also skips empty parts - useful for trailing commas
     messy := "one, two, , three,  "
-    cleaned := env.SplitAndTrim(messy, ",")
+    cleaned := messy |> env.SplitAndTrim(",")
     print(cleaned)
     # Result: ["one", "two", "three"] - empty part removed!
 ```
@@ -686,15 +696,15 @@ Combine a list of strings into one string. Update `string_petiole.kuki`:
 ```kukicha
 import "stdlib/string"
 
-func main()
+function main()
     words := list of string{"Hello", "World", "from", "Kukicha"}
 
     # Join with spaces
-    sentence := string.Join(words, " ")
+    sentence := words |> string.Join(" ")
     print(sentence)  # Prints: Hello World from Kukicha
 
     # Join with dashes
-    dashed := string.Join(words, "-")
+    dashed := words |> string.Join("-")
     print(dashed)  # Prints: Hello-World-from-Kukicha
 ```
 
@@ -711,20 +721,20 @@ Check if a string contains another string. Update `string_petiole.kuki`:
 ```kukicha
 import "stdlib/string"
 
-func main()
+function main()
     message := "Error: File not found"
 
     # Check if the message contains "Error"
-    if string.Contains(message, "Error")
+    if message |> string.Contains("Error")
         print("This is an error message!")
 
     # Check if the message starts with "Error:"
-    if string.HasPrefix(message, "Error:")
+    if message |> string.HasPrefix("Error:")
         print("Error detected!")
 
     # Check if a filename ends with .txt
     filename := "data.txt"
-    if string.HasSuffix(filename, ".txt")
+    if filename |> string.HasSuffix(".txt")
         print("This is a text file!")
 ```
 
@@ -741,15 +751,16 @@ Check whether a string contains a substring using `string.Contains`:
 ```kukicha
 import "stdlib/string"
 
-func main()
+function main()
     message := "Error: File not found"
 
     # Check if the message contains "Error"
-    if string.Contains(message, "Error")
+    if message |> string.Contains("Error")
         print("This is an error message!")
 
     # Check if "Success" is NOT in the message
-    if not string.Contains(message, "Success")
+    # 'not' works great with pipes!
+    if not (message |> string.Contains("Success"))
         print("Operation did not succeed")
 ```
 
@@ -764,7 +775,7 @@ Replace parts of a string. Need to make multiple replacements? Pipe them, one st
 ```kukicha
 import "stdlib/string"
 
-func main()
+function main()
     text := "I love cats and dogs"
 
     # Each replacement feeds into the next — line up the pipes to see the flow
