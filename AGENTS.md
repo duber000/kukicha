@@ -91,6 +91,20 @@ for item in items
 
 for i from 0 to 10        # 0..9 (exclusive)
 for i from 0 through 10   # 0..10 (inclusive)
+
+switch command
+    when "fetch", "pull"
+        fetchRepos()
+    when "help"
+        showHelp()
+    otherwise
+        print "Unknown: {command}"
+
+switch                     # condition switch (bare)
+    when stars >= 1000
+        print "Popular"
+    otherwise
+        print "New"
 ```
 
 ### Pipes

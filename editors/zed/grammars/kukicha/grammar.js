@@ -372,13 +372,13 @@ module.exports = grammar({
 
     switch_case: $ => choice(
       seq(
-        'case',
-        field('value', $._expression),
+        'when',
+        field('value', commaSep1($._expression)),
         $._newline,
         field('body', $.block),
       ),
       seq(
-        'default',
+        choice('otherwise', 'default'),
         $._newline,
         field('body', $.block),
       ),

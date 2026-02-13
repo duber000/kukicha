@@ -15,6 +15,7 @@ In this tutorial, you'll discover how to:
 - Handle errors gracefully with **`onerr`**
 - Use the **Pipe Operator (`|>`)** to build data transformation pipelines
 - **Fetch data** from a web API and parse **JSON**
+- Use **`switch`/`when`/`otherwise`** for clean command dispatch
 - Build a simple **command loop** for a console app
 
 Let's build something useful!
@@ -484,64 +485,65 @@ function main()
         parts := input |> string.SplitN(" ", 2)
         command := parts[0] |> string.ToLower()
 
-        if command equals "quit" or command equals "exit" or command equals "q"
-            print("Goodbye!")
-            break
+        switch command
+            when "quit", "exit", "q"
+                print("Goodbye!")
+                break
 
-        else if command equals "help" or command equals "?"
-            PrintHelp()
+            when "help", "?"
+                PrintHelp()
 
-        else if command equals "list" or command equals "ls"
-            ex.ShowList()
+            when "list", "ls"
+                ex.ShowList()
 
-        else if command equals "fetch"
-            if len(parts) < 2
-                print("Usage: fetch <username>")
-                continue
-            ex.Fetch(parts[1])
+            when "fetch"
+                if len(parts) < 2
+                    print("Usage: fetch <username>")
+                    continue
+                ex.Fetch(parts[1])
 
-        else if command equals "filter"
-            if len(parts) < 2
-                print("Usage: filter <language>")
-                continue
-            filtered := FilterByLanguage(ex.repos, parts[1])
-            print("\nShowing {len(filtered)} repos matching '{parts[1]}'")
-            for i, repo in filtered
-                print(repo.Summary(i + 1))
-            print("")
+            when "filter"
+                if len(parts) < 2
+                    print("Usage: filter <language>")
+                    continue
+                filtered := FilterByLanguage(ex.repos, parts[1])
+                print("\nShowing {len(filtered)} repos matching '{parts[1]}'")
+                for i, repo in filtered
+                    print(repo.Summary(i + 1))
+                print("")
 
-        else if command equals "search"
-            if len(parts) < 2
-                print("Usage: search <text>")
-                continue
-            term := parts[1] |> string.ToLower()
-            results := ex.repos |> slice.Filter(function(r Repo) bool
-                name := r.Name |> string.ToLower()
-                desc := r.Description |> string.ToLower()
-                return name |> string.Contains(term) or desc |> string.Contains(term)
-            )
-            print("\nFound {len(results)} repos matching '{parts[1]}'")
-            for i, repo in results
-                print(repo.Summary(i + 1))
-            print("")
+            when "search"
+                if len(parts) < 2
+                    print("Usage: search <text>")
+                    continue
+                term := parts[1] |> string.ToLower()
+                results := ex.repos |> slice.Filter(function(r Repo) bool
+                    name := r.Name |> string.ToLower()
+                    desc := r.Description |> string.ToLower()
+                    return name |> string.Contains(term) or desc |> string.Contains(term)
+                )
+                print("\nFound {len(results)} repos matching '{parts[1]}'")
+                for i, repo in results
+                    print(repo.Summary(i + 1))
+                print("")
 
-        else if command equals "fav"
-            if len(parts) < 2
-                print("Usage: fav <number>")
-                continue
-            # Parse the number — print a message and skip if it's not valid
-            id, idErr := strconv.Atoi(parts[1])
-            if idErr not equals empty
-                print("Invalid number: {parts[1]}")
-                continue
-            ex.AddFavorite(id)
+            when "fav"
+                if len(parts) < 2
+                    print("Usage: fav <number>")
+                    continue
+                # Parse the number — print a message and skip if it's not valid
+                id, idErr := strconv.Atoi(parts[1])
+                if idErr not equals empty
+                    print("Invalid number: {parts[1]}")
+                    continue
+                ex.AddFavorite(id)
 
-        else if command equals "favs" or command equals "favorites"
-            ex.ShowFavorites()
+            when "favs", "favorites"
+                ex.ShowFavorites()
 
-        else
-            print("Unknown command: {command}")
-            print("Type 'help' for available commands")
+            otherwise
+                print("Unknown command: {command}")
+                print("Type 'help' for available commands")
 ```
 
 ---
@@ -648,6 +650,33 @@ for
 
 A `for` with no condition runs forever. This is the standard pattern for programs that wait for user input — the loop keeps running until something inside calls `break`. You saw in the beginner tutorial that `for condition` runs while the condition is true; a bare `for` is just the extreme case where the condition is always true.
 
+### `switch`/`when`/`otherwise` — Command Dispatch
+
+```kukicha
+switch command
+    when "quit", "exit", "q"
+        print("Goodbye!")
+        break
+    when "help"
+        PrintHelp()
+    otherwise
+        print("Unknown command")
+```
+
+Instead of a long chain of `if`/`else if`/`else`, `switch` with `when` branches makes command dispatch clean and readable. Each `when` can match **multiple values** separated by commas — so `when "quit", "exit", "q"` handles all three in one branch. The `otherwise` branch catches anything that doesn't match (like `default` in other languages).
+
+You can also use `switch` without an expression for condition-based branching:
+
+```kukicha
+switch
+    when stars >= 1000
+        print("Popular!")
+    when stars >= 100
+        print("Growing")
+    otherwise
+        print("New")
+```
+
 ### `onerr` — Graceful Error Handling
 
 ```kukicha
@@ -694,6 +723,7 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | **`onerr`** | Handle errors gracefully with fallback values |
 | **Pipe Operator** | Chain operations into readable data pipelines |
 | **`empty`** | Check for null/missing values |
+| **`switch`/`when`** | Clean command dispatch with multiple matches per branch |
 | **Command Loop** | Read input, bare `for`, `break`, and `continue` |
 | **`fetch` + `json`** | Fetch and parse data from web APIs |
 

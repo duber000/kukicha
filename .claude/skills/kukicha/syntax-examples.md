@@ -106,6 +106,55 @@ func main()
 
 ---
 
+## Switch with When/Otherwise
+
+### Value Switch (Command Dispatch)
+```kukicha
+func HandleCommand(command string, args list of string)
+    switch command
+        when "help", "h", "?"
+            PrintHelp()
+        when "version", "v"
+            print("v1.0.0")
+        when "fetch"
+            if len(args) < 1
+                print("Usage: fetch <url>")
+                return
+            FetchData(args[0])
+        otherwise
+            print("Unknown command: {command}")
+```
+
+### Condition Switch (Multi-Branch Logic)
+```kukicha
+func Classify(score int) string
+    switch
+        when score >= 90
+            return "A"
+        when score >= 80
+            return "B"
+        when score >= 70
+            return "C"
+        otherwise
+            return "F"
+```
+
+### HTTP Method Dispatch
+```kukicha
+func handleResource(w http.ResponseWriter, r reference http.Request)
+    switch r.Method
+        when "GET"
+            httphelper.JSON(w, resource)
+        when "POST"
+            createResource(w, r)
+        when "DELETE"
+            deleteResource(w, r)
+        otherwise
+            httphelper.MethodNotAllowed(w)
+```
+
+---
+
 ## Production-Ready Packages
 
 ### Validation with stdlib/validate

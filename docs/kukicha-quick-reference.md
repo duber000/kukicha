@@ -89,7 +89,7 @@ user := fetchUser(id) onerr
     return empty
 ```
 
-### 5. References and Pointers
+### 6. References and Pointers
 Kukicha uses explicit keywords instead of symbols for pointers.
 
 ```kukicha
@@ -103,7 +103,7 @@ userPtr := reference of user
 userValue := dereference userPtr
 ```
 
-### 6. String Interpolation
+### 7. String Interpolation
 Insert expressions directly into strings using curly braces.
 
 ```kukicha
@@ -113,7 +113,7 @@ print("Welcome to {name} v{version}!")
 print("Math: 1 + 1 = {1 + 1}")
 ```
 
-### 7. Indentation-based Blocks
+### 8. Indentation-based Blocks
 Kukicha uses 4-space indentation instead of curly braces for all blocks.
 
 ```kukicha
@@ -125,7 +125,7 @@ func main()
         print("Inactive")
 ```
 
-### 8. Indented Struct Literals
+### 9. Indented Struct Literals
 For better readability of complex data, you can use indentation instead of braces.
 
 ```kukicha
@@ -135,7 +135,7 @@ user := User
     active: true
 ```
 
-### 9. Switch with English Branches
+### 10. Switch with English Branches
 Use `when` and `otherwise` for readable branching.
 
 ```kukicha
@@ -148,7 +148,7 @@ switch command
         print("Unknown command")
 ```
 
-### 8. Collection Types
+### 11. Collection Types
 Construct composite types with a readable syntax.
 
 ```kukicha
@@ -170,7 +170,7 @@ config := map of string to string{
 ch := make channel of string, 10
 ```
 
-### 10. Top-level Variables
+### 12. Top-level Variables
 Declare global state or constants at the top level of a file. You can use the full name `variable` or the abbreviation `var`.
 
 ```kukicha
@@ -178,7 +178,7 @@ variable API_URL string = "https://api.example.com"
 var IS_PRODUCTION bool = false
 ```
 
-### 9. Methods
+### 13. Methods
 Methods are defined with an explicit receiver name and the `on` keyword. You can use `function` or `func`.
 
 ```kukicha
@@ -196,7 +196,7 @@ function Get on s reference Store(id int) Todo
     return s.todos[id]
 ```
 
-### 10. Control Flow Variations
+### 14. Control Flow Variations
 ```kukicha
 # Range loops
 for i from 0 to 10          # 0 to 9
@@ -210,7 +210,7 @@ for i, item in items        # Index and value
 status := "Active" if user.active else "Inactive"
 ```
 
-### 11. Named Arguments
+### 15. Named Arguments
 Call functions with explicit argument names for clarity.
 
 ```kukicha
@@ -229,7 +229,7 @@ Configure("localhost", port: 8080, secure: true)
 Configure("localhost", secure: true)  # Use default port
 ```
 
-### 12. Default Parameter Values
+### 16. Default Parameter Values
 Define functions with optional parameters that have default values.
 
 ```kukicha
@@ -287,6 +287,7 @@ func Connect(host string, port int = 8080, timeout int = 30)
 | `make([]T, len)` | `make list of T, len` |
 | `defer f()` | `defer f()` |
 | `go f()` | `go f()` |
+| `switch x { case a: ... }` | `switch x` / `when a` / `otherwise` |
 | (no equivalent) | `foo(name: value)` (named arguments) |
 | (no equivalent) | `func F(x int = 10)` (default parameters) |
 

@@ -870,6 +870,9 @@ func (p *Parser) parseSwitchStmt() *ast.SwitchStmt {
 
 		if p.match(lexer.TOKEN_CASE) {
 			caseToken := p.previousToken()
+			if stmt.Otherwise != nil {
+				p.error(caseToken, "'when' branch after 'otherwise' will never execute")
+			}
 			values := []ast.Expression{p.parseExpression()}
 			for p.match(lexer.TOKEN_COMMA) {
 				values = append(values, p.parseExpression())

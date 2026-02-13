@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/duber000/kukicha/internal/ast"
@@ -274,6 +275,37 @@ func TestParseConditionSwitchStatement(t *testing.T) {
 
 	if switchStmt.Expression != nil {
 		t.Fatal("expected condition switch with nil expression")
+	}
+}
+
+func TestParseWhenAfterOtherwiseIsError(t *testing.T) {
+	input := `func Route(command string) string
+    switch command
+        otherwise
+            return "default"
+        when "help"
+            return "help"
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	_, errors := p.Parse()
+
+	if len(errors) == 0 {
+		t.Fatal("expected parser error for 'when' after 'otherwise'")
+	}
+
+	found := false
+	for _, e := range errors {
+		if strings.Contains(e.Error(), "will never execute") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected 'will never execute' error, got: %v", errors)
 	}
 }
 

@@ -131,11 +131,29 @@ for i from 0 through 10      # 0 to 10 (inclusive)
 
 for count > 0                # While-style loop
     count--
-    
+
  for                          # Infinite loop
      if something
          break
      continue
+
+# Switch with when/otherwise
+switch command
+    when "fetch", "pull"
+        fetchRepos()
+    when "help"
+        showHelp()
+    otherwise
+        print("Unknown command")
+
+# Condition switch (bare switch, like Go's switch {})
+switch
+    when stars >= 1000
+        print("Popular")
+    when stars >= 100
+        print("Growing")
+    otherwise
+        print("New")
 ```
 
 ### Types
@@ -287,6 +305,7 @@ evens := Filter(list of int{1, 2, 3, 4}, isEven)
 | `break` | `break` |
 | `continue` | `continue` |
 | `for` (bare) | `for { ... }` |
+| `switch x` / `when a, b` / `otherwise` | `switch x { case a, b: ... default: ... }` |
 
 ## Standard Library
 
@@ -431,10 +450,13 @@ func handleCommand(args cli.Args)
     verbose := cli.GetBool(args, "verbose")
     format := cli.GetString(args, "format")
 
-    if command == "fetch"
-        print("Fetching {input} with format {format}")
-    else if command == "process"
-        print("Processing {input}")
+    switch command
+        when "fetch"
+            print("Fetching {input} with format {format}")
+        when "process"
+            print("Processing {input}")
+        otherwise
+            print("Unknown command: {command}")
 ```
 
 ### Slice Package with Generics

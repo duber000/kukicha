@@ -60,7 +60,7 @@ switch
 
 | Feature | Status | Natural home |
 |---------|--------|-------------|
-| `switch/when` | Implemented | CLI Explorer command dispatch |
+| `switch/when` | **Done** — CLI Explorer, Link Shortener, Production tutorials updated | CLI Explorer command dispatch, HTTP method dispatch |
 | `interface` | In grammar, zero examples | New section in Production tutorial or standalone |
 | `channel` / `send` / `receive` | In grammar, never used | New "Concurrency" tutorial or Production addendum |
 | `recover` | In grammar, zero examples | Production tutorial error handling section |
