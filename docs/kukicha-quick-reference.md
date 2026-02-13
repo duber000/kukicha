@@ -135,6 +135,19 @@ user := User
     active: true
 ```
 
+### 9. Switch with English Branches
+Use `when` and `otherwise` for readable branching.
+
+```kukicha
+switch command
+    when "fetch", "pull"
+        print("Fetching...")
+    when "help"
+        print("Help")
+    otherwise
+        print("Unknown command")
+```
+
 ### 8. Collection Types
 Construct composite types with a readable syntax.
 

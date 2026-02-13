@@ -249,6 +249,8 @@ func (p *PrinterWithComments) printStatementWithComments(stmt ast.Statement) {
 		p.printReturnStmt(s)
 	case *ast.IfStmt:
 		p.printIfStmtWithComments(s)
+	case *ast.SwitchStmt:
+		p.printSwitchStmtWithComments(s)
 	case *ast.ForRangeStmt:
 		p.printForRangeStmtWithComments(s)
 	case *ast.ForNumericStmt:
@@ -351,6 +353,34 @@ func (p *PrinterWithComments) printForNumericStmtWithComments(stmt *ast.ForNumer
 
 	p.indentLevel++
 	p.printBlockWithComments(stmt.Body)
+	p.indentLevel--
+}
+
+func (p *PrinterWithComments) printSwitchStmtWithComments(stmt *ast.SwitchStmt) {
+	if stmt.Expression != nil {
+		p.writeLine(fmt.Sprintf("switch %s", p.exprToString(stmt.Expression)))
+	} else {
+		p.writeLine("switch")
+	}
+
+	p.indentLevel++
+	for _, c := range stmt.Cases {
+		values := make([]string, len(c.Values))
+		for i, v := range c.Values {
+			values[i] = p.exprToString(v)
+		}
+		p.writeLine(fmt.Sprintf("when %s", strings.Join(values, ", ")))
+		p.indentLevel++
+		p.printBlockWithComments(c.Body)
+		p.indentLevel--
+	}
+
+	if stmt.Otherwise != nil {
+		p.writeLine("otherwise")
+		p.indentLevel++
+		p.printBlockWithComments(stmt.Otherwise.Body)
+		p.indentLevel--
+	}
 	p.indentLevel--
 }
 

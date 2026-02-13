@@ -365,6 +365,30 @@ func (s *ElseStmt) Pos() Position {
 }
 func (s *ElseStmt) stmtNode() {}
 
+type SwitchStmt struct {
+	Token      lexer.Token // The 'switch' token
+	Expression Expression  // Optional (nil for condition switch)
+	Cases      []*WhenCase
+	Otherwise  *OtherwiseCase // Optional
+}
+
+func (s *SwitchStmt) TokenLiteral() string { return s.Token.Lexeme }
+func (s *SwitchStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *SwitchStmt) stmtNode() {}
+
+type WhenCase struct {
+	Token  lexer.Token // The 'when' or 'case' token
+	Values []Expression
+	Body   *BlockStmt
+}
+
+type OtherwiseCase struct {
+	Token lexer.Token // The 'otherwise' or 'default' token
+	Body  *BlockStmt
+}
+
 // ForRangeStmt: for item in collection
 type ForRangeStmt struct {
 	Token      lexer.Token // The 'for' token

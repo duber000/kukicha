@@ -264,6 +264,69 @@ func TestListOperations(t *testing.T) {
 	}
 }
 
+func TestBreakInsideSwitchIsAllowed(t *testing.T) {
+	input := `func Route(command string)
+    switch command
+        when "quit"
+            break
+        otherwise
+            print("ok")
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	if len(errors) > 0 {
+		t.Fatalf("unexpected semantic errors: %v", errors)
+	}
+}
+
+func TestConditionSwitchRequiresBoolWhenBranches(t *testing.T) {
+	input := `func Bad()
+    switch
+        when 42
+            print("bad")
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	if len(errors) == 0 {
+		t.Fatal("expected semantic error for non-bool switch condition branch")
+	}
+
+	found := false
+	for _, err := range errors {
+		if strings.Contains(err.Error(), "switch condition branch must be bool") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected switch condition bool error, got: %v", errors)
+	}
+}
+
 func TestBooleanExpression(t *testing.T) {
 	input := `func Test(x int, y int) bool
     return x > 5 and y < 10
