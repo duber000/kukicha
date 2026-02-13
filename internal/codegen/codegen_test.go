@@ -1106,3 +1106,157 @@ func TestMultiLinePipeCodegen(t *testing.T) {
 		t.Errorf("multi-line output missing %q:\n%s", want, multiOut)
 	}
 }
+
+func TestGoBlockSyntax(t *testing.T) {
+	input := `func main()
+    go
+        doSomething()
+        doSomethingElse()
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "go func() {") {
+		t.Errorf("expected 'go func() {' in output, got: %s", output)
+	}
+
+	if !strings.Contains(output, "}()") {
+		t.Errorf("expected '}()' in output, got: %s", output)
+	}
+
+	if !strings.Contains(output, "doSomething()") {
+		t.Errorf("expected 'doSomething()' in output, got: %s", output)
+	}
+}
+
+func TestGoCallSyntaxStillWorks(t *testing.T) {
+	input := `func main()
+    go processItem(item)
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "go processItem(item)") {
+		t.Errorf("expected 'go processItem(item)' in output, got: %s", output)
+	}
+}
+
+func TestArrowLambdaTypedExpression(t *testing.T) {
+	input := `func main()
+    f := (r Repo) => r.Stars > 100
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func(r Repo) bool") {
+		t.Errorf("expected 'func(r Repo) bool' in output, got: %s", output)
+	}
+
+	if !strings.Contains(output, "return (r.Stars > 100)") {
+		t.Errorf("expected 'return (r.Stars > 100)' in output, got: %s", output)
+	}
+}
+
+func TestArrowLambdaZeroParams(t *testing.T) {
+	input := `func main()
+    f := () => print("hello")
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func()") {
+		t.Errorf("expected 'func()' in output, got: %s", output)
+	}
+}
+
+func TestArrowLambdaBlockForm(t *testing.T) {
+	input := `func main()
+    f := (r Repo) =>
+        name := r.Name
+        return name
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func(r Repo)") {
+		t.Errorf("expected 'func(r Repo)' in output, got: %s", output)
+	}
+
+	if !strings.Contains(output, "name := r.Name") {
+		t.Errorf("expected 'name := r.Name' in output, got: %s", output)
+	}
+
+	if !strings.Contains(output, "return name") {
+		t.Errorf("expected 'return name' in output, got: %s", output)
+	}
+}

@@ -384,7 +384,12 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 	case *ast.DeferStmt:
 		a.analyzeExpression(s.Call)
 	case *ast.GoStmt:
-		a.analyzeExpression(s.Call)
+		if s.Call != nil {
+			a.analyzeExpression(s.Call)
+		}
+		if s.Block != nil {
+			a.analyzeBlock(s.Block)
+		}
 	case *ast.SendStmt:
 		a.analyzeExpression(s.Value)
 		a.analyzeExpression(s.Channel)
@@ -832,6 +837,15 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 		_ = a.analyzeExpression(e.Expression)
 		// Return the target type
 		return a.typeAnnotationToTypeInfo(e.TargetType)
+	case *ast.ArrowLambda:
+		// Analyze arrow lambda body
+		if e.Body != nil {
+			a.analyzeExpression(e.Body)
+		}
+		if e.Block != nil {
+			a.analyzeBlock(e.Block)
+		}
+		return &TypeInfo{Kind: TypeKindUnknown}
 	default:
 		return &TypeInfo{Kind: TypeKindUnknown}
 	}

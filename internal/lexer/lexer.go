@@ -232,6 +232,8 @@ func (l *Lexer) scanToken() {
 	case '=':
 		if l.match('=') {
 			l.addToken(TOKEN_DOUBLE_EQUALS)
+		} else if l.match('>') {
+			l.addToken(TOKEN_FAT_ARROW)
 		} else {
 			l.addToken(TOKEN_ASSIGN)
 		}

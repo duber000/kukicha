@@ -260,7 +260,16 @@ func (p *PrinterWithComments) printStatementWithComments(stmt ast.Statement) {
 	case *ast.DeferStmt:
 		p.writeLine("defer " + p.exprToString(s.Call))
 	case *ast.GoStmt:
-		p.writeLine("go " + p.exprToString(s.Call))
+		if s.Block != nil {
+			p.writeLine("go")
+			p.indentLevel++
+			for _, stmt := range s.Block.Statements {
+				p.printStatementWithComments(stmt)
+			}
+			p.indentLevel--
+		} else {
+			p.writeLine("go " + p.exprToString(s.Call))
+		}
 	case *ast.SendStmt:
 		channel := p.exprToString(s.Channel)
 		value := p.exprToString(s.Value)

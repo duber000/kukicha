@@ -446,7 +446,8 @@ func (s *DeferStmt) stmtNode() {}
 
 type GoStmt struct {
 	Token lexer.Token // The 'go' token
-	Call  Expression  // Can be CallExpr or MethodCallExpr
+	Call  Expression  // Can be CallExpr or MethodCallExpr (nil when Block is set)
+	Block *BlockStmt  // Block form: go NEWLINE INDENT ... DEDENT (nil when Call is set)
 }
 
 func (s *GoStmt) TokenLiteral() string { return s.Token.Lexeme }
@@ -846,6 +847,25 @@ func (e *FunctionLiteral) Pos() Position {
 	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
 }
 func (e *FunctionLiteral) exprNode() {}
+
+// ArrowLambda represents a short inline function using => syntax.
+// Expression form: (r Repo) => r.Stars > 100
+// Block form:      (r Repo) =>
+//
+//	name := r.Name
+//	return name
+type ArrowLambda struct {
+	Token      lexer.Token  // The '=>' token
+	Parameters []*Parameter // May have nil Type for untyped params
+	Body       Expression   // Expression lambda: single expression (auto-return)
+	Block      *BlockStmt   // Block lambda: multi-statement body (mutually exclusive with Body)
+}
+
+func (e *ArrowLambda) TokenLiteral() string { return e.Token.Lexeme }
+func (e *ArrowLambda) Pos() Position {
+	return Position{Line: e.Token.Line, Column: e.Token.Column, File: e.Token.File}
+}
+func (e *ArrowLambda) exprNode() {}
 
 type AddressOfExpr struct {
 	Token   lexer.Token // The 'reference' token
