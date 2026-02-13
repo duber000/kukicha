@@ -1,49 +1,50 @@
-# Building a Web Todo App with Kukicha
+# Build a Link Shortener with Kukicha
 
-**Level:** Intermediate  
-**Time:** 30 minutes  
-**Prerequisite:** [Console Todo Tutorial](console-todo-tutorial.md)
+**Level:** Intermediate
+**Time:** 30 minutes
+**Prerequisite:** [CLI Explorer Tutorial](cli-explorer-tutorial.md)
 
-Welcome! You've built a console app that manages todos in memory. Now let's build something even cooler: a **web application** that you can access from a browser!
+Welcome! You've built interactive CLI tools with custom types, methods, and pipes. Now let's build something even cooler: a **web service** you can access from a browser — a link shortener, like bit.ly.
 
 ## What You'll Learn
 
 In this tutorial, you'll discover how to:
 - Create a **web server** that responds to requests
 - Send and receive **JSON data** (the language of web APIs)
-- Build **endpoints** for creating, reading, updating, and deleting todos
-- Handle **different request types** (GET, POST, PUT, DELETE)
+- Build **endpoints** for creating, reading, and deleting links
+- Handle **different request types** (GET, POST, DELETE)
+- Perform **HTTP redirects** — the core of a link shortener
 
-By the end, you'll have a todo API that any web or mobile app could connect to!
+By the end, you'll have a working link shortener API that anyone can use!
 
 ---
 
 ## What We're Building
 
-Our web app will be a **REST API** - a way for other programs (like websites or phone apps) to talk to our todo list.
+A **link shortener** takes long URLs and gives back short ones. When someone visits the short URL, they get redirected to the original.
+
+Our API:
 
 | Action | Request | URL | Description |
 |--------|---------|-----|-------------|
-| List all todos | `GET` | `/todos` | Get all your todos |
-| Create a todo | `POST` | `/todos` | Add a new todo |
-| Get one todo | `GET` | `/todos/1` | Get todo with id 1 |
-| Update a todo | `PUT` | `/todos/1` | Update todo with id 1 |
-| Delete a todo | `DELETE` | `/todos/1` | Delete todo with id 1 |
+| Shorten a URL | `POST` | `/shorten` | Submit a URL, get back a short code |
+| Follow a link | `GET` | `/r/{code}` | Redirects to the original URL |
+| List all links | `GET` | `/links` | See all shortened links |
+| Get link info | `GET` | `/links/{code}` | Get details and click count |
+| Delete a link | `DELETE` | `/links/{code}` | Remove a shortened link |
 
-**Why a web API?** A web API lets any device—browser, mobile app, or script—talk to the same todo data, which is a natural next step after a local CLI. Your todo list becomes accessible anywhere, not just from the terminal.
+**Why a link shortener?** It's a real tool people actually use, it teaches all the core web concepts (routing, JSON, status codes, redirects), and you get to see HTTP redirects in action — something most tutorials skip.
 
-Don't worry if this looks complicated - we'll build it step by step!
+Don't worry if this looks complicated — we'll build it step by step!
 
 ---
 
 ## Step 0: Project Setup
 
-If you haven't already, set up your project:
-
 ```bash
-mkdir web-todo && cd web-todo
-go mod init web-todo
-kukicha init    # Extracts stdlib for JSON, fetch, etc.
+mkdir link-shortener && cd link-shortener
+go mod init link-shortener
+kukicha init    # Extracts stdlib for JSON, etc.
 ```
 
 ---
@@ -59,7 +60,7 @@ import "net/http"
 function main()
     # When someone visits the homepage, say hello
     http.HandleFunc("/", sayHello)
-    
+
     print("Server starting on http://localhost:8080")
     http.ListenAndServe(":8080", empty) onerr panic "server failed to start"
 
@@ -71,11 +72,11 @@ function sayHello(response http.ResponseWriter, request reference http.Request)
 
 **What's happening here?**
 
-1. `http.HandleFunc("/", sayHello)` - When someone visits `/`, run the `sayHello` function
-2. `http.ListenAndServe(":8080", empty)` - Start listening on port 8080
+1. `http.HandleFunc("/", sayHello)` — When someone visits `/`, run the `sayHello` function
+2. `http.ListenAndServe(":8080", empty)` — Start listening on port 8080
 3. `sayHello` receives two things:
-   - `response` - Where we write our reply
-   - `request` - Information about what the user asked for
+   - `response` — Where we write our reply
+   - `request` — Information about what the user asked for
 
 **Try it!**
 
@@ -84,7 +85,7 @@ Run the server:
 kukicha run main.kuki
 ```
 
-Then open your browser to `http://localhost:8080` - you should see "Hello from Kukicha!"
+Then open your browser to `http://localhost:8080` — you should see "Hello from Kukicha!"
 
 ---
 
@@ -103,9 +104,9 @@ We can check what **method** (GET, POST, etc.) the user is using:
 ```kukicha
 function myHandler(response http.ResponseWriter, request reference http.Request)
     if request.Method equals "GET"
-        response |> fmt.Fprintln("You used GET!")
+        response |> fmt.Fprintln("You want to read something!")
     else if request.Method equals "POST"
-        response |> fmt.Fprintln("You used POST!")
+        response |> fmt.Fprintln("You want to create something!")
     else
         response |> fmt.Fprintln("You used something else!")
 ```
@@ -117,59 +118,44 @@ function myHandler(response http.ResponseWriter, request reference http.Request)
 Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks like this:
 
 ```json
-{"id": 1, "title": "Buy groceries", "completed": false}
+{"code": "k7f", "url": "https://go.dev", "clicks": 42}
 ```
 
-> **📚 Note: JSON in Kukicha with Go 1.25+**
+> **Note: JSON in Kukicha with Go 1.25+**
 >
-> Kukicha's stdlib `json` package uses Go 1.25+ `encoding/json/v2` for 2-10x faster JSON parsing:
-> ```kukicha
-> import "stdlib/json"
-> 
-> # Parse JSON from file
-> configData := files.Read("config.json")
-> config := Config{}
-> json.Unmarshal(configData as list of byte, reference config) onerr panic "parse failed"
-> 
-> # Or using the pipe pattern:
-> config := Config{}
-> files.Read("config.json") |> json.Unmarshal(_, reference config) onerr panic "parse failed"
-> ```
->
-> For web servers, you can use `encoding/json/v2` for streaming:
+> Kukicha uses Go 1.25+ `encoding/json/v2` for faster JSON:
 > ```kukicha
 > import "encoding/json/v2"
-> json.MarshalWrite(response, data)  # Write JSON directly to response
-> json.UnmarshalRead(request.Body, reference result)  # Stream from request
+> json.MarshalWrite(response, data)            # Write JSON directly to response
+> json.UnmarshalRead(request.Body, reference result)  # Read JSON from request
 >
-> # With pipe placeholder (_), you can pipe data into any argument position:
-> data |> json.MarshalWrite(response, _)  # _ marks where piped value goes
+> # With pipe placeholder (_), pipe data into any argument position:
+> data |> json.MarshalWrite(response, _)       # _ marks where piped value goes
 > ```
 >
-> **Rule of thumb:** Use `json.Unmarshal()` for parsing JSON data, use `json.Marshal()` for creating JSON, and use the streaming functions for web servers.
+> **Rule of thumb:** Use `json.NewEncoder()` / `json.NewDecoder()` for streaming (web servers), and `json.Marshal()` / `json.Unmarshal()` for in-memory conversion.
 
-Kukicha makes sending JSON easy:
+Let's define our `Link` type and send one as JSON:
 
 ```kukicha
-import "encoding/json/v2"  # Go 1.25+ for better performance
+import "encoding/json/v2"
 
-type Todo
-    id int
-    title string
-    completed bool
+type Link
+    code string
+    url string
+    clicks int
 
-function sendTodo(response http.ResponseWriter, request reference http.Request)
-    # Create a todo with indented syntax
-    todo := Todo
-        id: 1
-        title: "Learn Kukicha"
-        completed: false
-    
+function sendLink(response http.ResponseWriter, request reference http.Request)
+    link := Link
+        code: "k7f"
+        url: "https://go.dev"
+        clicks: 42
+
     # Tell the browser we're sending JSON using pipe chaining
     response |> .Header() |> .Set("Content-Type", "application/json")
-    
-    # Convert the todo to JSON and send it using pipe
-    response |> json.NewEncoder() |> .Encode(todo) onerr return
+
+    # Convert the link to JSON and send it using pipe
+    response |> json.NewEncoder() |> .Encode(link) onerr return
 ```
 
 **💡 Tip:** When piping into a method that belongs to the value itself, use the dot shorthand:
@@ -180,137 +166,132 @@ response.Header().Set(...)
 # Same thing, using pipe:
 response |> .Header() |> .Set(...)
 ```
-This keeps the left-to-right data flow when chaining — and makes it clear the method belongs to the piped value, not an imported package.
+This keeps the left-to-right data flow — and makes it clear the method belongs to the piped value, not an imported package.
 
-When someone visits this endpoint, they'll receive:
+When someone hits this endpoint, they'll receive:
 ```json
-{"id":1,"title":"Learn Kukicha","completed":false}
+{"code":"k7f","url":"https://go.dev","clicks":42}
 ```
 
 ---
 
 ## Step 4: Receiving JSON Data
 
-When creating a new todo, the user sends JSON data to us. We need to read and parse it:
+When someone wants to shorten a URL, they'll send us JSON. We need to read and parse it:
 
 ```kukicha
-function createTodo(response http.ResponseWriter, request reference http.Request)
-    # Create an empty todo to fill with the incoming data
-    todo := Todo{}
+type ShortenRequest
+    url string
+
+function handleShorten(response http.ResponseWriter, request reference http.Request)
+    # Create an empty request to fill with the incoming data
+    input := ShortenRequest{}
 
     # Parse the JSON from the request body — pipe it through decoder
-    # "reference of" gets a pointer so the decoder can fill in our todo
+    # "reference of" gets a pointer so the decoder can fill in our struct
     decodeErr := request.Body
         |> json.NewDecoder()
-        |> json.Decode(_, reference of todo)
+        |> json.Decode(_, reference of input)
     if decodeErr not equals empty
         response |> .WriteHeader(400)
         response |> fmt.Fprintln("Invalid JSON")
         return
 
-    # Now 'todo' contains the data the user sent!
-    print("Received todo: {todo.title}")
+    # Now 'input' contains the URL the user wants to shorten!
+    print("Received URL: {input.url}")
 
-    # Send back a success response
-    response |> .Header() |> .Set("Content-Type", "application/json")
-    response |> .WriteHeader(201)  # 201 = Created
-    response |> json.NewEncoder() |> .Encode(todo) onerr return
+    # We'll generate a short code and send it back (next step)
 ```
 
 **What's `reference of`?**
 
-When we write `reference of todo`, we're giving the JSON decoder a way to **fill in** our todo variable. Without it, the decoder would only have a copy and couldn't modify our actual todo.
-
-This same idea shows up when you work with lists: looping over items gives you **copies**, so updating a todo requires mutating by index (or using a reference) rather than changing a loop variable. You'll see us find a todo's index and update it directly in later steps.
+When we write `reference of input`, we're giving the JSON decoder a way to **fill in** our struct variable. Without it, the decoder would only have a copy and couldn't modify our actual `input`.
 
 > **💡 Tip: The `_` placeholder.** By default, the piped value becomes the first argument. Use `_` to place it elsewhere:
 > ```kukicha
-> # Default: piped value is the first argument
+> # Default: piped value is first argument
 > text |> string.ToLower()                      # → string.ToLower(text)
 >
 > # With _: piped value goes where _ is
 > data |> json.MarshalWrite(response, _)        # → json.MarshalWrite(response, data)
 > ```
-> You'll see this pattern throughout this tutorial — it keeps data flowing left-to-right even when the API expects the value in a later position.
+> You'll see this pattern throughout this tutorial.
 
 ---
 
-## Step 5: Building the Todo Storage
+## Step 5: Building the Link Store
 
-Let's create a type to hold our todo list and the next available ID. Wrapping state in a type keeps things organized — and as a bonus, we can pass our store to HTTP handlers using **method values** (we'll see that in Step 6):
+Let's create a type to hold our links. Instead of a list, we'll use a **map** — a key-value store where the key is the short code and the value is the `Link`. This gives us instant lookup by code:
 
 ```kukicha
-# Our todo storage - bundled into a type
-type TodoStore
-    todos list of Todo
+type LinkStore
+    links map of string to Link    # code → Link
     nextId int
 ```
 
-For finding todos by ID, we'll walk the list and return the index. We can get the todo from the index if needed — this avoids returning multiple values when we only need the index for updates and deletes.
+Wrapping state in a type keeps things organized — and as a bonus, we can pass our store to HTTP handlers using **method values** (we'll see that in the main function).
+
+We also need a way to generate short codes. For now, we'll use a simple counter converted to base-36 (which uses letters and numbers):
+
+```kukicha
+import "strconv"
+
+function generateCode on store reference LinkStore() string
+    store.nextId = store.nextId + 1
+    return strconv.FormatInt(int64(store.nextId), 36)
+```
+
+This gives codes like `"1"`, `"2"`, ..., `"a"`, `"b"`, ..., `"10"`, `"11"`. Short, URL-safe, and predictable. The production tutorial will add proper random codes.
 
 ---
 
-## Step 6: The Complete Todo API
+## Step 6: The Complete Link Shortener
 
 Now let's put it all together! Create `main.kuki`:
 
 ```kukicha
+import "fmt"
 import "net/http"
-import "encoding/json/v2"  # Go 1.25+ for better performance
+import "encoding/json/v2"
 import "strconv"
 import "stdlib/string"
 
 # --- Data Types ---
 
-type Todo
-    id int
-    title string
-    completed bool
+type Link
+    code string
+    url string
+    clicks int
 
-# ErrorResponse is what the client receives when something goes wrong.
-# The json tag maps the "err" field to the JSON key "error".
+type ShortenRequest
+    url string
+
+type ShortenResponse
+    code string
+    url string
+    shortUrl string json:"short_url"
+
 type ErrorResponse
     err string json:"error"
 
-# Metadata can be used to store extra info (demonstrating map literals)
-variable API_METADATA = map of string to string{
-    "version": "1.0",
-    "environment": "development",
-}
-
 # --- Store ---
-# (In the Production tutorial, we'll use a database instead)
+# (In the Production tutorial, we'll replace this with a database)
 
-type TodoStore
-    todos list of Todo
+type LinkStore
+    links map of string to Link
     nextId int
 
 # --- Helper Functions ---
 
-function findTodoIndex on store reference TodoStore(id int) int
-    # Walk the list to find the matching ID
-    for i, todo in store.todos
-        if todo.id equals id
-            return i
-    return -1
+function generateCode on store reference LinkStore() string
+    store.nextId = store.nextId + 1
+    return strconv.FormatInt(int64(store.nextId), 36)
 
-function getIdFromPath(path string, prefix string) (int, bool)
-    # Extract "1" from "/todos/1"
-    idStr := path |> string.TrimPrefix(prefix)
-    if idStr equals "" or idStr equals path
-        return 0, false
-
-    id := idStr |> strconv.Atoi() onerr return 0, false
-    return id, true
-
-function sendJSON on store reference TodoStore(response http.ResponseWriter, data any)
-    # Helper to send any data as JSON with correct content-type header
+function sendJSON on store reference LinkStore(response http.ResponseWriter, data any)
     response |> .Header() |> .Set("Content-Type", "application/json")
     response |> json.NewEncoder() |> .Encode(data) onerr return
 
-function sendError on store reference TodoStore(response http.ResponseWriter, status int, message string)
-    # Helper to send error responses as JSON
-    # The client will receive a JSON object like {"error":"message"} with the given status code
+function sendError on store reference LinkStore(response http.ResponseWriter, status int, message string)
     response |> .Header() |> .Set("Content-Type", "application/json")
     response |> .WriteHeader(status)
     response |> json.NewEncoder() |> .Encode(ErrorResponse{err: message}) onerr return
@@ -319,276 +300,249 @@ function sendError on store reference TodoStore(response http.ResponseWriter, st
 > **💡 Pro Tip:** In production code, use `stdlib/http` helpers instead of writing these manually:
 > ```kukicha
 > import "stdlib/http" as httphelper
-> httphelper.JSON(response, todo)           # Send JSON with correct headers
-> httphelper.JSONError(response, 400, "...")  # Send error as JSON
-> httphelper.ReadJSON(request, reference todo)  # Parse request body
+> httphelper.JSON(response, link)              # Send JSON with correct headers
+> httphelper.JSONError(response, 400, "...")   # Send error as JSON
+> httphelper.ReadJSON(request, reference link) # Parse request body
 > ```
-> See the [Production Patterns Tutorial](production-patterns-tutorial.md) for more examples.
+> See the [Production Patterns Tutorial](production-patterns-tutorial.md) for more.
 
 ```kukicha
 # --- API Handlers ---
 
-# GET /todos - List all todos (with optional search)
-function handleListTodos on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
-    # Note: In production, you'd add limit/offset query parameters for pagination
-    # to handle large datasets efficiently
-    search := request.URL.Query().Get("search")
-    if search equals ""
-        store.sendJSON(response, store.todos)
+# POST /shorten — Create a shortened link
+function handleShorten on store reference LinkStore(response http.ResponseWriter, request reference http.Request)
+    if request.Method not equals "POST"
+        store.sendError(response, 405, "Method not allowed")
         return
 
-    # Filter todos that contain the search string (case-insensitive)
-    # Note: This is a simple substring match.
-    # For production, regex or full-text search would be better for larger datasets
-    filtered := empty list of Todo
-    for todo in store.todos
-        if todo.title |> string.ToLower() |> string.Contains(search |> string.ToLower())
-            filtered = append(filtered, todo)
-
-    store.sendJSON(response, filtered)
-
-# POST /todos - Create a new todo
-function handleCreateTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
-    # Parse the incoming JSON — pipe through decoder
-    # reference of todo gives the decoder a pointer so it can fill in the struct
-    todo := Todo{}
+    # Parse the incoming JSON
+    input := ShortenRequest{}
     decodeErr := request.Body
         |> json.NewDecoder()
-        |> json.Decode(_, reference of todo)
+        |> json.Decode(_, reference of input)
     if decodeErr not equals empty
         store.sendError(response, 400, "Invalid JSON")
         return
 
-    # Validate
-    if todo.title equals ""
-        store.sendError(response, 400, "Title is required")
+    # Validate the URL
+    if input.url equals ""
+        store.sendError(response, 400, "URL is required")
         return
 
-    # Assign an ID and add to the list
-    todo.id = store.nextId
-    store.nextId = store.nextId + 1
-    store.todos = append(store.todos, todo)
+    if not (input.url |> string.HasPrefix("http://")) and not (input.url |> string.HasPrefix("https://"))
+        store.sendError(response, 400, "URL must start with http:// or https://")
+        return
 
-    # Send back the created todo
+    # Generate a short code and store the link
+    code := store.generateCode()
+    link := Link{code: code, url: input.url, clicks: 0}
+    store.links[code] = link
+
+    # Send back the shortened link info
+    result := ShortenResponse
+        code: code
+        url: input.url
+        shortUrl: "http://localhost:8080/r/{code}"
+
     response |> .WriteHeader(201)
-    store.sendJSON(response, todo)
+    store.sendJSON(response, result)
 
-# GET /todos/{id} - Get a specific todo
-function handleGetTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
-    # Get the ID from the URL
-    id, ok := getIdFromPath(request.URL.Path, "/todos/")
-    if not ok
-        store.sendError(response, 400, "Invalid todo ID")
+# GET /r/{code} — Redirect to the original URL
+# This is the core of a link shortener!
+function handleRedirect on store reference LinkStore(response http.ResponseWriter, request reference http.Request)
+    # Extract the code from the URL path: "/r/abc" → "abc"
+    code := request.URL.Path |> string.TrimPrefix("/r/")
+    if code equals "" or code equals request.URL.Path
+        store.sendError(response, 400, "Missing link code")
         return
 
-    # Find the todo
-    index := store.findTodoIndex(id)
-    if index equals -1
-        store.sendError(response, 404, "Todo not found")
+    # Look up the link
+    link, exists := store.links[code]
+    if not exists
+        store.sendError(response, 404, "Link not found")
         return
 
-    store.sendJSON(response, store.todos[index])
+    # Increment the click counter
+    link.clicks = link.clicks + 1
+    store.links[code] = link
 
-# PUT /todos/{id} - Update a todo
-function handleUpdateTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
-    # Get the ID from the URL
-    id, ok := getIdFromPath(request.URL.Path, "/todos/")
-    if not ok
-        store.sendError(response, 400, "Invalid todo ID")
+    # Redirect! The browser will automatically follow this to the original URL
+    http.Redirect(response, request, link.url, 301)
+
+# GET /links — List all links
+function handleListLinks on store reference LinkStore(response http.ResponseWriter, request reference http.Request)
+    if request.Method not equals "GET"
+        store.sendError(response, 405, "Method not allowed")
         return
 
-    # Find the todo
-    index := store.findTodoIndex(id)
-    if index equals -1
-        store.sendError(response, 404, "Todo not found")
+    # Convert map values to a list for JSON output
+    result := empty list of Link
+    for _, link in store.links
+        result = append(result, link)
+
+    store.sendJSON(response, result)
+
+# /links/{code} — Get info or delete a specific link
+function handleLinkDetail on store reference LinkStore(response http.ResponseWriter, request reference http.Request)
+    # Extract the code from the URL path
+    code := request.URL.Path |> string.TrimPrefix("/links/")
+    if code equals "" or code equals request.URL.Path
+        store.sendError(response, 400, "Missing link code")
         return
 
-    # Parse the update — pipe through decoder
-    updated := Todo{}
-    updateErr := request.Body
-        |> json.NewDecoder()
-        |> json.Decode(_, reference of updated)
-    if updateErr not equals empty
-        store.sendError(response, 400, "Invalid JSON")
-        return
+    if request.Method equals "GET"
+        link, exists := store.links[code]
+        if not exists
+            store.sendError(response, 404, "Link not found")
+            return
+        store.sendJSON(response, link)
 
-    # Keep the original ID, update other fields
-    updated.id = id
-    store.todos[index] = updated
+    else if request.Method equals "DELETE"
+        _, exists := store.links[code]
+        if not exists
+            store.sendError(response, 404, "Link not found")
+            return
+        delete(store.links, code)
+        response |> .WriteHeader(204)
 
-    store.sendJSON(response, updated)
-
-# DELETE /todos/{id} - Delete a todo
-function handleDeleteTodo on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
-    # Get the ID from the URL
-    id, ok := getIdFromPath(request.URL.Path, "/todos/")
-    if not ok
-        store.sendError(response, 400, "Invalid todo ID")
-        return
-
-    # Find the todo
-    index := store.findTodoIndex(id)
-    if index equals -1
-        store.sendError(response, 404, "Todo not found")
-        return
-
-    # Remove by creating a new list without this item
-    # 'many' unpacks the second slice so append sees individual elements
-    store.todos = append(store.todos[:index], many store.todos[index+1:])
-
-    response |> .WriteHeader(204)  # 204 = No Content (success, nothing to return)
-
-# --- Route Handler ---
-
-function handleTodos on store reference TodoStore(response http.ResponseWriter, request reference http.Request)
-    # Route to the right handler based on the path and method
-
-    if request.URL.Path equals "/todos"
-        # Collection routes: /todos
-        if request.Method equals "GET"
-            store.handleListTodos(response, request)
-        else if request.Method equals "POST"
-            store.handleCreateTodo(response, request)
-        else
-            store.sendError(response, 405, "Method not allowed")
     else
-        # Item routes: /todos/{id}
-        if request.Method equals "GET"
-            store.handleGetTodo(response, request)
-        else if request.Method equals "PUT"
-            store.handleUpdateTodo(response, request)
-        else if request.Method equals "DELETE"
-            store.handleDeleteTodo(response, request)
-        else
-            store.sendError(response, 405, "Method not allowed")
+        store.sendError(response, 405, "Method not allowed")
 
 # --- Main Entry Point ---
 
 function main()
-    # Create the store with an empty todo list using indented literal
-    store := TodoStore
-        todos: empty list of Todo
-        nextId: 1
+    store := LinkStore
+        links: map of string to Link{}
+        nextId: 0
 
-    # Set up routes — method values let us pass a method as a handler function
-    http.HandleFunc("/todos", store.handleTodos)
-    http.HandleFunc("/todos/", store.handleTodos)  # Trailing slash catches /todos/1
+    # Set up routes — method values let us pass methods as handler functions
+    http.HandleFunc("/shorten", store.handleShorten)
+    http.HandleFunc("/r/", store.handleRedirect)
+    http.HandleFunc("/links", store.handleListLinks)
+    http.HandleFunc("/links/", store.handleLinkDetail)
 
-    print("=== Kukicha Todo API ===")
+    print("=== Kukicha Link Shortener ===")
     print("Server running on http://localhost:8080")
-    print("API endpoint: http://localhost:8080/todos")
     print("")
     print("Try these commands in another terminal:")
-    print("  curl http://localhost:8080/todos")
-    print("  curl -X POST -d '{\"title\":\"Learn Kukicha\"}' http://localhost:8080/todos")
+    print("  curl -X POST -d '{\"url\":\"https://go.dev\"}' http://localhost:8080/shorten")
+    print("  curl -L http://localhost:8080/r/1")
     print("")
 
-    # Note: In production, capture SIGINT and call http.Server.Shutdown()
-    # for graceful shutdown instead of relying on panic
     http.ListenAndServe(":8080", empty) onerr panic "server failed to start"
 ```
 
 ---
 
-## Step 7: Testing Your API
+## Step 7: Testing Your Link Shortener
 
 Run your server:
 ```bash
 kukicha run main.kuki
 ```
 
-Now test it with `curl` (open another terminal):
+Now test it with `curl` in another terminal:
 
-### Create todos:
+### Shorten some URLs:
 ```bash
 curl -X POST -H "Content-Type: application/json" \
-     -d '{"title":"Buy groceries"}' http://localhost:8080/todos
-# Response: {"id":1,"title":"Buy groceries","completed":false}
+     -d '{"url":"https://go.dev"}' http://localhost:8080/shorten
+# {"code":"1","url":"https://go.dev","short_url":"http://localhost:8080/r/1"}
 
 curl -X POST -H "Content-Type: application/json" \
-     -d '{"title":"Learn Kukicha"}' http://localhost:8080/todos
-# Response: {"id":2,"title":"Learn Kukicha","completed":false}
+     -d '{"url":"https://github.com/golang/go"}' http://localhost:8080/shorten
+# {"code":"2","url":"https://github.com/golang/go","short_url":"http://localhost:8080/r/2"}
 ```
 
-### List all todos:
+### Follow a short link (the magic moment!):
 ```bash
-curl http://localhost:8080/todos
-# Response: [{"id":1,"title":"Buy groceries","completed":false},{"id":2,"title":"Learn Kukicha","completed":false}]
+curl -L http://localhost:8080/r/1
+# Redirects to https://go.dev and shows the Go website HTML!
+
+# Without -L, you can see the redirect itself:
+curl -I http://localhost:8080/r/1
+# HTTP/1.1 301 Moved Permanently
+# Location: https://go.dev
 ```
 
-### Search for todos:
+### List all links:
 ```bash
-curl "http://localhost:8080/todos?search=Kukicha"
-# Response: [{"id":2,"title":"Learn Kukicha","completed":false}]
+curl http://localhost:8080/links
+# [{"code":"1","url":"https://go.dev","clicks":2},
+#  {"code":"2","url":"https://github.com/golang/go","clicks":0}]
 ```
 
-### Get a specific todo:
+### Get info about a specific link:
 ```bash
-curl http://localhost:8080/todos/1
-# Response: {"id":1,"title":"Buy groceries","completed":false}
+curl http://localhost:8080/links/1
+# {"code":"1","url":"https://go.dev","clicks":2}
 ```
 
-### Update a todo:
+### Delete a link:
 ```bash
-curl -X PUT -H "Content-Type: application/json" \
-     -d '{"title":"Buy groceries","completed":true}' http://localhost:8080/todos/1
-# Response: {"id":1,"title":"Buy groceries","completed":true}
+curl -X DELETE http://localhost:8080/links/2
+# (empty - 204 No Content)
 ```
 
-### Delete a todo:
+### Try an invalid URL:
 ```bash
-curl -X DELETE http://localhost:8080/todos/2
-# Response: (empty - 204 No Content)
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"url":"not-a-url"}' http://localhost:8080/shorten
+# {"error":"URL must start with http:// or https://"}
 ```
 
-🎉 **Congratulations!** You've built a working REST API!
+You've built a working link shortener!
 
 ---
 
 ## Understanding HTTP Status Codes
 
-You may have noticed we use numbers like `200`, `201`, `404`. These are **status codes** that tell the client what happened:
+You may have noticed we use numbers like `200`, `201`, `301`, `404`. These are **status codes** that tell the client what happened:
 
 | Code | Name | Meaning |
 |------|------|---------|
 | `200` | OK | Success! |
 | `201` | Created | Successfully created something new |
 | `204` | No Content | Success, but nothing to return |
+| `301` | Moved Permanently | Redirect — go to this other URL instead |
 | `400` | Bad Request | The client sent invalid data |
 | `404` | Not Found | The requested item doesn't exist |
 | `405` | Method Not Allowed | Wrong HTTP method for this endpoint |
 | `500` | Internal Server Error | Something went wrong on the server |
 
+The `301` is the workhorse of our link shortener — it tells browsers "this URL has moved, go here instead."
+
 ---
 
 ## What You've Learned
 
-Congratulations! You've built a real web API. Let's review:
+Congratulations! You've built a real web service. Let's review:
 
 | Concept | What It Does |
 |---------|--------------|
 | **HTTP Server** | `http.ListenAndServe()` starts a web server |
 | **Pipe Operator** | Cleanly chain functions (like JSON encoders) with `|>` |
-| **Method Values** | Pass `store.handleTodos` directly as an HTTP handler |
-| **Handlers** | Methods that respond to web requests |
-| **Request Methods** | GET (read), POST (create), PUT (update), DELETE (remove) |
-| **JSON** | Data format for web APIs (`encoding/json` package) |
-| **Status Codes** | Numbers that indicate success or failure |
-| **URL Paths** | Routes like `/todos` and `/todos/1` |
+| **Method Values** | Pass `store.handleShorten` directly as an HTTP handler |
+| **Handlers** | Functions that respond to web requests |
+| **Request Methods** | GET (read), POST (create), DELETE (remove) |
+| **JSON** | Data format for web APIs (`encoding/json/v2`) |
+| **Status Codes** | Numbers that indicate success, failure, or redirect |
+| **Maps** | Key-value storage with `map of string to Link` |
+| **HTTP Redirects** | `http.Redirect()` sends browsers to another URL |
 
 ---
 
 ## Current Limitations
 
-Our todo API works, but it has some limitations:
+Our link shortener works, but it has some limitations:
 
-1. **Data disappears when you restart** - We're storing in memory, not a database
-2. **Not safe for multiple users** - Concurrent writes to `store.todos` could race and corrupt data. In production, you'd use a mutex (sync lock) to protect access
-3. **No authentication** - Anyone can access it
-4. **No input validation** - We only check that title isn't empty. In production, you'd validate title length, sanitize input, and enforce business rules
-5. **Simple search only** - The substring search is slow on large datasets. You'd use regex or full-text search in production
+1. **Data disappears when you restart** — We're storing links in memory, not a database
+2. **Not safe for multiple users** — Concurrent writes to `store.links` could race and corrupt data
+3. **Predictable codes** — Sequential codes (`1`, `2`, `3`...) are guessable. Real shorteners use random codes
+4. **No analytics** — Click counts don't persist across restarts
+5. **No expiration** — Links live forever
 
-We'll fix the first two limitations in the next tutorial!
+We'll fix all of these in the next tutorial!
 
 ---
 
@@ -596,23 +550,23 @@ We'll fix the first two limitations in the next tutorial!
 
 Before moving on, try these enhancements:
 
-1. **Add a `priority` field** - Make todos have high/medium/low priority
-2. **Add a search endpoint** - `GET /todos?search=groceries` 
-3. **Count endpoint** - `GET /todos/count` returns the number of todos
-4. **Filter by completed** - `GET /todos?completed=true`
+1. **Custom codes** — Let users pick their own short code: `{"url":"...", "code":"my-link"}`
+2. **Search** — Add `GET /links?search=github` to filter links by URL
+3. **Stats endpoint** — `GET /stats` returns total links created and total clicks
+4. **Duplicate detection** — If the same URL is submitted twice, return the existing short link
 
 ---
 
 ## What's Next?
 
-You now have a working web API! But it's not production-ready yet. In the next tutorial, you'll learn:
+You now have a working web service! But it's not production-ready yet. In the next tutorial, you'll learn:
 
 - **[Production Patterns Tutorial](production-patterns-tutorial.md)** (Advanced)
-  - Store data in a **database** (SQLite)
+  - Store links in a **database** (SQLite) so they persist
+  - Generate **random codes** that aren't guessable
   - Handle **multiple users safely** with locking
-  - Learn **Go conventions** for larger applications
-  - Add proper **logging** and **configuration**
+  - Add proper **analytics**, **validation**, and **configuration**
 
 ---
 
-**You've built a web API! 🚀**
+**You've built a link shortener! 🔗**

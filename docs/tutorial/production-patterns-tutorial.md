@@ -1,15 +1,16 @@
 # Production Patterns with Kukicha (Advanced)
 
-**Level:** Advanced  
-**Time:** 45 minutes  
-**Prerequisite:** [Web Todo Tutorial](web-app-tutorial.md)
+**Level:** Advanced
+**Time:** 45 minutes
+**Prerequisite:** [Link Shortener Tutorial](web-app-tutorial.md)
 
-Welcome to the advanced tutorial! You've built a working web API, but it's not ready for real users yet. In this tutorial, we'll add:
+Welcome to the advanced tutorial! You've built a working link shortener, but it's not ready for real users yet. In this tutorial, we'll add:
 
-- **Database storage** (so data persists)
+- **Database storage** (so links persist across restarts)
+- **Random codes** (so links aren't guessable)
 - **Safe concurrent access** (so multiple users don't corrupt data)
 - **Go conventions** (patterns you'll see in real Go codebases)
-- **Proper project structure** (organized code)
+- **Proper configuration and validation**
 
 This tutorial bridges Kukicha's beginner-friendly syntax with real-world Go patterns.
 
@@ -17,47 +18,45 @@ This tutorial bridges Kukicha's beginner-friendly syntax with real-world Go patt
 
 ## What's Wrong with Our Current App?
 
-Our web API from the previous tutorial has three problems:
+Our link shortener from the previous tutorial has four problems:
 
 | Problem | Why It Matters |
 |---------|----------------|
-| **Memory storage** | Data disappears when the server restarts |
-| **No locking** | Two users updating at once could corrupt data |
+| **Memory storage** | Links disappear when the server restarts |
+| **No locking** | Two users shortening at once could corrupt data |
+| **Predictable codes** | Sequential codes like `1`, `2`, `3` are guessable |
 | **Global variables** | Makes testing hard and code messy |
 
-Let's fix all three!
+Let's fix all four!
 
 ---
 
 ## Optional: File Persistence (Stepping Stone)
 
-If you want a quick way to persist data without a database, you can save todos to a file. This is fine for small, single-user tools, but it's **not safe** for concurrent web requests and doesn't scale well. That's why this tutorial moves to a database.
+If you want a quick way to persist links without a database, you can save them to a file. This is fine for small, single-user tools, but it's **not safe** for concurrent web requests. That's why this tutorial moves to a database.
 
 ```kukicha
 import "stdlib/files"
 import "stdlib/json"
 
-function SaveTodos(todos list of Todo, filename string) error
-    # Use pipe for marshalling
-    data := todos |> json.Marshal() onerr return error "{error}"
+function SaveLinks(links map of string to Link, filename string) error
+    data := links |> json.Marshal() onerr return error "{error}"
     files.Write(filename, data) onerr return error "{error}"
     return empty
 
-function LoadTodos(filename string) (list of Todo, error)
-    data := files.Read(filename) onerr return empty list of Todo, error "{error}"
-    todos := empty list of Todo
-    # Use pipe for unmarshalling - note the _ placeholder
-    data |> json.Unmarshal(_, reference of todos) onerr return empty list of Todo, error "{error}"
-    return todos, empty
+function LoadLinks(filename string) (map of string to Link, error)
+    data := files.Read(filename) onerr return map of string to Link{}, error "{error}"
+    links := map of string to Link{}
+    data |> json.Unmarshal(_, reference of links) onerr return map of string to Link{}, error "{error}"
+    return links, empty
 ```
 
 **Why not use this for production?**
 - File writes aren't atomic across concurrent requests
 - No locking or transactions
-- Slow for large datasets
-- Hard to query or filter efficiently
+- Hard to query efficiently (search by URL, analytics, etc.)
 
-We'll use SQLite next because it solves these problems and teaches real-world patterns.
+We'll use SQLite because it solves these problems and teaches real-world patterns.
 
 ---
 
@@ -66,20 +65,18 @@ We'll use SQLite next because it solves these problems and teaches real-world pa
 In the previous tutorials, we used Kukicha's `on` syntax for methods:
 
 ```kukicha
-# Kukicha style - English-like
-function Display on todo Todo() string
-    return "{todo.id}. {todo.title}"
+# Kukicha style — English-like
+function Display on link Link() string
+    return "{link.code}: {link.url} ({link.clicks} clicks)"
 ```
 
-This is the **only** method syntax Kukicha supports. When you read Go code, you'll see a different syntax (`func (todo Todo) Display() string`), but in Kukicha that maps directly to the `on` form. The translation table at the end of this tutorial covers the full mapping.
-
-For this tutorial, we'll use `on`-style receivers throughout — the same pattern you learned in the Console Todo tutorial, but now with pointer receivers for mutation.
+This is the **only** method syntax Kukicha supports. When you read Go code, you'll see a different syntax (`func (link Link) Display() string`), but in Kukicha it maps directly to the `on` form. The translation table at the end of this tutorial covers the full mapping.
 
 ### Understanding `reference` vs `reference of`
 
 As you read through the code, you'll see two pointer-related keywords:
-- **`reference Type`** - Declares a pointer type (e.g., `reference Server` means "pointer to Server")
-- **`reference of value`** - Takes the address of an existing value (e.g., `reference of server` converts `server` into a pointer)
+- **`reference Type`** — Declares a pointer type (e.g., `reference Server` means "pointer to Server")
+- **`reference of value`** — Takes the address of an existing value (e.g., `reference of server` converts `server` into a pointer)
 
 Both are correct Kukicha syntax; they're just used in different contexts (declarations vs. operations).
 
@@ -91,19 +88,18 @@ Instead of global variables, let's create a proper `Server` type that holds all 
 
 ```kukicha
 import "sync"
-import "slices"
 
 type Server
-    todos list of Todo
-    nextId int
-    mu sync.RWMutex  # A lock for safe access
+    db Database
+    mu sync.RWMutex    # A lock for safe access
+    baseURL string     # e.g., "http://localhost:8080"
 ```
 
 **What's a `sync.RWMutex`?**
 
 It's a "read-write lock" that prevents data corruption:
-- **Read Lock** (`RLock`) - Multiple readers can access at once
-- **Write Lock** (`Lock`) - Only one writer at a time, blocks everyone else
+- **Read Lock** (`RLock`) — Multiple readers can access at once
+- **Write Lock** (`Lock`) — Only one writer at a time, blocks everyone else
 
 Think of it like a library book:
 - Many people can read the same book at once
@@ -111,38 +107,68 @@ Think of it like a library book:
 
 ### Why We Wrap State in a Struct
 
-Instead of using global variables (like we did in the web tutorial), we encapsulate all server state in the `Server` type. This design choice enables:
-- **Testability** - You can create multiple test instances with different states
-- **Dependency injection** - Pass the server instance where needed instead of relying on globals
-- **Concurrency safety** - The mutex lives with the data it protects
-- **Composability** - Future features can be added as new fields without touching global state
+Instead of using a `LinkStore` with methods, we encapsulate all server state in a `Server` type. This enables:
+- **Testability** — Create multiple test instances with different states
+- **Dependency injection** — Pass the server instance where needed
+- **Concurrency safety** — The mutex lives with the data it protects
+- **Composability** — Adding the database is just another field
 
 ---
 
 ## Part 3: Thread-Safe Methods
 
-Now let's write methods that use locking:
+Now let's write methods that use locking. We'll also add random code generation:
 
 ```kukicha
-# Get all todos - uses a read lock
-function GetAllTodos on s reference Server() list of Todo
-    s.mu.RLock()           # Start reading
-    defer s.mu.RUnlock()   # Unlock when done (even if there's an error)
+import "math/rand/v2"
 
-    # Return a copy using standard slices.Clone
-    return slices.Clone(s.todos)
+variable codeChars = "abcdefghijklmnopqrstuvwxyz0123456789"
 
-# Create a new todo - uses a write lock
-function CreateTodo on s reference Server(title string) Todo
-    s.mu.Lock()           # Start writing (exclusive access)
-    defer s.mu.Unlock()   # Unlock when done
+# generateCode creates a random 6-character code
+function generateCode() string
+    code := ""
+    for i := 0 to 6
+        code = code + string(codeChars[rand.IntN(len(codeChars))])
+    return code
+```
 
-    todo := Todo{id: s.nextId, title: title, completed: false}
+Random codes solve the "guessable" problem from the previous tutorial. Codes like `"x7km2p"` are much harder to guess than `"1"`, `"2"`, `"3"`.
 
-    s.nextId = s.nextId + 1
-    s.todos = append(s.todos, todo)
+```kukicha
+# CreateLink generates a random code, stores the link, and returns it
+function CreateLink on s reference Server(url string) (Link, error)
+    s.mu.Lock()              # Exclusive access for writing
+    defer s.mu.Unlock()      # Unlock when done (even if there's an error)
 
-    return todo
+    # Generate a unique code (retry if collision)
+    code := generateCode()
+    for i := 0 to 10
+        _, exists := s.db.GetLink(code) onerr empty
+        if not exists
+            break
+        code = generateCode()
+
+    link, err := s.db.InsertLink(code, url)
+    if err not equals empty
+        return Link{}, err
+
+    return link, empty
+
+# GetLink retrieves a link by code
+function GetLink on s reference Server(code string) (Link, bool)
+    s.mu.RLock()             # Shared access for reading
+    defer s.mu.RUnlock()
+
+    link, err := s.db.GetLink(code)
+    if err not equals empty
+        return Link{}, false
+    return link, true
+
+# RecordClick increments the click counter for a link
+function RecordClick on s reference Server(code string)
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    s.db.IncrementClicks(code)
 ```
 
 **Why `reference Server`?**
@@ -155,11 +181,10 @@ We use `reference` (a pointer) because:
 
 ## Part 4: Adding a Database
 
-Let's store our todos in SQLite so they persist across restarts.
+Let's store links in SQLite so they persist across restarts.
 
 ### Installing the Driver
 
-First, you need the SQLite driver:
 ```bash
 go get github.com/mattn/go-sqlite3
 ```
@@ -173,28 +198,33 @@ import _ "github.com/mattn/go-sqlite3"
 type Database
     db reference sql.DB
 
+type Link
+    code string
+    url string
+    clicks int
+    createdAt string json:"created_at"
+
 # Open the database and create the table if needed
 function OpenDatabase(filename string) (Database, error)
     db, err := sql.Open("sqlite3", filename)
     if err not equals empty
         return empty, err
 
-    # Create the todos table
+    # Create the links table
     createTable := `
-        CREATE TABLE IF NOT EXISTS todos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            completed BOOLEAN DEFAULT FALSE
+        CREATE TABLE IF NOT EXISTS links (
+            code TEXT PRIMARY KEY,
+            url TEXT NOT NULL,
+            clicks INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `
-    # Pipe the query into Exec
     createTable |> db.Exec() onerr return empty, error "{error}"
 
     return Database{db: db}, empty
 
 # Close the database
 function Close on d Database()
-    # empty is equivalent to nil in Go
     if d.db not equals empty
         d.db.Close()
 ```
@@ -202,63 +232,62 @@ function Close on d Database()
 ### CRUD Operations
 
 ```kukicha
-# Create a new todo
-function CreateTodo on d Database(title string) (Todo, error)
-    result, execErr := d.db.Exec("INSERT INTO todos (title, completed) VALUES (?, FALSE)", title)
+# InsertLink creates a new link in the database
+function InsertLink on d Database(code string, url string) (Link, error)
+    _, execErr := d.db.Exec(
+        "INSERT INTO links (code, url) VALUES (?, ?)", code, url)
     if execErr not equals empty
-        return Todo{}, execErr
+        return Link{}, execErr
 
-    # Note: 'onerr' creates an implicit 'error' variable. If we used it again here,
-    # it would "shadow" (hide) the outer error from the function signature.
-    # Always explicitly handle or propagate the error to avoid confusion.
-    id, idErr := result.LastInsertId()
-    if idErr not equals empty
-        return Todo{}, idErr
+    return d.GetLink(code)
 
-    return Todo{id: int(id), title: title, completed: false}, empty
+# GetLink retrieves a link by its code
+function GetLink on d Database(code string) (Link, error)
+    row := d.db.QueryRow(
+        "SELECT code, url, clicks, created_at FROM links WHERE code = ?", code)
 
-# Get all todos
-function GetAllTodos on d Database() (list of Todo, error)
-    # Returns a cloned slice to prevent external mutations
-    # Note: This is a shallow copy; deep copy needed if fields become reference types
-    # Pipe the query string into Query
-    rows, queryErr := "SELECT id, title, completed FROM todos" |> d.db.Query()
+    link := Link{}
+    scanErr := row.Scan(
+        reference of link.code,
+        reference of link.url,
+        reference of link.clicks,
+        reference of link.createdAt)
+    if scanErr not equals empty
+        return Link{}, scanErr
+
+    return link, empty
+
+# GetAllLinks returns all links, newest first
+function GetAllLinks on d Database() (list of Link, error)
+    rows, queryErr := d.db.Query(
+        "SELECT code, url, clicks, created_at FROM links ORDER BY created_at DESC")
     if queryErr not equals empty
         return empty, queryErr
     defer rows.Close()
 
-    todos := empty list of Todo
-
+    links := empty list of Link
     for rows.Next()
-        todo := Todo{}
-        scanErr := rows.Scan(reference of todo.id, reference of todo.title, reference of todo.completed)
+        link := Link{}
+        scanErr := rows.Scan(
+            reference of link.code,
+            reference of link.url,
+            reference of link.clicks,
+            reference of link.createdAt)
         if scanErr not equals empty
             continue
-        todos = append(todos, todo)
+        links = append(links, link)
 
-    return todos, empty
+    return links, empty
 
-# Get a single todo by ID
-function GetTodo on d Database(id int) (Todo, error)
-    # Pipe the query string into QueryRow
-    row := "SELECT id, title, completed FROM todos WHERE id = ?" |> d.db.QueryRow(id)
-
-    todo := Todo{}
-    scanErr := row.Scan(reference of todo.id, reference of todo.title, reference of todo.completed)
-    if scanErr not equals empty
-        return Todo{}, scanErr
-
-    return todo, empty
-
-# Update a todo
-function UpdateTodo on d Database(id int, title string, completed bool) error
-    "UPDATE todos SET title = ?, completed = ? WHERE id = ?" 
-        |> d.db.Exec(title, completed, id) onerr return error "{error}"
+# IncrementClicks adds 1 to the click counter (called on every redirect)
+function IncrementClicks on d Database(code string) error
+    "UPDATE links SET clicks = clicks + 1 WHERE code = ?"
+        |> d.db.Exec(code) onerr return error "{error}"
     return empty
 
-# Delete a todo
-function DeleteTodo on d Database(id int) error
-    "DELETE FROM todos WHERE id = ?" |> d.db.Exec(id) onerr return error "{error}"
+# DeleteLink removes a link by its code
+function DeleteLink on d Database(code string) error
+    "DELETE FROM links WHERE code = ?" |> d.db.Exec(code) onerr return error "{error}"
     return empty
 ```
 
@@ -269,15 +298,12 @@ function DeleteTodo on d Database(id int) error
 Now let's put it all together into a production-ready server:
 
 ```kukicha
-# Standard library - core functionality
+# Standard library
 import "fmt"
 import "log"
 import "net/http"
-import "strconv"
 import "sync"
-
-# Standard library - data structures and encoding
-import "slices"
+import "math/rand/v2"
 import "database/sql"
 import "encoding/json/v2"
 
@@ -288,212 +314,198 @@ import "stdlib/http" as httphelper
 import "stdlib/must"
 import "stdlib/env"
 
-# Third-party packages
-import _ "github.com/mattn/go-sqlite3"   # SQLite driver (requires CGO)
+# Third-party
+import _ "github.com/mattn/go-sqlite3"
 
 # --- Types ---
 
-type Todo
-    id int
-    title string
-    completed bool
+type Link
+    code string
+    url string
+    clicks int
+    createdAt string json:"created_at"
 
 type Server
     db Database
+    mu sync.RWMutex
+    baseURL string
+
+type ShortenRequest
+    url string
+
+type ShortenResponse
+    code string
+    url string
+    shortUrl string json:"short_url"
+    clicks int
 
 type ErrorResponse
     err string json:"error"
 
-type CreateTodoInput
-    title string
+# --- Code Generation ---
 
-type UpdateTodoInput
-    title string
-    completed bool
+variable codeChars = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+function generateCode() string
+    code := ""
+    for i := 0 to 6
+        code = code + string(codeChars[rand.IntN(len(codeChars))])
+    return code
 
 # --- Server Constructor ---
 
-# --- Server Constructor ---
-
-function NewServer(dbPath string) (reference Server, error)
+function NewServer(dbPath string, baseURL string) (reference Server, error)
     db, dbErr := OpenDatabase(dbPath)
     if dbErr not equals empty
         return empty, dbErr
 
-    server := Server{db: db}
-
+    server := Server{db: db, baseURL: baseURL}
     return reference of server, empty
 
 # --- HTTP Handlers ---
 
-function HandleTodos on s reference Server(w http.ResponseWriter, r reference http.Request)
-    if r.URL.Path equals "/todos"
-        if r.Method equals "GET"
-            s.handleListTodos(w, r)
-        else if r.Method equals "POST"
-            s.handleCreateTodo(w, r)
-        else
-            s.sendError(w, 405, "Method not allowed")
-    else
-        if r.Method equals "GET"
-            s.handleGetTodo(w, r)
-        else if r.Method equals "PUT"
-            s.handleUpdateTodo(w, r)
-        else if r.Method equals "DELETE"
-            s.handleDeleteTodo(w, r)
-        else
-            s.sendError(w, 405, "Method not allowed")
-
-function handleListTodos on s reference Server(w http.ResponseWriter, r reference http.Request)
-    todos, err := s.db.GetAllTodos()
-    if err not equals empty
-        log.Printf("Error fetching todos: %v", err)
-        s.sendError(w, 500, "Failed to fetch todos")
+# POST /shorten — Create a new short link
+function handleShorten on s reference Server(w http.ResponseWriter, r reference http.Request)
+    if r.Method not equals "POST"
+        httphelper.MethodNotAllowed(w)
         return
 
-    s.sendJSON(w, 200, todos)
-
-function handleCreateTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
-    # Parse request body using the http helper
-    input := CreateTodoInput{}
-    # Pipe request into ReadJSON
+    # Parse request body
+    input := ShortenRequest{}
     readErr := r |> httphelper.ReadJSON(reference of input)
     if readErr not equals empty
         httphelper.JSONBadRequest(w, "Invalid JSON")
         return
 
-    # Validate input using the validate package
-    _, titleErr := input.title |> validate.NotEmpty()
-    if titleErr not equals empty
-        httphelper.JSONBadRequest(w, "Title is required")
+    # Validate URL
+    _, emptyErr := input.url |> validate.NotEmpty()
+    if emptyErr not equals empty
+        httphelper.JSONBadRequest(w, "URL is required")
         return
 
-    _, lenErr := input.title |> validate.MaxLength(200)
-    if lenErr not equals empty
-        httphelper.JSONBadRequest(w, "Title must be 200 characters or less")
+    _, urlErr := input.url |> validate.URL()
+    if urlErr not equals empty
+        httphelper.JSONBadRequest(w, "Invalid URL — must start with http:// or https://")
         return
 
-    todo, createErr := s.db.CreateTodo(input.title)
+    # Create the link
+    s.mu.Lock()
+    code := generateCode()
+    # Retry on collision (unlikely with 6 random chars, but be safe)
+    for i := 0 to 10
+        _, getErr := s.db.GetLink(code)
+        if getErr not equals empty
+            break
+        code = generateCode()
+    link, createErr := s.db.InsertLink(code, input.url)
+    s.mu.Unlock()
+
     if createErr not equals empty
-        log.Printf("Error creating todo: %v", createErr)
-        httphelper.JSONInternalError(w, "Failed to create todo")
+        log.Printf("Error creating link: %v", createErr)
+        httphelper.JSONError(w, 500, "Failed to create link")
         return
 
-    httphelper.JSONCreated(w, todo)
+    result := ShortenResponse
+        code: link.code
+        url: link.url
+        shortUrl: "{s.baseURL}/r/{link.code}"
+        clicks: 0
 
-function handleGetTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
-    id, idErr := s.getIdFromPath(r.URL.Path, "/todos/")
-    if idErr not equals empty
-        s.sendError(w, 400, "Invalid ID")
+    httphelper.JSONStatus(w, 201, result)
+
+# GET /r/{code} — Redirect to original URL
+function handleRedirect on s reference Server(w http.ResponseWriter, r reference http.Request)
+    code := r.URL.Path |> string.TrimPrefix("/r/")
+    if code equals "" or code equals r.URL.Path
+        httphelper.JSONBadRequest(w, "Missing link code")
         return
 
-    todo, err := s.db.GetTodo(id)
-    if err not equals empty
-        s.sendError(w, 404, "Todo not found")
-        return
+    # Look up the link
+    s.mu.RLock()
+    link, getErr := s.db.GetLink(code)
+    s.mu.RUnlock()
 
-    s.sendJSON(w, 200, todo)
-
-function handleUpdateTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
-    id, idErr := s.getIdFromPath(r.URL.Path, "/todos/")
-    if idErr not equals empty
-        s.sendError(w, 400, "Invalid ID")
-        return
-
-    # Parse request body using pipe
-    # Note: This is a full update (PUT). For partial updates, use PATCH with optional fields
-    input := UpdateTodoInput{}
-    decodeErr := r.Body
-        |> json.NewDecoder()
-        |> json.Decode(_, reference of input)
-    if decodeErr not equals empty
-        s.sendError(w, 400, "Invalid JSON")
-        return
-
-    updateErr := s.db.UpdateTodo(id, input.title, input.completed)
-    if updateErr not equals empty
-        log.Printf("Error updating todo: %v", updateErr)
-        s.sendError(w, 500, "Failed to update todo")
-        return
-
-    # Fetch the updated todo to return
-    todo, getErr := s.db.GetTodo(id)
     if getErr not equals empty
-        s.sendError(w, 404, "Todo not found")
+        httphelper.JSONNotFound(w, "Link not found")
         return
 
-    s.sendJSON(w, 200, todo)
+    # Record the click (async-safe with its own lock)
+    go func()
+        s.mu.Lock()
+        s.db.IncrementClicks(code)
+        s.mu.Unlock()
+    ()
 
-function handleDeleteTodo on s reference Server(w http.ResponseWriter, r reference http.Request)
-    id, idErr := s.getIdFromPath(r.URL.Path, "/todos/")
-    if idErr not equals empty
-        s.sendError(w, 400, "Invalid ID")
+    http.Redirect(w, r, link.url, 301)
+
+# GET /links — List all links
+function handleListLinks on s reference Server(w http.ResponseWriter, r reference http.Request)
+    if r.Method not equals "GET"
+        httphelper.MethodNotAllowed(w)
         return
 
-    # In a production API, you might check if the todo was actually deleted (rows affected)
-    # and return 404 if not found for better idempotency semantics
-    deleteErr := s.db.DeleteTodo(id)
-    if deleteErr not equals empty
-        log.Printf("Error deleting todo: %v", deleteErr)
-        s.sendError(w, 500, "Failed to delete todo")
+    s.mu.RLock()
+    links, err := s.db.GetAllLinks()
+    s.mu.RUnlock()
+
+    if err not equals empty
+        log.Printf("Error fetching links: %v", err)
+        httphelper.JSONError(w, 500, "Failed to fetch links")
         return
 
-    w |> .WriteHeader(204)
+    httphelper.JSON(w, links)
 
-# --- Helper Methods ---
+# /links/{code} — Get info or delete a link
+function handleLinkDetail on s reference Server(w http.ResponseWriter, r reference http.Request)
+    code := r.URL.Path |> string.TrimPrefix("/links/")
+    if code equals "" or code equals r.URL.Path
+        httphelper.JSONBadRequest(w, "Missing link code")
+        return
 
-function getIdFromPath on s reference Server(path string, prefix string) (int, error)
-    # When called with manual error check, any error returned lets the caller decide
-    # what to do — e.g., send a 400 response if path is invalid
-    idStr := path |> string.TrimPrefix(prefix)
-    if idStr equals "" or idStr equals path
-        return 0, fmt.Errorf("invalid path")
-    id := idStr |> strconv.Atoi() onerr return 0, error "{error}"
-    return id, empty
+    if r.Method equals "GET"
+        s.mu.RLock()
+        link, err := s.db.GetLink(code)
+        s.mu.RUnlock()
+        if err not equals empty
+            httphelper.JSONNotFound(w, "Link not found")
+            return
+        httphelper.JSON(w, link)
 
-function sendJSON on s reference Server(w http.ResponseWriter, status int, data any)
-    # Set header before WriteHeader; after WriteHeader, header changes are ignored
-    # The Encode call writes the response body; any error after WriteHeader can't change status
-    w |> .Header() |> .Set("Content-Type", "application/json")
-    w |> .WriteHeader(status)
-    w |> json.NewEncoder() |> .Encode(data) onerr return
+    else if r.Method equals "DELETE"
+        s.mu.Lock()
+        deleteErr := s.db.DeleteLink(code)
+        s.mu.Unlock()
+        if deleteErr not equals empty
+            log.Printf("Error deleting link: %v", deleteErr)
+            httphelper.JSONError(w, 500, "Failed to delete link")
+            return
+        w |> .WriteHeader(204)
 
-# 💡 Tip: Note the use of `.Encode(data)` above. The dot shorthand keeps the focus on the data being piped — even when calling methods!
-
-function sendError on s reference Server(w http.ResponseWriter, status int, message string)
-    w |> .Header() |> .Set("Content-Type", "application/json")
-    w |> .WriteHeader(status)
-    w |> json.NewEncoder() |> .Encode(ErrorResponse{err: message}) onerr return
+    else
+        httphelper.MethodNotAllowed(w)
 
 # --- Main Entry Point ---
 
 function main()
     # Configuration from environment variables (production best practice)
-    # Using the 'must' package for startup config - panic is acceptable here
-
-    # Required: DATABASE_URL must be set
-    dbPath := must.EnvOr("DATABASE_URL", "todos.db")
-
-    # Optional: PORT with default
-    port := env.GetOr("PORT", "8080")
+    dbPath := must.EnvOr("DATABASE_URL", "links.db")
+    port := env.GetOr("PORT", ":8080")
+    baseURL := env.GetOr("BASE_URL", "http://localhost{port}")
 
     # Create the server
-    server := NewServer(dbPath) onerr panic "Failed to open database: {error}"
-
-    # Ensures the SQLite file is closed when the program exits
+    server := NewServer(dbPath, baseURL) onerr panic "Failed to open database: {error}"
     defer server.db.Close()
 
     # Register routes
-    # Trailing slash catches /todos/1 and other ID-based routes
-    http.HandleFunc("/todos", server.HandleTodos)
-    http.HandleFunc("/todos/", server.HandleTodos)
+    http.HandleFunc("/shorten", server.handleShorten)
+    http.HandleFunc("/r/", server.handleRedirect)
+    http.HandleFunc("/links", server.handleListLinks)
+    http.HandleFunc("/links/", server.handleLinkDetail)
 
-    # Start server
-    log.Printf("Server starting on http://localhost%s", port)
+    log.Printf("Link shortener starting on %s", port)
     log.Printf("Database: %s", dbPath)
+    log.Printf("Base URL: %s", baseURL)
 
-    # Note: In production, capture SIGINT (Ctrl+C) and call http.Server.Shutdown()
-    # for graceful shutdown instead of relying on panic
     http.ListenAndServe(port, empty) onerr panic "Server failed: {error}"
 ```
 
@@ -505,12 +517,14 @@ Let's compare the web tutorial version with this production version:
 
 | Aspect | Web Tutorial | Production |
 |--------|--------------|------------|
-| **Storage** | In-memory `TodoStore` | SQLite database |
-| **Safety** | None | Database handles concurrency |
-| **Method style** | Methods on `TodoStore` | Methods on `Server` with DB |
-| **Error handling** | Basic | Logging + proper responses |
-| **Lifecycle** | None | `NewServer()` constructor, `Close()` cleanup |
-| **State** | `TodoStore` type | `Server` type with `Database` |
+| **Storage** | In-memory map | SQLite database |
+| **Codes** | Sequential (`1`, `2`, ...) | Random 6-character (`x7km2p`) |
+| **Safety** | None | `sync.RWMutex` on every access |
+| **Clicks** | Lost on restart | Persisted, tracked with `go func()` |
+| **Validation** | Manual string checks | `stdlib/validate` (URL, NotEmpty) |
+| **Config** | Hardcoded | Environment variables (`PORT`, `DATABASE_URL`) |
+| **Errors** | Manual JSON encoding | `stdlib/http` helpers |
+| **Lifecycle** | `LinkStore` struct | `NewServer()` constructor, `defer Close()` |
 
 ---
 
@@ -520,7 +534,7 @@ Let's compare the web tutorial version with this production version:
 
 ```kukicha
 # Kukicha: "reference Server"  →  Go: "*Server"
-func Method on s reference Server()
+function Method on s reference Server()
 ```
 
 Use pointer receivers when:
@@ -548,12 +562,18 @@ function DoWork() error
     return empty
 ```
 
-### Error Wrapping
+### Goroutines for Background Work
 
 ```kukicha
-# Kukicha makes this easy with onerr
-result := operation() onerr return fmt.Errorf("operation failed: {error}")
+# Fire-and-forget click tracking
+go func()
+    s.mu.Lock()
+    s.db.IncrementClicks(code)
+    s.mu.Unlock()
+()
 ```
+
+The `go` keyword launches a function in a separate goroutine. We use it for click tracking so the redirect response isn't delayed by a database write.
 
 ---
 
@@ -572,92 +592,45 @@ function main()
     apiKey := must.Env("API_KEY")
 
     # Optional config with defaults
-    port := env.GetOr("PORT", "8080")
+    port := env.GetOr("PORT", ":8080")
     debug := env.GetBoolOrDefault("DEBUG", false)
     timeout := env.GetIntOr("TIMEOUT", 30) onerr 30
 
-    # Parse configuration from other sources (not just environment variables)
-    # These utilities are useful when reading config files, command-line flags, etc.
-
-    # Example: Parsing boolean from a config file value
-    configValue := "yes"  # Could come from a file, database, etc.
-    enabled := env.ParseBool(configValue) onerr false
-    # Accepts: "true", "false", "1", "0", "yes", "no", "on", "off"
-
-    # Example: Parsing a comma-separated list from any source
-    serverList := "prod-1.example.com, prod-2.example.com,  prod-3.example.com"
-    servers := env.SplitAndTrim(serverList, ",")
-    # Returns: ["prod-1.example.com", "prod-2.example.com", "prod-3.example.com"]
-    # Automatically trims whitespace and removes empty entries
-
-    print("Servers: {len(servers)} configured")
+    # Parse a comma-separated list from any source
+    allowedOrigins := env.GetOr("ALLOWED_ORIGINS", "http://localhost:3000")
+        |> env.SplitAndTrim(",")
 ```
-
-**Why use these utilities?**
-- `env.ParseBool()` handles multiple formats (true/false, yes/no, 1/0, on/off)
-- `env.SplitAndTrim()` combines splitting and trimming in one operation
-- Though they're in the `env` package, they're general-purpose utilities
-- Useful for parsing configuration from any source (files, databases, APIs)
 
 ### Input Validation with `validate`
 
 ```kukicha
 import "stdlib/validate"
-import "stdlib/env"
 
-function CreateUser(email string, age int) (User, error)
-    # Chain validations - each returns (value, error) for onerr
-    email |> validate.NotEmpty() onerr return User{}, error "{error}"
-    email |> validate.Email() onerr return User{}, error "{error}"
-
-    age |> validate.InRange(18, 120) onerr return User{}, error "{error}"
-
-    return User{email: email, age: age}, empty
-
-# Example: Parsing and validating a boolean setting from user input
-function UpdateSettings(enableNotificationsStr string) (Settings, error)
-    # First parse the boolean string, then use it
-    enableNotifications := env.ParseBool(enableNotificationsStr) onerr
-        return Settings{}, error "enableNotifications must be true/false/yes/no/1/0"
-
-    return Settings{notifications: enableNotifications}, empty
-
-# Example: Parsing and validating a list of email addresses
-function AddAllowedEmails(emailListStr string) error
-    # Split and trim the list
-    emails := emailListStr |> env.SplitAndTrim(",")
-
-    # Validate each email
-    for email in emails
-        email |> validate.Email() onerr
-            return error "invalid email: {email}"
-
+function ValidateShortenRequest(url string) error
+    url |> validate.NotEmpty() onerr return error "URL is required"
+    url |> validate.URL() onerr return error "Invalid URL"
+    url |> validate.MaxLength(2048) onerr return error "URL too long"
     return empty
 ```
-
-**Combining utilities with validation:**
-- Use `env.ParseBool()` to handle various boolean formats before validation
-- Use `env.SplitAndTrim()` to clean up lists before validating each item
-- These utilities make your validation code more robust and user-friendly
 
 ### HTTP Helpers
 
 ```kukicha
 import "stdlib/http" as httphelper
 
-function HandleUser(w http.ResponseWriter, r reference http.Request)
+function HandleRequest(w http.ResponseWriter, r reference http.Request)
     # Read JSON body
-    input := UserInput{}
-    # Pipe request into ReadJSON
+    input := ShortenRequest{}
     readErr := r |> httphelper.ReadJSON(reference of input)
     if readErr not equals empty
         httphelper.JSONBadRequest(w, "Invalid JSON")
         return
 
     # Send JSON responses
-    httphelper.JSON(w, user)              # 200 OK
-    httphelper.JSONCreated(w, user)       # 201 Created
-    httphelper.JSONNotFound(w, "User not found")  # 404
+    httphelper.JSON(w, link)                        # 200 OK
+    httphelper.JSONStatus(w, 201, link)             # 201 Created
+    httphelper.JSONNotFound(w, "Link not found")    # 404
+    httphelper.JSONError(w, 500, "Server error")    # Any status
 
     # Query parameters
     page := httphelper.GetQueryIntOr(r, "page", 1)
@@ -672,10 +645,11 @@ You've completed the full Kukicha tutorial series!
 
 | Tutorial | What You Learned |
 |----------|-----------------|
-| ✅ **1. Beginner** | Variables, functions, strings, string petiole |
-| ✅ **2. Console Todo** | Types, methods (`on`), lists, command loops, simple parsing |
-| ✅ **3. Web Todo** | HTTP servers, JSON, REST APIs |
-| ✅ **4. Production** | Databases, Go conventions, validation, env config |
+| ✅ **1. Beginner** | Variables, functions, strings, loops, pipes |
+| ✅ **2. CLI Explorer** | Types, methods (`on`), API data, `fetch` + `json` |
+| ✅ **3. Link Shortener** | HTTP servers, JSON, REST APIs, maps, redirects |
+| ✅ **4. Production** | Databases, concurrency, Go conventions, validation |
+|    **Bonus: LLM Scripting** | Shell + LLM + pipes — [try it!](llm-pipe-tutorial.md) |
 
 ---
 
@@ -683,23 +657,24 @@ You've completed the full Kukicha tutorial series!
 
 ### Explore More
 
-- **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** - Complete language grammar
-- **[Standard Library](../kukicha-stdlib-reference.md)** - iterator, slice, and more
+- **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** — Complete language grammar
+- **[Standard Library](../kukicha-stdlib-reference.md)** — iterator, slice, and more
+- **[LLM Scripting Tutorial](llm-pipe-tutorial.md)** — Combine shell + LLM + pipes
 
 ### Build Projects
 
 Ideas for your next project:
-- **Blog Engine** - Posts, comments, user authentication
-- **Chat Application** - WebSockets, real-time messaging
-- **File Upload Service** - Handle file uploads and downloads
-- **Task Queue** - Background job processing
+- **Paste Bin** — Share code snippets with syntax highlighting
+- **Webhook Relay** — Receive, log, and forward webhooks
+- **Health Checker** — Monitor URLs and alert on failures
+- **Chat Application** — WebSockets, real-time messaging
 
 ### Learn More Go
 
 Now that you know Kukicha, learning Go will be easy:
-- [Go Tour](https://go.dev/tour/) - Official interactive tutorial
-- [Effective Go](https://go.dev/doc/effective_go) - Go best practices
-- [Go by Example](https://gobyexample.com/) - Practical examples
+- [Go Tour](https://go.dev/tour/) — Official interactive tutorial
+- [Effective Go](https://go.dev/doc/effective_go) — Go best practices
+- [Go by Example](https://gobyexample.com/) — Practical examples
 
 ---
 
