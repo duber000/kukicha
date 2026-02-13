@@ -993,6 +993,8 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 		g.generateReturnStmt(s)
 	case *ast.IfStmt:
 		g.generateIfStmt(s)
+	case *ast.SwitchStmt:
+		g.generateSwitchStmt(s)
 	case *ast.ForRangeStmt:
 		g.generateForRangeStmt(s)
 	case *ast.ForNumericStmt:
@@ -1514,6 +1516,36 @@ func (g *Generator) generateIfStmtContinued(stmt *ast.IfStmt) {
 	} else {
 		g.writeLine("}")
 	}
+}
+
+func (g *Generator) generateSwitchStmt(stmt *ast.SwitchStmt) {
+	if stmt.Expression != nil {
+		g.writeLine(fmt.Sprintf("switch %s {", g.exprToString(stmt.Expression)))
+	} else {
+		g.writeLine("switch {")
+	}
+
+	g.indent++
+	for _, c := range stmt.Cases {
+		caseValues := make([]string, len(c.Values))
+		for i, value := range c.Values {
+			caseValues[i] = g.exprToString(value)
+		}
+		g.writeLine(fmt.Sprintf("case %s:", strings.Join(caseValues, ", ")))
+
+		g.indent++
+		g.generateBlock(c.Body)
+		g.indent--
+	}
+
+	if stmt.Otherwise != nil {
+		g.writeLine("default:")
+		g.indent++
+		g.generateBlock(stmt.Otherwise.Body)
+		g.indent--
+	}
+	g.indent--
+	g.writeLine("}")
 }
 
 func (g *Generator) generateForRangeStmt(stmt *ast.ForRangeStmt) {
@@ -2383,6 +2415,23 @@ func (g *Generator) checkStmtForInterpolation(stmt ast.Statement) bool {
 		if s.Alternative != nil {
 			return g.checkStmtForInterpolation(s.Alternative)
 		}
+	case *ast.SwitchStmt:
+		if s.Expression != nil && g.checkExprForInterpolation(s.Expression) {
+			return true
+		}
+		for _, c := range s.Cases {
+			for _, v := range c.Values {
+				if g.checkExprForInterpolation(v) {
+					return true
+				}
+			}
+			if c.Body != nil && g.checkBlockForInterpolation(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil {
+			return g.checkBlockForInterpolation(s.Otherwise.Body)
+		}
 	case *ast.ForRangeStmt:
 		if s.Body != nil {
 			return g.checkBlockForInterpolation(s.Body)
@@ -2503,6 +2552,23 @@ func (g *Generator) checkStmtForPrint(stmt ast.Statement) bool {
 		}
 		if s.Alternative != nil {
 			return g.checkStmtForPrint(s.Alternative)
+		}
+	case *ast.SwitchStmt:
+		if s.Expression != nil && g.checkExprForPrint(s.Expression) {
+			return true
+		}
+		for _, c := range s.Cases {
+			for _, v := range c.Values {
+				if g.checkExprForPrint(v) {
+					return true
+				}
+			}
+			if c.Body != nil && g.checkBlockForPrint(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil {
+			return g.checkBlockForPrint(s.Otherwise.Body)
 		}
 	case *ast.ForRangeStmt:
 		if s.Body != nil {
@@ -2643,6 +2709,21 @@ func (g *Generator) scanStmtForAutoImports(stmt ast.Statement) {
 		}
 		if s.Alternative != nil {
 			g.scanStmtForAutoImports(s.Alternative)
+		}
+	case *ast.SwitchStmt:
+		if s.Expression != nil {
+			g.scanExprForAutoImports(s.Expression)
+		}
+		for _, c := range s.Cases {
+			for _, v := range c.Values {
+				g.scanExprForAutoImports(v)
+			}
+			if c.Body != nil {
+				g.scanBlockForAutoImports(c.Body)
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil {
+			g.scanBlockForAutoImports(s.Otherwise.Body)
 		}
 	case *ast.ForRangeStmt:
 		g.scanExprForAutoImports(s.Collection)
@@ -2802,6 +2883,23 @@ func (g *Generator) checkStmtForErrors(stmt ast.Statement) bool {
 		}
 		if s.Alternative != nil {
 			return g.checkStmtForErrors(s.Alternative)
+		}
+	case *ast.SwitchStmt:
+		if s.Expression != nil && g.checkExprForErrors(s.Expression) {
+			return true
+		}
+		for _, c := range s.Cases {
+			for _, v := range c.Values {
+				if g.checkExprForErrors(v) {
+					return true
+				}
+			}
+			if c.Body != nil && g.checkBlockForErrors(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil {
+			return g.checkBlockForErrors(s.Otherwise.Body)
 		}
 	case *ast.ForRangeStmt:
 		if s.Body != nil {

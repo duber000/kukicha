@@ -695,6 +695,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseReturnStmt()
 	case lexer.TOKEN_IF:
 		return p.parseIfStmt()
+	case lexer.TOKEN_SWITCH:
+		return p.parseSwitchStmt()
 	case lexer.TOKEN_FOR:
 		return p.parseForStmt()
 	case lexer.TOKEN_DEFER:
@@ -836,6 +838,75 @@ func (p *Parser) parseIfStmt() *ast.IfStmt {
 		}
 	}
 
+	p.skipNewlines()
+	return stmt
+}
+
+func (p *Parser) parseSwitchStmt() *ast.SwitchStmt {
+	token := p.advance() // consume 'switch'
+
+	stmt := &ast.SwitchStmt{
+		Token: token,
+		Cases: []*ast.WhenCase{},
+	}
+
+	// Optional expression for value switch.
+	// If omitted, this is a condition switch.
+	if !p.check(lexer.TOKEN_NEWLINE) && !p.check(lexer.TOKEN_INDENT) && !p.isAtEnd() {
+		stmt.Expression = p.parseExpression()
+	}
+
+	p.skipNewlines()
+	if !p.match(lexer.TOKEN_INDENT) {
+		p.error(p.peekToken(), "expected indented block after switch")
+		return stmt
+	}
+
+	for !p.check(lexer.TOKEN_DEDENT) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(lexer.TOKEN_DEDENT) {
+			break
+		}
+
+		if p.match(lexer.TOKEN_CASE) {
+			caseToken := p.previousToken()
+			if stmt.Otherwise != nil {
+				p.error(caseToken, "'when' branch after 'otherwise' will never execute")
+			}
+			values := []ast.Expression{p.parseExpression()}
+			for p.match(lexer.TOKEN_COMMA) {
+				values = append(values, p.parseExpression())
+			}
+
+			p.skipNewlines()
+			body := p.parseBlock()
+			stmt.Cases = append(stmt.Cases, &ast.WhenCase{
+				Token:  caseToken,
+				Values: values,
+				Body:   body,
+			})
+			continue
+		}
+
+		if p.match(lexer.TOKEN_DEFAULT) {
+			otherwiseToken := p.previousToken()
+			if stmt.Otherwise != nil {
+				p.error(otherwiseToken, "switch can only have one otherwise branch")
+			}
+
+			p.skipNewlines()
+			stmt.Otherwise = &ast.OtherwiseCase{
+				Token: otherwiseToken,
+				Body:  p.parseBlock(),
+			}
+			continue
+		}
+
+		p.error(p.peekToken(), "expected 'when' or 'otherwise' in switch block")
+		p.advance()
+	}
+
+	p.consume(lexer.TOKEN_DEDENT, "expected dedent after switch block")
 	p.skipNewlines()
 	return stmt
 }

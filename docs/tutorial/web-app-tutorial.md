@@ -12,7 +12,7 @@ In this tutorial, you'll discover how to:
 - Create a **web server** that responds to requests
 - Send and receive **JSON data** (the language of web APIs)
 - Build **endpoints** for creating, reading, and deleting links
-- Handle **different request types** (GET, POST, DELETE)
+- Handle **different request types** (GET, POST, DELETE) with `switch`/`when`
 - Perform **HTTP redirects** — the core of a link shortener
 
 By the end, you'll have a working link shortener API that anyone can use!
@@ -390,23 +390,24 @@ function handleLinkDetail on store reference LinkStore(response http.ResponseWri
         store.sendError(response, 400, "Missing link code")
         return
 
-    if request.Method equals "GET"
-        link, exists := store.links[code]
-        if not exists
-            store.sendError(response, 404, "Link not found")
-            return
-        store.sendJSON(response, link)
+    switch request.Method
+        when "GET"
+            link, exists := store.links[code]
+            if not exists
+                store.sendError(response, 404, "Link not found")
+                return
+            store.sendJSON(response, link)
 
-    else if request.Method equals "DELETE"
-        _, exists := store.links[code]
-        if not exists
-            store.sendError(response, 404, "Link not found")
-            return
-        delete(store.links, code)
-        response |> .WriteHeader(204)
+        when "DELETE"
+            _, exists := store.links[code]
+            if not exists
+                store.sendError(response, 404, "Link not found")
+                return
+            delete(store.links, code)
+            response |> .WriteHeader(204)
 
-    else
-        store.sendError(response, 405, "Method not allowed")
+        otherwise
+            store.sendError(response, 405, "Method not allowed")
 
 # --- Main Entry Point ---
 
@@ -524,7 +525,7 @@ Congratulations! You've built a real web service. Let's review:
 | **Pipe Operator** | Cleanly chain functions (like JSON encoders) with `|>` |
 | **Method Values** | Pass `store.handleShorten` directly as an HTTP handler |
 | **Handlers** | Functions that respond to web requests |
-| **Request Methods** | GET (read), POST (create), DELETE (remove) |
+| **Request Methods** | GET (read), POST (create), DELETE (remove) — dispatched with `switch`/`when` |
 | **JSON** | Data format for web APIs (`encoding/json/v2`) |
 | **Status Codes** | Numbers that indicate success, failure, or redirect |
 | **Maps** | Key-value storage with `map of string to Link` |

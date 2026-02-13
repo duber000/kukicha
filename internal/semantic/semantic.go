@@ -13,8 +13,9 @@ type Analyzer struct {
 	program          *ast.Program
 	symbolTable      *SymbolTable
 	errors           []error
-	currentFunc      *ast.FunctionDecl    // Track current function for return type checking
-	loopDepth        int                  // Track loop nesting for break/continue
+	currentFunc      *ast.FunctionDecl      // Track current function for return type checking
+	loopDepth        int                    // Track loop nesting for break/continue
+	switchDepth      int                    // Track switch nesting for break
 	exprReturnCounts map[ast.Expression]int // Inferred return counts for expressions (used by codegen)
 }
 
@@ -372,6 +373,8 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 		a.analyzeReturnStmt(s)
 	case *ast.IfStmt:
 		a.analyzeIfStmt(s)
+	case *ast.SwitchStmt:
+		a.analyzeSwitchStmt(s)
 	case *ast.ForRangeStmt:
 		a.analyzeForRangeStmt(s)
 	case *ast.ForNumericStmt:
@@ -393,9 +396,32 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 			a.error(s.Pos(), "continue statement outside of loop")
 		}
 	case *ast.BreakStmt:
-		if a.loopDepth == 0 {
+		if a.loopDepth == 0 && a.switchDepth == 0 {
 			a.error(s.Pos(), "break statement outside of loop")
 		}
+	}
+}
+
+func (a *Analyzer) analyzeSwitchStmt(stmt *ast.SwitchStmt) {
+	if stmt.Expression != nil {
+		a.analyzeExpression(stmt.Expression)
+	}
+
+	a.switchDepth++
+	defer func() { a.switchDepth-- }()
+
+	for _, c := range stmt.Cases {
+		for _, val := range c.Values {
+			valType := a.analyzeExpression(val)
+			if stmt.Expression == nil && valType != nil && valType.Kind != TypeKindBool && valType.Kind != TypeKindUnknown {
+				a.error(val.Pos(), "switch condition branch must be bool")
+			}
+		}
+		a.analyzeBlock(c.Body)
+	}
+
+	if stmt.Otherwise != nil {
+		a.analyzeBlock(stmt.Otherwise.Body)
 	}
 }
 
@@ -583,7 +609,7 @@ func (a *Analyzer) analyzeReturnStmt(stmt *ast.ReturnStmt) {
 	var valueTypes []*TypeInfo
 	if len(stmt.Values) == 1 && len(a.currentFunc.Returns) > 1 {
 		valueTypes = a.analyzeExpressionMulti(stmt.Values[0])
-		
+
 		if len(valueTypes) != len(a.currentFunc.Returns) {
 			// If we can't match exact count, check if it's dynamic/unknown
 			if len(valueTypes) == 1 && valueTypes[0].Kind == TypeKindUnknown {
@@ -1036,7 +1062,7 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 			return types
 		}
 	}
-	
+
 	// Check for known stdlib method calls (e.g., os.LookupEnv)
 	// This might be parsed as a MethodCallExpr in some cases
 	if methodCall, ok := expr.Function.(*ast.MethodCallExpr); ok {

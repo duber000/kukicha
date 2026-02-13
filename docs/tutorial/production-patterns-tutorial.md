@@ -462,27 +462,28 @@ function handleLinkDetail on s reference Server(w http.ResponseWriter, r referen
         httphelper.JSONBadRequest(w, "Missing link code")
         return
 
-    if r.Method equals "GET"
-        s.mu.RLock()
-        link, err := s.db.GetLink(code)
-        s.mu.RUnlock()
-        if err not equals empty
-            httphelper.JSONNotFound(w, "Link not found")
-            return
-        httphelper.JSON(w, link)
+    switch r.Method
+        when "GET"
+            s.mu.RLock()
+            link, err := s.db.GetLink(code)
+            s.mu.RUnlock()
+            if err not equals empty
+                httphelper.JSONNotFound(w, "Link not found")
+                return
+            httphelper.JSON(w, link)
 
-    else if r.Method equals "DELETE"
-        s.mu.Lock()
-        deleteErr := s.db.DeleteLink(code)
-        s.mu.Unlock()
-        if deleteErr not equals empty
-            log.Printf("Error deleting link: %v", deleteErr)
-            httphelper.JSONError(w, 500, "Failed to delete link")
-            return
-        w |> .WriteHeader(204)
+        when "DELETE"
+            s.mu.Lock()
+            deleteErr := s.db.DeleteLink(code)
+            s.mu.Unlock()
+            if deleteErr not equals empty
+                log.Printf("Error deleting link: %v", deleteErr)
+                httphelper.JSONError(w, 500, "Failed to delete link")
+                return
+            w |> .WriteHeader(204)
 
-    else
-        httphelper.MethodNotAllowed(w)
+        otherwise
+            httphelper.MethodNotAllowed(w)
 
 # --- Main Entry Point ---
 
@@ -699,6 +700,7 @@ Here's a quick reference for translating between Kukicha and Go:
 | `result onerr default` | `if err != nil { ... }` |
 | `a \|> f(b)` | `f(a, b)` |
 | `a \|> f(b, _)` | `f(b, a)` (placeholder) |
+| `switch x` / `when a` / `otherwise` | `switch x { case a: ... default: ... }` |
 
 ---
 

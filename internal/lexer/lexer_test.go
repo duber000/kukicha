@@ -416,7 +416,7 @@ func TestPipeContinuation(t *testing.T) {
 		{
 			// Trailing |> suppresses NEWLINE; continuation-line indentation
 			// does not produce INDENT/DEDENT.
-			name: "single continuation",
+			name:  "single continuation",
 			input: "func Test() string\n    return x |>\n        ToUpper()\n",
 			expected: []TokenType{
 				TOKEN_FUNC, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_IDENTIFIER, TOKEN_NEWLINE,
@@ -428,7 +428,7 @@ func TestPipeContinuation(t *testing.T) {
 		{
 			// Two trailing |> in a row; only one INDENT/DEDENT pair at the
 			// end when the chain returns to the base indentation.
-			name: "chained continuation",
+			name:  "chained continuation",
 			input: "func Test() string\n    return x |>\n        f() |>\n        g()\n",
 			expected: []TokenType{
 				TOKEN_FUNC, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_IDENTIFIER, TOKEN_NEWLINE,
@@ -442,7 +442,7 @@ func TestPipeContinuation(t *testing.T) {
 			// Leading |> at column 0 (no indentation before the pipe).
 			// isPipeAtStartOfNextLine must start scanning at l.current,
 			// not l.current+1, or the '|' is skipped.
-			name: "leading pipe at column zero",
+			name:  "leading pipe at column zero",
 			input: "x := y\n|> foo()\n",
 			expected: []TokenType{
 				TOKEN_IDENTIFIER, TOKEN_WALRUS, TOKEN_IDENTIFIER, TOKEN_PIPE,
@@ -453,7 +453,7 @@ func TestPipeContinuation(t *testing.T) {
 		{
 			// A comment after the trailing |> is transparent; the next
 			// line is still treated as a continuation.
-			name: "comment after pipe",
+			name:  "comment after pipe",
 			input: "func Test() string\n    return x |> # comment\n        ToUpper()\n",
 			expected: []TokenType{
 				TOKEN_FUNC, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_IDENTIFIER, TOKEN_NEWLINE,
@@ -540,6 +540,10 @@ func TestKeywordRecognition(t *testing.T) {
 		{"from", TOKEN_FROM},
 		{"to", TOKEN_TO},
 		{"through", TOKEN_THROUGH},
+		{"switch", TOKEN_SWITCH},
+		{"when", TOKEN_CASE},
+		{"default", TOKEN_DEFAULT},
+		{"otherwise", TOKEN_DEFAULT},
 		{"go", TOKEN_GO},
 		{"defer", TOKEN_DEFER},
 		{"make", TOKEN_MAKE},
@@ -585,6 +589,25 @@ func TestKeywordRecognition(t *testing.T) {
 	}
 }
 
+func TestCaseIsNotKeyword(t *testing.T) {
+	lexer := NewLexer("case default", "test.kuki")
+	tokens, err := lexer.ScanTokens()
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if len(tokens) < 2 {
+		t.Fatalf("expected at least 2 tokens, got %d", len(tokens))
+	}
+
+	if tokens[0].Type != TOKEN_IDENTIFIER {
+		t.Fatalf("expected 'case' to be IDENTIFIER, got %s", tokens[0].Type)
+	}
+	if tokens[1].Type != TOKEN_DEFAULT {
+		t.Fatalf("expected 'default' to be TOKEN_DEFAULT, got %s", tokens[1].Type)
+	}
+}
+
 func TestClosureInFunctionCall(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -597,27 +620,27 @@ func TestClosureInFunctionCall(t *testing.T) {
     return x > 2
 )`,
 			expected: []TokenType{
-				TOKEN_IDENTIFIER,  // filtered
-				TOKEN_WALRUS,      // :=
-				TOKEN_IDENTIFIER,  // items
-				TOKEN_PIPE,        // |>
-				TOKEN_IDENTIFIER,  // Filter
-				TOKEN_LPAREN,      // (
-				TOKEN_FUNC,        // func
-				TOKEN_LPAREN,      // (
-				TOKEN_IDENTIFIER,  // x
-				TOKEN_IDENTIFIER,  // int
-				TOKEN_RPAREN,      // )
-				TOKEN_IDENTIFIER,  // bool
-				TOKEN_NEWLINE,     // newline after return type
-				TOKEN_INDENT,      // indentation for closure body
-				TOKEN_RETURN,      // return
-				TOKEN_IDENTIFIER,  // x
-				TOKEN_GT,          // >
-				TOKEN_INTEGER,     // 2
-				TOKEN_NEWLINE,     // newline after return
-				TOKEN_DEDENT,      // dedent from closure body
-				TOKEN_RPAREN,      // ) closing function call
+				TOKEN_IDENTIFIER, // filtered
+				TOKEN_WALRUS,     // :=
+				TOKEN_IDENTIFIER, // items
+				TOKEN_PIPE,       // |>
+				TOKEN_IDENTIFIER, // Filter
+				TOKEN_LPAREN,     // (
+				TOKEN_FUNC,       // func
+				TOKEN_LPAREN,     // (
+				TOKEN_IDENTIFIER, // x
+				TOKEN_IDENTIFIER, // int
+				TOKEN_RPAREN,     // )
+				TOKEN_IDENTIFIER, // bool
+				TOKEN_NEWLINE,    // newline after return type
+				TOKEN_INDENT,     // indentation for closure body
+				TOKEN_RETURN,     // return
+				TOKEN_IDENTIFIER, // x
+				TOKEN_GT,         // >
+				TOKEN_INTEGER,    // 2
+				TOKEN_NEWLINE,    // newline after return
+				TOKEN_DEDENT,     // dedent from closure body
+				TOKEN_RPAREN,     // ) closing function call
 				TOKEN_EOF,
 			},
 		},
@@ -628,32 +651,32 @@ func TestClosureInFunctionCall(t *testing.T) {
     return trimmed
 )`,
 			expected: []TokenType{
-				TOKEN_IDENTIFIER,  // result
-				TOKEN_WALRUS,      // :=
-				TOKEN_IDENTIFIER,  // data
-				TOKEN_PIPE,        // |>
-				TOKEN_IDENTIFIER,  // Map
-				TOKEN_LPAREN,      // (
-				TOKEN_FUNC,        // func
-				TOKEN_LPAREN,      // (
-				TOKEN_IDENTIFIER,  // item
-				TOKEN_IDENTIFIER,  // string
-				TOKEN_RPAREN,      // )
-				TOKEN_IDENTIFIER,  // string
+				TOKEN_IDENTIFIER, // result
+				TOKEN_WALRUS,     // :=
+				TOKEN_IDENTIFIER, // data
+				TOKEN_PIPE,       // |>
+				TOKEN_IDENTIFIER, // Map
+				TOKEN_LPAREN,     // (
+				TOKEN_FUNC,       // func
+				TOKEN_LPAREN,     // (
+				TOKEN_IDENTIFIER, // item
+				TOKEN_IDENTIFIER, // string
+				TOKEN_RPAREN,     // )
+				TOKEN_IDENTIFIER, // string
 				TOKEN_NEWLINE,
 				TOKEN_INDENT,
-				TOKEN_IDENTIFIER,  // trimmed
-				TOKEN_WALRUS,      // :=
-				TOKEN_IDENTIFIER,  // trim
-				TOKEN_LPAREN,      // (
-				TOKEN_IDENTIFIER,  // item
-				TOKEN_RPAREN,      // )
+				TOKEN_IDENTIFIER, // trimmed
+				TOKEN_WALRUS,     // :=
+				TOKEN_IDENTIFIER, // trim
+				TOKEN_LPAREN,     // (
+				TOKEN_IDENTIFIER, // item
+				TOKEN_RPAREN,     // )
 				TOKEN_NEWLINE,
-				TOKEN_RETURN,      // return
-				TOKEN_IDENTIFIER,  // trimmed
+				TOKEN_RETURN,     // return
+				TOKEN_IDENTIFIER, // trimmed
 				TOKEN_NEWLINE,
 				TOKEN_DEDENT,
-				TOKEN_RPAREN,      // ) closing function call
+				TOKEN_RPAREN, // ) closing function call
 				TOKEN_EOF,
 			},
 		},

@@ -105,10 +105,10 @@
 [":=" "=" "|>" "==" "!=" "<" ">" "<=" ">=" "+" "-" "*" "/" "%" "++" "--" "&&" "||" "!" "|"] @operator
 
 ; Keywords
-["petiole" "import" "as" "type" "interface" "var" "variable" "func" "function" "on" "return" "if" "else" "for" "in" "from" "to" "through" "switch" "case" "default" "go" "defer" "make" "list" "of" "map" "channel" "send" "receive" "close" "panic" "error" "empty" "discard" "many" "true" "false" "equals" "and" "or" "onerr" "not"] @keyword
+["petiole" "import" "as" "type" "interface" "var" "variable" "func" "function" "on" "return" "if" "else" "for" "in" "from" "to" "through" "switch" "when" "otherwise" "default" "go" "defer" "make" "list" "of" "map" "channel" "send" "receive" "close" "panic" "error" "empty" "discard" "many" "true" "false" "equals" "and" "or" "onerr" "not"] @keyword
 
 ; Control flow keywords (optional more specific highlighting)
-["if" "else" "for" "switch" "case" "default" "return" "break" "continue" "go" "defer" "onerr"] @keyword.control
+["if" "else" "for" "switch" "when" "otherwise" "default" "return" "break" "continue" "go" "defer" "onerr"] @keyword.control
 
 ; Logical operators as keywords
 ["and" "or" "not" "in" "equals"] @keyword.operator

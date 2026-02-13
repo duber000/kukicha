@@ -1666,14 +1666,35 @@
           "members": [
             {
               "type": "STRING",
-              "value": "case"
+              "value": "when"
             },
             {
               "type": "FIELD",
               "name": "value",
               "content": {
-                "type": "SYMBOL",
-                "name": "_expression"
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_expression"
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": ","
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "_expression"
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             },
             {
@@ -1694,8 +1715,17 @@
           "type": "SEQ",
           "members": [
             {
-              "type": "STRING",
-              "value": "default"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "otherwise"
+                },
+                {
+                  "type": "STRING",
+                  "value": "default"
+                }
+              ]
             },
             {
               "type": "SYMBOL",
@@ -3007,8 +3037,17 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "empty"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "empty"
+            },
+            {
+              "type": "STRING",
+              "value": "nil"
+            }
+          ]
         },
         {
           "type": "CHOICE",

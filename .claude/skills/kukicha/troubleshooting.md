@@ -118,6 +118,68 @@ ptr := &user
 ptr := reference of user
 ```
 
+### "expected 'when' or 'otherwise' in switch block"
+
+**Cause:** Using `case` or `default` instead of Kukicha keywords.
+
+```kukicha
+# Wrong (Go syntax)
+switch command
+    case "help"
+        showHelp()
+    default
+        print("unknown")
+
+# Correct (Kukicha syntax)
+switch command
+    when "help"
+        showHelp()
+    otherwise
+        print("unknown")
+```
+
+**Note:** `default` is accepted as an alias for `otherwise`, but `case` is not a keyword — use `when`.
+
+### "'when' branch after 'otherwise' will never execute"
+
+**Cause:** Placing a `when` branch after `otherwise`. The `otherwise` branch catches everything, so later `when` branches are unreachable.
+
+```kukicha
+# Wrong — "help" branch will never run
+switch command
+    when "fetch"
+        fetchData()
+    otherwise
+        print("unknown")
+    when "help"
+        showHelp()
+
+# Correct — otherwise goes last
+switch command
+    when "fetch"
+        fetchData()
+    when "help"
+        showHelp()
+    otherwise
+        print("unknown")
+```
+
+### "switch condition branch must be bool"
+
+**Cause:** Using a non-boolean expression in a condition switch (bare `switch` without an expression).
+
+```kukicha
+# Wrong — 42 is not a boolean
+switch
+    when 42
+        print("bad")
+
+# Correct — use a comparison
+switch
+    when score >= 42
+        print("good")
+```
+
 ## Indentation Issues
 
 ### Mixed Tabs and Spaces

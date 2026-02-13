@@ -2189,9 +2189,13 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": ",",
+            "named": false
+          },
           {
             "type": "binary_expression",
             "named": true
@@ -2600,10 +2604,6 @@
     "named": false
   },
   {
-    "type": "case",
-    "named": false
-  },
-  {
     "type": "channel",
     "named": false
   },
@@ -2752,6 +2752,10 @@
     "named": false
   },
   {
+    "type": "nil",
+    "named": false
+  },
+  {
     "type": "not",
     "named": false
   },
@@ -2769,6 +2773,10 @@
   },
   {
     "type": "or",
+    "named": false
+  },
+  {
+    "type": "otherwise",
     "named": false
   },
   {
@@ -2857,6 +2865,10 @@
   },
   {
     "type": "variable",
+    "named": false
+  },
+  {
+    "type": "when",
     "named": false
   },
   {

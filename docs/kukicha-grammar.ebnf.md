@@ -144,6 +144,7 @@ Statement ::=
     | IncDecStatement
     | ReturnStatement
     | IfStatement
+    | SwitchStatement
     | ForStatement
     | DeferStatement
     | GoStatement
@@ -179,6 +180,18 @@ IfStatement ::=
 ElseClause ::=
     | "else" NEWLINE INDENT StatementList DEDENT
     | "else" IfStatement
+
+SwitchStatement ::=
+    "switch" [ Expression ] NEWLINE
+    INDENT { WhenClause } [ OtherwiseClause ] DEDENT
+
+WhenClause ::=
+    "when" Expression { "," Expression } NEWLINE
+    INDENT StatementList DEDENT
+
+OtherwiseClause ::=
+    ( "otherwise" | "default" ) NEWLINE
+    INDENT StatementList DEDENT
 
 ForStatement ::=
     | ForBareLoop
@@ -432,7 +445,7 @@ send        receive     close       panic       recover
 error       empty       nil         reference   dereference
 on          discard     true        false       equals
 as          many        continue    break
-switch      case        default
+switch      when        otherwise   default
 ```
 
 **Note:** The keywords `list`, `map`, and `channel` are context-sensitive and may also be used as identifiers in certain contexts.

@@ -2,11 +2,45 @@
 
 ## Language Features
 
-### switch/case/default
-- `switch`, `case`, `default` are reserved keywords in the lexer but have **no parser, AST, or compiler support**
-- The if/else chain in the CLI Explorer tutorial is the only option for command dispatch today
-- Implementing switch/case would clean up handler routing in both CLI and web tutorials
-- Priority: **High** — one of the most common control flow patterns in Go
+### switch/when/otherwise
+- `switch` is implemented with beginner-friendly branch keywords: `when` and `otherwise`
+- Transpilation is Go-compatible: `when` maps to Go `case`, `otherwise` maps to Go `default`
+- This now replaces long if/else command-dispatch chains in tutorial code
+- Priority: **Completed in v0.0.2**
+
+**Implemented beginner syntax (English-sounding, Go-compatible):**
+- Keep `switch` (already Go-native and widely recognized)
+- Use `when` instead of `case`
+- Use `otherwise` instead of `default`
+- Keep Go behavior: first matching branch runs, no implicit fallthrough
+- `default` is accepted as an alias for easier transition from Go
+
+```kukicha
+switch command
+    when "fetch"
+        fetchRepos()
+    when "help", "h"
+        showHelp()
+    otherwise
+        print "Unknown command: {command}"
+```
+
+**Condition switch (Go's `switch true` style):**
+```kukicha
+switch
+    when stars >= 1000
+        print "Popular"
+    when stars >= 100
+        print "Growing"
+    otherwise
+        print "New"
+```
+
+**Go mapping:**
+- `switch expr` -> `switch expr`
+- `when a, b` -> `case a, b`
+- `otherwise` -> `default`
+- Bare `switch` + `when condition` -> `switch { case condition: ... }`
 
 ### interface
 - `interface` keyword exists in the grammar but has zero tutorial coverage
@@ -26,7 +60,7 @@
 
 | Feature | Status | Natural home |
 |---------|--------|-------------|
-| `switch/case` | Reserved, not implemented | CLI Explorer command dispatch (once implemented) |
+| `switch/when` | **Done** — CLI Explorer, Link Shortener, Production tutorials updated | CLI Explorer command dispatch, HTTP method dispatch |
 | `interface` | In grammar, zero examples | New section in Production tutorial or standalone |
 | `channel` / `send` / `receive` | In grammar, never used | New "Concurrency" tutorial or Production addendum |
 | `recover` | In grammar, zero examples | Production tutorial error handling section |

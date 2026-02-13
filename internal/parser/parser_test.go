@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/duber000/kukicha/internal/ast"
@@ -198,6 +199,113 @@ func TestParseIfStatement(t *testing.T) {
 
 	if ifStmt.Alternative == nil {
 		t.Error("expected alternative, got nil")
+	}
+}
+
+func TestParseSwitchStatement(t *testing.T) {
+	input := `func Route(command string) string
+    switch command
+        when "fetch", "pull"
+            return "fetching"
+        when "help"
+            return "help"
+        otherwise
+            return "unknown"
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	switchStmt, ok := fn.Body.Statements[0].(*ast.SwitchStmt)
+	if !ok {
+		t.Fatalf("expected SwitchStmt, got %T", fn.Body.Statements[0])
+	}
+
+	if switchStmt.Expression == nil {
+		t.Fatal("expected switch expression, got nil")
+	}
+
+	if len(switchStmt.Cases) != 2 {
+		t.Fatalf("expected 2 when branches, got %d", len(switchStmt.Cases))
+	}
+
+	if len(switchStmt.Cases[0].Values) != 2 {
+		t.Fatalf("expected 2 values in first when branch, got %d", len(switchStmt.Cases[0].Values))
+	}
+
+	if switchStmt.Otherwise == nil {
+		t.Fatal("expected otherwise branch, got nil")
+	}
+}
+
+func TestParseConditionSwitchStatement(t *testing.T) {
+	input := `func Label(stars int) string
+    switch
+        when stars >= 1000
+            return "popular"
+        when stars >= 100
+            return "growing"
+        otherwise
+            return "new"
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	switchStmt, ok := fn.Body.Statements[0].(*ast.SwitchStmt)
+	if !ok {
+		t.Fatalf("expected SwitchStmt, got %T", fn.Body.Statements[0])
+	}
+
+	if switchStmt.Expression != nil {
+		t.Fatal("expected condition switch with nil expression")
+	}
+}
+
+func TestParseWhenAfterOtherwiseIsError(t *testing.T) {
+	input := `func Route(command string) string
+    switch command
+        otherwise
+            return "default"
+        when "help"
+            return "help"
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	_, errors := p.Parse()
+
+	if len(errors) == 0 {
+		t.Fatal("expected parser error for 'when' after 'otherwise'")
+	}
+
+	found := false
+	for _, e := range errors {
+		if strings.Contains(e.Error(), "will never execute") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected 'will never execute' error, got: %v", errors)
 	}
 }
 

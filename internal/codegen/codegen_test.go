@@ -182,6 +182,75 @@ func TestNumericForLoop(t *testing.T) {
 	}
 }
 
+func TestSwitchStatement(t *testing.T) {
+	input := `func Route(command string) string
+    switch command
+        when "fetch", "pull"
+            return "ok"
+        otherwise
+            return "unknown"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "switch command {") {
+		t.Errorf("expected value switch, got: %s", output)
+	}
+	if !strings.Contains(output, "case \"fetch\", \"pull\":") {
+		t.Errorf("expected case values, got: %s", output)
+	}
+	if !strings.Contains(output, "default:") {
+		t.Errorf("expected default branch, got: %s", output)
+	}
+}
+
+func TestConditionSwitchStatement(t *testing.T) {
+	input := `func Label(stars int) string
+    switch
+        when stars >= 100
+            return "hot"
+        otherwise
+            return "new"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "switch {") {
+		t.Errorf("expected condition switch form, got: %s", output)
+	}
+	if !strings.Contains(output, "case (stars >= 100):") {
+		t.Errorf("expected condition branch, got: %s", output)
+	}
+}
+
 func TestEmptyTypedZeroValues(t *testing.T) {
 	input := `func ZeroInt() int
     return empty int

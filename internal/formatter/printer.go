@@ -220,6 +220,8 @@ func (p *Printer) printStatement(stmt ast.Statement) {
 		p.printReturnStmt(s)
 	case *ast.IfStmt:
 		p.printIfStmt(s)
+	case *ast.SwitchStmt:
+		p.printSwitchStmt(s)
 	case *ast.ForRangeStmt:
 		p.printForRangeStmt(s)
 	case *ast.ForNumericStmt:
@@ -374,6 +376,34 @@ func (p *Printer) printForConditionStmt(stmt *ast.ForConditionStmt) {
 
 	p.indentLevel++
 	p.printBlock(stmt.Body)
+	p.indentLevel--
+}
+
+func (p *Printer) printSwitchStmt(stmt *ast.SwitchStmt) {
+	if stmt.Expression != nil {
+		p.writeLine(fmt.Sprintf("switch %s", p.exprToString(stmt.Expression)))
+	} else {
+		p.writeLine("switch")
+	}
+
+	p.indentLevel++
+	for _, c := range stmt.Cases {
+		values := make([]string, len(c.Values))
+		for i, v := range c.Values {
+			values[i] = p.exprToString(v)
+		}
+		p.writeLine(fmt.Sprintf("when %s", strings.Join(values, ", ")))
+		p.indentLevel++
+		p.printBlock(c.Body)
+		p.indentLevel--
+	}
+
+	if stmt.Otherwise != nil {
+		p.writeLine("otherwise")
+		p.indentLevel++
+		p.printBlock(stmt.Otherwise.Body)
+		p.indentLevel--
+	}
 	p.indentLevel--
 }
 
