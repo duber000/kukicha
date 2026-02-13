@@ -14,6 +14,7 @@ In this tutorial, you'll discover how to:
 - Use `reference` to modify data in place
 - Handle errors gracefully with **`onerr`**
 - Use the **Pipe Operator (`|>`)** to build data transformation pipelines
+- Write concise inline functions with **arrow lambdas (`=>`)** for filtering and mapping
 - **Fetch data** from a web API and parse **JSON**
 - Use **`switch`/`when`/`otherwise`** for clean command dispatch
 - Build a simple **command loop** for a console app
@@ -206,17 +207,27 @@ function Summary on repo Repo(index int) string
 - `(index int)` — The method also takes an index number for display numbering
 - `string` — The method returns a string
 
-### Filtering with Pipes
+### Filtering with Pipes and Arrow Lambdas
 
-Now let's write functions to filter repos. This is where pipes become essential:
+Now let's write functions to filter repos. This is where pipes and **arrow lambdas** shine together:
 
 ```kukicha
 # FilterByLanguage returns repos matching a language (case-insensitive)
 function FilterByLanguage(repos list of Repo, language string) list of Repo
-    return repos |> slice.Filter(function(r Repo) bool
-        return r.Language |> string.ToLower() |> string.Contains(language |> string.ToLower())
-    )
+    return repos |> slice.Filter((r Repo) => r.Language |> string.ToLower() |> string.Contains(language |> string.ToLower()))
 ```
+
+**What's new here?**
+
+The `(r Repo) => ...` is an **arrow lambda** — a short inline function. Instead of writing:
+```kukicha
+# The verbose way (still valid, but wordy):
+repos |> slice.Filter(function(r Repo) bool
+    return r.Language |> string.ToLower() |> string.Contains(language |> string.ToLower())
+)
+```
+
+Arrow lambdas let you write the same thing in one line. The expression after `=>` is automatically returned — no `return` keyword needed.
 
 **💡 Pipe Pipelines:** Notice how `r.Language |> string.ToLower() |> string.Contains(...)` reads like a sentence: "take the language, make it lowercase, check if it contains our search term." This is cleaner than nesting function calls like `string.Contains(string.ToLower(r.Language), ...)`.
 
@@ -395,9 +406,7 @@ function FetchRepos(username string) list of Repo
 # --- Filter Functions ---
 
 function FilterByLanguage(repos list of Repo, language string) list of Repo
-    return repos |> slice.Filter(function(r Repo) bool
-        return r.Language |> string.ToLower() |> string.Contains(language |> string.ToLower())
-    )
+    return repos |> slice.Filter((r Repo) => r.Language |> string.ToLower() |> string.Contains(language |> string.ToLower()))
 
 # --- Explorer Methods ---
 
@@ -517,7 +526,7 @@ function main()
                     print("Usage: search <text>")
                     continue
                 term := parts[1] |> string.ToLower()
-                results := ex.repos |> slice.Filter(function(r Repo) bool
+                results := ex.repos |> slice.Filter((r Repo) =>
                     name := r.Name |> string.ToLower()
                     desc := r.Description |> string.ToLower()
                     return name |> string.Contains(term) or desc |> string.Contains(term)
@@ -677,6 +686,25 @@ switch
         print("New")
 ```
 
+### Arrow Lambdas (`=>`) — Concise Inline Functions
+
+```kukicha
+repos |> slice.Filter((r Repo) => r.Stars > 100)
+```
+
+An **arrow lambda** is a short inline function. The part before `=>` declares the parameters (with types), and the part after is the body. For single-expression lambdas, the result is returned automatically — no `return` needed.
+
+Arrow lambdas come in two forms:
+- **Expression form** (one line, auto-return): `(r Repo) => r.Stars > 100`
+- **Block form** (multi-statement, explicit `return`):
+  ```kukicha
+  (r Repo) =>
+      name := r.Name |> string.ToLower()
+      return name |> string.Contains(term)
+  ```
+
+They're especially useful with `slice.Filter`, `slice.Map`, and other functional helpers where a full `function(...)` literal would be verbose.
+
 ### `onerr` — Graceful Error Handling
 
 ```kukicha
@@ -722,6 +750,7 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | **`reference`** | Modify the original value, not a copy |
 | **`onerr`** | Handle errors gracefully with fallback values |
 | **Pipe Operator** | Chain operations into readable data pipelines |
+| **Arrow Lambdas** | Concise inline functions with `(r Repo) => expr` |
 | **`empty`** | Check for null/missing values |
 | **`switch`/`when`** | Clean command dispatch with multiple matches per branch |
 | **Command Loop** | Read input, bare `for`, `break`, and `continue` |
@@ -749,7 +778,7 @@ You now have solid programming skills with Kukicha! Continue with the tutorial s
 | # | Tutorial | What You'll Learn |
 |---|----------|-------------------|
 | 1 | ✅ **Beginner Tutorial** — Variables, functions, strings, decisions, lists, loops *(completed)* |
-| 2 | ✅ **CLI Explorer** — Custom types, methods, API data, pipes, error handling *(you are here)* |
+| 2 | ✅ **CLI Explorer** — Custom types, methods, API data, pipes, arrow lambdas, error handling *(you are here)* |
 | 3 | **[Link Shortener](web-app-tutorial.md)** ← Next step! |
 |   | Build a web service with HTTP, JSON, redirects |
 | 4 | **[Production Patterns](production-patterns-tutorial.md)** (Advanced) |

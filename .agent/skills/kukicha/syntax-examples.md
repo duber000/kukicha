@@ -155,6 +155,47 @@ func handleResource(w http.ResponseWriter, r reference http.Request)
 
 ---
 
+## Arrow Lambdas (`=>`)
+
+### Expression Lambdas (Auto-Return)
+```kukicha
+# Single typed param
+repos |> slice.Filter((r Repo) => r.Stars > 100)
+repos |> slice.Map((r Repo) => r.Name)
+
+# Single untyped param (no parens needed)
+numbers |> slice.Filter(n => n > 0)
+
+# Multiple typed params
+names |> slice.Sort((a string, b string) => a < b)
+
+# Zero params
+button.OnClick(() => print("clicked"))
+```
+
+### Block Lambdas (Multi-Statement)
+```kukicha
+# Block form — use when you need multiple statements
+repos |> slice.Filter((r Repo) =>
+    name := r.Name |> string.ToLower()
+    return name |> string.Contains("go")
+)
+```
+
+### Go Block Syntax
+```kukicha
+# Block form — desugars to go func() { ... }()
+go
+    mu.Lock()
+    doWork()
+    mu.Unlock()
+
+# Call form — still valid for single function calls
+go processItem(item)
+```
+
+---
+
 ## Production-Ready Packages
 
 ### Validation with stdlib/validate
@@ -275,8 +316,8 @@ func main()
     # Get with negative indexing
     item := slice.GetOr(items, -1, "default")  # Last item or default
 
-    # Find with predicate (use named function — inline closures don't compile)
-    user := slice.Find(users, isActiveUser) onerr return defaultUser
+    # Find with predicate (arrow lambda or named function)
+    user := slice.Find(users, (u User) => u.active) onerr return defaultUser
 
     # Check if empty
     if slice.IsEmpty(items)
@@ -336,12 +377,6 @@ type User
     age int
     active bool
 
-func isAdultActive(u User) bool
-    return u.active and u.age >= 18
-
-func userName(u User) string
-    return u.name
-
 func getActiveAdultNames(url string) list of string
     users := list of User{}
     resp := fetch.Get(url) onerr return empty list of string
@@ -352,8 +387,8 @@ func getActiveAdultNames(url string) list of string
         return empty list of string
 
     return users
-        |> slice.Filter(isAdultActive)
-        |> slice.Map(userName)
+        |> slice.Filter((u User) => u.active and u.age >= 18)
+        |> slice.Map((u User) => u.name)
         |> slice.Sort()
 ```
 
@@ -394,18 +429,12 @@ Transpilation:
 import "stdlib/files"
 import "strings"
 
-func isErrorLine(line string) bool
-    return strings.Contains(line, "ERROR")
-
-func trimLine(line string) string
-    return strings.TrimSpace(line)
-
 func processLogFile(path string) list of string
     content := files.Read(path) onerr panic "cannot read file"
     return content
         |> strings.Split("\n")
-        |> slice.Filter(isErrorLine)
-        |> slice.Map(trimLine)
+        |> slice.Filter((line string) => strings.Contains(line, "ERROR"))
+        |> slice.Map((line string) => strings.TrimSpace(line))
 ```
 
 ## Interface Implementation
@@ -507,11 +536,11 @@ func square(n int) int
 func main()
     numbers := list of int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
-    # Filter and transform (use named functions — inline closures don't compile)
+    # Filter and transform — arrow lambdas or named functions both work
     result := numbers
         |> iter.FromSlice()
-        |> iter.Filter(isEven)
-        |> iter.Map(square)
+        |> iter.Filter((n int) => n % 2 equals 0)
+        |> iter.Map((n int) => n * n)
         |> iter.Take(3)
         |> slice.Collect()
 
@@ -650,29 +679,22 @@ func Reduce(items list of int, initial int, reducer func(int, int) int) int
         accumulator = reducer(accumulator, item)
     return accumulator
 
-# Named callbacks (inline closures don't compile — parser limitation)
-func isEvenNum(n int) bool
-    return n % 2 equals 0
-
-func squareNum(n int) int
-    return n * n
-
-func sumReducer(acc int, n int) int
-    return acc + n
-
+# Arrow lambdas — preferred for short inline predicates
 func main()
     numbers := list of int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
-    # Filter for even numbers
-    evens := Filter(numbers, isEvenNum)
-
-    # Map to squares
-    squares := Map(evens, squareNum)
-
-    # Sum all squares
-    total := Reduce(squares, 0, sumReducer)
+    # Filter, map, reduce — all with arrow lambdas
+    evens := Filter(numbers, (n int) => n % 2 equals 0)
+    squares := Map(evens, (n int) => n * n)
+    total := Reduce(squares, 0, (acc int, n int) => acc + n)
 
     print(total)  # 4 + 16 + 36 + 64 + 100 = 220
+
+# Named functions — use for complex or reusable logic
+func isEvenNum(n int) bool
+    return n % 2 equals 0
+
+evens := Filter(numbers, isEvenNum)
 ```
 
 ### ForEach Pattern
@@ -713,13 +735,7 @@ func TransformUsers(users list of User, transform func(reference User) string) l
         result = append(result, transform(reference of user))
     return result
 
-# Named callbacks (inline closures don't compile — parser limitation)
-func isAdultUser(u reference User) bool
-    return u.age >= 30
-
-func formatUser(u reference User) string
-    return "{u.name} ({u.age})"
-
+# Arrow lambdas work for inline predicates
 func main()
     users := list of User{
         User{name: "Alice", age: 30},
@@ -727,11 +743,9 @@ func main()
         User{name: "Charlie", age: 35},
     }
 
-    # Filter adults (age >= 30)
-    adults := FilterUsers(users, isAdultUser)
-
-    # Transform to display names
-    names := TransformUsers(adults, formatUser)
+    # Filter and transform with arrow lambdas
+    adults := FilterUsers(users, (u reference User) => u.age >= 30)
+    names := TransformUsers(adults, (u reference User) => "{u.name} ({u.age})")
 
     for name in names
         print(name)
@@ -745,16 +759,17 @@ func DoAsync(operation func() string, onSuccess func(string), onError func(error
     result := operation()
     onSuccess(result)
 
-# Named callbacks (inline closures don't compile — parser limitation)
+# Arrow lambdas for simple callbacks
+func main()
+    DoAsync(
+        () => "Success!",
+        (msg string) => print("Result: {msg}"),
+        (err error) => print("Error: {err}")
+    )
+
+# Named functions for complex callbacks
 func doWork() string
     return "Success!"
 
-func onSuccess(msg string)
-    print("Result: {msg}")
-
-func onError(err error)
-    print("Error: {err}")
-
-func main()
-    DoAsync(doWork, onSuccess, onError)
+DoAsync(doWork, onSuccess, onError)
 ```

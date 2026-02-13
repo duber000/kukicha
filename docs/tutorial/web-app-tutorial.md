@@ -525,7 +525,7 @@ Congratulations! You've built a real web service. Let's review:
 | **Pipe Operator** | Cleanly chain functions (like JSON encoders) with `|>` |
 | **Method Values** | Pass `store.handleShorten` directly as an HTTP handler |
 | **Handlers** | Functions that respond to web requests |
-| **Request Methods** | GET (read), POST (create), DELETE (remove) — dispatched with `switch`/`when` |
+| **`switch`/`when`** | Dispatch HTTP methods and routes with clean branching |
 | **JSON** | Data format for web APIs (`encoding/json/v2`) |
 | **Status Codes** | Numbers that indicate success, failure, or redirect |
 | **Maps** | Key-value storage with `map of string to Link` |

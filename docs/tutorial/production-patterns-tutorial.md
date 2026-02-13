@@ -430,11 +430,10 @@ function handleRedirect on s reference Server(w http.ResponseWriter, r reference
         return
 
     # Record the click (async-safe with its own lock)
-    go func()
+    go
         s.mu.Lock()
         s.db.IncrementClicks(code)
         s.mu.Unlock()
-    ()
 
     http.Redirect(w, r, link.url, 301)
 
@@ -567,14 +566,18 @@ function DoWork() error
 
 ```kukicha
 # Fire-and-forget click tracking
-go func()
+go
     s.mu.Lock()
     s.db.IncrementClicks(code)
     s.mu.Unlock()
-()
 ```
 
-The `go` keyword launches a function in a separate goroutine. We use it for click tracking so the redirect response isn't delayed by a database write.
+The `go` keyword launches code in a separate goroutine. When followed by an indented block, Kukicha wraps it in an anonymous function for you (no need for the `go func()...()` pattern from Go). We use it for click tracking so the redirect response isn't delayed by a database write.
+
+You can still use `go` with a direct function call for single operations:
+```kukicha
+go processItem(item)
+```
 
 ---
 
@@ -647,7 +650,7 @@ You've completed the full Kukicha tutorial series!
 | Tutorial | What You Learned |
 |----------|-----------------|
 | ✅ **1. Beginner** | Variables, functions, strings, loops, pipes |
-| ✅ **2. CLI Explorer** | Types, methods (`on`), API data, `fetch` + `json` |
+| ✅ **2. CLI Explorer** | Types, methods (`on`), API data, arrow lambdas, `fetch` + `json` |
 | ✅ **3. Link Shortener** | HTTP servers, JSON, REST APIs, maps, redirects |
 | ✅ **4. Production** | Databases, concurrency, Go conventions, validation |
 |    **Bonus: LLM Scripting** | Shell + LLM + pipes — [try it!](llm-pipe-tutorial.md) |
@@ -700,6 +703,8 @@ Here's a quick reference for translating between Kukicha and Go:
 | `result onerr default` | `if err != nil { ... }` |
 | `a \|> f(b)` | `f(a, b)` |
 | `a \|> f(b, _)` | `f(b, a)` (placeholder) |
+| `(r Repo) => r.Stars > 100` | `func(r Repo) bool { return r.Stars > 100 }` |
+| `go` + indented block | `go func() { ... }()` |
 | `switch x` / `when a` / `otherwise` | `switch x { case a: ... default: ... }` |
 
 ---

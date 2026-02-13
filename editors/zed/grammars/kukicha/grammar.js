@@ -391,11 +391,20 @@ module.exports = grammar({
       $._newline,
     ),
 
-    // Go statement
-    go_statement: $ => seq(
-      'go',
-      field('expression', $._expression),
-      $._newline,
+    // Go statement — call form or block form
+    go_statement: $ => choice(
+      // Call form: go doWork()
+      seq(
+        'go',
+        field('expression', $._expression),
+        $._newline,
+      ),
+      // Block form: go NEWLINE INDENT ... DEDENT
+      seq(
+        'go',
+        $._newline,
+        field('body', $.block),
+      ),
     ),
 
     // Send statement
@@ -444,6 +453,7 @@ module.exports = grammar({
       $.list_literal,
       $.map_literal,
       $.function_literal,
+      $.arrow_lambda,
       $.make_expression,
       $.receive_expression,
       $.address_of_expression,
@@ -576,6 +586,26 @@ module.exports = grammar({
       optional(field('return_type', $.return_type)),
       $._newline,
       field('body', $.block),
+    ),
+
+    // Arrow lambda: (params) => expr  or  (params) => NEWLINE INDENT stmts DEDENT
+    //               ident => expr     or  () => expr
+    arrow_lambda: $ => prec.right(seq(
+      field('parameters', $.arrow_lambda_params),
+      '=>',
+      choice(
+        // Expression form (single expression, auto-return)
+        field('body_expr', $._expression),
+        // Block form (multi-statement)
+        seq($._newline, field('body', $.block)),
+      ),
+    )),
+
+    arrow_lambda_params: $ => choice(
+      // Typed params: (x Type, y Type) =>
+      seq('(', optional(commaSep1($.parameter)), ')'),
+      // Single untyped param: x =>
+      field('name', $.identifier),
     ),
 
     // Make expression - make(Type) or make(Type, size) or make(Type, size, cap)

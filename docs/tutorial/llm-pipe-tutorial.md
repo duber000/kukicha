@@ -289,7 +289,7 @@ The pattern is always the same: get data, pipe it through intelligence, do somet
 | # | Tutorial | What You'll Learn |
 |---|----------|-------------------|
 | 1 | **[Beginner Tutorial](beginner-tutorial.md)** | Variables, functions, strings, decisions, lists, loops, pipes |
-| 2 | **[CLI Explorer](cli-explorer-tutorial.md)** | Custom types, methods, API data, error handling |
+| 2 | **[CLI Explorer](cli-explorer-tutorial.md)** | Custom types, methods, API data, arrow lambdas, error handling |
 | 3 | **[Link Shortener](web-app-tutorial.md)** | HTTP servers, JSON, redirects |
 | 4 | **[Production Patterns](production-patterns-tutorial.md)** | Databases, concurrency, Go conventions |
 |   | ✅ **LLM Scripting** *(you are here)* | Shell + LLM + pipes |

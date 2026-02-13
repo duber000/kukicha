@@ -17,6 +17,8 @@ When editing `.kuki` files, write **Kukicha syntax, NOT Go**.
 | `{ }` braces | 4-space indentation |
 | `==` | `equals` (or `==`) |
 | `func (t T) Method()` | `func Method on t T` |
+| `func(x T) T { return expr }` | `(x T) => expr` |
+| `go func() { ... }()` | `go` + indented block |
 
 ## Kukicha Syntax Quick Reference
 
@@ -115,12 +117,36 @@ result := data |> parse() |> transform()
 todo |> json.MarshalWrite(w, _)   # becomes: json.MarshalWrite(w, todo)
 ```
 
+### Arrow Lambdas
+```kukicha
+# Expression lambda (auto-return)
+repos |> slice.Filter((r Repo) => r.Stars > 100)
+
+# Single untyped param (no parens)
+numbers |> slice.Filter(n => n > 0)
+
+# Zero params
+button.OnClick(() => print("clicked"))
+
+# Block lambda (multi-statement, explicit return)
+repos |> slice.Filter((r Repo) =>
+    name := r.Name |> string.ToLower()
+    return name |> string.Contains("go")
+)
+```
+
 ### Concurrency
 ```kukicha
 ch := make channel of string
 send ch, "message"
 msg := receive from ch
 go doWork()
+
+# Go block (multi-statement goroutine)
+go
+    mu.Lock()
+    doWork()
+    mu.Unlock()
 ```
 
 ## Build & Test Commands

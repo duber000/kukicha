@@ -60,7 +60,9 @@ switch
 
 | Feature | Status | Natural home |
 |---------|--------|-------------|
-| `switch/when` | **Done** — CLI Explorer, Link Shortener, Production tutorials updated | CLI Explorer command dispatch, HTTP method dispatch |
+| `switch/when` | **Done** — all tutorials updated | CLI Explorer command dispatch, HTTP method dispatch |
+| `=>` arrow lambdas | **Done** — CLI Explorer, Web App tutorials updated | CLI Explorer `slice.Filter`, anywhere pipes + functional helpers are used |
+| `go` block | **Done** — Production tutorial updated | Production tutorial goroutine click tracking |
 | `interface` | In grammar, zero examples | New section in Production tutorial or standalone |
 | `channel` / `send` / `receive` | In grammar, never used | New "Concurrency" tutorial or Production addendum |
 | `recover` | In grammar, zero examples | Production tutorial error handling section |
@@ -142,25 +144,47 @@ These are pain points hit while developing real tutorial code. Go stdlib fallbac
 
 ## Syntax Friction (discovered writing tutorials)
 
-### Verbose inline functions
-- `slice.Filter` requires a full `function(r Repo) bool` with a body block. Every filter/map call is 3+ lines:
-  ```kukicha
-  repos |> slice.Filter(function(r Repo) bool
-      return r.Stars > 100
-  )
-  ```
-- A short lambda form (e.g., `|r| r.Stars > 100` or `r => r.Stars > 100`) would make the pipe + functional style dramatically cleaner
-- Priority: **High** — this is the main friction point when composing pipes with functional helpers
+### Arrow lambdas (`=>`)
+- `slice.Filter` previously required a full `function(r Repo) bool` with a body block. Every filter/map call was 3+ lines
+- Arrow lambdas now provide a short inline form for pipe-friendly predicates
+- Priority: **Completed in v0.0.2**
 
-### `go func()...()` IIFE pattern
-- The production tutorial's click tracking goroutine uses a Go IIFE:
-  ```kukicha
-  go func()
-      s.mu.Lock()
-      s.db.IncrementClicks(code)
-      s.mu.Unlock()
-  ()
-  ```
-- The trailing `()` to invoke the anonymous function is non-obvious for beginners
-- Proposal: Allow `go` to accept a block directly, or document the pattern clearly
-- Priority: **Low** — rare in beginner code, but confusing when encountered
+**Implemented syntax:**
+```kukicha
+# Expression lambda (single expression, auto-return)
+repos |> slice.Filter((r Repo) => r.Stars > 100)
+repos |> slice.Map((r Repo) => r.Name)
+
+# Single untyped param (no parens needed)
+numbers |> slice.Filter(n => n > 0)
+
+# Zero params
+button.OnClick(() => print("clicked"))
+
+# Block lambda (multi-statement, explicit return)
+repos |> slice.Filter((r Repo) =>
+    name := r.Name |> string.ToLower()
+    return name |> string.Contains("go")
+)
+```
+
+**Implementation coverage:** Lexer (`=>` token), parser (expression/block/typed/untyped forms), AST (`ArrowLambda` node), codegen (transpiles to Go `func` literal with return type inference), formatter (roundtrip), semantic analysis. Tests across parser and codegen.
+
+### `go` block syntax
+- The production tutorial's click tracking goroutine previously used a Go IIFE (`go func()...()`)
+- `go` now accepts an indented block directly, desugaring to `go func() { ... }()` in codegen
+- Priority: **Completed in v0.0.2**
+
+**Implemented syntax:**
+```kukicha
+# Block form (recommended for multi-statement goroutines)
+go
+    s.mu.Lock()
+    s.db.IncrementClicks(code)
+    s.mu.Unlock()
+
+# Call form (still valid for single calls)
+go processItem(item)
+```
+
+**Implementation coverage:** Parser (`go` + `NEWLINE INDENT` detection), AST (`GoStmt.Block`), codegen (emits `go func() { ... }()`), formatter (roundtrip), semantic analysis. Tests across parser and codegen.

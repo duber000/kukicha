@@ -101,8 +101,19 @@
 ; Identifiers (general fallback - should be last)
 (identifier) @variable
 
+; Arrow lambda parameters
+(arrow_lambda
+  parameters: (arrow_lambda_params
+    (parameter
+      name: (identifier) @variable.parameter)))
+
+; Single untyped arrow lambda parameter
+(arrow_lambda
+  parameters: (arrow_lambda_params
+    name: (identifier) @variable.parameter))
+
 ; Operators
-[":=" "=" "|>" "==" "!=" "<" ">" "<=" ">=" "+" "-" "*" "/" "%" "++" "--" "&&" "||" "!" "|"] @operator
+[":=" "=" "|>" "=>" "==" "!=" "<" ">" "<=" ">=" "+" "-" "*" "/" "%" "++" "--" "&&" "||" "!" "|"] @operator
 
 ; Keywords
 ["petiole" "import" "as" "type" "interface" "var" "variable" "func" "function" "on" "return" "if" "else" "for" "in" "from" "to" "through" "switch" "when" "otherwise" "default" "go" "defer" "make" "list" "of" "map" "channel" "send" "receive" "close" "panic" "error" "empty" "discard" "many" "true" "false" "equals" "and" "or" "onerr" "not"] @keyword

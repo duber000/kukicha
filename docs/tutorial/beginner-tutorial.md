@@ -1415,7 +1415,7 @@ Ready for the next step? Follow this learning path:
 | # | Tutorial | What You'll Learn |
 |---|----------|-------------------|
 | 1 | ✅ *You are here* | Variables, functions, strings, decisions, lists, loops, pipes |
-| 2 | **[CLI Explorer](cli-explorer-tutorial.md)** ← Next! | Custom types, methods, API data, pipes, error handling |
+| 2 | **[CLI Explorer](cli-explorer-tutorial.md)** ← Next! | Custom types, methods, API data, pipes, arrow lambdas, error handling |
 | 3 | **[Link Shortener](web-app-tutorial.md)** | HTTP servers, JSON, REST APIs, redirects |
 | 4 | **[Production Patterns](production-patterns-tutorial.md)** | Databases, concurrency, Go conventions |
 |   | **[LLM Scripting](llm-pipe-tutorial.md)** (Bonus) | Shell + LLM + pipes — a force multiplier |

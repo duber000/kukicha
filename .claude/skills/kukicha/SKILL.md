@@ -89,21 +89,40 @@ result := data
     |> transform()
     |> process()
 
-# With arguments — use named functions (inline closures don't compile)
+# With arrow lambdas — concise inline predicates
+users := fetchUsers()
+    |> slice.Filter((u User) => u.active)
+    |> slice.Map((u User) => u.name)
+
+# Named functions also work as callbacks
 func isActive(u User) bool
     return u.active
 
-func getName(u User) string
-    return u.name
-
-users := fetchUsers()
-    |> slice.Filter(isActive)
-    |> slice.Map(getName)
+users |> slice.Filter(isActive)
 
 # Placeholder strategy: use _ to specify where piped value goes
 # Useful when piped value isn't the first argument
 todo |> json.MarshalWrite(writer, _)     # Becomes: json.MarshalWrite(writer, todo)
 data |> encode(options, _, format)       # Becomes: encode(options, data, format)
+```
+
+### Arrow Lambdas (`=>`)
+```kukicha
+# Expression lambda — auto-return, no `return` keyword needed
+repos |> slice.Filter((r Repo) => r.Stars > 100)
+repos |> slice.Map((r Repo) => r.Name)
+
+# Single untyped param — no parens needed
+numbers |> slice.Filter(n => n > 0)
+
+# Zero params
+button.OnClick(() => print("clicked"))
+
+# Block lambda — multi-statement, explicit return
+repos |> slice.Filter((r Repo) =>
+    name := r.Name |> string.ToLower()
+    return name |> string.Contains("go")
+)
 ```
 
 ### Control Flow
@@ -213,8 +232,14 @@ json.Unmarshal(data, reference of result) onerr panic "parse failed"
 
 ### Concurrency
 ```kukicha
-# Goroutines
+# Goroutines — single call
 go fetchData(url)
+
+# Goroutines — block form (multi-statement)
+go
+    mu.Lock()
+    doWork()
+    mu.Unlock()
 
 # Channels
 ch := make channel of string
@@ -267,12 +292,10 @@ func Filter(items list of int, predicate func(int) bool) list of int
             result = append(result, item)
     return result
 
-# No return type
-func ForEach(items list of string, action func(string))
-    for item in items
-        action(item)
+# Arrow lambda — preferred for short inline predicates
+evens := Filter(list of int{1, 2, 3, 4}, (n int) => n % 2 equals 0)
 
-# Pass named function as callback (inline closures don't compile)
+# Named function — use for complex or reusable logic
 func isEven(n int) bool
     return n % 2 equals 0
 
@@ -305,6 +328,8 @@ evens := Filter(list of int{1, 2, 3, 4}, isEven)
 | `break` | `break` |
 | `continue` | `continue` |
 | `for` (bare) | `for { ... }` |
+| `(r Repo) => r.Stars > 100` | `func(r Repo) bool { return r.Stars > 100 }` |
+| `go` + indented block | `go func() { ... }()` |
 | `switch x` / `when a, b` / `otherwise` | `switch x { case a, b: ... default: ... }` |
 
 ## Standard Library
@@ -345,11 +370,8 @@ resp = resp |> fetch.CheckStatus() onerr panic "bad status"
 data := resp |> fetch.Bytes() onerr panic "read failed"
 json.Unmarshal(data, reference of repos) onerr panic "parse failed"
 
-# Filter with pipes — use named predicate
-func hasEnoughStars(r Repo) bool
-    return r.Stars > 100
-
-activeRepos := repos |> slice.Filter(hasEnoughStars)
+# Filter with pipes — arrow lambda for concise predicates
+activeRepos := repos |> slice.Filter((r Repo) => r.Stars > 100)
 ```
 
 ### Parse Package (jsonv2 powered)

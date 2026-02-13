@@ -14,6 +14,8 @@
 (switch_statement) @indent
 (switch_case) @indent
 (function_literal) @indent
+(arrow_lambda) @indent
+(go_statement) @indent
 
 ; Block ends
 (block) @indent @end
