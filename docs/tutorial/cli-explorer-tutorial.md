@@ -720,10 +720,10 @@ You now have solid programming skills with Kukicha! Continue with the tutorial s
 |---|----------|-------------------|
 | 1 | ✅ **Beginner Tutorial** — Variables, functions, strings, decisions, lists, loops *(completed)* |
 | 2 | ✅ **CLI Explorer** — Custom types, methods, API data, pipes, error handling *(you are here)* |
-| 3 | **[Web App Tutorial](web-app-tutorial.md)** ← Next step! |
-|   | Build an HTTP server with REST APIs, learn JSON and web requests |
+| 3 | **[Link Shortener](web-app-tutorial.md)** ← Next step! |
+|   | Build a web service with HTTP, JSON, redirects |
 | 4 | **[Production Patterns](production-patterns-tutorial.md)** (Advanced) |
-|   | Add database storage, learn Go conventions and best practices |
+|   | Add database, concurrency, Go conventions |
 |   | **[LLM Scripting](llm-pipe-tutorial.md)** (Bonus) |
 |   | Combine shell commands + LLM calls + pipes — a force multiplier |
 
