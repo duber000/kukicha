@@ -1,18 +1,20 @@
 # Proposal: Fix Syntax Friction Discovered Writing Tutorials
 
 **Date:** 2026-02-13
-**Status:** Draft
+**Status:** Draft (updated after switch/when/otherwise landed on main)
 **References:** [ROADMAP-v0.0.2 — Syntax Friction](../ROADMAP-v0.0.2.md#syntax-friction-discovered-writing-tutorials)
 
 ---
 
 ## Summary
 
-Three syntax pain points were identified while writing tutorials for Kukicha v0.0.1. This proposal addresses each with concrete syntax designs, grammar changes, AST additions, and transpilation rules. The goals are:
+Three syntax pain points were identified while writing tutorials for Kukicha v0.0.1. One has been completed; two remain. This proposal covers all three for completeness, with the remaining two presented as actionable implementation plans.
 
-1. Make pipe + functional helper chains feel natural instead of verbose (**High priority**)
-2. Eliminate the confusing `go func()...()` IIFE pattern (**Low priority**)
-3. Implement `switch/case/default` to replace if/else dispatch chains (**High priority**)
+| # | Issue | Status | Priority |
+|---|-------|--------|----------|
+| 1 | Arrow lambdas for pipe + functional helpers | **Proposed** | High |
+| 2 | `go` block syntax to eliminate IIFE pattern | **Proposed** | Low |
+| 3 | `switch/when/otherwise` for command dispatch | **Completed on main** | ~~High~~ Done |
 
 ---
 
@@ -392,196 +394,72 @@ For loop variable capture, Go 1.22+ changed loop variables to be per-iteration, 
 
 ---
 
-## 3. `switch/case/default` Implementation
+## 3. `switch/when/otherwise` — COMPLETED
 
-### Problem
+> This feature was implemented on `main` in commits `a7a3a4d` and `2c792f8`. The review below documents what was built and evaluates the design decisions.
 
-`switch`, `case`, and `default` are reserved keywords in the lexer but have **no parser, AST, or compiler support**. The CLI Explorer tutorial uses verbose if/else chains for command dispatch:
+### What Was Implemented
 
-```kukicha
-# Current: if/else chain for command dispatch
-if command equals "search"
-    handleSearch(ex, term)
-else if command equals "list"
-    handleList(ex)
-else if command equals "filter"
-    handleFilter(ex, term)
-else if command equals "stats"
-    handleStats(ex)
-else if command equals "help"
-    handleHelp()
-else if command equals "quit" or command equals "exit"
-    print "Goodbye!"
-    break
-else
-    print "Unknown command. Type 'help' for usage."
-```
+Instead of using Go's `case`/`default` keywords directly, Kukicha chose beginner-friendly English equivalents:
 
-### Design
+| Kukicha | Go | Rationale |
+|---------|-----|-----------|
+| `switch` | `switch` | Already widely recognized, kept as-is |
+| `when` | `case` | Reads like English: "when the command is help" |
+| `otherwise` | `default` | Reads like English: "otherwise, do this" |
 
-Kukicha's switch follows Go semantics (no fallthrough by default) with indentation-based blocks:
+Both `case` and `default` are accepted as aliases (in the lexer, `when`/`case` both map to `TOKEN_CASE`, `otherwise`/`default` both map to `TOKEN_DEFAULT`). The formatter normalizes to `when`/`otherwise`.
 
-#### A. Expression Switch (most common)
-
+**Value switch:**
 ```kukicha
 switch command
-    case "search"
-        handleSearch(ex, term)
-    case "list"
-        handleList(ex)
-    case "filter"
-        handleFilter(ex, term)
-    case "stats"
-        handleStats(ex)
-    case "help"
-        handleHelp()
-    case "quit", "exit"
-        print "Goodbye!"
-        break
-    default
-        print "Unknown command. Type 'help' for usage."
+    when "fetch", "pull"
+        fetchRepos()
+    when "help"
+        showHelp()
+    otherwise
+        print("Unknown: {command}")
 ```
 
-#### B. Tagless Switch (replaces if/else if chains)
-
+**Condition switch (tagless):**
 ```kukicha
 switch
-    case score >= 90
-        grade := "A"
-    case score >= 80
-        grade := "B"
-    case score >= 70
-        grade := "C"
-    default
-        grade := "F"
+    when stars >= 1000
+        print("Popular")
+    when stars >= 100
+        print("Growing")
+    otherwise
+        print("New")
 ```
 
-#### C. Switch with Initializer
+### Implementation Coverage
 
-```kukicha
-switch value := computeValue()
-    case 1
-        print "one"
-    case 2
-        print "two"
-    default
-        print "other: {value}"
-```
+The implementation touches all compiler phases:
 
-### Comparison: Before and After
+| Phase | Files Changed | Key Additions |
+|-------|--------------|---------------|
+| **AST** | `ast.go` | `SwitchStmt`, `WhenCase`, `OtherwiseCase` nodes |
+| **Lexer** | `token.go` | `when` → `TOKEN_CASE`, `otherwise` → `TOKEN_DEFAULT` (aliases for `case`/`default`) |
+| **Parser** | `parser.go` | `parseSwitchStmt()` with error for `when` after `otherwise` |
+| **Semantic** | `semantic.go` | `analyzeSwitchStmt()`, `switchDepth` tracking for `break`, bool validation for tagless conditions |
+| **Codegen** | `codegen.go` | `generateSwitchStmt()` + auto-import/interpolation/error scanning |
+| **Formatter** | `formatter.go`, `printer.go`, `comments.go` | Roundtrip formatting with canonical `when`/`otherwise` |
+| **Editor** | Zed grammar + highlights | Syntax highlighting for new keywords |
+| **Tests** | parser (3), codegen (2), semantic (2) | Value switch, condition switch, when-after-otherwise error, break-in-switch, non-bool condition error |
+| **Tutorials** | CLI Explorer, Web App, Production | All if/else dispatch chains replaced with switch |
 
-```kukicha
-# ── BEFORE (if/else chain) ──────────────────────────────────────
+### Design Review
 
-if command equals "search"
-    handleSearch(ex, term)
-else if command equals "list"
-    handleList(ex)
-else if command equals "filter"
-    handleFilter(ex, term)
-else if command equals "stats"
-    handleStats(ex)
-else if command equals "help"
-    handleHelp()
-else if command equals "quit" or command equals "exit"
-    print "Goodbye!"
-    break
-else
-    print "Unknown command. Type 'help' for usage."
+**What works well:**
+- `when`/`otherwise` is a strong naming choice — consistent with Kukicha's "English keywords" philosophy (`equals`, `not equals`, `and`, `or`, `empty`)
+- Accepting `case`/`default` as aliases is smart for Go devs transitioning
+- The parser error for `when` after `otherwise` ("will never execute") is a good diagnostic
+- Semantic analysis validates that tagless switch conditions are boolean — catches `switch` / `when 42` at compile time
+- `switchDepth` tracking allows `break` inside switch without false "break outside loop" errors
 
-
-# ── AFTER (switch/case) ─────────────────────────────────────────
-
-switch command
-    case "search"
-        handleSearch(ex, term)
-    case "list"
-        handleList(ex)
-    case "filter"
-        handleFilter(ex, term)
-    case "stats"
-        handleStats(ex)
-    case "help"
-        handleHelp()
-    case "quit", "exit"
-        print "Goodbye!"
-        break
-    default
-        print "Unknown command. Type 'help' for usage."
-```
-
-### Grammar Changes (EBNF)
-
-Add to `Statement`:
-
-```ebnf
-Statement ::=
-    | ... (existing productions)
-    | SwitchStatement
-
-SwitchStatement ::=
-    "switch" [ SimpleStatement ";" ] [ Expression ] NEWLINE
-    INDENT CaseClause { CaseClause } [ DefaultClause ] DEDENT
-
-CaseClause ::=
-    "case" ExpressionList NEWLINE
-    INDENT StatementList DEDENT
-
-DefaultClause ::=
-    "default" NEWLINE
-    INDENT StatementList DEDENT
-```
-
-**Notes:**
-- Multiple expressions per case: `case "quit", "exit"` (comma-separated, same as Go)
-- No fallthrough by default (same as Go)
-- Tagless switch: omit the expression after `switch` for boolean case conditions
-- Optional initializer: `switch x := f()` followed by the tag expression after `;`
-
-### AST Changes
-
-```go
-type SwitchStmt struct {
-    Token   lexer.Token   // The 'switch' token
-    Init    Statement     // Optional initializer (e.g., x := f())
-    Tag     Expression    // Optional tag expression (nil for tagless switch)
-    Cases   []*CaseClause
-    Default *BlockStmt    // Optional default block
-}
-
-type CaseClause struct {
-    Token       lexer.Token   // The 'case' token
-    Expressions []Expression  // One or more match expressions
-    Body        *BlockStmt
-}
-```
-
-### Codegen
-
-Direct mapping to Go switch:
-
-```kukicha
-switch command
-    case "search"
-        handleSearch(ex, term)
-    case "quit", "exit"
-        print "Goodbye!"
-    default
-        print "Unknown"
-```
-
-Generates:
-
-```go
-switch command {
-case "search":
-    handleSearch(ex, term)
-case "quit", "exit":
-    fmt.Println("Goodbye!")
-default:
-    fmt.Println("Unknown")
-}
-```
+**Potential future additions (not blocking):**
+- **Switch with initializer** (`switch value := computeValue()`) — not yet supported but low priority since it's uncommon in tutorial-level code
+- **Type switch** (`switch v as type`) — agreed to defer until interface tutorial work is done
 
 ---
 
@@ -593,24 +471,12 @@ default:
 
 1. Modify `parseGoStmt()` to detect `NEWLINE INDENT` and parse a block
 2. Modify `generateGoStmt()` to emit `go func() { ... }()` for block form
-3. Add parser tests for `go` with block
-4. Add codegen tests for `go` with block
-5. Update quick reference and production tutorial
+3. Add formatter support (roundtrip `go` block back to `go` block, not IIFE)
+4. Add parser tests for `go` with block
+5. Add codegen tests for `go` with block
+6. Update quick reference and production tutorial
 
-### Phase 2: `switch/case/default` (High value, moderate effort)
-
-**Effort:** Moderate — new statement type through all compiler phases.
-
-1. Add `TOKEN_SWITCH`, `TOKEN_CASE`, `TOKEN_DEFAULT` recognition in lexer (already reserved)
-2. Add `SwitchStmt` and `CaseClause` AST nodes
-3. Implement `parseSwitchStmt()` in parser
-4. Implement `generateSwitchStmt()` in codegen
-5. Add semantic analysis for switch (type checking case expressions against tag)
-6. Add tests for all switch variants (expression, tagless, initializer, multi-value case)
-7. Update CLI Explorer tutorial to use switch
-8. Update quick reference and grammar docs
-
-### Phase 3: Arrow Lambdas (Highest value, largest effort)
+### Phase 2: Arrow Lambdas (Highest value, largest effort)
 
 **Effort:** Large — new expression type, new token, type inference extensions.
 
@@ -620,19 +486,21 @@ default:
 4. Implement `generateArrowLambda()` in codegen (transpile to Go `func` literal)
 5. Implement return type inference for expression lambdas
 6. Implement contextual parameter type inference for untyped lambdas
-7. Add comprehensive parser tests (typed, untyped, expression, block, 0/1/N params)
-8. Add codegen tests
-9. Add semantic analysis tests for type inference
-10. Update all tutorials to use arrow lambdas where appropriate
-11. Update quick reference, grammar, and architecture docs
+7. Add formatter support (normalize arrow lambdas in `kuki fmt`)
+8. Add comprehensive parser tests (typed, untyped, expression, block, 0/1/N params)
+9. Add codegen tests
+10. Add semantic analysis tests for type inference
+11. Update all tutorials to use arrow lambdas where appropriate
+12. Update quick reference, grammar, architecture docs, and Zed grammar
+13. Add editor syntax highlighting for `=>` token
 
 ### Phase Ordering Rationale
 
 | Phase | Feature | Priority | Effort | Why this order |
 |-------|---------|----------|--------|----------------|
+| ~~0~~ | ~~`switch/when/otherwise`~~ | ~~High~~ | ~~Moderate~~ | **Done** — landed on main |
 | 1 | `go` block | Low | Small | Minimal risk, grammar already defined, quick win |
-| 2 | `switch/case` | High | Moderate | High tutorial impact, no type inference complexity |
-| 3 | Arrow lambdas | High | Large | Most impactful but needs type inference, benefits from lessons learned in phases 1-2 |
+| 2 | Arrow lambdas | High | Large | Most impactful but needs type inference; benefits from phase 1 warmup |
 
 ---
 
@@ -665,26 +533,27 @@ This keeps the language predictable:
 
 ### Why not add `fallthrough` to switch?
 
-Go has `fallthrough` but it's rarely used and considered a footgun. Kukicha omits it for simplicity. If a user needs fallthrough behavior, they can use if/else chains or combine cases: `case "quit", "exit"`.
+Go has `fallthrough` but it's rarely used and considered a footgun. Kukicha omits it for simplicity. If a user needs fallthrough behavior, they can use if/else chains or combine branches: `when "quit", "exit"`. This was validated by the switch implementation on main — multi-value `when` covers every fallthrough use case in the tutorials.
 
 ---
 
 ## Impact on Existing Code
 
-All three changes are **purely additive**. No existing valid Kukicha code is affected:
+Both remaining changes are **purely additive**. No existing valid Kukicha code is affected:
 
 - `function(r Repo) bool` / `func(r Repo) bool` literals continue to work unchanged
 - `go func()...()` IIFE pattern continues to work unchanged
-- `if/else if` chains continue to work unchanged
 
-The new syntax forms are alternatives, not replacements. Existing tutorials and code need no migration, though they can be updated to use the cleaner forms.
+The new syntax forms are alternatives, not replacements. Existing code needs no migration, though tutorials should be updated to prefer the cleaner forms once implemented.
+
+The `switch/when/otherwise` implementation on main already demonstrated this additive approach — `case` and `default` are accepted as aliases, so Go-style muscle memory still works.
 
 ---
 
-## Open Questions
+## Resolved Design Questions
 
-1. **Should expression lambdas support multiple return values?** Proposal: No — use block form for `(T, error)` returns. Expression lambdas should be simple and single-valued.
+1. **Should expression lambdas support multiple return values?** **No** — use block form for `(T, error)` returns. Expression lambdas should be simple and single-valued.
 
-2. **Should `switch` support type switching (`switch v as type`)?** Proposal: Defer to a future version. Expression and tagless switch cover the immediate tutorial needs. Type switch can follow the interface tutorial work.
+2. **Should `switch` support type switching (`switch v as type`)?** **Defer** — type switch can follow the interface tutorial work. The current `switch/when/otherwise` covers the immediate needs.
 
-3. **Should untyped lambdas be limited to stdlib contexts?** Proposal: No — allow them anywhere the compiler can infer the type from the calling function's signature. But start the implementation with stdlib functions as the test cases.
+3. **Should untyped lambdas be limited to stdlib contexts?** **No** — allow them anywhere the compiler can infer the type from the calling function's signature. Start the implementation with stdlib functions as the primary test cases, then extend.
