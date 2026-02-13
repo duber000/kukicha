@@ -2,9 +2,9 @@
 
 **Level:** Intermediate  
 **Time:** 30 minutes  
-**Prerequisite:** [Console Todo Tutorial](console-todo-tutorial.md)
+**Prerequisite:** [CLI Explorer Tutorial](cli-explorer-tutorial.md)
 
-Welcome! You've built a console app that manages todos in memory. Now let's build something even cooler: a **web application** that you can access from a browser!
+Welcome! You've built interactive CLI tools with custom types, methods, and pipes. Now let's build something even cooler: a **web application** that you can access from a browser!
 
 ## What You'll Learn
 

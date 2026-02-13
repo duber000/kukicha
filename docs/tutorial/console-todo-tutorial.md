@@ -541,12 +541,14 @@ You now have solid programming skills with Kukicha! Continue with the tutorial s
 
 1. ✅ **Beginner Tutorial** - Variables, functions, strings, decisions, lists, loops *(completed)*
 2. ✅ **Console Todo** - Custom types, methods, error handling, command loops *(you are here)*
-3. **[Web Todo Tutorial](web-app-tutorial.md)** ← Next step!
+3. **[Web App Tutorial](web-app-tutorial.md)** ← Next step!
    - Build an HTTP server with REST APIs
    - Learn about JSON and web requests
 4. **[Production Patterns](production-patterns-tutorial.md)** (Advanced)
    - Add database storage
    - Learn Go conventions and best practices
+5. **[LLM Scripting](llm-pipe-tutorial.md)** (Bonus)
+   - Combine shell commands + LLM calls + pipes
 
 ### Reference Docs
 
