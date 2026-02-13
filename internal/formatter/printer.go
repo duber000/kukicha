@@ -231,7 +231,16 @@ func (p *Printer) printStatement(stmt ast.Statement) {
 	case *ast.DeferStmt:
 		p.writeLine("defer " + p.exprToString(s.Call))
 	case *ast.GoStmt:
-		p.writeLine("go " + p.exprToString(s.Call))
+		if s.Block != nil {
+			p.writeLine("go")
+			p.indentLevel++
+			for _, stmt := range s.Block.Statements {
+				p.printStatement(stmt)
+			}
+			p.indentLevel--
+		} else {
+			p.writeLine("go " + p.exprToString(s.Call))
+		}
 	case *ast.SendStmt:
 		channel := p.exprToString(s.Channel)
 		value := p.exprToString(s.Value)
@@ -479,6 +488,8 @@ func (p *Printer) exprToString(expr ast.Expression) string {
 		return fmt.Sprintf("panic %s", message)
 	case *ast.RecoverExpr:
 		return "recover"
+	case *ast.ArrowLambda:
+		return p.arrowLambdaToString(e)
 	default:
 		return ""
 	}
@@ -627,6 +638,33 @@ func (p *Printer) makeExprToString(expr *ast.MakeExpr) string {
 	}
 
 	return fmt.Sprintf("make %s, %s", targetType, strings.Join(args, ", "))
+}
+
+func (p *Printer) arrowLambdaToString(lambda *ast.ArrowLambda) string {
+	// Build parameter string
+	var paramParts []string
+	for _, param := range lambda.Parameters {
+		if param.Type != nil {
+			paramParts = append(paramParts, param.Name.Value+" "+p.typeAnnotationToString(param.Type))
+		} else {
+			paramParts = append(paramParts, param.Name.Value)
+		}
+	}
+
+	var paramsStr string
+	if len(lambda.Parameters) == 1 && lambda.Parameters[0].Type == nil {
+		// Single untyped param: no parens
+		paramsStr = lambda.Parameters[0].Name.Value
+	} else {
+		paramsStr = "(" + strings.Join(paramParts, ", ") + ")"
+	}
+
+	if lambda.Body != nil {
+		return fmt.Sprintf("%s => %s", paramsStr, p.exprToString(lambda.Body))
+	}
+
+	// Block form — for now, render inline (full block rendering would need multi-line support)
+	return fmt.Sprintf("%s => ...", paramsStr)
 }
 
 // Helper methods

@@ -306,6 +306,7 @@ PrimaryExpression ::=
     | TypeCast
     | TypeAssertionExpression
     | FunctionLiteral
+    | ArrowLambda
     | ReturnExpression
     | ShorthandMethodCall
 
@@ -398,6 +399,15 @@ ReturnExpression ::= "return" [ ExpressionList ]
 ShorthandMethodCall ::= "." IDENTIFIER [ "(" [ ArgumentList ] ")" ]
 
 FunctionLiteral ::= "func" "(" [ ParameterList ] ")" [ ReturnTypeList ] NEWLINE INDENT StatementList DEDENT
+
+ArrowLambda ::=
+    | "(" [ ParameterList ] ")" "=>" LambdaBody
+    | IDENTIFIER "=>" LambdaBody
+
+LambdaBody ::=
+    | Expression
+    | NEWLINE INDENT StatementList DEDENT
+
 ErrorExpression ::= "error" Expression
 DiscardExpression ::= "discard"
 CloseExpression ::= "close" Expression
@@ -458,7 +468,7 @@ switch      when        otherwise   default
 +     -     *     /     %
 ==    !=    <     <=    >     >=
 !     and   or    not
-|     |>    ++    --
+|     |>    =>    ++    --
 :=    =     :     .     ,     ;
 (     )     [     ]     {     }
 ```

@@ -85,6 +85,7 @@ const (
 	TOKEN_NOT           // not
 	TOKEN_BANG          // !
 	TOKEN_PIPE          // |>
+	TOKEN_FAT_ARROW     // =>
 	TOKEN_ARROW_LEFT    // <-
 
 	// Delimiters
@@ -269,6 +270,8 @@ func (t TokenType) String() string {
 		return "BANG"
 	case TOKEN_PIPE:
 		return "PIPE"
+	case TOKEN_FAT_ARROW:
+		return "FAT_ARROW"
 	case TOKEN_ARROW_LEFT:
 		return "ARROW_LEFT"
 

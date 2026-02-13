@@ -148,7 +148,42 @@ switch command
         print("Unknown command")
 ```
 
-### 11. Collection Types
+### 11. Arrow Lambdas
+Short inline functions using `=>` for pipe-friendly predicates.
+
+```kukicha
+# Expression lambda (single expression, auto-return)
+repos |> slice.Filter((r Repo) => r.Stars > 100)
+repos |> slice.Map((r Repo) => r.Name)
+
+# Single untyped param (no parens needed)
+numbers |> slice.Filter(n => n > 0)
+
+# Zero params
+button.OnClick(() => print("clicked"))
+
+# Block lambda (multi-statement, explicit return)
+repos |> slice.Filter((r Repo) =>
+    name := r.Name |> string.ToLower()
+    return name |> string.Contains("go")
+)
+```
+
+### 12. Go Block Syntax
+Spawn a goroutine with an indented block instead of the IIFE pattern.
+
+```kukicha
+# Block form (recommended)
+go
+    s.mu.Lock()
+    s.db.IncrementClicks(code)
+    s.mu.Unlock()
+
+# Call form (still valid)
+go processItem(item)
+```
+
+### 13. Collection Types
 Construct composite types with a readable syntax.
 
 ```kukicha
@@ -170,7 +205,7 @@ config := map of string to string{
 ch := make channel of string, 10
 ```
 
-### 12. Top-level Variables
+### 14. Top-level Variables
 Declare global state or constants at the top level of a file. You can use the full name `variable` or the abbreviation `var`.
 
 ```kukicha
@@ -178,7 +213,7 @@ variable API_URL string = "https://api.example.com"
 var IS_PRODUCTION bool = false
 ```
 
-### 13. Methods
+### 15. Methods
 Methods are defined with an explicit receiver name and the `on` keyword. You can use `function` or `func`.
 
 ```kukicha
@@ -196,7 +231,7 @@ function Get on s reference Store(id int) Todo
     return s.todos[id]
 ```
 
-### 14. Control Flow Variations
+### 16. Control Flow Variations
 ```kukicha
 # Range loops
 for i from 0 to 10          # 0 to 9
@@ -210,7 +245,7 @@ for i, item in items        # Index and value
 status := "Active" if user.active else "Inactive"
 ```
 
-### 15. Named Arguments
+### 17. Named Arguments
 Call functions with explicit argument names for clarity.
 
 ```kukicha
@@ -229,7 +264,7 @@ Configure("localhost", port: 8080, secure: true)
 Configure("localhost", secure: true)  # Use default port
 ```
 
-### 16. Default Parameter Values
+### 18. Default Parameter Values
 Define functions with optional parameters that have default values.
 
 ```kukicha
@@ -287,6 +322,8 @@ func Connect(host string, port int = 8080, timeout int = 30)
 | `make([]T, len)` | `make list of T, len` |
 | `defer f()` | `defer f()` |
 | `go f()` | `go f()` |
+| `go func() { ... }()` | `go` + indented block |
+| `func(x T) T { return expr }` | `(x T) => expr` |
 | `switch x { case a: ... }` | `switch x` / `when a` / `otherwise` |
 | (no equivalent) | `foo(name: value)` (named arguments) |
 | (no equivalent) | `func F(x int = 10)` (default parameters) |

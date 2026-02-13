@@ -578,6 +578,126 @@ func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
 	return result
 }
 
+// generateArrowLambda transpiles an arrow lambda to a Go anonymous function.
+// Expression form: (r Repo) => r.Stars > 100  →  func(r Repo) bool { return r.Stars > 100 }
+// Block form:      (r Repo) => BLOCK           →  func(r Repo) ReturnType { BLOCK }
+func (g *Generator) generateArrowLambda(lambda *ast.ArrowLambda) string {
+	// Build parameter string
+	var paramParts []string
+	for _, param := range lambda.Parameters {
+		if param.Type != nil {
+			paramParts = append(paramParts, param.Name.Value+" "+g.generateTypeAnnotation(param.Type))
+		} else {
+			// Untyped parameter — type must be inferred from context.
+			// For now, we emit as-is; the Go compiler will catch type errors.
+			// Full contextual inference is a semantic analysis extension.
+			paramParts = append(paramParts, param.Name.Value)
+		}
+	}
+	params := strings.Join(paramParts, ", ")
+
+	if lambda.Body != nil {
+		// Expression lambda: auto-return the expression
+		bodyStr := g.exprToString(lambda.Body)
+
+		// Infer return type from the expression for the Go func signature.
+		// For typed params, we can determine the return type.
+		// For the common case, we omit the return type and let Go infer it
+		// from the context (e.g., when passed to a generic function).
+		returnType := g.inferExprReturnType(lambda.Body)
+
+		if returnType != "" {
+			return fmt.Sprintf("func(%s) %s { return %s }", params, returnType, bodyStr)
+		}
+		return fmt.Sprintf("func(%s) { return %s }", params, bodyStr)
+	}
+
+	if lambda.Block != nil {
+		// Block lambda: generate as multi-line anonymous function
+		returnType := g.inferBlockReturnType(lambda.Block)
+
+		// Create temporary generator to capture body output
+		tempGen := &Generator{
+			program:        g.program,
+			output:         strings.Builder{},
+			indent:         g.indent + 1,
+			placeholderMap: g.placeholderMap,
+			autoImports:    g.autoImports,
+			isStdlibIter:   g.isStdlibIter,
+			sourceFile:     g.sourceFile,
+		}
+
+		for _, stmt := range lambda.Block.Statements {
+			tempGen.generateStatement(stmt)
+		}
+
+		var result string
+		if returnType != "" {
+			result = fmt.Sprintf("func(%s) %s {\n", params, returnType)
+		} else {
+			result = fmt.Sprintf("func(%s) {\n", params)
+		}
+		result += tempGen.output.String()
+		for i := 0; i < g.indent; i++ {
+			result += "\t"
+		}
+		result += "}"
+		return result
+	}
+
+	// Shouldn't happen — at least one of Body or Block must be set
+	return fmt.Sprintf("func(%s) {}", params)
+}
+
+// inferExprReturnType tries to infer the return type of an expression lambda body.
+// Returns empty string if it can't determine the type.
+func (g *Generator) inferExprReturnType(expr ast.Expression) string {
+	switch e := expr.(type) {
+	case *ast.BinaryExpr:
+		switch e.Operator {
+		case "==", "!=", "<", ">", "<=", ">=", "equals", "not equals",
+			"and", "or", "&&", "||", "in", "not in":
+			return "bool"
+		case "+", "-", "*", "/", "%":
+			// Arithmetic — try to infer from operands
+			leftType := g.inferExprReturnType(e.Left)
+			if leftType != "" {
+				return leftType
+			}
+			return g.inferExprReturnType(e.Right)
+		}
+	case *ast.UnaryExpr:
+		if e.Operator == "not" || e.Operator == "!" {
+			return "bool"
+		}
+	case *ast.BooleanLiteral:
+		return "bool"
+	case *ast.IntegerLiteral:
+		return "int"
+	case *ast.FloatLiteral:
+		return "float64"
+	case *ast.StringLiteral:
+		return "string"
+	case *ast.CallExpr:
+		// Can't easily determine return type of arbitrary call
+		return ""
+	}
+	// For field access, method calls, etc. — can't determine without full type info
+	return ""
+}
+
+// inferBlockReturnType scans a block's return statements to infer return type.
+func (g *Generator) inferBlockReturnType(block *ast.BlockStmt) string {
+	for _, stmt := range block.Statements {
+		if ret, ok := stmt.(*ast.ReturnStmt); ok {
+			if len(ret.Values) == 1 {
+				return g.inferExprReturnType(ret.Values[0])
+			}
+		}
+	}
+	return ""
+}
+
 // inferStdlibTypeParameters infers type parameters for stdlib/iterator functions
 // This enables special transpilation where iter.Seq → iter.Seq[T]
 func (g *Generator) inferStdlibTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
@@ -1004,7 +1124,19 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 	case *ast.DeferStmt:
 		g.writeLine("defer " + g.exprToString(s.Call))
 	case *ast.GoStmt:
-		g.writeLine("go " + g.exprToString(s.Call))
+		if s.Block != nil {
+			// Block form: go NEWLINE INDENT ... DEDENT
+			// Generates: go func() { ... }()
+			g.write(g.indentStr() + "go func() {\n")
+			g.indent++
+			for _, stmt := range s.Block.Statements {
+				g.generateStatement(stmt)
+			}
+			g.indent--
+			g.write(g.indentStr() + "}()\n")
+		} else {
+			g.writeLine("go " + g.exprToString(s.Call))
+		}
 	case *ast.SendStmt:
 		channel := g.exprToString(s.Channel)
 		value := g.exprToString(s.Value)
@@ -1705,6 +1837,8 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		return "recover()"
 	case *ast.FunctionLiteral:
 		return g.generateFunctionLiteral(e)
+	case *ast.ArrowLambda:
+		return g.generateArrowLambda(e)
 	case *ast.AddressOfExpr:
 		return g.generateAddressOfExpr(e)
 	case *ast.DerefExpr:
@@ -2597,6 +2731,9 @@ func (g *Generator) checkStmtForPrint(stmt ast.Statement) bool {
 		if s.Call != nil {
 			return g.checkExprForPrint(s.Call)
 		}
+		if s.Block != nil {
+			return g.checkBlockForPrint(s.Block)
+		}
 	}
 	return false
 }
@@ -2635,6 +2772,13 @@ func (g *Generator) checkExprForPrint(expr ast.Expression) bool {
 	case *ast.FunctionLiteral:
 		if e.Body != nil {
 			return g.checkBlockForPrint(e.Body)
+		}
+	case *ast.ArrowLambda:
+		if e.Body != nil {
+			return g.checkExprForPrint(e.Body)
+		}
+		if e.Block != nil {
+			return g.checkBlockForPrint(e.Block)
 		}
 	}
 
@@ -2749,7 +2893,12 @@ func (g *Generator) scanStmtForAutoImports(stmt ast.Statement) {
 	case *ast.DeferStmt:
 		g.scanExprForAutoImports(s.Call)
 	case *ast.GoStmt:
-		g.scanExprForAutoImports(s.Call)
+		if s.Call != nil {
+			g.scanExprForAutoImports(s.Call)
+		}
+		if s.Block != nil {
+			g.scanBlockForAutoImports(s.Block)
+		}
 	case *ast.SendStmt:
 		g.scanExprForAutoImports(s.Value)
 		g.scanExprForAutoImports(s.Channel)
@@ -2804,6 +2953,13 @@ func (g *Generator) scanExprForAutoImports(expr ast.Expression) {
 	case *ast.FunctionLiteral:
 		if e.Body != nil {
 			g.scanBlockForAutoImports(e.Body)
+		}
+	case *ast.ArrowLambda:
+		if e.Body != nil {
+			g.scanExprForAutoImports(e.Body)
+		}
+		if e.Block != nil {
+			g.scanBlockForAutoImports(e.Block)
 		}
 	case *ast.StructLiteralExpr:
 		for _, f := range e.Fields {
@@ -2913,6 +3069,13 @@ func (g *Generator) checkStmtForErrors(stmt ast.Statement) bool {
 		if s.Body != nil {
 			return g.checkBlockForErrors(s.Body)
 		}
+	case *ast.GoStmt:
+		if s.Call != nil && g.checkExprForErrors(s.Call) {
+			return true
+		}
+		if s.Block != nil && g.checkBlockForErrors(s.Block) {
+			return true
+		}
 	case *ast.ExpressionStmt:
 		if g.checkExprForErrors(s.Expression) {
 			return true
@@ -2956,6 +3119,13 @@ func (g *Generator) checkExprForErrors(expr ast.Expression) bool {
 	case *ast.FunctionLiteral:
 		if e.Body != nil {
 			return g.checkBlockForErrors(e.Body)
+		}
+	case *ast.ArrowLambda:
+		if e.Body != nil {
+			return g.checkExprForErrors(e.Body)
+		}
+		if e.Block != nil {
+			return g.checkBlockForErrors(e.Block)
 		}
 	}
 

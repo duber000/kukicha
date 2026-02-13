@@ -1027,6 +1027,20 @@ func (p *Parser) parseDeferStmt() *ast.DeferStmt {
 func (p *Parser) parseGoStmt() *ast.GoStmt {
 	token := p.advance() // consume 'go'
 
+	// Check for block form: go NEWLINE INDENT ... DEDENT
+	// This desugars to go func() { ... }() in codegen
+	if p.check(lexer.TOKEN_NEWLINE) || p.check(lexer.TOKEN_INDENT) {
+		p.skipNewlines()
+		if p.check(lexer.TOKEN_INDENT) {
+			block := p.parseBlock()
+			p.skipNewlines()
+			return &ast.GoStmt{
+				Token: token,
+				Block: block,
+			}
+		}
+	}
+
 	expr := p.parseExpression()
 
 	// Accept both regular function calls and method calls
@@ -1045,7 +1059,7 @@ func (p *Parser) parseGoStmt() *ast.GoStmt {
 			Call:  call,
 		}
 	default:
-		p.error(token, "go must be followed by a function call")
+		p.error(token, "go must be followed by a function call or indented block")
 		return nil
 	}
 }
@@ -1655,6 +1669,10 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 	case lexer.TOKEN_TRUE, lexer.TOKEN_FALSE:
 		return p.parseBooleanLiteral()
 	case lexer.TOKEN_IDENTIFIER:
+		// Check for single-param untyped arrow lambda: x => expr
+		if p.peekNextToken().Type == lexer.TOKEN_FAT_ARROW {
+			return p.parseArrowLambda()
+		}
 		return p.parseIdentifierOrStructLiteral()
 	case lexer.TOKEN_EMPTY:
 		return p.parseEmptyExpr()
@@ -1689,6 +1707,10 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 	case lexer.TOKEN_LBRACKET:
 		return p.parseListLiteral()
 	case lexer.TOKEN_LPAREN:
+		// Check if this is an arrow lambda: () => ..., (x Type) => ..., (x, y) => ...
+		if p.isArrowLambda() {
+			return p.parseArrowLambda()
+		}
 		return p.parseGroupedExpression()
 	case lexer.TOKEN_FUNC:
 		return p.parseFunctionLiteral()
@@ -2046,6 +2068,124 @@ func (p *Parser) parseFunctionLiteral() *ast.FunctionLiteral {
 		Returns:    returns,
 		Body:       body,
 	}
+}
+
+// isArrowLambda performs lookahead to determine if the current position starts
+// an arrow lambda expression. Called when peekToken is TOKEN_LPAREN.
+// It scans forward to find the matching ')' and checks if '=>' follows.
+func (p *Parser) isArrowLambda() bool {
+	// We're at '(' — scan forward to find matching ')'
+	depth := 0
+	i := p.pos
+	for i < len(p.tokens) {
+		tok := p.tokens[i]
+		switch tok.Type {
+		case lexer.TOKEN_LPAREN:
+			depth++
+		case lexer.TOKEN_RPAREN:
+			depth--
+			if depth == 0 {
+				// Found matching ')'. Check if '=>' follows.
+				i++
+				// Skip any comments
+				for i < len(p.tokens) && p.tokens[i].Type == lexer.TOKEN_COMMENT {
+					i++
+				}
+				return i < len(p.tokens) && p.tokens[i].Type == lexer.TOKEN_FAT_ARROW
+			}
+		case lexer.TOKEN_NEWLINE, lexer.TOKEN_EOF, lexer.TOKEN_INDENT, lexer.TOKEN_DEDENT:
+			// Newlines inside parens shouldn't occur (lexer suppresses them)
+			// but if we hit EOF or indent tokens, it's not a lambda
+			return false
+		}
+		i++
+	}
+	return false
+}
+
+// parseArrowLambda parses an arrow lambda expression.
+// Forms:
+//
+//	x => expr                          single untyped param
+//	(x Type) => expr                   single typed param
+//	(x Type, y Type) => expr           multiple typed params
+//	(x, y) => expr                     multiple untyped params
+//	() => expr                         zero params
+//	<any of the above> => NEWLINE INDENT ... DEDENT   block form
+func (p *Parser) parseArrowLambda() *ast.ArrowLambda {
+	var params []*ast.Parameter
+
+	if p.check(lexer.TOKEN_IDENTIFIER) && p.peekNextToken().Type == lexer.TOKEN_FAT_ARROW {
+		// Single untyped param: x => ...
+		paramToken := p.advance()
+		params = append(params, &ast.Parameter{
+			Name: &ast.Identifier{Token: paramToken, Value: paramToken.Lexeme},
+		})
+	} else if p.check(lexer.TOKEN_LPAREN) {
+		p.advance() // consume '('
+		if !p.check(lexer.TOKEN_RPAREN) {
+			params = p.parseArrowLambdaParams()
+		}
+		p.consume(lexer.TOKEN_RPAREN, "expected ')' after arrow lambda parameters")
+	}
+
+	arrowToken, _ := p.consume(lexer.TOKEN_FAT_ARROW, "expected '=>' in arrow lambda")
+
+	lambda := &ast.ArrowLambda{
+		Token:      arrowToken,
+		Parameters: params,
+	}
+
+	// Check if block form or expression form
+	if p.check(lexer.TOKEN_NEWLINE) || p.check(lexer.TOKEN_INDENT) {
+		p.skipNewlines()
+		if p.check(lexer.TOKEN_INDENT) {
+			lambda.Block = p.parseBlock()
+		} else {
+			// Newline but no indent — parse as expression
+			lambda.Body = p.parseExpression()
+		}
+	} else {
+		lambda.Body = p.parseExpression()
+	}
+
+	return lambda
+}
+
+// parseArrowLambdaParams parses arrow lambda parameters.
+// Supports both typed (x int, y string) and untyped (x, y) params.
+func (p *Parser) parseArrowLambdaParams() []*ast.Parameter {
+	var params []*ast.Parameter
+
+	for {
+		paramName := p.parseIdentifier()
+
+		// Determine if this is typed or untyped by checking what follows:
+		// - comma or ')' means untyped
+		// - anything else means it's a type annotation
+		var paramType ast.TypeAnnotation
+		if !p.check(lexer.TOKEN_COMMA) && !p.check(lexer.TOKEN_RPAREN) && !p.check(lexer.TOKEN_ASSIGN) {
+			paramType = p.parseTypeAnnotation()
+		}
+
+		// Check for default value
+		var defaultValue ast.Expression
+		if p.match(lexer.TOKEN_ASSIGN) {
+			defaultValue = p.parseExpression()
+		}
+
+		params = append(params, &ast.Parameter{
+			Name:         paramName,
+			Type:         paramType,
+			DefaultValue: defaultValue,
+		})
+
+		if !p.match(lexer.TOKEN_COMMA) {
+			break
+		}
+	}
+
+	return params
 }
 
 // parseStructTag parses a struct tag like json:"name" or empty string if none present
