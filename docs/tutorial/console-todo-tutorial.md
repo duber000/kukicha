@@ -4,14 +4,15 @@
 **Time:** 15-18 minutes  
 **Prerequisite:** [Beginner Tutorial](beginner-tutorial.md)
 
-Welcome back! In the beginner tutorial, you learned about variables, functions, and strings. Now we're going to build something real: a **todo list application** that runs in your terminal.
+Welcome back! In the beginner tutorial, you learned about variables, functions, strings, decisions, lists, and loops. Now we're going to build something real: a **todo list application** that runs in your terminal.
 
 ## What You'll Learn
 
 In this tutorial, you'll discover how to:
-- Store multiple items in **lists** (collections)
-- Create **types** to organize related data
+- Create **custom types** to organize related data
 - Write **methods** that belong to types
+- Use `reference` to modify data in place
+- Handle errors gracefully with **`onerr`**
 - Use the **Pipe Operator (`|>`)** for clean data flow
 - Build a simple **command loop** for a console app
 
@@ -139,6 +140,8 @@ function MarkDone on todo reference Todo
 
 Without `reference`, the method would get a **copy** of the todo. Any changes would only affect the copy, not the original. Using `reference` means we're working with the **actual** todo, so our changes stick.
 
+Think of it like a shared document: without `reference`, you'd get a photocopy - you can scribble on it all day, but the original won't change. With `reference`, you're editing the original document itself.
+
 ### Let's Try It
 
 Add a `main` function to `todo.kuki` so we can run what we've built so far:
@@ -213,7 +216,9 @@ function ShowAll on tl TodoList
 
 To complete a todo, we need to find it in our list. List items are accessed by their **index** (their position in the list, starting at 0).
 
-We can get the index in a loop by adding a variable for it: `for i, todo in tl.items`.
+> **💡 Recall from the beginner tutorial:** `for i, todo in tl.items` loops through the list with both the index and the item. The names `i` and `todo` are your choice - `i` gets the position number (starting at 0), and `todo` gets the item at that position. See [Loops - Repeating Actions](beginner-tutorial.md#loops---repeating-actions) for a refresher.
+
+**Why return -1?** Valid list indices start at 0, so -1 is an impossible index. This is a common programming convention called a **sentinel value** - a special value that signals "not found." When the caller sees -1, they know the search failed.
 
 ```kukicha
 # FindIndex returns the invalid index -1 if not found
@@ -251,6 +256,8 @@ function main()
     tl.Complete(2)
     tl.ShowAll()
 ```
+
+**Note:** `empty list of Todo` creates an empty list that's typed to hold `Todo` items. Since the list starts empty, Kukicha can't infer the type from the contents, so we specify it explicitly.
 
 Run it:
 
@@ -453,6 +460,52 @@ Goodbye!
 
 ---
 
+## Understanding the New Concepts
+
+The final program introduced several concepts that deserve a closer look. Let's walk through them.
+
+### Bare `for` - The Infinite Loop
+
+```kukicha
+for
+    # ... read input and process commands ...
+```
+
+A `for` with no condition runs forever. This is the standard pattern for programs that wait for user input - the loop keeps running until something inside calls `break`. You saw in the beginner tutorial that `for condition` runs while the condition is true; a bare `for` is just the extreme case where the condition is always true.
+
+### `onerr` - Graceful Error Handling
+
+```kukicha
+input := reader.ReadString('\n') onerr ""
+```
+
+Some operations can fail - reading input might hit an error if the terminal closes unexpectedly. The **`onerr`** clause says "if this fails, use this value instead." Here, if `ReadString` fails, `input` gets set to an empty string `""` and the program continues normally instead of crashing.
+
+You can use `onerr` with different fallback strategies:
+- `onerr ""` or `onerr 0` - use a default value
+- `onerr return` - exit the current function
+- `onerr panic "message"` - crash with an error message (for truly unexpected failures)
+
+### `continue` in Context
+
+```kukicha
+if input equals ""
+    continue
+```
+
+When the user presses Enter without typing anything, `continue` skips the rest of the loop body and goes straight back to the `>` prompt. Without `continue`, the empty input would fall through to the command parsing logic and print "Unknown command."
+
+### `empty` for Null Checking
+
+```kukicha
+if idErr not equals empty
+    print("Invalid id: {parts[1]}")
+```
+
+In Kukicha, **`empty`** represents "no value" (called `nil` in many other languages). When a function can fail, it returns an error value alongside the result. If the error `not equals empty`, something went wrong. Here we check whether `strconv.Atoi` (which converts text to a number) failed - if so, the user typed something that isn't a valid number.
+
+---
+
 ## What You've Learned
 
 Congratulations! You've built a real, working application. Let's review what you learned:
@@ -461,10 +514,11 @@ Congratulations! You've built a real, working application. Let's review what you
 |---------|--------------|
 | **Custom Types** | Define your own data structures with `type Name` |
 | **Methods** | Attach functions to types with `function Name on receiver Type` |
+| **`reference`** | Modify the original value, not a copy |
+| **`onerr`** | Handle errors gracefully with fallback values |
 | **Pipe Operator** | Cleanly chain functions together with `|>` |
-| **Lists** | Store multiple items with `list of Type` |
-| **Loops** | Process each item with `for item in list` |
-| **Command Loop** | Read input and respond to simple commands |
+| **`empty`** | Check for null/missing values |
+| **Command Loop** | Read input, bare `for`, `break`, and `continue` |
 
 ---
 
@@ -485,8 +539,8 @@ You now have solid programming skills with Kukicha! Continue with the tutorial s
 
 ### Tutorial Path
 
-1. ✅ **Beginner Tutorial** - Variables, functions, strings *(completed)*
-2. ✅ **Console Todo** - Types, methods, lists, file I/O *(you are here)*
+1. ✅ **Beginner Tutorial** - Variables, functions, strings, decisions, lists, loops *(completed)*
+2. ✅ **Console Todo** - Custom types, methods, error handling, command loops *(you are here)*
 3. **[Web Todo Tutorial](web-app-tutorial.md)** ← Next step!
    - Build an HTTP server with REST APIs
    - Learn about JSON and web requests

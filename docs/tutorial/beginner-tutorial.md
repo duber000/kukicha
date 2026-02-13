@@ -7,15 +7,19 @@ Welcome! This tutorial will teach you programming from scratch using **Kukicha**
 1. [What is Programming?](#what-is-programming)
 2. [What is Kukicha?](#what-is-kukicha)
 3. [Your First Program](#your-first-program)
-4. [Comments - Leaving Notes for Yourself](#comments)
-5. [Variables - Storing Information](#variables)
-6. [Types - What Kind of Data?](#types)
-7. [Functions - Reusable Recipes](#functions)
-8. [Strings - Working with Text](#strings)
-9. [String Interpolation - Combining Text and Data](#string-interpolation)
-10. [The String Petiole - Text Superpowers](#the-string-petiole)
-11. [Building Your First Real Program](#building-your-first-real-program)
-12. [What's Next?](#whats-next)
+4. [Comments - Leaving Notes for Yourself](#comments---leaving-notes-for-yourself)
+5. [Variables - Storing Information](#variables---storing-information)
+6. [Types - What Kind of Data?](#types---what-kind-of-data)
+7. [Functions - Reusable Recipes](#functions---reusable-recipes)
+8. [Strings - Working with Text](#strings---working-with-text)
+9. [String Interpolation - Combining Text and Data](#string-interpolation---combining-text-and-data)
+10. [Making Decisions - If, Else If, and Else](#making-decisions---if-else-if-and-else)
+11. [Lists - Storing Multiple Items](#lists---storing-multiple-items)
+12. [Loops - Repeating Actions](#loops---repeating-actions)
+13. [Putting It Together - A Grade Reporter](#putting-it-together---a-grade-reporter)
+14. [The String Petiole - Text Superpowers](#the-string-petiole---text-superpowers)
+15. [Building Your First Real Program](#building-your-first-real-program)
+16. [What's Next?](#whats-next)
 
 ---
 
@@ -501,6 +505,515 @@ kukicha run strings.kuki
 
 ---
 
+## Making Decisions - If, Else If, and Else
+
+Programs often need to make decisions. Think of it like choosing what to wear: *if* it's raining, take an umbrella; *else if* it's sunny, wear sunglasses; *else*, just head out.
+
+Kukicha uses `if`, `else if`, and `else` to make decisions. Let's see how!
+
+### Basic If
+
+Create a file called `decisions.kuki`:
+
+```kukicha
+function main()
+    temperature := 35
+
+    if temperature > 30
+        print("It's hot outside!")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run decisions.kuki
+```
+
+**Output:**
+```
+It's hot outside!
+```
+
+The code inside the `if` block only runs when the condition is true. If `temperature` were 20, nothing would print.
+
+### If and Else
+
+What if we want to do something when the condition is *not* true? That's what `else` is for. Update `decisions.kuki`:
+
+```kukicha
+function main()
+    temperature := 20
+
+    if temperature > 30
+        print("It's hot outside!")
+    else
+        print("It's not too hot.")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run decisions.kuki
+```
+
+**Output:**
+```
+It's not too hot.
+```
+
+### If, Else If, and Else Chains
+
+Sometimes you need more than two choices. Use `else if` to check additional conditions. Update `decisions.kuki`:
+
+```kukicha
+function main()
+    score := 85
+
+    if score >= 90
+        print("Grade: A")
+    else if score >= 80
+        print("Grade: B")
+    else if score >= 70
+        print("Grade: C")
+    else if score >= 60
+        print("Grade: D")
+    else
+        print("Grade: F")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run decisions.kuki
+```
+
+**Output:**
+```
+Grade: B
+```
+
+Kukicha checks each condition from top to bottom. The first one that's true wins, and the rest are skipped.
+
+### Combining Conditions with And, Or, Not
+
+You can combine conditions using plain English words:
+
+- **`and`** - both conditions must be true
+- **`or`** - at least one condition must be true
+- **`not`** - flips true to false (and vice versa)
+
+```kukicha
+function main()
+    age := 25
+    hasTicket := true
+
+    if age >= 18 and hasTicket
+        print("Welcome to the show!")
+
+    isMember := false
+    if isMember or hasTicket
+        print("You can enter.")
+
+    if not isMember
+        print("Consider joining our membership program!")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run decisions.kuki
+```
+
+**Output:**
+```
+Welcome to the show!
+You can enter.
+Consider joining our membership program!
+```
+
+**Key points:**
+- Conditions don't need parentheses in Kukicha
+- Kukicha uses English words: `equals`, `not equals`, `and`, `or`, `not`
+- Indentation defines what code belongs to each branch
+- Only the first matching branch runs in an `if/else if/else` chain
+
+---
+
+## Lists - Storing Multiple Items
+
+So far, each variable has held one value. But what if you need to store a whole shopping list, or a collection of scores? That's what **lists** are for. A list is like a numbered shelf where each slot holds one item.
+
+### Creating Lists
+
+Create a file called `lists.kuki`:
+
+```kukicha
+function main()
+    # Create a list of strings
+    fruits := list of string{"apple", "banana", "cherry"}
+
+    print(fruits)
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run lists.kuki
+```
+
+**Output:**
+```
+[apple banana cherry]
+```
+
+The `list of string` part tells Kukicha that this list holds strings. You put the initial items inside `{ }`.
+
+### Accessing Items by Index
+
+Each item in a list has an **index** - its position number. Indexing starts at **0**, not 1. Update `lists.kuki`:
+
+```kukicha
+function main()
+    fruits := list of string{"apple", "banana", "cherry"}
+
+    print(fruits[0])   # First item
+    print(fruits[1])   # Second item
+    print(fruits[2])   # Third item
+
+    # Negative indices count from the end
+    print(fruits[-1])  # Last item
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run lists.kuki
+```
+
+**Output:**
+```
+apple
+banana
+cherry
+cherry
+```
+
+**Why start at 0?** Almost all programming languages start counting at 0. Think of it as "how many items to skip from the beginning" - skip 0 to get the first item.
+
+### How Many Items? Use len()
+
+The built-in `len()` function tells you how many items are in a list. Update `lists.kuki`:
+
+```kukicha
+function main()
+    fruits := list of string{"apple", "banana", "cherry"}
+
+    print("Number of fruits: {len(fruits)}")
+
+    if len(fruits) > 0
+        print("The list is not empty!")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run lists.kuki
+```
+
+**Output:**
+```
+Number of fruits: 3
+The list is not empty!
+```
+
+### Adding Items with append()
+
+Use `append()` to add items to a list. One important thing: `append()` gives you back a **new list** with the item added - you need to save the result. Update `lists.kuki`:
+
+```kukicha
+function main()
+    fruits := list of string{"apple", "banana"}
+    print("Before: {fruits}")
+
+    # append() returns a new list - save it back!
+    fruits = append(fruits, "cherry")
+    fruits = append(fruits, "date")
+    print("After: {fruits}")
+    print("Count: {len(fruits)}")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run lists.kuki
+```
+
+**Output:**
+```
+Before: [apple banana]
+After: [apple banana cherry date]
+Count: 4
+```
+
+**Key points:**
+- `list of Type{items}` creates a list with initial items
+- Indices start at **0** (first item) - negative indices count from the end
+- `len(list)` returns the number of items
+- `append(list, item)` returns a new list with the item added at the end
+
+---
+
+## Loops - Repeating Actions
+
+Imagine you have a list of 100 students and you want to print each name. Writing 100 `print()` calls would be terrible! **Loops** let you repeat actions automatically.
+
+### For-Each: Doing Something with Each Item
+
+The most common loop goes through each item in a list. Create a file called `loops.kuki`:
+
+```kukicha
+function main()
+    fruits := list of string{"apple", "banana", "cherry"}
+
+    for fruit in fruits
+        print("I like {fruit}!")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run loops.kuki
+```
+
+**Output:**
+```
+I like apple!
+I like banana!
+I like cherry!
+```
+
+The name `fruit` is one **you choose** - it's a temporary variable that holds the current item during each pass through the loop. You could call it `item`, `f`, or `snack` - whatever makes your code readable.
+
+### Indexed Loops: Knowing the Position
+
+Sometimes you need to know *where* you are in the list, not just *what* the item is. Add a second variable before the item name to get the index. Update `loops.kuki`:
+
+```kukicha
+function main()
+    fruits := list of string{"apple", "banana", "cherry"}
+
+    for i, fruit in fruits
+        print("{i}: {fruit}")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run loops.kuki
+```
+
+**Output:**
+```
+0: apple
+1: banana
+2: cherry
+```
+
+Both names are **your choice**: `i` is the position number (starting at 0), and `fruit` is the item at that position. You could write `for index, item in fruits` or `for pos, snack in fruits` - the names are up to you.
+
+### Counting Loops: From and To
+
+Sometimes you need to count through a range of numbers. Kukicha has two styles:
+
+- **`to`** - stops *before* the end number (exclusive)
+- **`through`** - includes the end number (inclusive)
+
+Update `loops.kuki`:
+
+```kukicha
+function main()
+    # 'to' is exclusive: 1, 2, 3, 4 (stops before 5)
+    print("Counting with 'to':")
+    for i from 1 to 5
+        print(i)
+
+    # 'through' is inclusive: 1, 2, 3, 4, 5
+    print("Counting with 'through':")
+    for i from 1 through 5
+        print(i)
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run loops.kuki
+```
+
+**Output:**
+```
+Counting with 'to':
+1
+2
+3
+4
+Counting with 'through':
+1
+2
+3
+4
+5
+```
+
+### While-Style Loops
+
+Sometimes you want to keep looping as long as a condition is true. Just put a condition after `for`. Update `loops.kuki`:
+
+```kukicha
+function main()
+    count := 5
+
+    print("Countdown:")
+    for count > 0
+        print(count)
+        count = count - 1
+    print("Go!")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run loops.kuki
+```
+
+**Output:**
+```
+Countdown:
+5
+4
+3
+2
+1
+Go!
+```
+
+### Break and Continue
+
+Two special keywords control loop behavior:
+
+- **`break`** - stop the loop immediately and move on
+- **`continue`** - skip the rest of this pass and go to the next one
+
+Update `loops.kuki`:
+
+```kukicha
+function main()
+    # break: stop when we find what we're looking for
+    names := list of string{"Alice", "Bob", "Charlie", "Diana"}
+
+    print("Searching for Charlie...")
+    for name in names
+        if name equals "Charlie"
+            print("Found Charlie!")
+            break
+        print("Not {name}...")
+
+    # continue: skip items we don't want
+    print("\nOdd numbers from 1 to 10:")
+    for i from 1 through 10
+        if i % 2 equals 0
+            continue   # Skip even numbers
+        print(i)
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run loops.kuki
+```
+
+**Output:**
+```
+Searching for Charlie...
+Not Alice...
+Not Bob...
+Found Charlie!
+
+Odd numbers from 1 to 10:
+1
+3
+5
+7
+9
+```
+
+**Key points:**
+- `for item in list` loops through each item - the name is your choice
+- `for i, item in list` gives you both position and item - both names are your choice
+- `for i from X to Y` counts from X up to (but not including) Y
+- `for i from X through Y` counts from X up to (and including) Y
+- `for condition` repeats while the condition is true
+- `break` exits the loop early; `continue` skips to the next iteration
+- `%` is the modulo operator - `i % 2` gives the remainder when dividing by 2
+
+---
+
+## Putting It Together - A Grade Reporter
+
+Let's combine decisions, lists, and loops into one program. This mini project takes a list of student scores and prints a report.
+
+Create a file called `grades.kuki`:
+
+```kukicha
+function LetterGrade(score int) string
+    if score >= 90
+        return "A"
+    else if score >= 80
+        return "B"
+    else if score >= 70
+        return "C"
+    else if score >= 60
+        return "D"
+    return "F"
+
+function main()
+    names := list of string{"Alice", "Bob", "Charlie", "Diana", "Eve"}
+    scores := list of int{92, 75, 88, 61, 45}
+
+    print("=== Grade Report ===")
+    for i, name in names
+        grade := LetterGrade(scores[i])
+        print("{name}: {scores[i]} ({grade})")
+
+    print("\nTotal students: {len(names)}")
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run grades.kuki
+```
+
+**Output:**
+```
+=== Grade Report ===
+Alice: 92 (A)
+Bob: 75 (C)
+Charlie: 88 (B)
+Diana: 61 (D)
+Eve: 45 (F)
+
+Total students: 5
+```
+
+**What this program demonstrates:**
+1. A function with `if/else if` that returns different values
+2. Two lists working together (names and scores, matched by index)
+3. An indexed `for` loop to walk through both lists at once
+4. `len()` to count items
+5. String interpolation pulling it all together
+
+---
+
 ## The String Petiole - Text Superpowers
 
 Now comes the exciting part! Kukicha includes a **string petiole** (package) with powerful functions for working with text.
@@ -889,6 +1402,9 @@ Congratulations! You now know:
 - ✅ How to create functions to organize code
 - ✅ How to work with strings (text)
 - ✅ How to use string interpolation
+- ✅ How to make decisions with `if`, `else if`, and `else`
+- ✅ How to store multiple items in **lists**
+- ✅ How to repeat actions with **loops** (`for`, `break`, `continue`)
 - ✅ How to use the Pipe Operator (`|>`) to chain functions
 - ✅ How to use the string petiole for advanced text operations
 
@@ -898,8 +1414,8 @@ Ready for the next step? Follow this learning path:
 
 | # | Tutorial | What You'll Learn |
 |---|----------|-------------------|
-| 1 | ✅ *You are here* | Variables, functions, strings, pipes, shorthands |
-| 2 | **[Console Todo](console-todo-tutorial.md)** ← Next! | Types, methods, default parameters, named arguments, lists, file I/O, more pipes, error handling |
+| 1 | ✅ *You are here* | Variables, functions, strings, decisions, lists, loops, pipes |
+| 2 | **[Console Todo](console-todo-tutorial.md)** ← Next! | Custom types, methods, command loops, error handling, more pipes |
 | 3 | **[Web Todo](web-app-tutorial.md)** | HTTP servers, JSON, REST APIs, expert piping |
 | 4 | **[Production Patterns](production-patterns-tutorial.md)** | Databases, Go conventions |
 
