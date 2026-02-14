@@ -51,7 +51,6 @@ const (
 	TOKEN_DEREFERENCE
 	TOKEN_ON
 	TOKEN_DISCARD
-	TOKEN_AT
 	TOKEN_OF
 	TOKEN_AS
 
@@ -206,8 +205,6 @@ func (t TokenType) String() string {
 		return "ON"
 	case TOKEN_DISCARD:
 		return "DISCARD"
-	case TOKEN_AT:
-		return "AT"
 	case TOKEN_OF:
 		return "OF"
 	case TOKEN_AS:
@@ -360,7 +357,6 @@ var keywords = map[string]TokenType{
 	"dereference": TOKEN_DEREFERENCE,
 	"on":          TOKEN_ON,
 	"discard":     TOKEN_DISCARD,
-	"at":          TOKEN_AT,
 	"of":          TOKEN_OF,
 	"as":          TOKEN_AS,
 	"many":        TOKEN_MANY,

@@ -23,32 +23,39 @@ func main() {
 	}
 
 	command := os.Args[1]
+	args := os.Args[2:]
+
+	target := ""
+	if len(args) >= 2 && args[0] == "--target" {
+		target = args[1]
+		args = args[2:]
+	}
 
 	switch command {
 	case "build":
-		if len(os.Args) < 3 {
-			fmt.Println("Usage: kukicha build <file.kuki>")
+		if len(args) < 1 {
+			fmt.Println("Usage: kukicha build [--target <target>] <file.kuki>")
 			os.Exit(1)
 		}
-		buildCommand(os.Args[2])
+		buildCommand(args[0], target)
 	case "run":
-		if len(os.Args) < 3 {
-			fmt.Println("Usage: kukicha run <file.kuki>")
+		if len(args) < 1 {
+			fmt.Println("Usage: kukicha run [--target <target>] <file.kuki>")
 			os.Exit(1)
 		}
-		runCommand(os.Args[2])
+		runCommand(args[0], target)
 	case "check":
-		if len(os.Args) < 3 {
+		if len(args) < 1 {
 			fmt.Println("Usage: kukicha check <file.kuki>")
 			os.Exit(1)
 		}
-		checkCommand(os.Args[2])
+		checkCommand(args[0])
 	case "fmt":
-		if len(os.Args) < 3 {
+		if len(args) < 1 {
 			fmt.Println("Usage: kukicha fmt [options] <files>")
 			os.Exit(1)
 		}
-		fmtCommand(os.Args[2:])
+		fmtCommand(args)
 	case "init":
 		initCommand()
 	case "version":
@@ -66,8 +73,8 @@ func printUsage() {
 	fmt.Println("Kukicha - A transpiler that compiles Kukicha to Go")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  kukicha build <file.kuki>   Compile Kukicha file to Go")
-	fmt.Println("  kukicha run <file.kuki>     Transpile and execute Kukicha file")
+	fmt.Println("  kukicha build [--target t] <file.kuki> Compile Kukicha file to Go")
+	fmt.Println("  kukicha run [--target t] <file.kuki>   Transpile and execute Kukicha file")
 	fmt.Println("  kukicha check <file.kuki>   Type check Kukicha file")
 	fmt.Println("  kukicha fmt [options] <files>  Fix indentation and normalize style")
 	fmt.Println("    -w          Write result to file instead of stdout")
@@ -110,6 +117,20 @@ func loadAndAnalyze(filename string) (*ast.Program, map[ast.Expression]int, erro
 	return program, analyzer.ReturnCounts(), nil
 }
 
+func detectTarget(source string) string {
+	lines := strings.Split(source, "\n")
+	for i, line := range lines {
+		if i > 10 { // Only look at first 10 lines
+			break
+		}
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "# target:") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "# target:"))
+		}
+	}
+	return ""
+}
+
 // rewriteGoErrors replaces references to the generated .go file path in stderr
 // output with the original .kuki source path. This cleans up any residual file
 // references that aren't covered by //line directives (e.g., temp file paths).
@@ -118,7 +139,7 @@ func rewriteGoErrors(stderr []byte, goFile, kukiFile string) []byte {
 	return []byte(result)
 }
 
-func buildCommand(filename string) {
+func buildCommand(filename string, targetFlag string) {
 	absFile, err := filepath.Abs(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
@@ -131,10 +152,23 @@ func buildCommand(filename string) {
 		os.Exit(1)
 	}
 
+	// Detect target from source if not provided by flag
+	if targetFlag != "" {
+		program.Target = targetFlag
+	} else {
+		source, _ := os.ReadFile(absFile)
+		if t := detectTarget(string(source)); t != "" {
+			program.Target = t
+		}
+	}
+
 	// Generate Go code
 	gen := codegen.New(program)
 	gen.SetSourceFile(absFile) // Enable special transpilation detection
 	gen.SetExprReturnCounts(returnCounts)
+	if program.Target == "mcp" {
+		gen.SetMCPTarget(true)
+	}
 	goCode, err := gen.Generate()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Code generation error: %v\n", err)
@@ -194,7 +228,7 @@ func buildCommand(filename string) {
 	fmt.Printf("Successfully built binary: %s\n", binaryName)
 }
 
-func runCommand(filename string) {
+func runCommand(filename string, targetFlag string) {
 	absFile, err := filepath.Abs(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
@@ -206,11 +240,23 @@ func runCommand(filename string) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	// Detect target from source if not provided by flag
+	if targetFlag != "" {
+		program.Target = targetFlag
+	} else {
+		source, _ := os.ReadFile(absFile)
+		if t := detectTarget(string(source)); t != "" {
+			program.Target = t
+		}
+	}
 
 	// Generate Go code
 	gen := codegen.New(program)
 	gen.SetSourceFile(absFile) // Enable special transpilation detection
 	gen.SetExprReturnCounts(returnCounts)
+	if program.Target == "mcp" {
+		gen.SetMCPTarget(true)
+	}
 	goCode, err := gen.Generate()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Code generation error: %v\n", err)

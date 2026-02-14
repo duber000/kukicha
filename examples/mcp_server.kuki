@@ -1,0 +1,35 @@
+# target: mcp
+
+import "stdlib/mcp"
+import "stdlib/cast"
+
+# A tool that adds two numbers, demonstrating smart type conversion
+# Using 'any' return type to match mcp.ToolHandler: func(map of string to any) (any, error)
+func add(args map of string to any) (any, error)
+    # LLMs often send numbers as strings, cast.SmartInt handles both
+    a := args["a"] |> cast.SmartInt() onerr 0
+    b := args["b"] |> cast.SmartInt() onerr 0
+    
+    result := a + b
+    res := "{a} + {b} = {result}"
+    return res as any, empty
+
+func main()
+    # Create the server
+    server := mcp.New("Kukicha Example", "1.0.0")
+
+    # Define the schema for the 'add' tool
+    propA := mcp.Prop("a", "number", "The first number")
+    propB := mcp.Prop("b", "number", "The second number")
+    addSchema := mcp.Schema(propA, propB) |> mcp.Required("a", "b")
+
+    # Register the tool
+    server |> mcp.Tool("add", "Add two numbers", addSchema, add)
+
+    # Print to stdout (will be redirected to stderr by compiler because of # target: mcp)
+    print("MCP Server starting...")
+
+    # Serve on stdio (blocking)
+    err := mcp.Serve(server)
+    if err != empty
+        print("Server finished with error: {err}")

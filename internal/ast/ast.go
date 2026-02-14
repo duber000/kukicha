@@ -20,6 +20,7 @@ type Position struct {
 // ============================================================================
 
 type Program struct {
+	Target       string        // Directive target (e.g., "mcp")
 	PetioleDecl  *PetioleDecl  // Optional petiole declaration
 	Imports      []*ImportDecl // Import declarations
 	Declarations []Declaration // Top-level declarations (types, interfaces, functions)

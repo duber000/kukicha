@@ -559,7 +559,6 @@ func TestKeywordRecognition(t *testing.T) {
 		{"reference", TOKEN_REFERENCE},
 		{"on", TOKEN_ON},
 		{"discard", TOKEN_DISCARD},
-		{"at", TOKEN_AT},
 		{"of", TOKEN_OF},
 		{"true", TOKEN_TRUE},
 		{"false", TOKEN_FALSE},

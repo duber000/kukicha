@@ -54,6 +54,7 @@ type Generator struct {
 	processingReturnType bool                     // Whether we are currently generating return types
 	tempCounter          int                      // Counter for generating unique temporary variable names
 	exprReturnCounts     map[ast.Expression]int   // Semantic return counts passed from analyzer
+	mcpTarget            bool                     // True if targeting MCP (Model Context Protocol)
 }
 
 // New creates a new code generator
@@ -78,6 +79,11 @@ func (g *Generator) SetSourceFile(path string) {
 // SetExprReturnCounts passes semantic analysis return counts to the generator.
 func (g *Generator) SetExprReturnCounts(counts map[ast.Expression]int) {
 	g.exprReturnCounts = counts
+}
+
+// SetMCPTarget enables special codegen for MCP servers (e.g., print to stderr)
+func (g *Generator) SetMCPTarget(v bool) {
+	g.mcpTarget = v
 }
 
 // addImport adds an auto-import
@@ -149,6 +155,11 @@ func (g *Generator) generateImports() {
 	needsFmt := g.needsStringInterpolation() || g.needsPrintBuiltin()
 	if needsFmt {
 		imports["fmt"] = ""
+	}
+
+	// Check if we need os for MCP target (printbuiltin uses os.Stderr)
+	if g.mcpTarget && g.needsPrintBuiltin() {
+		imports["os"] = ""
 	}
 
 	// Check if we need errors for error expressions
@@ -2120,9 +2131,13 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 
 	if call, ok := expr.Right.(*ast.CallExpr); ok {
 		funcName = g.exprToString(call.Function)
-		// Check if this is a print() builtin - transpile to fmt.Println()
+		// Check if this is a print() builtin - transpile to fmt.Println() or fmt.Fprintln(os.Stderr)
 		if id, ok := call.Function.(*ast.Identifier); ok && id.Value == "print" {
-			funcName = "fmt.Println"
+			if g.mcpTarget {
+				funcName = "fmt.Fprintln"
+			} else {
+				funcName = "fmt.Println"
+			}
 		}
 		arguments = call.Arguments
 		isVariadic = call.Variadic
@@ -2182,6 +2197,10 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 	// Build the argument list
 	var args []string
 
+	if g.mcpTarget && funcName == "fmt.Fprintln" {
+		args = append(args, "os.Stderr")
+	}
+
 	if placeholderIndex != -1 {
 		// STRATEGY A: Explicit placeholder found (e.g., json.MarshalWrite(w, _))
 		// Replace "_" with the piped expression
@@ -2226,10 +2245,14 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 	funcName := g.exprToString(expr.Function)
 
-	// Check if this is a print() builtin - transpile to fmt.Println()
+	// Check if this is a print() builtin - transpile to fmt.Println() or fmt.Fprintln(os.Stderr)
 	if id, ok := expr.Function.(*ast.Identifier); ok {
 		if id.Value == "print" {
-			funcName = "fmt.Println"
+			if g.mcpTarget {
+				funcName = "fmt.Fprintln"
+			} else {
+				funcName = "fmt.Println"
+			}
 		}
 	}
 
@@ -2243,9 +2266,12 @@ func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 		}
 
 		if !needsDefaults {
-			args := make([]string, len(expr.Arguments))
-			for i, arg := range expr.Arguments {
-				args[i] = g.exprToString(arg)
+			args := make([]string, 0, len(expr.Arguments)+1)
+			if g.mcpTarget && g.isPrintBuiltin(expr.Function) {
+				args = append(args, "os.Stderr")
+			}
+			for _, arg := range expr.Arguments {
+				args = append(args, g.exprToString(arg))
 			}
 
 			if expr.Variadic {
@@ -2810,6 +2836,13 @@ func (g *Generator) checkExprForPrint(expr ast.Expression) bool {
 		}
 	}
 
+	return false
+}
+
+func (g *Generator) isPrintBuiltin(expr ast.Expression) bool {
+	if id, ok := expr.(*ast.Identifier); ok {
+		return id.Value == "print"
+	}
 	return false
 }
 
