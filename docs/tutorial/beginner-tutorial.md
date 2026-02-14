@@ -341,6 +341,29 @@ kukicha run functions.kuki
 - Parameters and return types must have **explicit types** (you write them out)
 - Local variables inside functions use **type inference** (Kukicha figures it out)
 
+### Functions with Many Arguments
+
+Sometimes you want a function that can take any number of arguments, like `print()`. In Kukicha, use the `many` keyword:
+
+```kukicha
+# 'many numbers int' means 'numbers' is a list of int
+function Sum(many numbers int) int
+    total := 0
+    for n in numbers
+        total = total + n
+    return total
+
+function main()
+    print(Sum(1, 2, 3))       # Prints: 6
+    print(Sum(10, 20))        # Prints: 30
+    print(Sum())              # Prints: 0
+```
+
+**Key points:**
+- `many` goes before the parameter name
+- Inside the function, the parameter acts like a list
+- You can treat it just like any other list (loop over it, check length, etc.)
+
 ---
 
 ## Strings - Working with Text
@@ -793,6 +816,18 @@ I like cherry!
 ```
 
 The name `fruit` is one **you choose** - it's a temporary variable that holds the current item during each pass through the loop. You could call it `item`, `f`, or `snack` - whatever makes your code readable.
+
+### Shortcuts: ++ and --
+
+When counting, you often want to add or subtract 1 from a variable. Instead of writing `count = count + 1`, you can use the `++` and `--` operators:
+
+```kukicha
+count := 0
+count++       # Same as: count = count + 1
+count--       # Same as: count = count - 1
+```
+
+This is especially common in loops!
 
 ### Indexed Loops: Knowing the Position
 

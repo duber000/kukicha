@@ -735,12 +735,162 @@ In Kukicha, **`empty`** represents "no value" (called `nil` in many other langua
 
 ---
 
+## Step 7: Ship It!
+
+One of Kukicha's superpowers is that it compiles to a **single, standalone binary**.
+
+With Python, you need the interpreter installed. Tools like `uv` make this easier (`uv run script.py`), but the user still needs `uv` installed.
+
+A compiled Kukicha binary needs **nothing**. No runtime, no `pip`, no `node_modules`, no containers. You can email the file to a friend, and it just runs. 
+
+### Build Your Tool
+
+Run this in your terminal:
+
+```bash
+kukicha build explorer.kuki
+```
+
+You'll see a new file named `explorer` (or `explorer.exe` on Windows). You can run it directly:
+
+```bash
+./explorer
+# === GitHub Repo Explorer ===
+# Type 'help' for commands
+```
+
+### Cross-Compilation (The Killer Feature)
+
+Want to send your tool to a friend who uses Linux while you're on a Mac? No problem. Just tell Kukicha where you're sending it:
+
+```bash
+# Build for Linux
+GOOS=linux kukicha build explorer.kuki
+
+# Build for Windows
+GOOS=windows kukicha build explorer.kuki
+```
+
+That's it. You've just created software you can ship to anyone.
+
+---
+
+## Step 8: Make it Fast (Bonus)
+
+Let's use **concurrency** to do multiple things at once. We'll add a `fetch-all` command that grabs repos for multiple users simultaneously.
+
+### The Power of `stdlib/concurrent`
+
+In most languages, doing things in parallel is hard. In Kukicha, it's easy.
+
+First, import the concurrent package in `explorer.kuki`:
+
+```kukicha
+import "stdlib/concurrent"
+```
+
+Now add a new `fetch-all` command to your `switch` block in `main`:
+
+```kukicha
+            when "fetch-all"
+                # Usage: fetch-all golang google facebook
+                if len(parts) < 2
+                    print("Usage: fetch-all <user1> <user2> ...")
+                    continue
+                
+                users := parts[1] |> string.Split(" ")
+                print("Fetching {len(users)} users in parallel...")
+                
+                # Fetch all users at the same time!
+                results := concurrent.Map(users, (u string) => FetchRepos(u))
+                
+                # Combine results
+                allRepos := empty list of Repo
+                for userRepos in results
+                    # the ... expands the list into individual items
+                    allRepos = append(allRepos, userRepos...)
+                
+                ex.repos = allRepos
+                print("Fetched {len(ex.repos)} total repos from {len(users)} users.")
+```
+
+**How it works:**
+- `concurrent.Map` takes a list (`users`) and a function.
+- It runs the function for *every item in the list at the same time*.
+- It returns a list of results in the same order.
+
+If you have 3 users and each takes 1 second to fetch:
+- **Python (sequential):** 1s + 1s + 1s = **3 seconds**
+- **Kukicha (concurrent):** max(1s, 1s, 1s) = **1 second**
+
+You just made your tool 3x faster with one line of code.
+
+---
+
+## Step 9: One-Shot Mode with `cli` (Bonus)
+
+The interactive loop is great for exploration, but sometimes you want a command you can script:
+
+```bash
+./explorer golang --filter=go --limit=10
+```
+
+For that, use `stdlib/cli`.
+
+First, add the import:
+
+```kukicha
+import "stdlib/cli"
+```
+
+Then wire a one-shot app entrypoint:
+
+```kukicha
+function main()
+    app := cli.New("explorer")
+        |> cli.Arg("username", "GitHub user or org to explore")
+        |> cli.AddFlag("filter", "Filter by language", "")
+        |> cli.AddFlag("limit", "Max repos to show", "10")
+        |> cli.Action(runExplorer)
+
+    cli.RunApp(app) onerr panic "CLI error: {error}"
+
+function runExplorer(args cli.Args)
+    username := cli.GetString(args, "username")
+    filter := cli.GetString(args, "filter")
+    limit, _ := cli.GetInt(args, "limit") onerr 10
+
+    repos := FetchRepos(username)
+    if filter not equals ""
+        repos = FilterByLanguage(repos, filter)
+
+    top := repos
+    if len(repos) > limit
+        top = repos[:limit]
+
+    for i, repo in top
+        print(repo.Summary(i + 1))
+```
+
+**What this adds:**
+- `cli.New("explorer")` creates a builder for your app.
+- `cli.Arg(...)`, `cli.AddFlag(...)`, and `cli.Action(...)` are chained with pipes.
+- `cli.GetString(...)` and `cli.GetInt(...)` read parsed arguments safely.
+
+**When to use which style:**
+- Use the **interactive loop** when you want guided exploration with multiple commands in one session.
+- Use **one-shot CLI mode** when you want shell scripts, automation, and pipelines.
+
+---
+
 ## What You've Learned
 
 Congratulations! You've built a real tool that talks to the internet. Let's review what you learned:
 
 | Concept | What It Does |
 |---------|--------------|
+| **Single Binary** | Compile your app for any OS with `kukicha build` |
+| **Concurrency** | Run tasks in parallel with `concurrent.Map` |
 | **Custom Types** | Define your own data structures with `type Name` |
 | **JSON Tags** | Map API fields to your type's fields with `json:"..."` |
 | **Methods** | Attach functions to types with `function Name on receiver Type` |
@@ -752,6 +902,8 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | **`switch`/`when`** | Clean command dispatch with multiple matches per branch |
 | **Command Loop** | Read input, bare `for`, `break`, and `continue` |
 | **`fetch` + `json`** | Fetch and parse data from web APIs |
+| **`cli`** | Build one-shot command interfaces with args, flags, and actions |
+| **`iterator`** | Functional iteration tools (advanced; optional for this project) |
 
 ---
 

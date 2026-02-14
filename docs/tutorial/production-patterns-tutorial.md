@@ -505,6 +505,8 @@ Let's compare the web tutorial version with this production version:
 | **Validation** | Manual string checks | `stdlib/validate` (URL, NotEmpty) |
 | **Config** | Hardcoded | Environment variables (`PORT`, `DATABASE_URL`) |
 | **Errors** | Manual JSON encoding | `stdlib/http` helpers |
+| **Optional/Result values** | Not modeled explicitly | `stdlib/result` (`Some`/`None`, `Ok`/`Err`) |
+| **HTTP retries** | Single attempt only | `stdlib/retry` config + manual retry loop |
 | **Lifecycle** | `LinkStore` struct | `NewServer()` constructor, `defer Close()` |
 
 ---
@@ -622,6 +624,130 @@ function HandleRequest(w http.ResponseWriter, r reference http.Request)
     search := httphelper.GetQueryParam(r, "q")
 ```
 
+### Rust-Style Optionals with `result`
+
+```kukicha
+import "stdlib/result"
+
+# Pattern 1: Optional for nullable cache lookups
+function FindCachedUser(id string) result.Optional
+    user, exists := userCache[id]
+    if not exists
+        return result.None()
+    return result.Some(user)
+
+# Usage
+opt := FindCachedUser(id)
+if result.IsSome(opt)
+    user := result.Unwrap(opt)
+    print("Found: {user}")
+```
+
+```kukicha
+# Pattern 2: Result for operations that can fail
+function FetchLinkResult on s reference Server(code string) result.Result
+    link, err := s.db.GetLink(code)
+    if err not equals empty
+        return result.Err(err)
+    return result.Ok(link)
+
+# Usage with Match for clean dispatch
+result.Match(
+    s.FetchLinkResult(code),
+    (link any) => httphelper.JSON(w, link),
+    (err error) => httphelper.JSONNotFound(w, "Link not found")
+)
+```
+
+```kukicha
+# Pattern 3: AndThen for chaining fallible steps
+s.FetchLinkResult(code)
+    |> result.AndThen((link any) => ValidateLinkResult(link))
+    |> result.UnwrapOrResult(Link{})
+```
+
+Use `result` when you want success/failure as a first-class value you can return, pass, or store, instead of only using multiple return values.
+
+### Resilient HTTP Calls with `retry`
+
+```kukicha
+import "stdlib/retry"
+
+function FetchReposResilient(username string) list of Repo
+    url := "https://api.github.com/users/{username}/repos?per_page=30&sort=stars"
+    cfg := retry.New()
+        |> retry.Attempts(3)
+        |> retry.Delay(500)
+        |> retry.Backoff(1)   # 1 = exponential: 500ms, 1000ms, 2000ms
+
+    attempt := 0
+    for attempt < cfg.MaxAttempts
+        repos := empty list of Repo
+        fetchOk := true
+
+        fetch.Get(url)
+            |> fetch.CheckStatus()
+            |> fetch.Bytes()
+            |> json.Unmarshal(reference repos)
+            onerr
+                fetchOk = false
+
+        if fetchOk
+            return repos
+
+        if attempt < cfg.MaxAttempts - 1
+            print("Attempt {attempt + 1} failed, retrying...")
+            retry.Sleep(cfg, attempt)
+
+        attempt = attempt + 1
+
+    print("Failed to fetch repos for '{username}' after {cfg.MaxAttempts} attempts")
+    return empty list of Repo
+```
+
+Notes:
+- `retry.New()` defaults to 3 attempts, 1000ms delay, exponential backoff.
+- `retry.Backoff(0)` is linear (constant delay), `retry.Backoff(1)` is exponential.
+- `retry.Sleep(cfg, attempt)` computes the correct pause for each attempt.
+- `retry.Do()` is intentionally not provided; in Kukicha, a manual loop is the recommended pattern.
+
+---
+
+## Part 9: Panic and Recover
+
+In production, you want your server to stay alive even if a bug causes a crash. In Go (and Kukicha), a crash is called a **panic**.
+
+You can "catch" a panic using `recover`. This is usually done in **middleware** (code that wraps every request) or at the top of a background job.
+
+### Middleware Example
+
+Here's how to write a middleware that recovers from panics and logs the error instead of crashing the server:
+
+```kukicha
+import "log"
+import "net/http"
+import "stdlib/env"
+
+function RecoveryMiddleware(next http.Handler) http.Handler
+    return http.HandlerFunc(function(w http.ResponseWriter, r reference http.Request)
+        # Defer a function that calls recover()
+        defer function()
+            err := recover()
+            if err not equals empty
+                log.Printf("PANIC RECOVERED: %v", err)
+                http.Error(w, "Internal Server Error", 500)
+        () # Call the deferred function
+
+        # Call the next handler
+        next.ServeHTTP(w, r)
+    )
+```
+
+**Key points:**
+- `panic("message")` stops normal execution immediately.
+- `recover()` regains control, but **only** if called inside a `defer` function.
+- If you don't recover, the program exits.
+
 ---
 
 ## Summary: The Kukicha Learning Path
@@ -633,7 +759,7 @@ You've completed the full Kukicha tutorial series!
 | ✅ **1. Beginner** | Variables, functions, strings, loops, pipes |
 | ✅ **2. CLI Explorer** | Types, methods (`on`), API data, arrow lambdas, `fetch` + `json` |
 | ✅ **3. Link Shortener** | HTTP servers, JSON, REST APIs, maps, redirects |
-| ✅ **4. Production** | Databases, concurrency, Go conventions, validation |
+| ✅ **4. Production** | Databases, concurrency, Go conventions, `env`/`must`, `validate`, `http`, `result`, `retry` |
 |    **Bonus: LLM Scripting** | Shell + LLM + pipes — [try it!](llm-pipe-tutorial.md) |
 
 ---

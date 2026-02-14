@@ -201,6 +201,11 @@ config := map of string to string{
     "port": "8080",
 }
 
+# Map operations
+count := scores["Alice"]        # Lookup
+scores["Bob"] = 95              # Insert/Update
+delete(scores, "Alice")         # Delete key (Go builtin, valid in Kukicha)
+
 # Channels
 ch := make channel of string, 10
 ```

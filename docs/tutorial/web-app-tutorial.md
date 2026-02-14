@@ -547,6 +547,61 @@ We'll fix all of these in the next tutorial!
 
 ---
 
+## Step 8: Server-Side Rendering (Optional)
+
+Web APIs are great, but sometimes you want to serve HTML pages directly. Kukicha's `stdlib/template` makes this easy.
+
+Let's add a simple homepage so users can shorten links from their browser.
+
+### Importing the Template Package
+
+Add `import "stdlib/template"` to your `main.kuki`.
+
+### Creating the Handler
+
+Add this handler to your `LinkStore` (or `Server`):
+
+```kukicha
+function handleHome on store reference LinkStore(response http.ResponseWriter, request reference http.Request)
+    if request.URL.Path not equals "/"
+        http.NotFound(response, request)
+        return
+
+    html := `
+<!DOCTYPE html>
+<html>
+<head><title>Kukicha Shortener</title></head>
+<body>
+    <h1>Shorten Your Link</h1>
+    <form action="/shorten" method="POST">
+        <input type="text" name="url" placeholder="https://example.com" required>
+        <button type="submit">Shorten</button>
+    </form>
+</body>
+</html>
+`
+    # Check this out: Parse, then Execute directly to the response!
+    # 1. Parse the string into a template
+    # 2. Execute it (writing to 'response') with 'empty' data
+    tmpl, _ := template.New("home") |> .Parse(html)
+    tmpl |> .Execute(response, empty)
+```
+
+Then register it in `main()`:
+
+```kukicha
+http.HandleFunc("/", store.handleHome)
+```
+
+Now visiting `http://localhost:8080` shows a real HTML form!
+
+**Why `stdlib/template`?**
+- Safe against XSS attacks (auto-escaping)
+- Powerful logic (`{{if .}}`, loops, etc.)
+- Familiar syntax for Go developers (it wraps `html/template`)
+
+---
+
 ## Practice Exercises
 
 Before moving on, try these enhancements:

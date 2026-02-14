@@ -22,24 +22,15 @@
 |---------|--------|-------------|
 | `interface` | In grammar, zero examples | New section in Production tutorial or standalone |
 | `channel` / `send` / `receive` | In grammar, never used | New "Concurrency" tutorial or Production addendum |
-| `recover` | In grammar, zero examples | Production tutorial error handling section |
 | `as` (type assertions) | Barely mentioned | Alongside interface tutorial |
-| `many` (variadic params) | Zero examples | Beginner tutorial functions section |
-| `++` / `--` | In grammar, zero examples | Beginner tutorial loops section |
 
 ### Missing from tutorials (stdlib packages)
 
 | Package | Key functions | Natural home |
 |---------|--------------|-------------|
-| `iterator` | Filter, Map, FlatMap, Reduce, Find, Any, All | CLI Explorer filtering section — functional alternative to slice.Filter |
-| `concurrent` | Parallel, ParallelWithLimit | CLI Explorer — fetch repos for multiple users at once |
-| `cli` | Args, Flags, Actions | CLI Explorer — replace manual arg parsing |
-| `template` | Render, Execute, Parse | Link Shortener — serve an HTML landing page |
-| `result` | Some, None, Ok, Err, Map, UnwrapOr | Production tutorial — Rust-style optionals |
 | `parse` | CSV, YAML | Standalone example or LLM tutorial extension |
-| `retry` | Retry with backoff | Production tutorial — resilient HTTP calls |
-| `files` | Read, Write, Append, List | Covered in LLM tutorial but deserves beginner coverage |
-| `datetime` | Format, Parse, Now, AddDays | Covered in LLM tutorial but deserves standalone examples |
+| `files` | Read, Write, Append | Covered in LLM tutorial but deserves beginner coverage |
+| `datetime` | Format, Parse, Now | Covered in LLM tutorial but deserves standalone examples |
 
 ### Potential new tutorials
 
@@ -47,8 +38,3 @@
 - **Interface patterns** — defining and implementing interfaces, the io.Reader/Writer pattern, error interface
 - **File processing** — read CSV, transform with pipes, write JSON. Shows files + parse + iterator in one flow
 
-### Low priority
-
-**`delete()` documentation**
-- `delete(store.links, code)` is a Go builtin that works in Kukicha but isn't in the quick reference, stdlib docs, or any tutorial explanations. It's invisible to someone reading only Kukicha docs.
-- Fix: Add to quick reference under "Map Operations" alongside map literal syntax
