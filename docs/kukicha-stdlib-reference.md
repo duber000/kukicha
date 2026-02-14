@@ -34,7 +34,7 @@ Kukicha combines two powerful ideas:
 
 ### Quick Summary
 
-**Ready to Use:** ✅ iterator, slice, string, files, json, parse (CSV/YAML), fetch, concurrent, shell, cli, http, template, result, validate, must, env, datetime
+**Ready to Use:** ✅ iterator, slice, string, files, json, parse (CSV/YAML), fetch, concurrent, shell, cli, http, template, result, validate, must, env, datetime, **cast**, **mcp**
 
 **Partially Implemented:** ⚠️ retry (limited stub due to error handling design constraints)
 
@@ -63,6 +63,8 @@ Kukicha combines two powerful ideas:
 | **must** | Initialization helpers (panic on error) | ✅ Ready | Do, DoMsg, Ok, OkMsg, Env, EnvOr, EnvInt, EnvIntOr, EnvBool, EnvBoolOr, EnvList, EnvListOr, True, False, NotEmpty, NotNil |
 | **env** | Typed environment variable access | ✅ Ready | Get, GetOr, GetInt, GetIntOr, GetIntOrDefault, GetBool, GetBoolOr, GetBoolOrDefault, GetFloat, GetFloatOr, GetList, GetListOr, Set, Unset, IsSet, IsSetAndNotEmpty, All, ParseBool, SplitAndTrim |
 | **datetime** | Time helpers with named formats | ✅ Ready | Format, Parse, Now, Today, Tomorrow, Yesterday, Seconds, Minutes, Hours, Days, Weeks, AddDays, SubDays, IsBefore, IsAfter, IsBetween, IsToday, IsPast, IsFuture, Unix, FromUnix, Sleep, InUTC, InLocal |
+| **cast** | Smart type conversion | ✅ Ready | SmartInt, SmartFloat64, SmartBool, SmartString |
+| **mcp** | MCP server wrapper | ✅ Ready | New, Serve, Prop, Schema, Required, Tool |
 
 ### Partially Implemented
 

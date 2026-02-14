@@ -2246,8 +2246,10 @@ func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 	funcName := g.exprToString(expr.Function)
 
 	// Check if this is a print() builtin - transpile to fmt.Println() or fmt.Fprintln(os.Stderr)
+	isPrintCall := false
 	if id, ok := expr.Function.(*ast.Identifier); ok {
 		if id.Value == "print" {
+			isPrintCall = true
 			if g.mcpTarget {
 				funcName = "fmt.Fprintln"
 			} else {
@@ -2267,7 +2269,7 @@ func (g *Generator) generateCallExpr(expr *ast.CallExpr) string {
 
 		if !needsDefaults {
 			args := make([]string, 0, len(expr.Arguments)+1)
-			if g.mcpTarget && g.isPrintBuiltin(expr.Function) {
+			if g.mcpTarget && isPrintCall {
 				args = append(args, "os.Stderr")
 			}
 			for _, arg := range expr.Arguments {

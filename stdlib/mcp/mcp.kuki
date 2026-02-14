@@ -1,0 +1,49 @@
+# Kukicha Standard Library - MCP Server Wrapper
+
+petiole mcp
+
+import "context"
+import "github.com/modelcontextprotocol/go-sdk/mcp"
+
+# SchemaProperty represents a property in a JSON schema
+type SchemaProperty
+    Name string
+    Type string
+    Description string
+
+# New creates a new MCP server with the given name and version
+func New(name string, version string) reference mcp.Server
+    return mcp.NewServer(reference of mcp.Implementation{
+        Name: name,
+        Version: version,
+    }, empty)
+
+# Serve runs the server on the stdio transport (blocking)
+func Serve(server reference mcp.Server) error
+    return server.Run(context.Background(), reference of mcp.StdioTransport{})
+
+# Prop creates a new SchemaProperty
+func Prop(name string, typ string, description string) SchemaProperty
+    return SchemaProperty{Name: name, Type: typ, Description: description}
+
+# Schema creates a JSON schema object from a list of properties
+func Schema(props list of SchemaProperty) map of string to any
+    properties := make(map of string to any)
+    for prop in props
+        properties[prop.Name] = map of string to any{
+            "type": prop.Type,
+            "description": prop.Description,
+        }
+
+    return map of string to any{
+        "type": "object",
+        "properties": properties,
+    }
+
+# Required adds a list of required property names to a schema
+func Required(schema any, names list of string) any
+    s, ok := schema.(map of string to any)
+    if not ok
+        return schema
+    s["required"] = names
+    return s
