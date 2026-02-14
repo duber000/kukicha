@@ -2,7 +2,7 @@
 
 **Level:** Advanced
 **Time:** 45 minutes
-**Prerequisite:** [Link Shortener Tutorial](web-app-tutorial.md)
+**Prerequisite:** [Concurrent Health Checker Tutorial](concurrent-url-health-checker.md)
 
 Welcome to the advanced tutorial! You've built a working link shortener, but it's not ready for real users yet. In this tutorial, we'll add:
 
