@@ -41,6 +41,9 @@ func (a *Analyzer) Analyze() []error {
 	// Check package name for collisions with Go stdlib
 	a.checkPackageName()
 
+	// Validate skill declaration if present
+	a.checkSkillDecl()
+
 	// First pass: Collect all type and interface declarations
 	a.collectDeclarations()
 
@@ -80,6 +83,56 @@ func (a *Analyzer) checkPackageName() {
 	if reservedPackages[name] {
 		a.error(a.program.PetioleDecl.Pos(), fmt.Sprintf("package name '%s' conflicts with Go standard library package", name))
 	}
+}
+
+func (a *Analyzer) checkSkillDecl() {
+	skill := a.program.SkillDecl
+	if skill == nil {
+		return
+	}
+
+	// Skill name must be exported (start with uppercase)
+	if skill.Name != nil && !isExported(skill.Name.Value) {
+		a.error(skill.Name.Pos(), fmt.Sprintf("skill name '%s' must be exported (start with uppercase letter)", skill.Name.Value))
+	}
+
+	// Skill requires petiole (skills are packages, not main programs)
+	if a.program.PetioleDecl == nil {
+		a.error(skill.Pos(), "skill declaration requires a petiole declaration (skills are packages)")
+	}
+
+	// Warn if description is empty
+	if skill.Description == "" {
+		a.error(skill.Pos(), "skill should have a description (skills should be self-documenting)")
+	}
+
+	// Basic semver validation if version is provided
+	if skill.Version != "" {
+		if !isBasicSemver(skill.Version) {
+			a.error(skill.Pos(), fmt.Sprintf("skill version '%s' should follow semver format (e.g., '1.0.0')", skill.Version))
+		}
+	}
+}
+
+// isBasicSemver performs a basic check that a version string looks semver-like
+func isBasicSemver(v string) bool {
+	// Allow optional leading 'v'
+	s := strings.TrimPrefix(v, "v")
+	parts := strings.Split(s, ".")
+	if len(parts) < 2 || len(parts) > 3 {
+		return false
+	}
+	for _, part := range parts {
+		if len(part) == 0 {
+			return false
+		}
+		for _, r := range part {
+			if r < '0' || r > '9' {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // collectDeclarations collects all top-level declarations

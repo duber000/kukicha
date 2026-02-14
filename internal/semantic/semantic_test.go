@@ -745,3 +745,165 @@ func someFunc(x int) (int, error)
 		t.Errorf("expected type mismatch error, got: %v", errors[0])
 	}
 }
+
+// ============================================================================
+// Skill declaration semantic tests
+// ============================================================================
+
+func TestSkillDeclValid(t *testing.T) {
+	input := `petiole weather
+
+skill WeatherService
+    description: "Provides weather data."
+    version: "1.0.0"
+
+func GetForecast(city string) string
+    return city
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	if len(errors) > 0 {
+		t.Fatalf("expected no errors, got: %v", errors)
+	}
+}
+
+func TestSkillDeclWithoutPetiole(t *testing.T) {
+	input := `skill WeatherService
+    description: "Provides weather data."
+    version: "1.0.0"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	found := false
+	for _, e := range errors {
+		if strings.Contains(e.Error(), "requires a petiole") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected 'requires a petiole' error, got: %v", errors)
+	}
+}
+
+func TestSkillDeclLowercaseName(t *testing.T) {
+	input := `petiole myskill
+
+skill weatherService
+    description: "Provides weather data."
+    version: "1.0.0"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	found := false
+	for _, e := range errors {
+		if strings.Contains(e.Error(), "must be exported") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected 'must be exported' error, got: %v", errors)
+	}
+}
+
+func TestSkillDeclEmptyDescription(t *testing.T) {
+	input := `petiole myskill
+
+skill MySkill
+    version: "1.0.0"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	found := false
+	for _, e := range errors {
+		if strings.Contains(e.Error(), "should have a description") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected 'should have a description' error, got: %v", errors)
+	}
+}
+
+func TestSkillDeclBadSemver(t *testing.T) {
+	input := `petiole myskill
+
+skill MySkill
+    description: "A skill."
+    version: "not-a-version"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	found := false
+	for _, e := range errors {
+		if strings.Contains(e.Error(), "should follow semver") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected 'should follow semver' error, got: %v", errors)
+	}
+}

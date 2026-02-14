@@ -22,6 +22,7 @@ type Position struct {
 type Program struct {
 	Target       string        // Directive target (e.g., "mcp")
 	PetioleDecl  *PetioleDecl  // Optional petiole declaration
+	SkillDecl    *SkillDecl    // Optional skill declaration
 	Imports      []*ImportDecl // Import declarations
 	Declarations []Declaration // Top-level declarations (types, interfaces, functions)
 }
@@ -73,6 +74,21 @@ func (d *PetioleDecl) Pos() Position {
 	return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File}
 }
 func (d *PetioleDecl) declNode() {}
+
+type SkillDecl struct {
+	Token       lexer.Token // The 'skill' token
+	Name        *Identifier
+	Description string // Description field
+	Version     string // Version field
+}
+
+func (d *SkillDecl) TokenLiteral() string {
+	return d.Token.Lexeme
+}
+func (d *SkillDecl) Pos() Position {
+	return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File}
+}
+func (d *SkillDecl) declNode() {}
 
 type ImportDecl struct {
 	Token lexer.Token // The 'import' token
@@ -248,6 +264,7 @@ func (t *FunctionType) typeNode() {}
 type OnErrClause struct {
 	Token   lexer.Token // The 'onerr' token
 	Handler Expression  // Error handler (panic, error, empty, discard, or default value)
+	Explain string      // Optional explanation/hint for LLM (e.g., onerr explain "hint message")
 }
 
 // ============================================================================

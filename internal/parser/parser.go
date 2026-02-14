@@ -64,6 +64,13 @@ func (p *Parser) Parse() (*ast.Program, []error) {
 
 	p.skipNewlines()
 
+	// Parse optional skill declaration (simple form: skill name)
+	if p.peekToken().Type == lexer.TOKEN_SKILL {
+		program.SkillDecl = p.parseSkillDecl()
+	}
+
+	p.skipNewlines()
+
 	// Parse imports
 	for p.peekToken().Type == lexer.TOKEN_IMPORT {
 		program.Imports = append(program.Imports, p.parseImportDecl())
@@ -204,6 +211,64 @@ func (p *Parser) parsePetioleDecl() *ast.PetioleDecl {
 		Token: token,
 		Name:  name,
 	}
+}
+
+func (p *Parser) parseSkillDecl() *ast.SkillDecl {
+	token := p.advance() // consume 'skill'
+	p.skipNewlines()
+
+	name := p.parseIdentifier()
+
+	decl := &ast.SkillDecl{
+		Token: token,
+		Name:  name,
+	}
+
+	p.skipNewlines()
+
+	// Check for indented block with description/version fields
+	if p.match(lexer.TOKEN_INDENT) {
+		for !p.check(lexer.TOKEN_DEDENT) && !p.isAtEnd() {
+			p.skipNewlines()
+			if p.check(lexer.TOKEN_DEDENT) {
+				break
+			}
+
+			// Parse field name (contextual identifier: "description" or "version")
+			fieldToken := p.advance()
+			if fieldToken.Type != lexer.TOKEN_IDENTIFIER {
+				p.error(fieldToken, fmt.Sprintf("expected 'description' or 'version' in skill block, got %s", fieldToken.Type))
+				p.skipNewlines()
+				continue
+			}
+
+			p.consume(lexer.TOKEN_COLON, fmt.Sprintf("expected ':' after '%s'", fieldToken.Lexeme))
+
+			// Parse string literal value
+			valueToken := p.advance()
+			if valueToken.Type != lexer.TOKEN_STRING {
+				p.error(valueToken, fmt.Sprintf("expected string value for '%s'", fieldToken.Lexeme))
+				p.skipNewlines()
+				continue
+			}
+
+			switch fieldToken.Lexeme {
+			case "description":
+				decl.Description = valueToken.Lexeme
+			case "version":
+				decl.Version = valueToken.Lexeme
+			default:
+				p.error(fieldToken, fmt.Sprintf("unknown skill field '%s' (expected 'description' or 'version')", fieldToken.Lexeme))
+			}
+
+			p.skipNewlines()
+		}
+
+		p.consume(lexer.TOKEN_DEDENT, "expected dedent after skill block")
+		p.skipNewlines()
+	}
+
+	return decl
 }
 
 func (p *Parser) parseImportDecl() *ast.ImportDecl {
@@ -1336,6 +1401,13 @@ func (p *Parser) parsePipeExpr() ast.Expression {
 
 // parseOnErrClause parses the onerr clause after a statement.
 // Called when TOKEN_ONERR has already been detected (but not consumed).
+//
+// Forms:
+//
+//	onerr <handler>                          - handler only
+//	onerr <handler> explain "hint"           - handler with explain
+//	onerr explain "hint"                     - standalone explain (implies fmt.Errorf return)
+//	onerr INDENT ... DEDENT                  - block handler
 func (p *Parser) parseOnErrClause() *ast.OnErrClause {
 	token := p.advance() // consume 'onerr'
 
@@ -1352,8 +1424,37 @@ func (p *Parser) parseOnErrClause() *ast.OnErrClause {
 		}
 	}
 
+	// Check for standalone "onerr explain" (no handler before explain)
+	if p.check(lexer.TOKEN_IDENTIFIER) && p.peekToken().Lexeme == "explain" {
+		p.advance() // consume 'explain'
+		explainToken := p.advance()
+		if explainToken.Type != lexer.TOKEN_STRING {
+			p.error(explainToken, "expected string literal after 'explain'")
+			return &ast.OnErrClause{Token: token}
+		}
+		// Standalone explain: implies return with fmt.Errorf wrapping
+		return &ast.OnErrClause{
+			Token:   token,
+			Handler: nil, // nil handler signals standalone explain
+			Explain: explainToken.Lexeme,
+		}
+	}
+
 	handler := p.parseExpression()
-	return &ast.OnErrClause{Token: token, Handler: handler}
+
+	// Check for trailing "explain" after handler
+	clause := &ast.OnErrClause{Token: token, Handler: handler}
+	if p.check(lexer.TOKEN_IDENTIFIER) && p.peekToken().Lexeme == "explain" {
+		p.advance() // consume 'explain'
+		explainToken := p.advance()
+		if explainToken.Type != lexer.TOKEN_STRING {
+			p.error(explainToken, "expected string literal after 'explain'")
+		} else {
+			clause.Explain = explainToken.Lexeme
+		}
+	}
+
+	return clause
 }
 
 func (p *Parser) parseAndExpr() ast.Expression {

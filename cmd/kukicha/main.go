@@ -56,6 +56,21 @@ func main() {
 			os.Exit(1)
 		}
 		fmtCommand(args)
+	case "pack":
+		outputDir := ""
+		packArgs := args
+		for i := 0; i < len(packArgs)-1; i++ {
+			if packArgs[i] == "--output" {
+				outputDir = packArgs[i+1]
+				packArgs = append(packArgs[:i], packArgs[i+2:]...)
+				break
+			}
+		}
+		if len(packArgs) < 1 {
+			fmt.Println("Usage: kukicha pack [--output <dir>] <skill.kuki>")
+			os.Exit(1)
+		}
+		packCommand(packArgs[0], outputDir)
 	case "init":
 		initCommand()
 	case "version":
@@ -79,6 +94,7 @@ func printUsage() {
 	fmt.Println("  kukicha fmt [options] <files>  Fix indentation and normalize style")
 	fmt.Println("    -w          Write result to file instead of stdout")
 	fmt.Println("    --check     Check if files are formatted (exit 1 if not)")
+	fmt.Println("  kukicha pack [--output dir] <skill.kuki>  Package skill for distribution")
 	fmt.Println("  kukicha init                Extract stdlib and configure go.mod")
 	fmt.Println("  kukicha version             Show version information")
 	fmt.Println("  kukicha help                Show this help message")

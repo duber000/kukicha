@@ -1321,3 +1321,174 @@ func TestArrowLambdaBlockForm(t *testing.T) {
 		t.Errorf("expected 'return name' in output, got: %s", output)
 	}
 }
+
+// ============================================================================
+// Skill codegen tests
+// ============================================================================
+
+func TestSkillComment(t *testing.T) {
+	input := `petiole weather
+
+skill WeatherService
+    description: "Provides real-time weather data."
+    version: "2.1.0"
+
+func GetForecast(city string) string
+    return city
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "// Skill: WeatherService") {
+		t.Errorf("expected '// Skill: WeatherService' in output, got: %s", output)
+	}
+
+	if !strings.Contains(output, "// Description: Provides real-time weather data.") {
+		t.Errorf("expected '// Description: Provides real-time weather data.' in output, got: %s", output)
+	}
+
+	if !strings.Contains(output, "// Version: 2.1.0") {
+		t.Errorf("expected '// Version: 2.1.0' in output, got: %s", output)
+	}
+}
+
+func TestSkillCommentNoFields(t *testing.T) {
+	input := `petiole myskill
+
+skill MySkill
+
+func Hello() string
+    return "hello"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "// Skill: MySkill") {
+		t.Errorf("expected '// Skill: MySkill' in output, got: %s", output)
+	}
+
+	// Should NOT contain Description or Version lines since they're empty
+	if strings.Contains(output, "// Description:") {
+		t.Errorf("did not expect '// Description:' in output when description is empty")
+	}
+	if strings.Contains(output, "// Version:") {
+		t.Errorf("did not expect '// Version:' in output when version is empty")
+	}
+}
+
+// ============================================================================
+// onerr explain codegen tests
+// ============================================================================
+
+func TestOnErrExplainStandaloneCodegen(t *testing.T) {
+	input := `func Test() (string, error)
+    x := foo() onerr explain "City names must be capitalized"
+    return x, nil
+
+func foo() (string, error)
+    return "hello", nil
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.New(program)
+	semErrors := analyzer.Analyze()
+	if len(semErrors) > 0 {
+		t.Fatalf("semantic errors: %v", semErrors)
+	}
+
+	gen := New(program)
+	gen.SetExprReturnCounts(analyzer.ReturnCounts())
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	// Should contain fmt.Errorf wrapping
+	if !strings.Contains(output, `fmt.Errorf("City names must be capitalized: %w"`) {
+		t.Errorf("expected fmt.Errorf wrapping in output, got: %s", output)
+	}
+
+	// Should import fmt
+	if !strings.Contains(output, `"fmt"`) {
+		t.Errorf("expected fmt import in output, got: %s", output)
+	}
+}
+
+func TestOnErrExplainWithHandlerCodegen(t *testing.T) {
+	input := `func Test()
+    x := foo() onerr 0 explain "Expected a positive integer"
+
+func foo() (int, error)
+    return 42, nil
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.New(program)
+	semErrors := analyzer.Analyze()
+	if len(semErrors) > 0 {
+		t.Fatalf("semantic errors: %v", semErrors)
+	}
+
+	gen := New(program)
+	gen.SetExprReturnCounts(analyzer.ReturnCounts())
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	// Should contain fmt.Errorf wrapping
+	if !strings.Contains(output, `fmt.Errorf("Expected a positive integer: %w"`) {
+		t.Errorf("expected fmt.Errorf wrapping in output, got: %s", output)
+	}
+
+	// Should also assign the default value 0
+	if !strings.Contains(output, "= 0") {
+		t.Errorf("expected default value assignment '= 0' in output, got: %s", output)
+	}
+}

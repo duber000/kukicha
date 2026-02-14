@@ -104,14 +104,17 @@ func (g *Generator) Generate() (string, error) {
 	// Generate package declaration
 	g.generatePackage()
 
+	// Generate skill metadata comment if present
+	g.generateSkillComment()
+
 	// Pre-scan for auto-imports (e.g. net/http for fetch wrappers)
 	g.scanForAutoImports()
 
 	// Pre-scan for function defaults (needed for named arguments and default parameter values)
 	g.scanForFunctionDefaults()
 
-	// Generate imports (including auto-imports like fmt for string interpolation and print builtin)
-	needsFmt := g.needsStringInterpolation() || g.needsPrintBuiltin()
+	// Generate imports (including auto-imports like fmt for string interpolation, print builtin, and onerr explain)
+	needsFmt := g.needsStringInterpolation() || g.needsPrintBuiltin() || g.needsExplain()
 	if len(g.program.Imports) > 0 || needsFmt || len(g.autoImports) > 0 {
 		g.writeLine("")
 		g.generateImports()
@@ -134,6 +137,21 @@ func (g *Generator) generatePackage() {
 	g.writeLine(fmt.Sprintf("package %s", packageName))
 }
 
+func (g *Generator) generateSkillComment() {
+	skill := g.program.SkillDecl
+	if skill == nil {
+		return
+	}
+	g.writeLine("")
+	g.writeLine(fmt.Sprintf("// Skill: %s", skill.Name.Value))
+	if skill.Description != "" {
+		g.writeLine(fmt.Sprintf("// Description: %s", skill.Description))
+	}
+	if skill.Version != "" {
+		g.writeLine(fmt.Sprintf("// Version: %s", skill.Version))
+	}
+}
+
 func (g *Generator) generateImports() {
 	// Collect all imports
 	imports := make(map[string]string) // path -> alias
@@ -151,8 +169,8 @@ func (g *Generator) generateImports() {
 		imports[path] = alias
 	}
 
-	// Check if we need fmt for string interpolation or print builtin
-	needsFmt := g.needsStringInterpolation() || g.needsPrintBuiltin()
+	// Check if we need fmt for string interpolation, print builtin, or onerr explain
+	needsFmt := g.needsStringInterpolation() || g.needsPrintBuiltin() || g.needsExplain()
 	if needsFmt {
 		imports["fmt"] = ""
 	}
@@ -1230,6 +1248,7 @@ func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
 // generateOnErrVarDecl handles variable declarations with onerr
 // e.g., val := foo() onerr panic "error" → val, err := foo(); if err != nil { panic("error") }
 // e.g., port := getPort() onerr "8080" → port, err := getPort(); if err != nil { port = "8080" }
+// e.g., val := foo() onerr explain "hint" → val, err := foo(); if err != nil { return ..., fmt.Errorf("hint: %w", err) }
 func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.Expression, clause *ast.OnErrClause) {
 	// Build the value expression string (typically a single call expression)
 	valuesStr := make([]string, len(values))
@@ -1239,26 +1258,28 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 	valueExpr := strings.Join(valuesStr, ", ")
 
 	// Check for discard case first - we can skip error handling entirely
-	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
-		// For discard with multi-value returns (where last value is error), just use the names as-is
-		// (the error variable is already one of the names, and we don't need separate error handling)
-		if len(names) > 1 && len(values) == 1 {
+	if clause.Handler != nil {
+		if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
+			// For discard with multi-value returns (where last value is error), just use the names as-is
+			// (the error variable is already one of the names, and we don't need separate error handling)
+			if len(names) > 1 && len(values) == 1 {
+				var lhsParts []string
+				for _, name := range names {
+					lhsParts = append(lhsParts, name.Value)
+				}
+				g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), valueExpr))
+				return
+			}
+
+			// For single-value assignments, ignore the error by using _
 			var lhsParts []string
 			for _, name := range names {
 				lhsParts = append(lhsParts, name.Value)
 			}
+			lhsParts = append(lhsParts, "_")
 			g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), valueExpr))
 			return
 		}
-
-		// For single-value assignments, ignore the error by using _
-		var lhsParts []string
-		for _, name := range names {
-			lhsParts = append(lhsParts, name.Value)
-		}
-		lhsParts = append(lhsParts, "_")
-		g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), valueExpr))
-		return
 	}
 
 	// Special case: if we have multiple names (e.g., x, err) and a single value expression,
@@ -1277,6 +1298,7 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 		errVar := names[len(names)-1].Value
 		g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
 		g.indent++
+		g.generateOnErrExplainWrap(clause, errVar)
 		g.generateOnErrHandler(names[:len(names)-1], clause.Handler, errVar)
 		g.indent--
 		g.writeLine("}")
@@ -1299,13 +1321,53 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 	// Generate error check block
 	g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
 	g.indent++
+	g.generateOnErrExplainWrap(clause, errVar)
 	g.generateOnErrHandler(names, clause.Handler, errVar)
 	g.indent--
 	g.writeLine("}")
 }
 
+// generateOnErrExplainWrap emits err = fmt.Errorf("hint: %w", err) if explain is set.
+// For standalone explain (nil handler), it also generates the return statement.
+func (g *Generator) generateOnErrExplainWrap(clause *ast.OnErrClause, errVar string) {
+	if clause.Explain == "" {
+		return
+	}
+	g.addImport("fmt")
+	g.writeLine(fmt.Sprintf(`%s = fmt.Errorf("%s: %%w", %s)`, errVar, clause.Explain, errVar))
+
+	// Standalone explain (nil handler): generate return with zero values + wrapped error
+	if clause.Handler == nil {
+		g.generateStandaloneExplainReturn(errVar)
+	}
+}
+
+// generateStandaloneExplainReturn generates a return statement with zero values for
+// all non-error return types, plus the wrapped error variable.
+func (g *Generator) generateStandaloneExplainReturn(errVar string) {
+	if g.currentReturnTypes == nil || len(g.currentReturnTypes) == 0 {
+		g.writeLine(fmt.Sprintf("return %s", errVar))
+		return
+	}
+
+	var parts []string
+	for i, ret := range g.currentReturnTypes {
+		if i == len(g.currentReturnTypes)-1 {
+			// Last return type is assumed to be error
+			parts = append(parts, errVar)
+		} else {
+			parts = append(parts, g.zeroValueForType(ret))
+		}
+	}
+	g.writeLine(fmt.Sprintf("return %s", strings.Join(parts, ", ")))
+}
+
 // generateOnErrHandler generates code for the onerr handler expression
 func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Expression, errVar string) {
+	// If handler is nil, the explain wrapping already generated the return
+	if handler == nil {
+		return
+	}
 	switch h := handler.(type) {
 	case *ast.PanicExpr:
 		// onerr panic "message"
@@ -1361,26 +1423,28 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 // Generates: if err := json.MarshalWrite(w, todo); err != nil { panic("failed") }
 func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClause) {
 	// Check for discard case - just execute and ignore error
-	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
-		if count, ok := g.inferReturnCount(expr); ok {
-			switch count {
-			case 0:
-				g.writeLine(g.exprToString(expr))
-			case 1:
-				g.writeLine(fmt.Sprintf("_ = %s", g.exprToString(expr)))
-			default:
-				blanks := make([]string, count)
-				for i := range blanks {
-					blanks[i] = "_"
+	if clause.Handler != nil {
+		if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
+			if count, ok := g.inferReturnCount(expr); ok {
+				switch count {
+				case 0:
+					g.writeLine(g.exprToString(expr))
+				case 1:
+					g.writeLine(fmt.Sprintf("_ = %s", g.exprToString(expr)))
+				default:
+					blanks := make([]string, count)
+					for i := range blanks {
+						blanks[i] = "_"
+					}
+					g.writeLine(fmt.Sprintf("%s = %s", strings.Join(blanks, ", "), g.exprToString(expr)))
 				}
-				g.writeLine(fmt.Sprintf("%s = %s", strings.Join(blanks, ", "), g.exprToString(expr)))
+			} else {
+				// Fallback: when return count inference fails (e.g. external multi-return
+				// functions not yet modeled), default to a single blank assignment.
+				g.writeLine(fmt.Sprintf("_ = %s", g.exprToString(expr)))
 			}
-		} else {
-			// Fallback: when return count inference fails (e.g. external multi-return
-			// functions not yet modeled), default to a single blank assignment.
-			g.writeLine(fmt.Sprintf("_ = %s", g.exprToString(expr)))
+			return
 		}
-		return
 	}
 
 	// Generate unique error variable name
@@ -1391,6 +1455,7 @@ func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClau
 	g.indent++
 
 	// Generate the error handler (no variable names for statement-level)
+	g.generateOnErrExplainWrap(clause, errVar)
 	g.generateOnErrHandler([]*ast.Identifier{}, clause.Handler, errVar)
 
 	g.indent--
@@ -1452,33 +1517,31 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 	}
 
 	// Check for discard case
-	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
-		// For discard with multi-value returns (where last value is error), just use the targets as-is
-		// (the error variable is already one of the targets, and we don't need separate error handling)
-		if len(stmt.Targets) > 1 && len(stmt.Values) == 1 {
+	if clause.Handler != nil {
+		if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
+			// For discard with multi-value returns (where last value is error), just use the targets as-is
+			if len(stmt.Targets) > 1 && len(stmt.Values) == 1 {
+				var lhsParts []string
+				for _, t := range stmt.Targets {
+					lhsParts = append(lhsParts, g.exprToString(t))
+				}
+				g.writeLine(fmt.Sprintf("%s = %s", strings.Join(lhsParts, ", "), valueExpr))
+				return
+			}
+
+			// For single-value assignments, ignore the error by using _
 			var lhsParts []string
 			for _, t := range stmt.Targets {
 				lhsParts = append(lhsParts, g.exprToString(t))
 			}
+			lhsParts = append(lhsParts, "_")
 			g.writeLine(fmt.Sprintf("%s = %s", strings.Join(lhsParts, ", "), valueExpr))
 			return
 		}
-
-		// For single-value assignments, ignore the error by using _
-		var lhsParts []string
-		for _, t := range stmt.Targets {
-			lhsParts = append(lhsParts, g.exprToString(t))
-		}
-		lhsParts = append(lhsParts, "_")
-		g.writeLine(fmt.Sprintf("%s = %s", strings.Join(lhsParts, ", "), valueExpr))
-		return
 	}
 
 	// Special case: if we have multiple targets (e.g., x, err) and a single value expression,
 	// the single expression likely returns multiple values including an error.
-	// In this case, use the targets as-is without adding an extra error variable.
-	// This handles cases like: x, err = data |> Parse() onerr handler
-	// where Parse() returns (int, error) and targets are [x, err]
 	if len(stmt.Targets) > 1 && len(stmt.Values) == 1 {
 		var lhsParts []string
 		for _, t := range stmt.Targets {
@@ -1491,6 +1554,7 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 			errVar := g.exprToString(stmt.Targets[len(stmt.Targets)-1])
 			g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
 			g.indent++
+			g.generateOnErrExplainWrap(clause, errVar)
 			g.generateOnErrHandler(names[:len(names)-1], clause.Handler, errVar)
 			g.indent--
 			g.writeLine("}")
@@ -1517,6 +1581,7 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 	// Generate error check block
 	g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
 	g.indent++
+	g.generateOnErrExplainWrap(clause, errVar)
 	g.generateOnErrHandler(names, clause.Handler, errVar)
 	g.indent--
 	g.writeLine("}")
@@ -2683,6 +2748,62 @@ func (g *Generator) checkExprForInterpolation(expr ast.Expression) bool {
 func (g *Generator) needsPrintBuiltin() bool {
 	// Check if any calls use the print() builtin
 	return g.checkProgramForPrint(g.program)
+}
+
+func (g *Generator) needsExplain() bool {
+	for _, decl := range g.program.Declarations {
+		fn, ok := decl.(*ast.FunctionDecl)
+		if !ok || fn.Body == nil {
+			continue
+		}
+		if g.blockHasExplain(fn.Body) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *Generator) blockHasExplain(block *ast.BlockStmt) bool {
+	for _, stmt := range block.Statements {
+		if g.stmtHasExplain(stmt) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *Generator) stmtHasExplain(stmt ast.Statement) bool {
+	switch s := stmt.(type) {
+	case *ast.VarDeclStmt:
+		if s.OnErr != nil && s.OnErr.Explain != "" {
+			return true
+		}
+	case *ast.AssignStmt:
+		if s.OnErr != nil && s.OnErr.Explain != "" {
+			return true
+		}
+	case *ast.ExpressionStmt:
+		if s.OnErr != nil && s.OnErr.Explain != "" {
+			return true
+		}
+	case *ast.IfStmt:
+		if s.Consequence != nil && g.blockHasExplain(s.Consequence) {
+			return true
+		}
+	case *ast.ForRangeStmt:
+		if s.Body != nil && g.blockHasExplain(s.Body) {
+			return true
+		}
+	case *ast.ForNumericStmt:
+		if s.Body != nil && g.blockHasExplain(s.Body) {
+			return true
+		}
+	case *ast.ForConditionStmt:
+		if s.Body != nil && g.blockHasExplain(s.Body) {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *Generator) checkProgramForPrint(program *ast.Program) bool {

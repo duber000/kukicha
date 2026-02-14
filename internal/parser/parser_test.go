@@ -1216,3 +1216,190 @@ func TestParseGroupedExpressionStillWorks(t *testing.T) {
 
 // REMOVED: Old generics tests - generics syntax has been removed from Kukicha
 // Generic functionality is now provided by the stdlib (written in Go) with special transpilation
+
+// ============================================================================
+// Skill declaration tests
+// ============================================================================
+
+func TestParseSkillDeclSimple(t *testing.T) {
+	input := `petiole weather
+
+skill WeatherService
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	if program.SkillDecl == nil {
+		t.Fatal("expected SkillDecl, got nil")
+	}
+
+	if program.SkillDecl.Name.Value != "WeatherService" {
+		t.Errorf("expected skill name 'WeatherService', got '%s'", program.SkillDecl.Name.Value)
+	}
+
+	if program.SkillDecl.Description != "" {
+		t.Errorf("expected empty description, got '%s'", program.SkillDecl.Description)
+	}
+
+	if program.SkillDecl.Version != "" {
+		t.Errorf("expected empty version, got '%s'", program.SkillDecl.Version)
+	}
+}
+
+func TestParseSkillDeclWithBlock(t *testing.T) {
+	input := `petiole weather
+
+skill WeatherService
+    description: "Provides real-time weather data."
+    version: "2.1.0"
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	if program.SkillDecl == nil {
+		t.Fatal("expected SkillDecl, got nil")
+	}
+
+	skill := program.SkillDecl
+	if skill.Name.Value != "WeatherService" {
+		t.Errorf("expected skill name 'WeatherService', got '%s'", skill.Name.Value)
+	}
+
+	if skill.Description != "Provides real-time weather data." {
+		t.Errorf("expected description 'Provides real-time weather data.', got '%s'", skill.Description)
+	}
+
+	if skill.Version != "2.1.0" {
+		t.Errorf("expected version '2.1.0', got '%s'", skill.Version)
+	}
+}
+
+func TestParseSkillDeclDescriptionOnly(t *testing.T) {
+	input := `petiole myskill
+
+skill MySkill
+    description: "A test skill."
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	skill := program.SkillDecl
+	if skill == nil {
+		t.Fatal("expected SkillDecl, got nil")
+	}
+
+	if skill.Description != "A test skill." {
+		t.Errorf("expected description 'A test skill.', got '%s'", skill.Description)
+	}
+
+	if skill.Version != "" {
+		t.Errorf("expected empty version, got '%s'", skill.Version)
+	}
+}
+
+// ============================================================================
+// onerr explain tests
+// ============================================================================
+
+func TestParseOnErrExplainStandalone(t *testing.T) {
+	input := `func Test() (string, error)
+    x := foo() onerr explain "City names must be capitalized"
+    return x, nil
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	varDecl, ok := fn.Body.Statements[0].(*ast.VarDeclStmt)
+	if !ok {
+		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
+	}
+
+	if varDecl.OnErr == nil {
+		t.Fatal("expected OnErr clause, got nil")
+	}
+
+	if varDecl.OnErr.Explain != "City names must be capitalized" {
+		t.Errorf("expected explain 'City names must be capitalized', got '%s'", varDecl.OnErr.Explain)
+	}
+
+	// Standalone explain has nil handler
+	if varDecl.OnErr.Handler != nil {
+		t.Errorf("expected nil handler for standalone explain, got %T", varDecl.OnErr.Handler)
+	}
+}
+
+func TestParseOnErrWithHandlerAndExplain(t *testing.T) {
+	input := `func Test()
+    x := foo() onerr 0 explain "Expected a positive integer"
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	varDecl, ok := fn.Body.Statements[0].(*ast.VarDeclStmt)
+	if !ok {
+		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
+	}
+
+	if varDecl.OnErr == nil {
+		t.Fatal("expected OnErr clause, got nil")
+	}
+
+	if varDecl.OnErr.Handler == nil {
+		t.Fatal("expected handler, got nil")
+	}
+
+	// Handler should be the integer literal 0
+	intLit, ok := varDecl.OnErr.Handler.(*ast.IntegerLiteral)
+	if !ok {
+		t.Fatalf("expected IntegerLiteral handler, got %T", varDecl.OnErr.Handler)
+	}
+	if intLit.Value != 0 {
+		t.Errorf("expected handler value 0, got %d", intLit.Value)
+	}
+
+	if varDecl.OnErr.Explain != "Expected a positive integer" {
+		t.Errorf("expected explain 'Expected a positive integer', got '%s'", varDecl.OnErr.Explain)
+	}
+}
