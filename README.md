@@ -2,7 +2,7 @@
 
 **Write code that reads like English. Compile it to blazing-fast Go.**
 
-Kukicha is a beginner-friendly programming language that transpiles to idiomatic Go code. No runtime overhead. No magic. Just cleaner syntax that becomes real Go.
+Kukicha is a programming language that transpiles to idiomatic Go code. If you're comfortable with shell scripts but find Go's symbols intimidating, or you want Python's readability with Go's performance and deployment story, Kukicha is for you. No runtime overhead. No magic. Just cleaner syntax that becomes real Go.
 
 ```kukicha
 import "stdlib/slice"
@@ -33,7 +33,7 @@ func main()
 Pick your OS/arch from the GitHub releases, download, and run:
 
 ```bash
-VERSION=v0.0.2
+VERSION=v0.0.3
 OS=linux
 ARCH=amd64
 curl -L -o kukicha.tar.gz \
@@ -47,7 +47,7 @@ Windows uses `.zip` archives and `kukicha.exe`.
 ### Or Install With Go
 
 ```bash
-go install github.com/duber000/kukicha/cmd/kukicha@v0.0.2
+go install github.com/duber000/kukicha/cmd/kukicha@v0.0.3
 kukicha version
 ```
 
@@ -62,29 +62,35 @@ kukicha run hello.kuki      # Transpile, build, run
 
 ## Why Kukicha?
 
-### For Beginners
+### For Shell Scripters
 
-**Go is powerful but intimidating.** Pointers (`*`, `&`), error handling boilerplate, and cryptic symbols create a steep learning curve.
+Your bash scripts work, but they're getting harder to maintain. Kukicha keeps what you like - pipes, running commands, readable flow - and adds real types, proper error handling, and compiled binaries.
 
-Kukicha fixes this:
+| Bash | Kukicha |
+|------|---------|
+| `echo "$name is $age"` | `print("{name} is {age}")` |
+| `if [ ... ]; then ... fi` | `if condition` with indentation |
+| `cmd1 \| cmd2 \| cmd3` | `val \|> func1() \|> func2()` |
+| `result=$(command)` | `result := shell.Output(...)` |
+| `set -e` / `$?` | `onerr` per operation |
+
+### For Python Developers
+
+You already know the syntax - `and`/`or`/`not`, indentation, `for x in items`, `# comments`. Kukicha adds compile-time type checking, real concurrency, and single-binary deployment.
+
+### For Go Developers
+
+Same ecosystem, same performance, less boilerplate:
 
 | Go | Kukicha |
 |----|---------|
 | `&&`, `\|\|`, `!` | `and`, `or`, `not` |
 | `*User`, `&user` | `reference User`, `reference of user` |
-| `nil` | `empty` |
 | `if err != nil { return err }` | `onerr return error "{error}"` |
-| `break`, `continue` | `break`, `continue` |
-| `for { ... }` | `for` |
-| `v.(T)` | `v as T` |
+| `[]string{"a", "b"}` | `list of string{"a", "b"}` |
+| Curly braces everywhere | Indentation (4 spaces) |
 
-**Learn programming concepts, not symbols.** When you're ready, the generated Go code teaches you Go itself.
-
-### For DevOps And Go Developers
-
-- **Single static binary** deployment
-- **Zero runtime overhead** (transpiles to idiomatic Go)
-- **Full Go ecosystem access** (import any Go package)
+See the [FAQ](docs/faq.md) for detailed comparisons and migration paths.
 
 ---
 
@@ -194,19 +200,22 @@ See [Contributing Guide](docs/contributing.md) for development setup, tests, and
 
 ## Documentation
 
-- [Beginner Tutorial](docs/tutorial/beginner-tutorial.md)
-- [Data & AI Scripting](docs/tutorial/data-scripting-tutorial.md)
-- [CLI Repo Explorer](docs/tutorial/cli-explorer-tutorial.md)
-- [Concurrent Health Checker](docs/tutorial/concurrent-url-health-checker.md)
-- [FAQ](docs/faq.md)
-- [Quick Reference](docs/kukicha-quick-reference.md)
-- [Stdlib Reference](docs/kukicha-stdlib-reference.md)
+**Tutorials:**
+- [Beginner Tutorial](docs/tutorial/beginner-tutorial.md) - for shell scripters moving to Kukicha
+- [Data & AI Scripting](docs/tutorial/data-scripting-tutorial.md) - maps, CSV parsing, shell commands, LLM integration
+- [CLI Repo Explorer](docs/tutorial/cli-explorer-tutorial.md) - custom types, methods, API data
+- [Concurrent Health Checker](docs/tutorial/concurrent-url-health-checker.md) - goroutines and channels
+
+**Reference:**
+- [FAQ](docs/faq.md) - coming from bash, Python, or Go
+- [Quick Reference](docs/kukicha-quick-reference.md) - Go-to-Kukicha translation table
+- [Stdlib Reference](docs/kukicha-stdlib-reference.md) - standard library documentation
 
 ---
 
 ## Status
 
-**Version:** 0.0.2
+**Version:** 0.0.3
 **Status:** Ready for testing
 **Go:** 1.25+ required
 

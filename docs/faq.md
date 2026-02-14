@@ -1,105 +1,155 @@
-# FAQ (Frequently Asked Questions)
+# FAQ
 
-1. Why use Kukicha instead of just using Python?
+## Coming from Bash / Shell Scripting
 
-Great question! While Kukicha was designed to feel familiar to Python developers, the underlying "soul" is entirely different. Python is an interpreted, dynamic language, whereas Kukicha is a statically-typed, compiled language that transpiles directly to Go.
+**Why not just keep writing bash scripts?**
 
-### What Feels Familiar
+Bash is great for quick one-liners and gluing commands together. But once your script hits a few hundred lines, you start running into problems: quoting issues, no real data structures, error handling with `set -e` that surprises you, no type safety, and debugging with `echo` everywhere.
 
-If you know Python, you already know a lot of Kukicha:
+Kukicha keeps the parts of shell scripting that work well - pipes, running commands, readable flow - and gives you real types, proper error handling, and compiled binaries.
+
+| Bash Pain Point | Kukicha Solution |
+|---|---|
+| Quoting hell (`"${var}"`) | Just use `{var}` in strings |
+| `set -e` surprises | `onerr` per operation |
+| No real data types | `int`, `string`, `bool`, `list of`, `map of` |
+| `$1`, `$2` positional args | Named, typed function parameters |
+| `if [ ... ]; then ... fi` | `if condition` with indentation |
+| Arrays (`"${arr[@]}"`) | `list of string{"a", "b"}` |
+| Word splitting breaks things | Arguments are separate strings, always safe |
+
+**What about Python as a bash replacement?**
+
+Python is a solid option. But Kukicha compiles to a static binary - no runtime, no `pip install`, no virtualenv on the target machine. `scp` the binary and run it. For scripts that need to run on remote servers, in containers, or as CLI tools you distribute, that matters.
+
+**Where to start:** The [Beginner Tutorial](tutorial/beginner-tutorial.md) is written specifically for shell scripters. Every section shows the bash way first, then the Kukicha equivalent.
+
+---
+
+## Coming from Python
+
+**Why use Kukicha instead of Python?**
+
+Kukicha was designed to feel familiar to Python developers. You already know a lot of the syntax:
 
 | Python | Kukicha | Notes |
-|--------|---------|-------|
-| `and`, `or`, `not` | `and`, `or`, `not` | Identical! |
+|---|---|---|
+| `and`, `or`, `not` | `and`, `or`, `not` | Identical |
 | `if x == y:` | `if x equals y` | English keyword |
 | `for x in items:` | `for x in items` | Same iteration style |
-| `# comment` | `# comment` | Identical! |
-| Indentation (4 spaces) | Indentation (4 spaces) | Identical! |
+| `# comment` | `# comment` | Identical |
+| Indentation (4 spaces) | Indentation (4 spaces) | Identical |
 | f-strings `f"{name}"` | `"{name}"` | No prefix needed |
 | `def greet(name):` | `func Greet(name string)` | Types required |
 | Default params | `func F(x int = 10)` | Same concept |
 | `**kwargs` / named args | `F(x: 10)` | Clean syntax |
 
-### Key Differences to Learn
+### Key Differences
 
-Python developers should be aware of these key distinctions:
-
-1. **Static Types**: Function parameters require explicit types. Local variables are inferred.
+1. **Static types** - function parameters require explicit types. Local variables are inferred.
    ```kukicha
    func Greet(name string)      # 'name' must specify type
        message := "Hi"          # 'message' type is inferred
    ```
 
-2. **No Implicit Returns**: Use `return` explicitly.
+2. **No implicit returns** - use `return` explicitly.
 
-3. **Error Handling**: Python uses exceptions; Kukicha uses `onerr` for explicit handling.
+3. **Error handling** - Python uses exceptions; Kukicha uses `onerr` for inline handling.
    ```kukicha
    data := files.Read("config.json") onerr panic "failed"
    ```
 
-4. **The Pipe Operator**: Chain operations in a data-flow style (think `|` in shell).
+4. **The pipe operator** - chain operations in a data-flow style.
    ```kukicha
    result := text |> string.TrimSpace() |> string.ToLower()
    ```
 
-### Why Make the Switch?
+### When to Stay with Python
 
-Python is improving rapidly — Python 3.13+ has experimental free-threading (no GIL), and tools like **uv** make dependency management much smoother. So why Kukicha?
+Python is improving rapidly - Python 3.13+ has experimental free-threading (no GIL), and **uv** makes dependency management much smoother. If your workloads are I/O-bound or ML-focused, and you're already productive in Python, it may not be worth switching.
 
-| Consideration | Python (2024+) | Kukicha |
-|---------------|----------------|---------|
-| **Deployment** | Much better with `uv` + containers | Single static binary, truly zero dependencies |
-| **Concurrency** | Free-threading is experimental; async still has limits | Goroutines are production-proven, trivial to use |
-| **Type Safety** | Optional (mypy, pyright) — runtime errors still possible | Mandatory compile-time checking |
-| **Performance** | Slow for CPU-bound tasks even without GIL | 10-100x faster, compiles to native code |
-| **Ecosystem** | Massive, unparalleled for ML/data science | Full access to Go ecosystem + any Go library |
+### When Kukicha Makes Sense
 
-**Bottom line**: If you're happy with Python and your workloads are I/O-bound or ML-focused, stay with Python! Kukicha shines for **systems programming, DevOps, CLI tools, and high-performance services** where you want Go's speed and deployment story with a friendlier syntax.
+| Consideration | Python | Kukicha |
+|---|---|---|
+| **Deployment** | Better with `uv` + containers, still needs a runtime | Single static binary, zero dependencies |
+| **Concurrency** | Free-threading is experimental; async has limits | Goroutines are production-proven |
+| **Type safety** | Optional (mypy, pyright) - runtime errors still possible | Mandatory compile-time checking |
+| **Performance** | Slow for CPU-bound tasks | 10-100x faster, compiles to native code |
+| **Ecosystem** | Massive, unparalleled for ML/data science | Full access to Go's ecosystem |
 
-### Transition Tips
+**Where to start:** The [Beginner Tutorial](tutorial/beginner-tutorial.md) covers the fundamentals. If you're comfortable with programming concepts already, you may want to skim it and jump to the [Quick Reference](kukicha-quick-reference.md) to see the full syntax mapping.
 
-1. **Start with the [Beginner Tutorial](tutorial/beginner-tutorial.md)** — it's written for Python developers.
-2. **Use `kukicha run`** to iterate quickly, just like running `python script.py`.
-3. **Embrace the pipe operator** — it replaces many for-loops and makes data transformations readable.
-4. **Don't fight the types** — they catch bugs before runtime.
+---
 
-2. Doesn't XGo (formerly Go+) already do this?
+## Coming from Go
 
-XGo is an excellent project, but it serves a different niche. 
+**Why not just write Go?**
 
-    Semantic Keywords: Kukicha replaces symbols with English words (e.g., reference of user instead of &user, or and/or instead of &&/||). Go+ stays closer to standard Go syntax.
+You already know Go, so you already know Kukicha's underlying power. The question is whether the syntax improvements are worth it for you.
 
-    The Pipe Operator: Kukicha is built around a "Data-Flow" philosophy. Our Smart Pipe (|>) logic allows you to chain complex operations with placeholders (_), making it significantly more readable for DevOps and API logic.
+| Go | Kukicha | Notes |
+|---|---|---|
+| `if err != nil { ... }` | `onerr panic "msg"` | Inline, one line |
+| `&&`, `\|\|`, `!` | `and`, `or`, `not` | English keywords |
+| `*Type`, `&var` | `reference Type`, `reference of var` | Readable pointers |
+| `[]string{"a", "b"}` | `list of string{"a", "b"}` | Readable collections |
+| `map[string]int{}` | `map of string to int{}` | Readable maps |
+| `func(s string) bool { return ... }` | `(s string) => ...` | Arrow lambdas |
+| Curly braces + semicolons | Indentation (4 spaces) | Python-style blocks |
+| `go func() { ... }()` | `go` with indented block | No IIFE pattern |
+| `case` / `default` | `when` / `otherwise` | English switch |
 
-    Error Handling: Kukicha's onerr keyword is a unique middle ground—it removes the "if err != nil" boilerplate without hiding errors behind magic exceptions.
+### What Stays the Same
 
-3. How do pipes handle Go's "Writer-First" or "Context-First" APIs?
+- Full access to the Go standard library and third-party packages
+- `go mod` for dependency management
+- Goroutines and channels (with friendlier syntax: `channel of Type`, `send val to ch`, `receive from ch`)
+- All Go types and interfaces
+- Compiles to idiomatic Go, then to a native binary
 
-Standard Go often places a `context.Context` or an `io.Writer` as the first argument. Kukicha handles this with **Smart Pipe Logic**:
+### The Pipe Operator
 
-1. **Automatic Context Handling**: If you pipe a `context.Context` (or any variable named `ctx`), it is automatically prepended as the first argument:
-   ```kukicha
-   ctx |> db.FetchUser(userID)  # Becomes: db.FetchUser(ctx, userID)
-   ```
+This is probably the biggest feature Go doesn't have. Instead of:
 
-2. **Explicit Placeholders**: Use `_` to specify exactly where data should go (crucial for Writers):
-   ```kukicha
-   todo |> json.MarshalWrite(response, _)  # Becomes: json.MarshalWrite(response, todo)
-   ```
+```go
+result := strings.Title(strings.ToLower(strings.TrimSpace(text)))
+```
 
-4. Does Kukicha have a runtime?
+You write:
 
-No. Kukicha has zero runtime overhead. The compiler transpiles your code into standard, idiomatic Go. Once compiled by the Go toolchain, there is no trace of Kukicha left—just a high-performance Go binary.
+```kukicha
+result := text |> string.TrimSpace() |> string.ToLower() |> string.Title()
+```
 
-5. Can I use existing Go libraries?
+For Go's "writer-first" or "context-first" APIs, Kukicha uses smart pipe logic:
 
-Yes. You can import any Go package (standard library or third-party) and use it directly in Kukicha. If the compiler hasn't seen the type before, it "trusts" the external package, allowing you to leverage the entire Go ecosystem immediately.
+```kukicha
+# Context is automatically prepended as first arg
+ctx |> db.FetchUser(userID)  # Becomes: db.FetchUser(ctx, userID)
 
-6. Does Kukicha support named arguments or default parameters?
+# Use _ to specify argument position
+todo |> json.MarshalWrite(response, _)  # Becomes: json.MarshalWrite(response, todo)
+```
 
-Yes! Kukicha has both features to make code more readable:
+**Where to start:** The [Quick Reference](kukicha-quick-reference.md) is a direct Go-to-Kukicha translation table. That's likely all you need to get going.
 
-**Default Parameters** let you specify default values for function parameters:
+---
+
+## General Questions
+
+### Does Kukicha have a runtime?
+
+No. Kukicha has zero runtime overhead. The compiler transpiles your code into standard, idiomatic Go. Once compiled by the Go toolchain, there is no trace of Kukicha left - just a native Go binary.
+
+### Can I use existing Go libraries?
+
+Yes. You can import any Go package (standard library or third-party) and use it directly in Kukicha. If the compiler hasn't seen the type before, it trusts the external package, allowing you to use the entire Go ecosystem immediately.
+
+### Does Kukicha support named arguments and default parameters?
+
+Yes. Default parameters let you specify fallback values:
+
 ```kukicha
 func Greet(name string, greeting string = "Hello")
     print("{greeting}, {name}!")
@@ -108,28 +158,36 @@ Greet("Alice")          # "Hello, Alice!"
 Greet("Bob", "Hi")      # "Hi, Bob!"
 ```
 
-**Named Arguments** let you specify argument names at the call site:
+Named arguments let you specify argument names at the call site:
+
 ```kukicha
 func Connect(host string, port int = 8080, timeout int = 30)
     # ...
 
-# Clear and self-documenting
 Connect("localhost", timeout: 60)
 Connect("api.example.com", port: 443, timeout: 120)
 ```
 
-Note: Named arguments must come after positional arguments, and parameters with defaults must come after those without.
+Named arguments must come after positional arguments, and parameters with defaults must come after those without.
 
-7. What editor support is available?
+### Doesn't XGo (formerly Go+) already do this?
+
+XGo is an excellent project, but it serves a different niche:
+
+- **Semantic keywords** - Kukicha replaces symbols with English words (`reference of user` instead of `&user`, `and`/`or` instead of `&&`/`||`). XGo stays closer to standard Go syntax.
+- **The pipe operator** - Kukicha is built around a data-flow philosophy. The smart pipe (`|>`) supports placeholders (`_`), making it readable for DevOps and API logic.
+- **Error handling** - Kukicha's `onerr` keyword removes the `if err != nil` boilerplate without hiding errors behind exceptions.
+
+### What editor support is available?
 
 **Zed** is currently supported with full language support:
 
-- **Syntax Highlighting**: Tree-sitter grammar for accurate highlighting of Kukicha syntax
-- **Diagnostics**: Real-time error reporting from the parser and semantic analyzer
-- **Hover Information**: Type info for functions, types, interfaces, and builtins
-- **Go-to-Definition**: Jump to function, type, interface, and field definitions
-- **Code Completions**: Keywords, builtins, types, and declarations
-- **Document Symbols**: Outline view of your code structure
+- Syntax highlighting (Tree-sitter grammar)
+- Real-time diagnostics from the parser and semantic analyzer
+- Hover information for functions, types, interfaces, and builtins
+- Go-to-definition for functions, types, interfaces, and fields
+- Code completions for keywords, builtins, types, and declarations
+- Document symbols (outline view)
 
 **Installation:**
 
@@ -144,5 +202,3 @@ export PATH="$PATH:$(go env GOPATH)/bin"
 # In Zed, run: "zed: install dev extension"
 # Select the editors/zed directory
 ```
-
-The extension includes both the Tree-sitter grammar for syntax highlighting and integration with the `kukicha-lsp` language server for IDE features.
