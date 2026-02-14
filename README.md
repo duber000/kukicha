@@ -201,10 +201,10 @@ See [Contributing Guide](docs/contributing.md) for development setup, tests, and
 ## Documentation
 
 **Tutorials:**
-- [Beginner Tutorial](docs/tutorial/beginner-tutorial.md) - for shell scripters moving to Kukicha
-- [Data & AI Scripting](docs/tutorial/data-scripting-tutorial.md) - maps, CSV parsing, shell commands, LLM integration
-- [CLI Repo Explorer](docs/tutorial/cli-explorer-tutorial.md) - custom types, methods, API data
-- [Concurrent Health Checker](docs/tutorial/concurrent-url-health-checker.md) - goroutines and channels
+- [Beginner Tutorial](docs/tutorials/beginner-tutorial.md) - for shell scripters moving to Kukicha
+- [Data & AI Scripting](docs/tutorials/data-scripting-tutorial.md) - maps, CSV parsing, shell commands, LLM integration
+- [CLI Repo Explorer](docs/tutorials/cli-explorer-tutorial.md) - custom types, methods, API data
+- [Concurrent Health Checker](docs/tutorials/concurrent-url-health-checker.md) - goroutines and channels
 
 **Reference:**
 - [FAQ](docs/faq.md) - coming from bash, Python, or Go
