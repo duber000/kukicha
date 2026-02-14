@@ -105,6 +105,6 @@ parts := string.SplitN("a:b:c:d", ":", 2)
 
 ## See Also
 
-- [Beginner Tutorial](tutorial/beginner-tutorial.md) - Learn essential string operations
+- [Absolute Beginner Tutorial](tutorials/absolute-beginner-tutorial.md) - Learn essential string operations
 - [Kukicha Syntax Reference](kukicha-syntax-v1.0.md) - Complete language reference
 - [Quick Reference](kukicha-quick-reference.md) - Quick lookup cheat sheet
