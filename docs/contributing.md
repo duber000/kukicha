@@ -6,7 +6,7 @@ Thank you for your interest in contributing to Kukicha! This document provides g
 
 ### Prerequisites
 
-- Go 1.25 or later
+- Go 1.26 or later
 - Git
 - A text editor or IDE with Go support
 

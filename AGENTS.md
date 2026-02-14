@@ -189,7 +189,7 @@ docs/                 # Documentation
 2. **Always validate** - Run `kukicha check` before committing `.kuki` changes
 3. **4-space indentation only** - Tabs are not allowed in Kukicha
 4. **Explicit function signatures** - Parameters and return types must be declared
-5. **Test with `make test`** - Sets required `GOEXPERIMENT=jsonv2,greenteagc`
+5. **Test with `make test`** - Sets required `GOEXPERIMENT=jsonv2`
 
 ## Adding Features to the Compiler
 

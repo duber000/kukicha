@@ -121,9 +121,9 @@ Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks 
 {"code": "k7f", "url": "https://go.dev", "clicks": 42}
 ```
 
-> **Note: JSON in Kukicha with Go 1.25+**
+> **Note: JSON in Kukicha with Go 1.26+**
 >
-> Kukicha uses Go 1.25+ `encoding/json/v2` for faster JSON:
+> Kukicha uses Go 1.26+ `encoding/json/v2` for faster JSON:
 > ```kukicha
 > import "encoding/json/v2"
 > json.MarshalWrite(response, data)            # Write JSON directly to response

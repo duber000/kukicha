@@ -338,8 +338,8 @@ Located in `stdlib/`:
 
 | Package | Purpose |
 |---------|---------|
-| `iterator` | Functional iterators with Go 1.25+ generics (Filter, Map, Take, Skip, Reduce) |
-| `slice` | Slice operations with Go 1.25+ generics (First, Last, Reverse, Unique, **GroupBy**) |
+| `iterator` | Functional iterators with Go 1.26+ generics (Filter, Map, Take, Skip, Reduce) |
+| `slice` | Slice operations with Go 1.26+ generics (First, Last, Reverse, Unique, **GroupBy**) |
 | `string` | String utilities (ToUpper, Split, Contains, Join) |
 | `json` | Pipe-friendly jsonv2 wrapper (Marshal, Unmarshal, Encoder/Decoder) |
 | `fetch` | HTTP client (Builder, Auth, Forms, Sessions) |
@@ -496,7 +496,7 @@ func getLevel(e LogEntry) string
 entries := logs |> slice.GroupBy(getLevel)
 # Result: map[string][]LogEntry with keys "ERROR", "WARN", "INFO", etc.
 
-# GroupBy is Go 1.25+ generic - you write simple Kukicha code, transpiler handles the generics
+# GroupBy is Go 1.26+ generic - you write simple Kukicha code, transpiler handles the generics
 ```
 
 ### DevOps & SRE Patterns
@@ -529,14 +529,14 @@ for url in endpoints
 concurrent.Parallel(tasks...)
 ```
 
-## Transparent Go 1.25+ Generics
+## Transparent Go 1.26+ Generics
 
 **Important:** You don't write generic syntax in Kukicha! The transpiler automatically generates proper Go generics for stdlib functions.
 
 When you use `slice.GroupBy`, `iter.Map`, etc., the transpiler:
 - Infers type parameters from your code (`T` for element type, `K` for key type)
 - Applies proper constraints where needed (`K comparable` for map keys)
-- Generates correct Go 1.25+ generic syntax
+- Generates correct Go 1.26+ generic syntax
 - All type safety benefits without the syntax burden
 
 This is part of Kukicha's philosophy: **"It's Just Go"** - zero runtime overhead, full type safety, no learning curve for generics.
@@ -571,13 +571,12 @@ func ProcessFile(path string)
     # ... process file
 ```
 
-## Go 1.25+ Features
+## Go 1.26+ Features
 
 Kukicha leverages modern Go features:
 
 - **encoding/json/v2**: 2-10x faster JSON parsing in `stdlib/json` and `stdlib/fetch`
 - **testing/synctest**: Deterministic concurrency testing in compiler tests
-- **Green Tea GC**: Improved garbage collection (no code changes needed)
 
 ## Architecture (for compiler work)
 

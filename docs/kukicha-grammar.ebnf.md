@@ -943,7 +943,7 @@ The generic types `[T any, K comparable]` are inferred from:
 2. The type constraints needed for the operation (e.g., `K comparable` is required for map keys)
 3. Context-specific inference (e.g., `Enumerate` returns `iter.Seq2[int, T]`)
 
-### Stdlib Functions with Generics (Go 1.25+)
+### Stdlib Functions with Generics (Go 1.26+)
 
 | Function | Type Parameters | Example |
 |----------|-----------------|---------|
@@ -993,7 +993,7 @@ The generic types `[T any, K comparable]` are inferred from:
    - Convert methods to Go receiver syntax (`on r T` → `(r T)`)
    - Handle string interpolation (fmt.Sprintf)
    - Generate proper Go package structure
-   - **Generate generic type parameters for stdlib functions** (Go 1.25+ syntax)
+   - **Generate generic type parameters for stdlib functions** (Go 1.26+ syntax)
      - Detect stdlib package context (stdlib/iter, stdlib/slice)
      - Infer type parameters from placeholder names and function signatures
      - Apply constraints where needed (e.g., `comparable` for map keys)

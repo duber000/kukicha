@@ -798,6 +798,67 @@ func TestAddressOfWithFieldAccess(t *testing.T) {
 	}
 }
 
+func TestAddressOfCallExprUsesNew(t *testing.T) {
+	// Go 1.26 new(expr): function call returns are non-addressable,
+	// so `reference of someFunc()` should generate `new(someFunc())`.
+	input := `func GetName() string
+    return "alice"
+
+func main()
+    ptr := reference of GetName()
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "new(GetName())") {
+		t.Errorf("expected 'new(GetName())', got: %s", output)
+	}
+}
+
+func TestAddressOfVariableStillUsesAmpersand(t *testing.T) {
+	// Plain variables are addressable, so `reference of x` stays as `&x`.
+	input := `func Ptr(x int) reference int
+    return reference of x
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "&x") {
+		t.Errorf("expected '&x', got: %s", output)
+	}
+	if strings.Contains(output, "new(x)") {
+		t.Errorf("should not use new() for addressable variable, got: %s", output)
+	}
+}
+
 // REMOVED: Old generics tests - generics syntax has been removed from Kukicha
 // Generic functionality is now provided by the stdlib (written in Go) with special transpilation
 // See stdlib/iterator/ for examples of special transpilation

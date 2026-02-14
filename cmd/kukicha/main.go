@@ -176,7 +176,7 @@ func buildCommand(filename string) {
 	projectDir := findProjectDir(absFile)
 	cmd := exec.Command("go", "build", outputFile)
 	cmd.Dir = projectDir
-	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2,greenteagc")
+	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2")
 	cmd.Stdout = os.Stdout
 	var stderrBuf bytes.Buffer
 	cmd.Stderr = &stderrBuf
@@ -253,7 +253,7 @@ func runCommand(filename string) {
 	// Run with go run
 	cmd := exec.Command("go", "run", tmpFile)
 	cmd.Dir = findProjectDir(absFile)
-	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2,greenteagc")
+	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2")
 	cmd.Stdout = os.Stdout
 	var stderrBuf bytes.Buffer
 	cmd.Stderr = &stderrBuf

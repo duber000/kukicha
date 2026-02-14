@@ -519,7 +519,7 @@ func main()
 
 ## Generics via stdlib/iter and stdlib/slice
 
-Kukicha uses special transpilation for Go 1.25+ generics without requiring you to write generic syntax:
+Kukicha uses special transpilation for Go 1.26+ generics without requiring you to write generic syntax:
 
 ### Functional Iteration (iter package)
 

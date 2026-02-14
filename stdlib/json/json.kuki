@@ -1,5 +1,5 @@
 # Kukicha Standard Library - JSON (jsonv2 wrapper)
-# Pipe-friendly wrapper around Go 1.25+ encoding/json/v2
+# Pipe-friendly wrapper around Go 1.26+ encoding/json/v2
 # Provides beautiful pipe syntax with 2-10x performance improvements
 
 petiole json
@@ -108,7 +108,7 @@ func MarshalPretty(value any) (list of byte, error)
 func Unmarshal(data list of byte, target any) error
     return json.Unmarshal(data, target)
 
-# MarshalWrite writes JSON directly to an io.Writer (Go 1.25+ jsonv2)
+# MarshalWrite writes JSON directly to an io.Writer (Go 1.26+ jsonv2)
 # Perfect for HTTP responses and streaming scenarios
 # Uses placeholder strategy: todo |> MarshalWrite(response, _)
 # Example: todo |> json.MarshalWrite(w, _) onerr panic

@@ -178,7 +178,7 @@ batches := items
     |> slice.Chunk(100)
     |> slice.Map(processBatch)
 
-# Group items by category (Go 1.25+ generics with comparable constraints)
+# Group items by category (Go 1.26+ generics with comparable constraints)
 type LogEntry
     Level string
     Message string
@@ -203,7 +203,7 @@ healthyNodes := nodes
     )
 ```
 
-**Note on GroupBy:** This function uses Go 1.25+ generics with proper type constraints:
+**Note on GroupBy:** This function uses Go 1.26+ generics with proper type constraints:
 - `GroupBy[T any, K comparable](items []T, keyFunc func(T) K) map[K][]T`
 - The `K` type parameter is constrained to `comparable` (required for map keys)
 
@@ -244,7 +244,7 @@ resourceName := "arn:aws:s3:::my-bucket-name"
 
 ### Concurrent Package
 
-Concurrency helpers leveraging Go 1.25+ `sync.WaitGroup.Go()`:
+Concurrency helpers leveraging Go 1.26+ `sync.WaitGroup.Go()`:
 
 ```kukicha
 import "stdlib/concurrent"
@@ -291,7 +291,7 @@ concurrent.Parallel(tasks...)
 
 ### HTTP Package
 
-HTTP server helpers using Go 1.25+ features:
+HTTP server helpers using Go 1.26+ features:
 
 ```kukicha
 import "stdlib/http"
@@ -301,7 +301,7 @@ func main()
     mux := http.NewServeMux()
     mux.HandleFunc("/api/data", handleData)
 
-    # Wrap with CSRF protection (Go 1.25+ CrossOriginProtection)
+    # Wrap with CSRF protection (Go 1.26+ CrossOriginProtection)
     handler := mux |> http.WithCSRF()
 
     # Start server
@@ -323,7 +323,7 @@ mux.HandleFunc("/health", func(w http.ResponseWriter, r reference http.Request)
 
 ### Fetch Package 
 
-HTTP client with fluent builder pattern and response helpers. **Important**: JSON parsing uses Go 1.25+ jsonv2 directly for type safety.
+HTTP client with fluent builder pattern and response helpers. **Important**: JSON parsing uses Go 1.26+ jsonv2 directly for type safety.
 
 **request building:**
 ```kukicha
@@ -457,7 +457,7 @@ instanceId := fetch.Get("http://169.254.169.254/latest/meta-data/instance-id")
 
 ### JSON Package 
 
-Pipe-friendly wrapper around Go 1.25+ jsonv2 for beautiful syntax with 2-10x performance.
+Pipe-friendly wrapper around Go 1.26+ jsonv2 for beautiful syntax with 2-10x performance.
 
 ```kukicha
 import "stdlib/json"

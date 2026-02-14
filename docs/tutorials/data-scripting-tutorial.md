@@ -250,7 +250,7 @@ function main()
     # 2. Pipe the diff to the LLM
     print("Analyzing changes...")
     
-    message := llm.New("gpt-4o-mini")
+    message := llm.New("gpt-5-nano")
         |> llm.System("You are a helpful assistant. Write a concise git commit message for this diff. Format: 'feat: description' or 'fix: description'. One line only.")
         |> llm.Ask(diff)
         onerr

@@ -170,7 +170,7 @@ func main()
 
 ## Install
 
-**Requirements:** Go 1.25+
+**Requirements:** Go 1.26+
 
 ```bash
 git clone https://github.com/duber000/kukicha.git
