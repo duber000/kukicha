@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"go/format"
 	"os"
@@ -109,6 +110,14 @@ func loadAndAnalyze(filename string) (*ast.Program, map[ast.Expression]int, erro
 	return program, analyzer.ReturnCounts(), nil
 }
 
+// rewriteGoErrors replaces references to the generated .go file path in stderr
+// output with the original .kuki source path. This cleans up any residual file
+// references that aren't covered by //line directives (e.g., temp file paths).
+func rewriteGoErrors(stderr []byte, goFile, kukiFile string) []byte {
+	result := strings.ReplaceAll(string(stderr), goFile, kukiFile)
+	return []byte(result)
+}
+
 func buildCommand(filename string) {
 	absFile, err := filepath.Abs(filename)
 	if err != nil {
@@ -169,11 +178,14 @@ func buildCommand(filename string) {
 	cmd.Dir = projectDir
 	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2,greenteagc")
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	var stderrBuf bytes.Buffer
+	cmd.Stderr = &stderrBuf
 	err = cmd.Run()
+	if stderrBuf.Len() > 0 {
+		os.Stderr.Write(rewriteGoErrors(stderrBuf.Bytes(), outputFile, absFile))
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: go build failed: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Generated Go file is at: %s\n", outputFile)
 		os.Exit(1)
 	}
 
@@ -243,9 +255,13 @@ func runCommand(filename string) {
 	cmd.Dir = findProjectDir(absFile)
 	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2,greenteagc")
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	var stderrBuf bytes.Buffer
+	cmd.Stderr = &stderrBuf
 	cmd.Stdin = os.Stdin
 	err = cmd.Run()
+	if stderrBuf.Len() > 0 {
+		os.Stderr.Write(rewriteGoErrors(stderrBuf.Bytes(), tmpFile, absFile))
+	}
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitErr.ExitCode())

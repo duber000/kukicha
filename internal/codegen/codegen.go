@@ -317,6 +317,7 @@ func (g *Generator) rewriteStdlibImport(path string) string {
 }
 
 func (g *Generator) generateDeclaration(decl ast.Declaration) {
+	g.emitLineDirective(decl.Pos())
 	switch d := decl.(type) {
 	case *ast.TypeDecl:
 		g.generateTypeDecl(d)
@@ -1102,6 +1103,7 @@ func (g *Generator) generateBlock(block *ast.BlockStmt) {
 }
 
 func (g *Generator) generateStatement(stmt ast.Statement) {
+	g.emitLineDirective(stmt.Pos())
 	switch s := stmt.(type) {
 	case *ast.VarDeclStmt:
 		g.generateVarDeclStmt(s)
@@ -2478,6 +2480,16 @@ func (g *Generator) writeLine(s string) {
 
 func (g *Generator) indentStr() string {
 	return strings.Repeat("\t", g.indent)
+}
+
+// emitLineDirective writes a //line directive that maps the generated Go code
+// back to the original .kuki source file. The Go compiler and runtime honor
+// these directives, so compile errors, panics, and stack traces will reference
+// the .kuki file instead of the generated .go file.
+func (g *Generator) emitLineDirective(pos ast.Position) {
+	if pos.Line > 0 && pos.File != "" {
+		g.output.WriteString(fmt.Sprintf("//line %s:%d\n", pos.File, pos.Line))
+	}
 }
 
 // uniqueId generates unique identifiers to prevent variable shadowing
