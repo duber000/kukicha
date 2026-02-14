@@ -33,7 +33,7 @@ func main()
 Pick your OS/arch from the GitHub releases, download, and run:
 
 ```bash
-VERSION=v0.0.3
+VERSION=v0.0.4
 OS=linux
 ARCH=amd64
 curl -L -o kukicha.tar.gz \
@@ -47,7 +47,7 @@ Windows uses `.zip` archives and `kukicha.exe`.
 ### Or Install With Go
 
 ```bash
-go install github.com/duber000/kukicha/cmd/kukicha@v0.0.3
+go install github.com/duber000/kukicha/cmd/kukicha@v0.0.4
 kukicha version
 ```
 
@@ -215,7 +215,7 @@ See [Contributing Guide](docs/contributing.md) for development setup, tests, and
 
 ## Status
 
-**Version:** 0.0.3
+**Version:** 0.0.4
 **Status:** Ready for testing
 **Go:** 1.25+ required
 
