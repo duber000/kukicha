@@ -96,33 +96,68 @@ Built with the assistance of AI. Review and test before production use.
 
 ## Quick Taste
 
-```kukicha
-type Todo
-    id int json:"id"
-    title string json:"title"
-    done bool json:"done"
+### 1. Data Pipelines
+Fetch and parse real data with zero boilerplate. The pipe operator (`|>`) and `onerr` make error handling elegant.
 
-func Display on todo Todo string
-    status := "[ ]"
-    if todo.done
-        status = "[x]"
-    return "{status} {todo.title}"
+```kukicha
+import "stdlib/fetch"
+import "stdlib/json"
+
+type Repo
+    Name string json:"name"
+    Stars int json:"stargazers_count"
 
 func main()
-    todos := list of Todo{
-        Todo
-            id: 1
-            title: "Learn Kukicha"
-            done: true
-        Todo
-            id: 2
-            title: "Build something"
-            done: false
-    }
+    # Fetch, check status, and parse JSON in one pipeline
+    repos := empty list of Repo
+    fetch.Get("https://api.github.com/users/golang/repos")
+        |> fetch.CheckStatus()
+        |> fetch.Bytes()
+        |> json.Unmarshal(reference repos)
+        onerr panic "API call failed: {error}"
 
-    for todo in todos
-        print(todo.Display())
+    for repo in repos[:5]
+        print("- {repo.Name}: {repo.Stars} stars")
+```
 
+### 2. Concurrency
+Run thousands of tasks in parallel using Goroutines and Channels. High performance, zero complexity.
+
+```kukicha
+import "time"
+
+func check(url string, results channel of string)
+    # Background work...
+    send "{url} is UP" to results
+
+func main()
+    urls := list of string{"google.com", "github.com", "go.dev"}
+    results := make channel of string
+
+    for url in urls
+        go check(url, results)
+
+    for i from 0 to len(urls)
+        print(receive from results)
+```
+
+### 3. AI Scripting
+Native LLM support lets you build AI-powered tools as easily as writing a "Hello World".
+
+```kukicha
+import "stdlib/llm"
+import "stdlib/shell"
+
+func main()
+    # Pipe a git diff directly into an LLM for commit message generation
+    diff := shell.Output("git", "diff", "--staged") onerr return
+
+    message := llm.New("gpt-4o-mini")
+        |> llm.System("Write a concise git commit message for this diff.")
+        |> llm.Ask(diff)
+        onerr panic "AI Error: {error}"
+
+    print("Suggested: {message}")
 ```
 
 ---
@@ -160,6 +195,9 @@ See [Contributing Guide](docs/contributing.md) for development setup, tests, and
 ## Documentation
 
 - [Beginner Tutorial](docs/tutorial/beginner-tutorial.md)
+- [Data & AI Scripting](docs/tutorial/data-scripting-tutorial.md)
+- [CLI Repo Explorer](docs/tutorial/cli-explorer-tutorial.md)
+- [Concurrent Health Checker](docs/tutorial/concurrent-url-health-checker.md)
 - [FAQ](docs/faq.md)
 - [Quick Reference](docs/kukicha-quick-reference.md)
 - [Stdlib Reference](docs/kukicha-stdlib-reference.md)
