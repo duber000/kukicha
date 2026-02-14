@@ -22,7 +22,7 @@ Kukicha keeps the parts of shell scripting that work well - pipes, running comma
 
 Python is a solid option. But Kukicha compiles to a static binary - no runtime, no `pip install`, no virtualenv on the target machine. `scp` the binary and run it. For scripts that need to run on remote servers, in containers, or as CLI tools you distribute, that matters.
 
-**Where to start:** The [Beginner Tutorial](tutorial/beginner-tutorial.md) is written specifically for shell scripters. Every section shows the bash way first, then the Kukicha equivalent.
+**Where to start:** The [Beginner Tutorial](tutorials/beginner-tutorial.md) is written specifically for shell scripters. Every section shows the bash way first, then the Kukicha equivalent.
 
 ---
 
@@ -78,7 +78,7 @@ Python is improving rapidly - Python 3.13+ has experimental free-threading (no G
 | **Performance** | Slow for CPU-bound tasks | 10-100x faster, compiles to native code |
 | **Ecosystem** | Massive, unparalleled for ML/data science | Full access to Go's ecosystem |
 
-**Where to start:** The [Beginner Tutorial](tutorial/beginner-tutorial.md) covers the fundamentals. If you're comfortable with programming concepts already, you may want to skim it and jump to the [Quick Reference](kukicha-quick-reference.md) to see the full syntax mapping.
+**Where to start:** The [Beginner Tutorial](tutorials/beginner-tutorial.md) covers the fundamentals. If you're comfortable with programming concepts already, you may want to skim it and jump to the [Quick Reference](kukicha-quick-reference.md) to see the full syntax mapping.
 
 ---
 
