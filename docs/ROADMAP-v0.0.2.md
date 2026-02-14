@@ -28,7 +28,6 @@
 
 | Package | Key functions | Natural home |
 |---------|--------------|-------------|
-| `parse` | CSV, YAML | Standalone example or LLM tutorial extension |
 | `files` | Read, Write, Append | Covered in LLM tutorial but deserves beginner coverage |
 | `datetime` | Format, Parse, Now | Covered in LLM tutorial but deserves standalone examples |
 
@@ -36,5 +35,4 @@
 
 - **Concurrency patterns** — goroutines, channels, fan-out/fan-in, select. Build a concurrent URL health checker
 - **Interface patterns** — defining and implementing interfaces, the io.Reader/Writer pattern, error interface
-- **File processing** — read CSV, transform with pipes, write JSON. Shows files + parse + iterator in one flow
 

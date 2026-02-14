@@ -754,13 +754,13 @@ function RecoveryMiddleware(next http.Handler) http.Handler
 
 You've completed the full Kukicha tutorial series!
 
-| Tutorial | What You Learned |
+| # | Tutorial | What You Learned |
 |----------|-----------------|
 | ✅ **1. Beginner** | Variables, functions, strings, loops, pipes |
-| ✅ **2. CLI Explorer** | Types, methods (`on`), API data, arrow lambdas, `fetch` + `json` |
-| ✅ **3. Link Shortener** | HTTP servers, JSON, REST APIs, maps, redirects |
-| ✅ **4. Production** | Databases, concurrency, Go conventions, `env`/`must`, `validate`, `http`, `result`, `retry` |
-|    **Bonus: LLM Scripting** | Shell + LLM + pipes — [try it!](llm-pipe-tutorial.md) |
+| ✅ **2. Data & AI Scripting** | Maps (Key-Value), parsing CSVs, shell commands, AI scripting |
+| ✅ **3. CLI Explorer** | Types, methods (`on`), API data, arrow lambdas, `fetch` + `json` |
+| ✅ **4. Link Shortener** | HTTP servers, JSON, REST APIs, maps, redirects |
+| ✅ **5. Production** | Databases, concurrency, Go conventions, `env`/`must`, `validate`, `http`, `result`, `retry` |
 
 ---
 
@@ -770,7 +770,7 @@ You've completed the full Kukicha tutorial series!
 
 - **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** — Complete language grammar
 - **[Standard Library](../kukicha-stdlib-reference.md)** — iterator, slice, and more
-- **[LLM Scripting Tutorial](llm-pipe-tutorial.md)** — Combine shell + LLM + pipes
+- **[Data & AI Scripting Tutorial](data-scripting-tutorial.md)** — Review shell + LLM + pipes
 
 ### Build Projects
 

@@ -2,7 +2,7 @@
 
 **Level:** Intermediate
 **Time:** 15-18 minutes
-**Prerequisite:** [Beginner Tutorial](beginner-tutorial.md)
+**Prerequisite:** [Data & AI Scripting](data-scripting-tutorial.md)
 
 Welcome back! In the beginner tutorial, you learned about variables, functions, strings, decisions, lists, and loops. Now we're going to build something genuinely useful: a **GitHub Repo Explorer** that fetches real data from the internet and lets you browse it interactively.
 
@@ -78,6 +78,7 @@ kukicha init    # Extracts stdlib for imports like "stdlib/fetch"
 
 > **📝 Reminder:** This tutorial builds on the beginner tutorial. Here are the key concepts you'll need:
 > - **`:=`** creates a new variable, **`=`** updates an existing one
+> - **Maps:** Key-Value storage (e.g., `map of string to int`) for complex data
 > - **String interpolation:** Use `{variable}` inside strings to insert values
 > - **`print()`** outputs to the console
 > - **Functions** (starting with `function`) take parameters and can return values
@@ -924,16 +925,15 @@ You now have solid programming skills with Kukicha! Continue with the tutorial s
 
 ### Tutorial Path
 
+### Tutorial Path
+
 | # | Tutorial | What You'll Learn |
 |---|----------|-------------------|
-| 1 | ✅ **Beginner Tutorial** — Variables, functions, strings, decisions, lists, loops *(completed)* |
-| 2 | ✅ **CLI Explorer** — Custom types, methods, API data, pipes, arrow lambdas, error handling *(you are here)* |
-| 3 | **[Link Shortener](web-app-tutorial.md)** ← Next step! |
-|   | Build a web service with HTTP, JSON, redirects |
-| 4 | **[Production Patterns](production-patterns-tutorial.md)** (Advanced) |
-|   | Add database, concurrency, Go conventions |
-|   | **[LLM Scripting](llm-pipe-tutorial.md)** (Bonus) |
-|   | Combine shell commands + LLM calls + pipes — a force multiplier |
+| 1 | **[Beginner Tutorial](beginner-tutorial.md)** | Variables, functions, strings, decisions, lists, loops, pipes |
+| 2 | **[Data & AI Scripting](data-scripting-tutorial.md)** | Maps (Key-Value), parsing CSVs, shell commands, AI scripting |
+| 3 | ✅ **CLI Explorer** | Custom types, methods, API data, arrow lambdas, error handling *(you are here)* |
+| 4 | **[Link Shortener](web-app-tutorial.md)** ← Next! | HTTP servers, JSON, REST APIs, redirects |
+| 5 | **[Production Patterns](production-patterns-tutorial.md)** | Databases, concurrency, Go conventions |
 
 ### Reference Docs
 

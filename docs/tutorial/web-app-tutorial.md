@@ -617,11 +617,15 @@ Before moving on, try these enhancements:
 
 You now have a working web service! But it's not production-ready yet. In the next tutorial, you'll learn:
 
-- **[Production Patterns Tutorial](production-patterns-tutorial.md)** (Advanced)
-  - Store links in a **database** (SQLite) so they persist
-  - Generate **random codes** that aren't guessable
-  - Handle **multiple users safely** with locking
-  - Add proper **analytics**, **validation**, and **configuration**
+### Tutorial Path
+
+| # | Tutorial | What You'll Learn |
+|---|----------|-------------------|
+| 1 | **[Beginner Tutorial](beginner-tutorial.md)** | Variables, functions, strings, decisions, lists, loops, pipes |
+| 2 | **[Data & AI Scripting](data-scripting-tutorial.md)** | Maps (Key-Value), parsing CSVs, shell commands, AI scripting |
+| 3 | **[CLI Explorer](cli-explorer-tutorial.md)** | Custom types, methods, API data, arrow lambdas, error handling |
+| 4 | ✅ **Link Shortener** | HTTP servers, JSON, REST APIs, redirects *(you are here)* |
+| 5 | **[Production Patterns](production-patterns-tutorial.md)** ← Next! | Databases, concurrency, Go conventions |
 
 ---
 
