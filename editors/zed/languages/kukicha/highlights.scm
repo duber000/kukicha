@@ -79,7 +79,7 @@
 (import_declaration
   path: (interpreted_string_literal) @string)
 
-; Built-in expressions (recover, panic, error, empty, make, close)
+; Built-in expressions (recover, panic, error, empty, make, close, reference, dereference)
 (recover_expression) @function.builtin
 (panic_expression) @function.builtin
 (error_expression) @function.builtin
@@ -87,6 +87,8 @@
 (make_expression) @function.builtin
 (close_expression) @function.builtin
 (receive_expression) @function.builtin
+(address_of_expression) @function.builtin
+(dereference_expression) @function.builtin
 
 ; print builtin (parsed as a regular call, not a dedicated grammar node)
 (call_expression
@@ -116,7 +118,7 @@
 [":=" "=" "|>" "=>" "==" "!=" "<" ">" "<=" ">=" "+" "-" "*" "/" "%" "++" "--" "&&" "||" "!" "|"] @operator
 
 ; Keywords
-["petiole" "import" "as" "type" "interface" "var" "variable" "func" "function" "on" "return" "if" "else" "for" "in" "from" "to" "through" "switch" "when" "otherwise" "default" "go" "defer" "make" "list" "of" "map" "channel" "send" "receive" "close" "panic" "error" "empty" "discard" "many" "true" "false" "equals" "and" "or" "onerr" "not"] @keyword
+["petiole" "import" "as" "type" "interface" "var" "variable" "func" "function" "on" "return" "if" "else" "for" "in" "from" "to" "through" "switch" "when" "otherwise" "default" "go" "defer" "make" "list" "of" "map" "channel" "send" "receive" "close" "panic" "error" "empty" "discard" "many" "true" "false" "equals" "and" "or" "onerr" "not" "reference" "dereference" "nil" "recover" "break" "continue"] @keyword
 
 ; Control flow keywords (optional more specific highlighting)
 ["if" "else" "for" "switch" "when" "otherwise" "default" "return" "break" "continue" "go" "defer" "onerr"] @keyword.control

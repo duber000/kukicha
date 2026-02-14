@@ -86,7 +86,6 @@ const (
     TOKEN_ON
     TOKEN_THIS
     TOKEN_DISCARD
-    TOKEN_AT
     TOKEN_OF
     
     // Operators

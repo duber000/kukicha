@@ -283,7 +283,6 @@ PostfixExpression ::=
     PrimaryExpression {
         | "." IDENTIFIER
         | "(" [ ArgumentList ] ")"
-        | "at" Expression
         | "[" Expression "]"
         | "[" [ Expression ] ":" [ Expression ] "]"
     }
@@ -448,7 +447,7 @@ COMMENT ::= "#" { any character except NEWLINE } NEWLINE
 ```
 petiole      import      type        interface   func
 if          else        for         in          from
-to          through     at          of          and
+to          through     of          and
 or          onerr       not         return      go
 defer       make        list        map         channel
 send        receive     close       panic       recover
@@ -569,7 +568,7 @@ Kukicha supports negative indices for accessing elements from the end of a colle
 **Single element access:**
 ```kukicha
 # Source
-last := items at -1
+last := items[-1]
 secondLast := items[-2]
 
 # Generates Go
@@ -593,7 +592,6 @@ middle := items[1:len(items)-1]
 **How it works:**
 - The parser recognizes negative numbers as `UnaryExpression` with `-` operator
 - The code generator detects negative indices and transforms them to `len(collection) - N`
-- Both `at` keyword and bracket `[]` syntax support negative indices
 
 ### Pipe Operator
 

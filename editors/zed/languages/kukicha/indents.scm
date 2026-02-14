@@ -16,6 +16,8 @@
 (function_literal) @indent
 (arrow_lambda) @indent
 (go_statement) @indent
+(defer_statement) @indent
+(onerr_clause) @indent
 
 ; Block ends
 (block) @indent @end
