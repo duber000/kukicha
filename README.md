@@ -47,7 +47,7 @@ Windows uses `.zip` archives and `kukicha.exe`.
 ### Or Install With Go
 
 ```bash
-go install github.com/duber000/kukicha/cmd/kukicha@v0.0.1
+go install github.com/duber000/kukicha/cmd/kukicha@v0.0.2
 kukicha version
 ```
 
