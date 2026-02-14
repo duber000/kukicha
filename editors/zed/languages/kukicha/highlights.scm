@@ -118,7 +118,7 @@
 [":=" "=" "|>" "=>" "==" "!=" "<" ">" "<=" ">=" "+" "-" "*" "/" "%" "++" "--" "&&" "||" "!" "|"] @operator
 
 ; Keywords
-["petiole" "import" "as" "type" "interface" "var" "variable" "func" "function" "on" "return" "if" "else" "for" "in" "from" "to" "through" "switch" "when" "otherwise" "default" "go" "defer" "make" "list" "of" "map" "channel" "send" "receive" "close" "panic" "error" "empty" "discard" "many" "true" "false" "equals" "and" "or" "onerr" "not" "reference" "dereference" "nil" "recover" "break" "continue"] @keyword
+["petiole" "import" "as" "type" "interface" "var" "variable" "func" "function" "on" "return" "if" "else" "for" "in" "from" "to" "through" "switch" "when" "otherwise" "default" "go" "defer" "make" "list" "of" "map" "channel" "send" "receive" "close" "panic" "error" "empty" "discard" "many" "true" "false" "equals" "and" "or" "onerr" "explain" "not" "reference" "dereference" "nil" "recover" "break" "continue"] @keyword
 
 ; Control flow keywords (optional more specific highlighting)
 ["if" "else" "for" "switch" "when" "otherwise" "default" "return" "break" "continue" "go" "defer" "onerr"] @keyword.control

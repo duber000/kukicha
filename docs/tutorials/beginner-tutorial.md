@@ -622,6 +622,7 @@ The `onerr` goes right at the end of the line that might fail. You can:
 - Provide a fallback value: `onerr ""`, `onerr 0`, `onerr empty`
 - Stop the program: `onerr panic "message"`
 - Return from the function: `onerr return`
+- Wrap error with a hint: `onerr explain "hint message"` or `onerr "default" explain "hint message"`
 - Run a block of code:
 
 ```kukicha

@@ -40,14 +40,14 @@ import "stdlib/files"
 import "stdlib/json"
 
 function SaveLinks(links map of string to Link, filename string) error
-    data := links |> json.Marshal() onerr return error "{error}"
-    files.Write(filename, data) onerr return error "{error}"
+    data := links |> json.Marshal() onerr explain "failed to serialize links"
+    files.Write(filename, data) onerr explain "failed to write links file"
     return empty
 
 function LoadLinks(filename string) (map of string to Link, error)
-    data := files.Read(filename) onerr return map of string to Link{}, error "{error}"
+    data := files.Read(filename) onerr explain "failed to read links file"
     links := map of string to Link{}
-    data |> json.Unmarshal(_, reference of links) onerr return map of string to Link{}, error "{error}"
+    data |> json.Unmarshal(_, reference of links) onerr explain "failed to parse links JSON"
     return links, empty
 ```
 
@@ -273,12 +273,12 @@ function GetAllLinks on d Database() (list of Link, error)
 # IncrementClicks adds 1 to the click counter (called on every redirect)
 function IncrementClicks on d Database(code string) error
     "UPDATE links SET clicks = clicks + 1 WHERE code = ?"
-        |> d.db.Exec(code) onerr return error "{error}"
+        |> d.db.Exec(code) onerr explain "failed to increment clicks"
     return empty
 
 # DeleteLink removes a link by its code
 function DeleteLink on d Database(code string) error
-    "DELETE FROM links WHERE code = ?" |> d.db.Exec(code) onerr return error "{error}"
+    "DELETE FROM links WHERE code = ?" |> d.db.Exec(code) onerr explain "failed to delete link"
     return empty
 ```
 
@@ -538,7 +538,7 @@ function NewServer(config string) (reference Server, error)
 
 ```kukicha
 function DoWork() error
-    resource := Acquire() onerr return error "{error}"
+    resource := Acquire() onerr explain "failed to acquire resource"
     defer resource.Close()  # Guaranteed to run when function exits
 
     # Do work...
@@ -594,9 +594,9 @@ function main()
 import "stdlib/validate"
 
 function ValidateShortenRequest(url string) error
-    url |> validate.NotEmpty() onerr return error "URL is required"
-    url |> validate.URL() onerr return error "Invalid URL"
-    url |> validate.MaxLength(2048) onerr return error "URL too long"
+    url |> validate.NotEmpty() onerr explain "URL is required"
+    url |> validate.URL() onerr explain "Invalid URL format"
+    url |> validate.MaxLength(2048) onerr explain "URL exceeds maximum length of 2048 characters"
     return empty
 ```
 
@@ -808,6 +808,8 @@ Here's a quick reference for translating between Kukicha and Go:
 | `for item in list` | `for _, item := range list` |
 | `function Name on x Type` | `func (x Type) Name()` |
 | `result onerr default` | `if err != nil { ... }` |
+| `result onerr explain "hint"` | `if err != nil { return ..., fmt.Errorf("hint: %w", err) }` |
+| `result onerr 0 explain "hint"` | `if err != nil { result = 0; err = fmt.Errorf("hint: %w", err) }` |
 | `a \|> f(b)` | `f(a, b)` |
 | `a \|> f(b, _)` | `f(b, a)` (placeholder) |
 | `(r Repo) => r.Stars > 100` | `func(r Repo) bool { return r.Stars > 100 }` |

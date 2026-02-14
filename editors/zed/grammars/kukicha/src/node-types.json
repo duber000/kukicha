@@ -1495,6 +1495,16 @@
           }
         ]
       },
+      "explain": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "interpreted_string_literal",
+            "named": true
+          }
+        ]
+      },
       "handler": {
         "multiple": false,
         "required": false,
@@ -2746,6 +2756,10 @@
   {
     "type": "escape_sequence",
     "named": true
+  },
+  {
+    "type": "explain",
+    "named": false
   },
   {
     "type": "false",

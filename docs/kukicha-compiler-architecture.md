@@ -1257,6 +1257,31 @@ if err_1 := json.MarshalWrite(w, todo); err_1 != nil {
 - `ReturnExpr` allows returning from the parent function directly from an `onerr` handler, supporting multiple return values: `onerr return empty, error "failed"`
 - Pipe expressions are fully resolved before the onerr clause — no restructuring needed
 
+#### Pattern 6: Explain (Error Wrapping)
+```kukicha
+data := fetchData() onerr explain "failed to fetch data"
+```
+Generates:
+```go
+data, err_1 := fetchData()
+if err_1 != nil {
+    return ..., fmt.Errorf("failed to fetch data: %w", err_1)
+}
+```
+
+#### Pattern 7: Explain with Handler
+```kukicha
+port := getPort() onerr 0 explain "PORT must be set"
+```
+Generates:
+```go
+port, err_1 := getPort()
+if err_1 != nil {
+    port = 0
+    err_1 = fmt.Errorf("PORT must be set: %w", err_1)
+}
+```
+
 
 ---
 

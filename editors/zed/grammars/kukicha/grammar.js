@@ -421,16 +421,34 @@ module.exports = grammar({
     continue_statement: $ => seq('continue', $._newline),
 
     // OnErr clause
+    // Forms:
+    //   onerr handler               — handler only
+    //   onerr handler explain "hint" — handler with explain
+    //   onerr explain "hint"       — standalone explain (nil handler, implies return)
+    //   onerr NEWLINE INDENT ...   — block form
     onerr_clause: $ => prec(5, seq(
       'onerr',
       choice(
-        field('handler', choice(
-          $.panic_expression,
-          $.return_expression,
-          'discard',
-          $._expression,
-        )),
+        // Block form: onerr NEWLINE INDENT ... DEDENT
         seq($._newline, field('body', $.block)),
+        // Standalone explain: onerr explain "hint"
+        seq(
+          'explain',
+          field('explain', $.interpreted_string_literal),
+        ),
+        // Handler form (with optional explain)
+        seq(
+          field('handler', choice(
+            $.panic_expression,
+            $.return_expression,
+            'discard',
+            $._expression,
+          )),
+          optional(seq(
+            'explain',
+            field('explain', $.interpreted_string_literal),
+          )),
+        ),
       ),
     )),
 

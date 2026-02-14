@@ -1884,31 +1884,6 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "FIELD",
-                "name": "handler",
-                "content": {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "panic_expression"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "return_expression"
-                    },
-                    {
-                      "type": "STRING",
-                      "value": "discard"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "_expression"
-                    }
-                  ]
-                }
-              },
-              {
                 "type": "SEQ",
                 "members": [
                   {
@@ -1922,6 +1897,78 @@
                       "type": "SYMBOL",
                       "name": "block"
                     }
+                  }
+                ]
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "explain"
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "explain",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "interpreted_string_literal"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "FIELD",
+                    "name": "handler",
+                    "content": {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "panic_expression"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "return_expression"
+                        },
+                        {
+                          "type": "STRING",
+                          "value": "discard"
+                        },
+                        {
+                          "type": "SYMBOL",
+                          "name": "_expression"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "STRING",
+                            "value": "explain"
+                          },
+                          {
+                            "type": "FIELD",
+                            "name": "explain",
+                            "content": {
+                              "type": "SYMBOL",
+                              "name": "interpreted_string_literal"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
                   }
                 ]
               }

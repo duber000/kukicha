@@ -230,12 +230,15 @@ SendStatement ::= "send" Expression "," Expression NEWLINE
 
 ExpressionStatement ::= Expression [ OnErrClause ] StatementTerminator
 
-OnErrClause ::= "onerr" ( Expression | NEWLINE INDENT StatementList DEDENT )
+OnErrClause ::= "onerr" ( Expression | NEWLINE INDENT StatementList DEDENT ) [ "explain" STRING ]
     # Single expression: onerr panic "failed"
     # Block form:
     #   onerr
     #       log.Printf("Error: {err}")
     #       return
+    # With explain hint:
+    #   onerr explain "hint message"           # Standalone: wraps error, returns
+    #   onerr "default" explain "hint message" # With handler: wraps error, then runs handler
 
 SimpleStatement ::=
     | IdentifierList ":=" ExpressionList [ OnErrClause ]

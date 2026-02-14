@@ -256,6 +256,19 @@ func LoadConfig() Config, error
     # ...
 ```
 
+### onerr explain (error wrapping with hint)
+```kukicha
+# Standalone explain - wraps error and returns it
+func FetchUser(id int64) User, error
+    data := db.Query("SELECT * FROM users WHERE id = ?", id) onerr explain "database query failed"
+    # ...
+
+# Explain with handler - wraps error before running handler
+func GetConfig() int
+    port := os.Getenv("PORT") onerr 0 explain "PORT must be set"
+    return port
+```
+
 ## String Interpolation Gotchas
 
 ### Escaping Braces

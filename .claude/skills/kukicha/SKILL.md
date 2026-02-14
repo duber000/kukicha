@@ -80,6 +80,10 @@ data := fetchData() onerr return empty, error "{error}"
 
 # Discard error (use sparingly)
 result := riskyOp() onerr discard
+
+# Explain syntax - wrap error with hint message
+data := fetchData() onerr explain "failed to fetch data"  # Standalone: returns wrapped error
+data := fetchData() onerr 0 explain "fetch failed"        # With handler: wraps error, then runs handler
 ```
 
 ### Pipe Operator
@@ -325,6 +329,8 @@ evens := Filter(list of int{1, 2, 3, 4}, isEven)
 | `a \|> f(b, _)` | `f(b, a)` (placeholder) |
 | `x := f() onerr "default"` | `x, err := f(); if err != nil { x = "default" }` |
 | `x := f() onerr discard` | `x, _ := f()` |
+| `x := f() onerr explain "hint"` | `x, err := f(); if err != nil { return ..., fmt.Errorf("hint: %w", err) }` |
+| `x := f() onerr 0 explain "hint"` | `x, err := f(); if err != nil { x = 0; err = fmt.Errorf("hint: %w", err) }` |
 | `break` | `break` |
 | `continue` | `continue` |
 | `for` (bare) | `for { ... }` |

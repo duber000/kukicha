@@ -62,6 +62,10 @@ data := fetchData() onerr panic "failed"              # Panic on error
 data := fetchData() onerr return empty, error "{error}" # Propagate error
 port := getPort() onerr 8080                          # Default value
 _ := riskyOp() onerr discard                          # Ignore error
+
+# Explain syntax - wrap error with hint message
+data := fetchData() onerr explain "failed to fetch data"  # Standalone: returns wrapped error
+data := fetchData() onerr 0 explain "fetch failed"        # With handler: wraps error, then runs handler
 ```
 > **Note:** `error` always requires a message string. Use `error "{error}"` to re-wrap the implicit onerr error variable. Multi-statement error handling is supported via indented blocks following `onerr`.
 
