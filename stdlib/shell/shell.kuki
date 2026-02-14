@@ -25,6 +25,17 @@ type Result
 
 # Builder Pattern Functions
 
+# Output runs the command and returns the stdout as a string
+# Returns an error if the command fails
+# Example: out := shell.Output("git", "status")
+func Output(name string, many args string) (string, error)
+    cmd := New(name, many args)
+    result := Execute(cmd)
+    if not Success(result)
+        errStr := GetError(result) as string
+        return "", error "{errStr}"
+    return GetOutput(result) as string, empty
+
 # New creates a new Command builder
 # Example: cmd := shell.New("git", "status")
 func New(name string, many args string) Command

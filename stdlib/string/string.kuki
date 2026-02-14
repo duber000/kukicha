@@ -113,6 +113,22 @@ func ReplaceAll(s string, old string, new string) string
 func Repeat(s string, count int) string
     return strings.Repeat(s, count)
 
+# PadRight pads the string on the right with the specified character to the given width
+# If the string is already longer than width, it returns the original string
+func PadRight(s string, width int, padChar string = " ") string
+    length := len(s)
+    if length >= width
+        return s
+    return s + strings.Repeat(padChar, width - length)
+
+# PadLeft pads the string on the left with the specified character to the given width
+# If the string is already longer than width, it returns the original string
+func PadLeft(s string, width int, padChar string = " ") string
+    length := len(s)
+    if length >= width
+        return s
+    return strings.Repeat(padChar, width - length) + s
+
 # Builder Functions (for efficient string construction)
 
 # Builder provides an efficient way to build strings incrementally

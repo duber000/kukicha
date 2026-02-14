@@ -9,6 +9,7 @@ package shell
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -28,6 +29,16 @@ type Result struct {
 	stderr   []byte
 	exitCode int
 	err      error
+}
+
+func Output(name string, args ...string) (string, error) {
+	cmd := New(name, args...)
+	result := Execute(cmd)
+	if !Success(result) {
+		errStr := string(GetError(result))
+		return "", errors.New(fmt.Sprintf("%v", errStr))
+	}
+	return string(GetOutput(result)), nil
 }
 
 func New(name string, args ...string) Command {

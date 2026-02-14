@@ -1141,7 +1141,7 @@ func GetResponseText(resp Response) string
 # Returns all items with type "function_call"
 # Example: calls := llm.GetFunctionCalls(resp)
 func GetFunctionCalls(resp Response) list of OutputItem
-    calls := empty list of OutputItem
+    calls := list of OutputItem{}
     for _, item in resp.Output
         if item.Type == "function_call"
             calls = append(calls, item)
@@ -1779,7 +1779,7 @@ func GetThinking(resp AnthropicResponse) string
 # Returns all content blocks with type "tool_use"
 # Example: tools := llm.GetToolUses(resp)
 func GetToolUses(resp AnthropicResponse) list of ContentBlock
-    uses := empty list of ContentBlock
+    uses := list of ContentBlock{}
     for _, block in resp.Content
         if block.Type == "tool_use"
             uses = append(uses, block)

@@ -255,6 +255,7 @@ import "net/http"
 import "encoding/json/v2"
 import "strconv"
 import "stdlib/string"
+import "stdlib/maps"
 
 # --- Data Types ---
 
@@ -399,8 +400,7 @@ function handleLinkDetail on store reference LinkStore(response http.ResponseWri
             store.sendJSON(response, link)
 
         when "DELETE"
-            _, exists := store.links[code]
-            if not exists
+            if not maps.Contains(store.links, code)
                 store.sendError(response, 404, "Link not found")
                 return
             delete(store.links, code)

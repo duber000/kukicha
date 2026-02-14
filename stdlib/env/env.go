@@ -121,7 +121,7 @@ func GetFloatOr(key string, defaultValue float64) (float64, error) {
 func GetList(key string, separator string) ([]string, error) {
 	value := os.Getenv(key)
 	if value == "" {
-		return []string{}, errors.New(fmt.Sprintf("environment variable %v is not set", key))
+		return nil, errors.New(fmt.Sprintf("environment variable %v is not set", key))
 	}
 	return splitAndTrim(value, separator), nil
 }

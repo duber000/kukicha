@@ -131,8 +131,8 @@ type Client struct {
 
 func New(model string) Client {
 	c := Client{}
-	c.messages = []Message{}
-	c.tools = []Tool{}
+	c.messages = nil
+	c.tools = nil
 	c.temperature = 0.000000
 	c.maxTokens = 0
 	c.topP = 0.000000
@@ -317,7 +317,7 @@ func GetContent(comp Completion) string {
 
 func GetToolCalls(comp Completion) []ToolCall {
 	if len(comp.Choices) == 0 {
-		return []ToolCall{}
+		return nil
 	}
 	return comp.Choices[0].Message.ToolCalls
 }
@@ -678,8 +678,8 @@ type ResponseClient struct {
 
 func NewResponse(model string) ResponseClient {
 	c := ResponseClient{}
-	c.input = []InputItem{}
-	c.tools = []Tool{}
+	c.input = nil
+	c.tools = nil
 	c.temperature = 0.000000
 	c.topP = 0.000000
 	c.maxOutputTokens = 0
@@ -704,7 +704,7 @@ func NewResponse(model string) ResponseClient {
 	c.eventHandler = nil
 	c.toolChoice = nil
 	c.textFormat = nil
-	c.metadata = map[string]string{}
+	c.metadata = nil
 	return c
 }
 
@@ -1288,13 +1288,13 @@ func NewMessages(model string) MessagesClient {
 	c.apiKey = ""
 	c.apiVersion = "2023-06-01"
 	c.system = ""
-	c.messages = []AnthropicMessage{}
+	c.messages = nil
 	c.maxTokens = 1024
 	c.temperature = 0.000000
 	c.topP = 0.000000
 	c.topK = 0
-	c.stopSequences = []string{}
-	c.tools = []AnthropicTool{}
+	c.stopSequences = nil
+	c.tools = nil
 	c.toolChoice = nil
 	c.metadata = nil
 	c.thinking = nil

@@ -198,7 +198,9 @@ function Summary on repo Repo(index int) string
     lang := repo.Language
     if lang equals ""
         lang = "n/a"
-    return "  {index}. {repo.Name}  ⭐ {repo.Stars}  {lang}  {repo.Description}"
+    name := repo.Name |> string.PadRight(30, " ")
+    lang = lang |> string.PadRight(12, " ")
+    return "  {index}. {name}  ⭐ {repo.Stars}  {lang}  {repo.Description}"
 ```
 
 **Reading this method:**
@@ -354,17 +356,16 @@ Think of it like a shared document: without `reference`, you'd get a photocopy �
 
 Now let's put it all together into a working application!
 
-> **Note:** The final program imports `bufio` and `os` only for reading console input. Everything else uses Kukicha's standard library.
+> **Note:** The final program uses `stdlib/input` for reading console input. This replaces the `bufio`/`os` boilerplate you'd need in plain Go.
 
 Replace the contents of `explorer.kuki` with the complete program:
 
 ```kukicha
-import "bufio"
-import "os"
 import "stdlib/fetch"
 import "stdlib/json"
 import "stdlib/string"
 import "stdlib/slice"
+import "stdlib/input"
 import "strconv"
 
 # --- Type Definitions ---
@@ -387,7 +388,9 @@ function Summary on repo Repo(index int) string
     lang := repo.Language
     if lang equals ""
         lang = "n/a"
-    return "  {index}. {repo.Name}  ⭐ {repo.Stars}  {lang}  {repo.Description}"
+    name := repo.Name |> string.PadRight(30, " ")
+    lang = lang |> string.PadRight(12, " ")
+    return "  {index}. {name}  ⭐ {repo.Stars}  {lang}  {repo.Description}"
 
 # --- Data Fetching ---
 
@@ -476,22 +479,16 @@ function main()
     ex.Fetch("golang")
     print("")
 
-    # Create a reader for user input
-    reader := bufio.NewReader(os.Stdin)
-
     # Main loop
     for
-        print("> ")
-
         # Read user input — default to empty string on error
-        input := reader.ReadString('\n') onerr ""
-        input = input |> string.TrimSpace()
+        line := input.ReadLine("> ") onerr ""
 
-        if input equals ""
+        if line equals ""
             continue
 
         # SplitN(" ", 2) splits into at most 2 parts
-        parts := input |> string.SplitN(" ", 2)
+        parts := line |> string.SplitN(" ", 2)
         command := parts[0] |> string.ToLower()
 
         switch command
@@ -708,10 +705,10 @@ They're especially useful with `slice.Filter`, `slice.Map`, and other functional
 ### `onerr` — Graceful Error Handling
 
 ```kukicha
-input := reader.ReadString('\n') onerr ""
+line := input.ReadLine("> ") onerr ""
 ```
 
-Some operations can fail — reading input might hit an error if the terminal closes. The **`onerr`** clause says "if this fails, use this value instead." Here, if `ReadString` fails, `input` gets set to an empty string.
+Some operations can fail — reading input might hit an error if the terminal closes. The **`onerr`** clause says "if this fails, use this value instead." Here, if `ReadLine` fails, `line` gets set to an empty string.
 
 You can use `onerr` with different fallback strategies:
 - `onerr ""` or `onerr 0` — use a default value

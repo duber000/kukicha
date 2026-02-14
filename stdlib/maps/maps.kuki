@@ -1,0 +1,27 @@
+# Kukicha Standard Library - Map Operations
+# Generic map utilities
+
+petiole maps
+
+# Keys returns a list of all keys in the map
+# The order of keys is random
+func Keys(m map of any to any) list of any
+    keys := make(list of any, 0, len(m))
+    for k in m
+        keys = append(keys, k)
+    return keys
+
+# Values returns a list of all values in the map
+# The order corresponds to the iteration order of the map (random)
+func Values(m map of any to any) list of any
+    values := make(list of any, 0, len(m))
+    for _, v in m
+        values = append(values, v)
+    return values
+
+# Contains checks if a key exists in the map
+func Contains(m map of any to any, key any) bool
+    for k in m
+        if k equals key
+            return true
+    return false

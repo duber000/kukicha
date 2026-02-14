@@ -96,6 +96,22 @@ func Repeat(s string, count int) string {
 	return strings.Repeat(s, count)
 }
 
+func PadRight(s string, width int, padChar string) string {
+	length := len(s)
+	if length >= width {
+		return s
+	}
+	return (s + strings.Repeat(padChar, (width-length)))
+}
+
+func PadLeft(s string, width int, padChar string) string {
+	length := len(s)
+	if length >= width {
+		return s
+	}
+	return (strings.Repeat(padChar, (width-length)) + s)
+}
+
 func EqualFold(s string, t string) bool {
 	return strings.EqualFold(s, t)
 }

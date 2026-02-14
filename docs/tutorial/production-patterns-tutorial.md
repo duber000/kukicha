@@ -120,19 +120,10 @@ Instead of using a `LinkStore` with methods, we encapsulate all server state in 
 Now let's write methods that use locking. We'll also add random code generation:
 
 ```kukicha
-import "math/rand/v2"
-
-variable codeChars = "abcdefghijklmnopqrstuvwxyz0123456789"
-
-# generateCode creates a random 6-character code
-function generateCode() string
-    code := ""
-    for i := 0 to 6
-        code = code + string(codeChars[rand.IntN(len(codeChars))])
-    return code
+import "stdlib/random"
 ```
 
-Random codes solve the "guessable" problem from the previous tutorial. Codes like `"x7km2p"` are much harder to guess than `"1"`, `"2"`, `"3"`.
+Random codes solve the "guessable" problem from the previous tutorial. Codes like `"x7km2p"` are much harder to guess than `"1"`, `"2"`, `"3"`. The `random.String(6)` call from `stdlib/random` generates a 6-character alphanumeric code — no boilerplate required.
 
 ```kukicha
 # CreateLink generates a random code, stores the link, and returns it
@@ -141,12 +132,12 @@ function CreateLink on s reference Server(url string) (Link, error)
     defer s.mu.Unlock()      # Unlock when done (even if there's an error)
 
     # Generate a unique code (retry if collision)
-    code := generateCode()
+    code := random.String(6)
     for i := 0 to 10
         _, exists := s.db.GetLink(code) onerr empty
         if not exists
             break
-        code = generateCode()
+        code = random.String(6)
 
     link, err := s.db.InsertLink(code, url)
     if err not equals empty
@@ -303,7 +294,6 @@ import "fmt"
 import "log"
 import "net/http"
 import "sync"
-import "math/rand/v2"
 import "database/sql"
 import "encoding/json/v2"
 
@@ -313,6 +303,7 @@ import "stdlib/validate"
 import "stdlib/http" as httphelper
 import "stdlib/must"
 import "stdlib/env"
+import "stdlib/random"
 
 # Third-party
 import _ "github.com/mattn/go-sqlite3"
@@ -341,16 +332,6 @@ type ShortenResponse
 
 type ErrorResponse
     err string json:"error"
-
-# --- Code Generation ---
-
-variable codeChars = "abcdefghijklmnopqrstuvwxyz0123456789"
-
-function generateCode() string
-    code := ""
-    for i := 0 to 6
-        code = code + string(codeChars[rand.IntN(len(codeChars))])
-    return code
 
 # --- Server Constructor ---
 
@@ -390,13 +371,13 @@ function handleShorten on s reference Server(w http.ResponseWriter, r reference 
 
     # Create the link
     s.mu.Lock()
-    code := generateCode()
+    code := random.String(6)
     # Retry on collision (unlikely with 6 random chars, but be safe)
     for i := 0 to 10
         _, getErr := s.db.GetLink(code)
         if getErr not equals empty
             break
-        code = generateCode()
+        code = random.String(6)
     link, createErr := s.db.InsertLink(code, input.url)
     s.mu.Unlock()
 

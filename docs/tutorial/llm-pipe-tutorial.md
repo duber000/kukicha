@@ -43,8 +43,7 @@ import "stdlib/string"
 
 function main()
     # Get the staged diff from git
-    result := shell.New("git", "diff", "--staged") |> shell.Execute()
-    diff := string(shell.GetOutput(result))
+    diff := shell.Output("git", "diff", "--staged") onerr ""
 
     if diff |> string.TrimSpace() equals ""
         print("No staged changes. Run 'git add' first.")
@@ -135,10 +134,7 @@ import "stdlib/string"
 
 function main()
     # Grab recent logs (swap the command for your log source)
-    result := shell.New("journalctl", "--no-pager", "-n", "50", "--output", "short-iso")
-        |> shell.Execute()
-
-    logs := string(shell.GetOutput(result))
+    logs := shell.Output("journalctl", "--no-pager", "-n", "50", "--output", "short-iso") onerr ""
 
     if logs |> string.TrimSpace() equals ""
         print("No log entries found.")
@@ -185,16 +181,14 @@ import "stdlib/datetime"
 
 function main()
     # Get the diff between this branch and main
-    result := shell.New("git", "diff", "main...HEAD") |> shell.Execute()
-    diff := string(shell.GetOutput(result))
+    diff := shell.Output("git", "diff", "main...HEAD") onerr ""
 
     if diff |> string.TrimSpace() equals ""
         print("No changes compared to main.")
         return
 
     # Get commit messages for context
-    logResult := shell.New("git", "log", "main..HEAD", "--oneline") |> shell.Execute()
-    commits := string(shell.GetOutput(logResult))
+    commits := shell.Output("git", "log", "main..HEAD", "--oneline") onerr ""
 
     # Build the review prompt
     prompt := "## Commits\n{commits}\n\n## Diff\n{diff}"

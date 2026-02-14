@@ -1,0 +1,17 @@
+# Kukicha Standard Library - Random Generation
+
+petiole random
+
+import "math/rand"
+
+# String returns a random string of the specified length using alphanumeric characters
+func String(length int) string
+    charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    b := make(list of byte, length)
+    for i from 0 to length
+        b[i] = charset[rand.Intn(len(charset))]
+    return b as string
+
+# Alphanumeric is an alias for String
+func Alphanumeric(length int) string
+    return String(length)
