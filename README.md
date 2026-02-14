@@ -33,7 +33,7 @@ func main()
 Pick your OS/arch from the GitHub releases, download, and run:
 
 ```bash
-VERSION=v0.0.1
+VERSION=v0.0.2
 OS=linux
 ARCH=amd64
 curl -L -o kukicha.tar.gz \
@@ -152,7 +152,7 @@ func main()
     # Pipe a git diff directly into an LLM for commit message generation
     diff := shell.Output("git", "diff", "--staged") onerr return
 
-    message := llm.New("gpt-4o-mini")
+    message := llm.New("gpt-5-nano")
         |> llm.System("Write a concise git commit message for this diff.")
         |> llm.Ask(diff)
         onerr panic "AI Error: {error}"
@@ -206,7 +206,7 @@ See [Contributing Guide](docs/contributing.md) for development setup, tests, and
 
 ## Status
 
-**Version:** 0.0.1
+**Version:** 0.0.2
 **Status:** Ready for testing
 **Go:** 1.25+ required
 
