@@ -3,6 +3,7 @@ package a2a
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/a2aproject/a2a-go/a2a"
@@ -39,6 +40,22 @@ func Discover(url string) (Agent, error) {
 		return Agent{}, fmt.Errorf("a2a discover: %w", err)
 	}
 	client, err := a2aclient.NewFromCard(ctx, card)
+	if err != nil {
+		return Agent{}, fmt.Errorf("a2a client: %w", err)
+	}
+	return Agent{Card: card, Client: client}, nil
+}
+
+// DiscoverGuarded resolves an agent card and creates a client using a custom HTTP client.
+// Use with netguard.HTTPClient() to restrict which hosts the A2A client can reach.
+func DiscoverGuarded(url string, httpClient *http.Client) (Agent, error) {
+	ctx := context.Background()
+	resolver := agentcard.NewResolver(httpClient)
+	card, err := resolver.Resolve(ctx, url)
+	if err != nil {
+		return Agent{}, fmt.Errorf("a2a discover: %w", err)
+	}
+	client, err := a2aclient.NewFromCard(ctx, card, a2aclient.WithJSONRPCTransport(httpClient))
 	if err != nil {
 		return Agent{}, fmt.Errorf("a2a client: %w", err)
 	}

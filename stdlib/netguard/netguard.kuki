@@ -1,0 +1,22 @@
+# Kukicha Standard Library - NetGuard (Network Restriction)
+# Controls which hosts/IPs outbound connections can reach,
+# preventing SSRF, DNS rebinding, and other network-level attacks.
+#
+# Examples:
+#   # Block all private/reserved IPs (SSRF protection)
+#   guard := netguard.NewSSRFGuard()
+#   resp, err := fetch.New(url)
+#       |> fetch.Transport(netguard.HTTPTransport(guard))
+#       |> fetch.Do()
+#
+#   # Allow only specific CIDRs
+#   guard, err := netguard.NewAllow(["93.184.216.0/24"])
+
+petiole netguard
+
+import "net"
+
+type Guard
+    networks list of reference net.IPNet
+    blockPrivate bool
+    mode string

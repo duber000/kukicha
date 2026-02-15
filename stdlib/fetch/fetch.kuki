@@ -22,6 +22,7 @@ import "io"
 import "bytes"
 import "fmt"
 import "stdlib/json"
+import "stdlib/sandbox"
 
 # Request represents an HTTP request with builder pattern support
 type Request
@@ -30,6 +31,7 @@ type Request
     timeoutNs int64
     method string
     body any
+    transport reference http.Transport
 
 # New creates a new HTTP request builder for the given URL
 # Returns a Request that can be configured with Header(), Timeout(), etc.
@@ -69,11 +71,20 @@ func Body(req Request, data any) Request
     req.body = data
     return req
 
+# Transport sets a custom *http.Transport on the request for chaining
+# Use with netguard.HTTPTransport() for network-restricted requests
+# Example: req |> fetch.Transport(netguard.HTTPTransport(guard))
+func Transport(req Request, t reference http.Transport) Request
+    req.transport = t
+    return req
+
 # Do executes the configured HTTP request
 # Returns the HTTP response and any error that occurred
 # Example: resp, err := fetch.New(url) |> fetch.Header(...) |> fetch.Do()
 func Do(req Request) (reference http.Response, error)
     client := http.Client{}
+    if req.transport != empty
+        client.Transport = req.transport
     client.Timeout = time.Duration(req.timeoutNs)
 
     # Create HTTP request with optional body
@@ -299,3 +310,23 @@ func SessionPost(s Session, data any, url string) (reference http.Response, erro
     req = Method(req, "POST")
     req.body = data
     return SessionDo(s, req)
+
+# SessionTransport sets a custom *http.Transport on the session's client
+# Use with netguard.HTTPTransport() for network-restricted sessions
+# Example: session |> fetch.SessionTransport(netguard.HTTPTransport(guard))
+func SessionTransport(s Session, t reference http.Transport) Session
+    s.client.Transport = t
+    return s
+
+# ============================================================================
+# P4: Sandbox Integration
+# ============================================================================
+
+# DownloadTo saves a response body to a file within a sandbox
+# Example: fetch.Get(url) |> fetch.DownloadTo(box, "data.json")
+func DownloadTo(resp reference http.Response, box sandbox.Root, path string) error
+    defer resp.Body.Close()
+    bodyBytes, err := io.ReadAll(resp.Body)
+    if err != empty
+        return err
+    return sandbox.WriteString(box, bodyBytes as string, path)
