@@ -1,0 +1,29 @@
+# Kukicha Standard Library - A2A Client Wrapper
+
+petiole a2a
+
+# Task represents a simplified A2A task result
+type Task
+    ID string
+    ContextID string
+    State string
+    Text string
+    Artifacts list of Artifact
+
+# Artifact represents a named text artifact from a task
+type Artifact
+    Name string
+    Text string
+
+# StatusUpdate represents a streaming status callback payload
+type StatusUpdate
+    TaskID string
+    State string
+    Message string
+    Final bool
+
+# Skill represents an agent skill from its card
+type Skill
+    Name string
+    Description string
+    Examples list of string
