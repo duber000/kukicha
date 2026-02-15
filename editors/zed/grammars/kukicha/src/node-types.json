@@ -1500,7 +1500,7 @@
         "required": false,
         "types": [
           {
-            "type": "interpreted_string_literal",
+            "type": "plain_string_literal",
             "named": true
           }
         ]
@@ -1701,6 +1701,25 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "plain_string_literal",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "escape_sequence",
+          "named": true
+        },
+        {
+          "type": "plain_string_content",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -2892,6 +2911,10 @@
   {
     "type": "petiole",
     "named": false
+  },
+  {
+    "type": "plain_string_content",
+    "named": true
   },
   {
     "type": "receive",

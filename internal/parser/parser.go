@@ -1425,7 +1425,7 @@ func (p *Parser) parseOnErrClause() *ast.OnErrClause {
 	}
 
 	// Check for standalone "onerr explain" (no handler before explain)
-	if p.check(lexer.TOKEN_IDENTIFIER) && p.peekToken().Lexeme == "explain" {
+	if p.check(lexer.TOKEN_EXPLAIN) {
 		p.advance() // consume 'explain'
 		explainToken := p.advance()
 		if explainToken.Type != lexer.TOKEN_STRING {
@@ -1444,7 +1444,7 @@ func (p *Parser) parseOnErrClause() *ast.OnErrClause {
 
 	// Check for trailing "explain" after handler
 	clause := &ast.OnErrClause{Token: token, Handler: handler}
-	if p.check(lexer.TOKEN_IDENTIFIER) && p.peekToken().Lexeme == "explain" {
+	if p.check(lexer.TOKEN_EXPLAIN) {
 		p.advance() // consume 'explain'
 		explainToken := p.advance()
 		if explainToken.Type != lexer.TOKEN_STRING {

@@ -57,7 +57,7 @@ func (s *Server) getCompletions(doc *Document, pos lsp.Position) []lsp.Completio
 		"if", "else", "for", "in", "from", "to", "through",
 		"switch", "when", "otherwise", "default",
 		"return", "break", "continue", "defer", "go",
-		"true", "false", "empty", "nil", "make", "onerr", "explain",
+		"true", "false", "empty", "nil", "make", "onerr",
 		"and", "or", "not", "equals", "reference", "dereference",
 		"send", "receive", "many", "channel", "list", "map", "of", "as",
 		"variable", "var", "on", "close", "panic", "error", "discard",

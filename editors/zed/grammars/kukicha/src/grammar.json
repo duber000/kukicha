@@ -1912,7 +1912,7 @@
                     "name": "explain",
                     "content": {
                       "type": "SYMBOL",
-                      "name": "interpreted_string_literal"
+                      "name": "plain_string_literal"
                     }
                   }
                 ]
@@ -1960,7 +1960,7 @@
                             "name": "explain",
                             "content": {
                               "type": "SYMBOL",
-                              "name": "interpreted_string_literal"
+                              "name": "plain_string_literal"
                             }
                           }
                         ]
@@ -3577,6 +3577,46 @@
           "value": "`"
         }
       ]
+    },
+    "plain_string_literal": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "\""
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "plain_string_content"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "escape_sequence"
+              }
+            ]
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "\""
+        }
+      ]
+    },
+    "plain_string_content": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "[^\"\\\\]+"
+        }
+      }
     },
     "rune_literal": {
       "type": "SEQ",

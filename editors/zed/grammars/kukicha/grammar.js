@@ -434,7 +434,7 @@ module.exports = grammar({
         // Standalone explain: onerr explain "hint"
         seq(
           'explain',
-          field('explain', $.interpreted_string_literal),
+          field('explain', $.plain_string_literal),
         ),
         // Handler form (with optional explain)
         seq(
@@ -446,7 +446,7 @@ module.exports = grammar({
           )),
           optional(seq(
             'explain',
-            field('explain', $.interpreted_string_literal),
+            field('explain', $.plain_string_literal),
           )),
         ),
       ),
@@ -757,6 +757,19 @@ module.exports = grammar({
       token.immediate(prec(1, /[^`]*/)),
       '`',
     ),
+
+    // Plain string literal: double-quoted, no interpolation.
+    // Used for contexts where interpolation is not supported (e.g., onerr explain).
+    plain_string_literal: $ => seq(
+      '"',
+      repeat(choice(
+        $.plain_string_content,
+        $.escape_sequence,
+      )),
+      '"',
+    ),
+
+    plain_string_content: $ => token.immediate(prec(1, /[^"\\]+/)),
 
     rune_literal: $ => seq(
       "'",

@@ -82,6 +82,7 @@ const (
 	TOKEN_BIT_OR        // | (for Go flag combinations like os.O_APPEND | os.O_CREATE)
 	TOKEN_RUNE          // 'a' (character/rune literal)
 	TOKEN_ONERR         // onerr
+	TOKEN_EXPLAIN       // explain
 	TOKEN_NOT           // not
 	TOKEN_BANG          // !
 	TOKEN_PIPE          // |>
@@ -264,6 +265,8 @@ func (t TokenType) String() string {
 		return "RUNE"
 	case TOKEN_ONERR:
 		return "ONERR"
+	case TOKEN_EXPLAIN:
+		return "EXPLAIN"
 	case TOKEN_NOT:
 		return "NOT"
 	case TOKEN_BANG:
@@ -369,6 +372,7 @@ var keywords = map[string]TokenType{
 	"and":         TOKEN_AND,
 	"or":          TOKEN_OR,
 	"onerr":       TOKEN_ONERR,
+	"explain":     TOKEN_EXPLAIN,
 	"not":         TOKEN_NOT,
 	"skill":       TOKEN_SKILL,
 }

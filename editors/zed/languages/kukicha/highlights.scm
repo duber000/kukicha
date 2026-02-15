@@ -10,7 +10,9 @@
 ; String literals
 (interpreted_string_literal) @string
 (raw_string_literal) @string
+(plain_string_literal) @string
 (string_content) @string
+(plain_string_content) @string
 (escape_sequence) @string.escape
 
 ; String interpolation
