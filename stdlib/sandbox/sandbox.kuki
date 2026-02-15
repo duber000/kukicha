@@ -1,0 +1,13 @@
+# Kukicha Standard Library - Sandbox (os.Root Filesystem Sandboxing)
+# Confines file operations to a directory tree, preventing symlink escapes
+# and path traversal attacks. Wraps Go 1.24+ os.Root.
+
+petiole sandbox
+
+import "os"
+
+# Root wraps an os.Root to provide sandboxed file operations
+# All file access is confined to the directory used to create the Root
+type Root
+    root reference os.Root
+    path string
