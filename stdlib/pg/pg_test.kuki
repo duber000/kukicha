@@ -1,0 +1,34 @@
+# Tests for Kukicha Standard Library - PG Package
+# These tests validate the pg module's builder pattern and type construction.
+# Full integration tests require a running PostgreSQL instance.
+
+petiole pg_test
+
+import "testing"
+import "stdlib/pg"
+
+# TestNewConfig verifies the builder creates a Config with the URL
+func TestNewConfig(t reference testing.T)
+    cfg := pg.New("postgres://user:pass@localhost/testdb")
+    # Builder should not panic and should return a Config
+    # Further builder calls should chain
+    cfg = cfg |> pg.MaxConns(10) |> pg.MinConns(2)
+    # No assertion needed beyond successful construction
+
+# TestMaxConns verifies MaxConns chaining
+func TestMaxConns(t reference testing.T)
+    cfg := pg.New("postgres://localhost/test") |> pg.MaxConns(20)
+    # Should not panic
+    cfg = cfg |> pg.MinConns(5)
+
+# TestMaxConnLifetime verifies lifetime chaining
+func TestMaxConnLifetime(t reference testing.T)
+    cfg := pg.New("postgres://localhost/test") |> pg.MaxConnLifetime(3600000000000)
+    cfg = cfg |> pg.MaxConnIdleTime(600000000000)
+
+# TestRowsAffected verifies RowsAffected returns zero for a zero Result
+func TestRowsAffected(t reference testing.T)
+    r := pg.Result{}
+    count := pg.RowsAffected(r)
+    if count != 0
+        t.Errorf("Expected 0 rows affected, got {count}")

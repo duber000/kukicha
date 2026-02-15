@@ -1,0 +1,47 @@
+# Kukicha Standard Library - PG (PostgreSQL Client)
+# Provides a pipe-friendly wrapper around pgx/pgxpool for database access.
+#
+# Examples:
+#   # Simple connection
+#   pool := pg.Connect("postgres://user:pass@localhost/mydb") onerr panic "db: {error}"
+#   defer pg.ClosePool(pool)
+#
+#   # Builder pattern
+#   pool := pg.New("postgres://user:pass@localhost/mydb")
+#       |> pg.MaxConns(20)
+#       |> pg.MinConns(5)
+#       |> pg.Open()
+#       onerr panic "db: {error}"
+
+petiole pg
+
+import "github.com/jackc/pgx/v5/pgxpool"
+import "github.com/jackc/pgx/v5/pgconn"
+
+# Pool wraps a pgxpool.Pool for connection pooling
+type Pool
+    pool reference pgxpool.Pool
+
+# Row wraps a single-row query result for scanning
+type Row
+    scanFn any
+
+# Rows wraps a multi-row query result for iteration
+type Rows
+    rows any
+
+# Tx wraps a database transaction
+type Tx
+    tx any
+
+# Result wraps a command tag from INSERT/UPDATE/DELETE
+type Result
+    tag pgconn.CommandTag
+
+# Config is a builder for pool configuration
+type Config
+    url string
+    maxConns int32
+    minConns int32
+    maxConnLifetimeNs int64
+    maxConnIdleTimeNs int64

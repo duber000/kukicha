@@ -1,0 +1,28 @@
+# Kubernetes demo - list pods and find unhealthy ones across namespaces
+#
+# Prerequisites: a valid ~/.kube/config
+
+petiole main
+
+import "stdlib/kube"
+
+func main()
+    cluster := kube.Connect() onerr panic "k8s: {error}"
+
+    # List pods in default namespace
+    scoped := kube.Namespace(cluster, "default")
+    pods := kube.ListPods(scoped) onerr panic "{error}"
+
+    print("Pods in default namespace:")
+    for pod in kube.Pods(pods)
+        status := kube.PodStatus(pod)
+        ready := kube.PodReady(pod)
+        restarts := kube.PodRestarts(pod)
+        print("  {kube.PodName(pod)} - {status} (ready: {ready}, restarts: {restarts})")
+
+    # List deployments
+    deps := kube.ListDeployments(scoped) onerr panic "{error}"
+
+    print("\nDeployments:")
+    for dep in kube.Deployments(deps)
+        print("  {kube.DeploymentName(dep)} - {kube.DeploymentReady(dep)}/{kube.DeploymentReplicas(dep)} ready ({kube.DeploymentImage(dep)})")

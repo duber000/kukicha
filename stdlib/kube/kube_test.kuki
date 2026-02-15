@@ -1,0 +1,29 @@
+# Tests for Kukicha Standard Library - Kube Package
+# These tests validate the kube module's builder pattern and type construction.
+# Full integration tests require a running Kubernetes cluster.
+
+petiole kube_test
+
+import "testing"
+import "stdlib/kube"
+
+# TestNewConfig verifies the builder creates a Config
+func TestNewConfig(t reference testing.T)
+    cfg := kube.New()
+    # Builder should not panic and should return a Config
+    cfg = cfg |> kube.Kubeconfig("/tmp/test-kubeconfig")
+    cfg = cfg |> kube.Context("test-context")
+
+# TestInCluster verifies the InCluster builder method
+func TestInCluster(t reference testing.T)
+    cfg := kube.New() |> kube.InCluster()
+    # Should not panic - just sets the flag
+    _ = cfg
+
+# TestNamespace verifies Namespace scoping returns a new Cluster
+func TestNamespace(t reference testing.T)
+    # Create a zero-value cluster to test namespace scoping
+    c := kube.Cluster{}
+    scoped := kube.Namespace(c, "production")
+    # Should not panic - namespace is set on the copy
+    _ = scoped

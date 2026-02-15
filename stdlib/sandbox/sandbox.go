@@ -4,9 +4,7 @@
 
 package sandbox
 
-import (
-	"os"
-)
+import "os"
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:11
 type Root struct {

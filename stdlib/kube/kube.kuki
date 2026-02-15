@@ -1,0 +1,71 @@
+# Kukicha Standard Library - Kube (Kubernetes Client)
+# Provides a pipe-friendly wrapper around client-go for cluster management.
+#
+# Examples:
+#   # Simple connection (uses ~/.kube/config)
+#   cluster := kube.Connect() onerr panic "k8s: {error}"
+#
+#   # Builder pattern
+#   cluster := kube.New()
+#       |> kube.Kubeconfig("/path/to/config")
+#       |> kube.Context("production")
+#       |> kube.Open()
+#       onerr panic "k8s: {error}"
+#
+#   # List pods in a namespace
+#   pods := cluster |> kube.Namespace("default") |> kube.ListPods() onerr panic "{error}"
+#   for pod in kube.Pods(pods)
+#       print("{kube.PodName(pod)}: {kube.PodStatus(pod)}")
+
+petiole kube
+
+# Cluster wraps a Kubernetes clientset and namespace context
+type Cluster
+    client any
+    namespace string
+
+# Config is a builder for connection options
+type Config
+    kubeconfig string
+    context string
+    inCluster bool
+
+# PodList wraps a list of pods
+type PodList
+    items any
+
+# Pod wraps a single pod
+type Pod
+    pod any
+
+# DeploymentList wraps a list of deployments
+type DeploymentList
+    items any
+
+# Deployment wraps a single deployment
+type Deployment
+    dep any
+
+# ServiceList wraps a list of services
+type ServiceList
+    items any
+
+# Service wraps a single service
+type Service
+    svc any
+
+# NodeList wraps a list of nodes
+type NodeList
+    items any
+
+# Node wraps a single node
+type Node
+    node any
+
+# NamespaceList wraps a list of namespaces
+type NamespaceList
+    items any
+
+# NamespaceItem wraps a single namespace
+type NamespaceItem
+    ns any

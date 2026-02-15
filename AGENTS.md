@@ -206,60 +206,9 @@ Typical workflow for new syntax:
 
 ## Stdlib Packages
 
-| Package | Purpose |
-|---------|---------|
-| `stdlib/slice` | Filter, Map, GroupBy, GetOr, FirstOr, Find, Pop |
-| `stdlib/json` | jsonv2 wrapper (Marshal, Unmarshal, streaming) |
-| `stdlib/fetch` | HTTP client (Builder, Auth, Forms, Sessions) |
-| `stdlib/files` | Read, Write, Watch file operations |
-| `stdlib/shell` | Safe command execution |
-| `stdlib/cli` | CLI argument parsing |
-| `stdlib/concurrent` | Parallel, ParallelWithLimit |
-| `stdlib/validate` | Input validation (Email, URL, InRange, NotEmpty) |
-| `stdlib/must` | Panic-on-error helpers for startup (Env, EnvInt) |
-| `stdlib/env` | Typed env vars with onerr (Get, GetInt, GetBool) |
-| `stdlib/datetime` | Named formats, duration helpers (Format, Seconds) |
-| `stdlib/http` | HTTP helpers (JSON, JSONError, ReadJSON) |
-| `stdlib/iterator` | Functional iteration (Map, Filter, Reduce) |
-| `stdlib/must` | Initialization helpers (Env, Do, OkMsg) |
-| `stdlib/env` | Typed environment access (GetInt, GetBool) |
-| `stdlib/validate` | Input validation (Email, URL, InRange) |
-| `stdlib/result` | Result and Optional types |
-| `stdlib/retry` | Retry patterns (Partial implementation) |
-| `stdlib/datetime` | Named formats, durations (Seconds, Hours) |
-| `stdlib/string` | String utilities (Split, Trim, Join) |
-| `stdlib/parse` | CSV and YAML parsing |
-| `stdlib/template` | Text templating |
+See **[`stdlib/AGENTS.md`](stdlib/AGENTS.md)** for the full package reference, API details, and common usage patterns.
 
 Import with: `import "stdlib/slice"`
-
-### Common Patterns
-
-```kukicha
-# Validation (returns error for onerr)
-import "stdlib/validate"
-email |> validate.Email() onerr return error "{error}"
-age |> validate.InRange(18, 120) onerr return error "{error}"
-
-# Startup config (panics if missing/invalid)
-import "stdlib/must"
-apiKey := must.Env("API_KEY")
-port := must.EnvIntOr("PORT", 8080)
-
-# Runtime config (returns error for onerr)
-import "stdlib/env"
-debug := env.GetBoolOrDefault("DEBUG", false)
-
-# HTTP responses
-import "stdlib/http" as httphelper
-httphelper.JSON(w, data)
-httphelper.JSONNotFound(w, "User not found")
-
-# Time formatting
-import "stdlib/datetime"
-datetime.Format(t, "iso8601")  # Not "2006-01-02T15:04:05Z07:00"!
-timeout := datetime.Seconds(30)
-```
 
 ## More Documentation
 

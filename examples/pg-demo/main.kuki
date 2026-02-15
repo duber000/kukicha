@@ -1,0 +1,38 @@
+# PostgreSQL demo - shows connection pooling, queries, and transactions
+#
+# Prerequisites: a running PostgreSQL instance
+#   export DATABASE_URL="postgres://user:pass@localhost/mydb"
+
+petiole main
+
+import "stdlib/pg"
+import "stdlib/env"
+import "fmt"
+
+func main()
+    url := env.Get("DATABASE_URL") onerr panic "set DATABASE_URL"
+    pool := pg.Connect(url) onerr panic "db: {error}"
+    defer pg.ClosePool(pool)
+
+    # Simple query
+    rows := pg.Query(pool, "SELECT id, name FROM users WHERE active = $1", true) onerr panic "{error}"
+    defer pg.Close(rows)
+
+    for pg.Next(rows)
+        id := 0
+        name := ""
+        scanErr := pg.ScanRow(rows, reference of id, reference of name)
+        if scanErr != empty
+            continue
+        fmt.Printf("User %d: %s\n", id, name)
+
+    # Transaction example
+    tx := pg.Begin(pool) onerr panic "{error}"
+    pg.TxExec(tx, "UPDATE accounts SET balance = balance - $1 WHERE id = $2", 100, 1) onerr
+        pg.Rollback(tx)
+        panic "{error}"
+    pg.TxExec(tx, "UPDATE accounts SET balance = balance + $1 WHERE id = $2", 100, 2) onerr
+        pg.Rollback(tx)
+        panic "{error}"
+    pg.Commit(tx) onerr panic "{error}"
+    print("Transfer complete")
