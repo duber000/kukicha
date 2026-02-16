@@ -10,66 +10,69 @@ import (
 )
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:9
+type ToolHandler func(map[string]any) (any, error)
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:12
 type SchemaProperty struct {
 	Name        string
 	Type        string
 	Description string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:18
 func New(name string, version string) *mcp.Server {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:19
 	return mcp.NewServer(&mcp.Implementation{Name: name, Version: version}, nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:25
 func Serve(server *mcp.Server) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:26
 	return server.Run(context.Background(), &mcp.StdioTransport{})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:29
 func Prop(name string, typ string, description string) SchemaProperty {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:30
 	return SchemaProperty{Name: name, Type: typ, Description: description}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:33
 func Schema(props []SchemaProperty) map[string]any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:34
 	properties := make(map[string]any)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:35
 	for _, prop := range props {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:39
 		properties[prop.Name] = map[string]any{"type": prop.Type, "description": prop.Description}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:41
 	return map[string]any{"type": "object", "properties": properties}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:44
-func Required(schema any, names []string) any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:45
-	s, ok := schema.(map[string]any)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:46
-	if !ok {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:47
+func Required(schema any, names []string) any {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:48
+	s, ok := schema.(map[string]any)
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:49
+	if !ok {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:50
 		return schema
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:51
 	s["required"] = names
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:52
 	return s
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:55
 func TextResult(text string) any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:56
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: text}}}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:61
 func ErrorResult(msg string) any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:62
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: msg}}, IsError: true}
 }

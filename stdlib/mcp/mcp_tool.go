@@ -7,8 +7,6 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-type ToolHandler func(args map[string]any) (any, error)
-
 func Tool(server *mcp.Server, name, description string, schema any, handler ToolHandler) {
 	server.AddTool(&mcp.Tool{
 		Name:        name,

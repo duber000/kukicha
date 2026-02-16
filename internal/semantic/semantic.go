@@ -187,11 +187,17 @@ func (a *Analyzer) collectTypeDecl(decl *ast.TypeDecl) {
 		return
 	}
 
+	// Determine type kind based on alias vs struct
+	typeKind := TypeKindStruct
+	if decl.AliasType != nil {
+		typeKind = TypeKindFunction
+	}
+
 	// Add type to symbol table
 	symbol := &Symbol{
 		Name:     decl.Name.Value,
 		Kind:     SymbolType,
-		Type:     &TypeInfo{Kind: TypeKindStruct, Name: decl.Name.Value},
+		Type:     &TypeInfo{Kind: typeKind, Name: decl.Name.Value},
 		Defined:  decl.Name.Pos(),
 		Exported: isExported(decl.Name.Value),
 	}
@@ -290,6 +296,12 @@ func (a *Analyzer) analyzeDeclarations() {
 }
 
 func (a *Analyzer) analyzeTypeDecl(decl *ast.TypeDecl) {
+	// Type alias: validate the alias type annotation
+	if decl.AliasType != nil {
+		a.validateTypeAnnotation(decl.AliasType)
+		return
+	}
+
 	// Validate field types exist
 	for _, field := range decl.Fields {
 		if !isValidIdentifier(field.Name.Value) {

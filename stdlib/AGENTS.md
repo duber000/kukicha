@@ -149,6 +149,7 @@ Examples: `slice`, `string`, `validate`, `env`, `must`, `fetch`, `net`, `errors`
 
 ### Kukicha types + Go helper (types in .kuki, implementation in _helper.go)
 Used when wrapping complex Go libraries. The `.kuki` file defines types visible to Kukicha code, and the `_helper.go` provides the implementation in Go.
+Function type aliases (`type Handler func(string)`) are supported in `.kuki` files, enabling callback types for packages like `a2a` and `mcp`.
 Examples: `a2a`, `container`, `sandbox`, `pg`, `kube`
 
 ### Mixed (most logic in .kuki, thin Go helper for syscall-level ops)

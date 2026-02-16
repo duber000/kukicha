@@ -43,7 +43,9 @@ TopLevelDeclaration ::=
     | FunctionDeclaration
     | MethodDeclaration
 
-TypeDeclaration ::= "type" IDENTIFIER NEWLINE INDENT FieldList DEDENT
+TypeDeclaration ::=
+    | "type" IDENTIFIER NEWLINE INDENT FieldList DEDENT
+    | "type" IDENTIFIER FunctionType NEWLINE
 
 FieldList ::= Field { Field }
 

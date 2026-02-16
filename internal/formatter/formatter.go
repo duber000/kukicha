@@ -161,6 +161,13 @@ func (p *PrinterWithComments) printDeclarationWithComments(decl ast.Declaration)
 }
 
 func (p *PrinterWithComments) printTypeDeclWithComments(decl *ast.TypeDecl) {
+	// Type alias (e.g., type Handler func(string))
+	if decl.AliasType != nil {
+		p.writeLine(fmt.Sprintf("type %s %s", decl.Name.Value, p.typeAnnotationToString(decl.AliasType)))
+		p.printTrailingComment(decl)
+		return
+	}
+
 	p.writeLine(fmt.Sprintf("type %s", decl.Name.Value))
 	p.printTrailingComment(decl)
 	p.indentLevel++

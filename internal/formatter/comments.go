@@ -101,8 +101,10 @@ func collectDeclLines(decl ast.Declaration, lines map[int]bool) {
 			collectBlockLines(d.Body, lines)
 		}
 	case *ast.TypeDecl:
-		for _, field := range d.Fields {
-			lines[field.Name.Token.Line] = true
+		if d.AliasType == nil {
+			for _, field := range d.Fields {
+				lines[field.Name.Token.Line] = true
+			}
 		}
 	case *ast.InterfaceDecl:
 		for _, method := range d.Methods {
@@ -257,10 +259,12 @@ func attachCommentsToDecl(comments []Comment, idx *int, decl ast.Declaration, cm
 			attachCommentsToBlock(comments, idx, d.Body, cm)
 		}
 	case *ast.TypeDecl:
-		for _, field := range d.Fields {
-			fieldLine := field.Name.Token.Line
-			*idx = attachLeadingComments(comments, *idx, fieldLine, field.Name, cm)
-			*idx = attachTrailingComment(comments, *idx, fieldLine, field.Name, cm)
+		if d.AliasType == nil {
+			for _, field := range d.Fields {
+				fieldLine := field.Name.Token.Line
+				*idx = attachLeadingComments(comments, *idx, fieldLine, field.Name, cm)
+				*idx = attachTrailingComment(comments, *idx, fieldLine, field.Name, cm)
+			}
 		}
 	case *ast.InterfaceDecl:
 		for _, method := range d.Methods {

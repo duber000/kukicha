@@ -74,6 +74,69 @@ func TestTypeDeclaration(t *testing.T) {
 	}
 }
 
+func TestFunctionTypeAlias(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "basic func type alias",
+			input:    "type Handler func(string)\n",
+			expected: "type Handler func(string)",
+		},
+		{
+			name:     "func type alias with return",
+			input:    "type Transform func(string) string\n",
+			expected: "type Transform func(string) string",
+		},
+		{
+			name:     "func type alias with multiple returns",
+			input:    "type Callback func(string, int) (bool, error)\n",
+			expected: "type Callback func(string, int) (bool, error)",
+		},
+		{
+			name:     "func type alias no params",
+			input:    "type Factory func() error\n",
+			expected: "type Factory func() error",
+		},
+		{
+			name:     "func type alias with map param",
+			input:    "type ToolHandler func(map of string to any) (any, error)\n",
+			expected: "type ToolHandler func(map[string]any) (any, error)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := parser.New(tt.input, "test.kuki")
+			if err != nil {
+				t.Fatalf("parser error: %v", err)
+			}
+
+			program, parseErrors := p.Parse()
+			if len(parseErrors) > 0 {
+				t.Fatalf("parse errors: %v", parseErrors)
+			}
+
+			gen := New(program)
+			output, err := gen.Generate()
+			if err != nil {
+				t.Fatalf("codegen error: %v", err)
+			}
+
+			if !strings.Contains(output, tt.expected) {
+				t.Errorf("expected output to contain %q, got:\n%s", tt.expected, output)
+			}
+
+			// Ensure it's NOT a struct
+			if strings.Contains(output, "struct") {
+				t.Errorf("function type alias should not generate struct, got:\n%s", output)
+			}
+		})
+	}
+}
+
 func TestListType(t *testing.T) {
 	input := `func GetItems() list of int
     return [1, 2, 3]

@@ -78,6 +78,123 @@ func TestParseTypeDeclaration(t *testing.T) {
 	}
 }
 
+func TestParseFunctionTypeAlias(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		typeName   string
+		paramCount int
+		retCount   int
+	}{
+		{
+			name:       "basic func type",
+			input:      "type Handler func(string)\n",
+			typeName:   "Handler",
+			paramCount: 1,
+			retCount:   0,
+		},
+		{
+			name:       "func type with return",
+			input:      "type Transform func(string) string\n",
+			typeName:   "Transform",
+			paramCount: 1,
+			retCount:   1,
+		},
+		{
+			name:       "func type with multiple params and returns",
+			input:      "type Callback func(string, int) (bool, error)\n",
+			typeName:   "Callback",
+			paramCount: 2,
+			retCount:   2,
+		},
+		{
+			name:       "func type with no params",
+			input:      "type Factory func() error\n",
+			typeName:   "Factory",
+			paramCount: 0,
+			retCount:   1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := New(tt.input, "test.kuki")
+			if err != nil {
+				t.Fatalf("lexer error: %v", err)
+			}
+			program, errors := p.Parse()
+
+			if len(errors) > 0 {
+				t.Fatalf("parser errors: %v", errors)
+			}
+
+			if len(program.Declarations) != 1 {
+				t.Fatalf("expected 1 declaration, got %d", len(program.Declarations))
+			}
+
+			typeDecl, ok := program.Declarations[0].(*ast.TypeDecl)
+			if !ok {
+				t.Fatalf("expected TypeDecl, got %T", program.Declarations[0])
+			}
+
+			if typeDecl.Name.Value != tt.typeName {
+				t.Errorf("expected type name %q, got %q", tt.typeName, typeDecl.Name.Value)
+			}
+
+			if typeDecl.AliasType == nil {
+				t.Fatal("expected AliasType to be non-nil for function type alias")
+			}
+
+			funcType, ok := typeDecl.AliasType.(*ast.FunctionType)
+			if !ok {
+				t.Fatalf("expected FunctionType, got %T", typeDecl.AliasType)
+			}
+
+			if len(funcType.Parameters) != tt.paramCount {
+				t.Errorf("expected %d parameters, got %d", tt.paramCount, len(funcType.Parameters))
+			}
+
+			if len(funcType.Returns) != tt.retCount {
+				t.Errorf("expected %d return types, got %d", tt.retCount, len(funcType.Returns))
+			}
+
+			if typeDecl.Fields != nil {
+				t.Errorf("expected Fields to be nil for type alias, got %v", typeDecl.Fields)
+			}
+		})
+	}
+}
+
+func TestParseStructTypeStillWorks(t *testing.T) {
+	input := `type Person
+    Name string
+    Age int
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	typeDecl, ok := program.Declarations[0].(*ast.TypeDecl)
+	if !ok {
+		t.Fatalf("expected TypeDecl, got %T", program.Declarations[0])
+	}
+
+	if typeDecl.AliasType != nil {
+		t.Error("expected AliasType to be nil for struct type")
+	}
+
+	if len(typeDecl.Fields) != 2 {
+		t.Errorf("expected 2 fields, got %d", len(typeDecl.Fields))
+	}
+}
+
 func TestParseInterfaceDeclaration(t *testing.T) {
 	input := `interface Writer
     Write(data string) (int, error)

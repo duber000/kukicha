@@ -76,6 +76,10 @@ type Todo
     title string json:"title"       # Struct tags supported
     tags list of string
     meta map of string to string
+
+# Function type aliases
+type Handler func(string)
+type Transform func(int) (string, error)
 ```
 
 ### Collections

@@ -4,7 +4,37 @@
 
 package a2a
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:6
+import (
+	"context"
+	"fmt"
+	"github.com/a2aproject/a2a-go/a2a"
+	"github.com/a2aproject/a2a-go/a2aclient"
+	"github.com/a2aproject/a2a-go/a2aclient/agentcard"
+	"net/http"
+)
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:12
+type TextHandler func(string)
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:15
+type StatusHandler func(StatusUpdate)
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:18
+type Agent struct {
+	Card   *a2a.AgentCard
+	Client *a2aclient.Client
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:23
+type Request struct {
+	agent     Agent
+	text      string
+	contextID string
+	onText    TextHandler
+	onStatus  StatusHandler
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:31
 type Task struct {
 	ID        string
 	ContextID string
@@ -13,13 +43,13 @@ type Task struct {
 	Artifacts []Artifact
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:39
 type Artifact struct {
 	Name string
 	Text string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:44
 type StatusUpdate struct {
 	TaskID  string
 	State   string
@@ -27,9 +57,108 @@ type StatusUpdate struct {
 	Final   bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:51
 type Skill struct {
 	Name        string
 	Description string
 	Examples    []string
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:57
+func Discover(url string) (Agent, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:58
+	ctx := context.Background()
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:59
+	card, err_1 := agentcard.DefaultResolver.Resolve(ctx, url)
+	if err_1 != nil {
+		err_1 = fmt.Errorf("a2a discover: %w", err_1)
+		return *new(Agent), err_1
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:60
+	client, err_2 := a2aclient.NewFromCard(ctx, card)
+	if err_2 != nil {
+		err_2 = fmt.Errorf("a2a client: %w", err_2)
+		return *new(Agent), err_2
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:61
+	return Agent{Card: card, Client: client}, nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:64
+func DiscoverGuarded(url string, httpClient *http.Client) (Agent, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:65
+	ctx := context.Background()
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:66
+	resolver := agentcard.NewResolver(httpClient)
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:67
+	card, err_3 := resolver.Resolve(ctx, url)
+	if err_3 != nil {
+		err_3 = fmt.Errorf("a2a discover: %w", err_3)
+		return *new(Agent), err_3
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:68
+	client, err_4 := a2aclient.NewFromCard(ctx, card, a2aclient.WithJSONRPCTransport(httpClient))
+	if err_4 != nil {
+		err_4 = fmt.Errorf("a2a client: %w", err_4)
+		return *new(Agent), err_4
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:69
+	return Agent{Card: card, Client: client}, nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:72
+func New(agent Agent) Request {
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:73
+	return Request{agent: agent}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:76
+func Text(req Request, text string) Request {
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:77
+	req.text = text
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:78
+	return req
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:81
+func Context(req Request, id string) Request {
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:82
+	req.contextID = id
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:83
+	return req
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:86
+func OnText(req Request, handler TextHandler) Request {
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:87
+	req.onText = handler
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:88
+	return req
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:91
+func OnStatus(req Request, handler StatusHandler) Request {
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:92
+	req.onStatus = handler
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:93
+	return req
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:96
+func Close(agent Agent) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:97
+	return agent.Client.Destroy()
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:100
+func Skills(agent Agent) []Skill {
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:101
+	skills := make([]Skill, len(agent.Card.Skills))
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:102
+	for i, s := range agent.Card.Skills {
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:103
+		skills[i] = Skill{Name: s.Name, Description: s.Description, Examples: s.Examples}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:104
+	return skills
 }

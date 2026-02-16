@@ -5,6 +5,9 @@ petiole mcp
 import "context"
 import "github.com/modelcontextprotocol/go-sdk/mcp"
 
+# ToolHandler is a callback for handling MCP tool invocations.
+type ToolHandler func(map of string to any) (any, error)
+
 # SchemaProperty represents a property in a JSON schema
 type SchemaProperty
     Name string

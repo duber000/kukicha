@@ -111,6 +111,12 @@ function myHandler(response http.ResponseWriter, request reference http.Request)
         response |> fmt.Fprintln("You used something else!")
 ```
 
+> **💡 Naming handler signatures.** If you find yourself repeating the same function signature, you can give it a name with a **function type alias**:
+> ```kukicha
+> type HandlerFunc func(http.ResponseWriter, reference http.Request)
+> ```
+> This is exactly how Go's `http.HandlerFunc` is defined under the hood. You'll see this pattern more in the [Production Patterns Tutorial](production-patterns-tutorial.md).
+
 ---
 
 ## Step 3: Sending JSON Responses

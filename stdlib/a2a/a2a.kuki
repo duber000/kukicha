@@ -2,6 +2,31 @@
 
 petiole a2a
 
+import "context"
+import "net/http"
+import "github.com/a2aproject/a2a-go/a2a"
+import "github.com/a2aproject/a2a-go/a2aclient"
+import "github.com/a2aproject/a2a-go/a2aclient/agentcard"
+
+# TextHandler is a callback for streaming text chunks.
+type TextHandler func(string)
+
+# StatusHandler is a callback for streaming status updates.
+type StatusHandler func(StatusUpdate)
+
+# Agent wraps a resolved agent card and its corresponding client.
+type Agent
+    Card reference a2a.AgentCard
+    Client reference a2aclient.Client
+
+# Request is a builder struct for constructing A2A requests via pipe-chaining.
+type Request
+    agent Agent
+    text string
+    contextID string
+    onText TextHandler
+    onStatus StatusHandler
+
 # Task represents a simplified A2A task result
 type Task
     ID string
@@ -27,3 +52,53 @@ type Skill
     Name string
     Description string
     Examples list of string
+
+# Discover resolves an agent card from a URL and creates a client.
+func Discover(url string) (Agent, error)
+    ctx := context.Background()
+    card := agentcard.DefaultResolver.Resolve(ctx, url) onerr explain "a2a discover"
+    client := a2aclient.NewFromCard(ctx, card) onerr explain "a2a client"
+    return Agent{Card: card, Client: client}, empty
+
+# DiscoverGuarded resolves an agent card and creates a client using a custom HTTP client.
+func DiscoverGuarded(url string, httpClient reference http.Client) (Agent, error)
+    ctx := context.Background()
+    resolver := agentcard.NewResolver(httpClient)
+    card := resolver.Resolve(ctx, url) onerr explain "a2a discover"
+    client := a2aclient.NewFromCard(ctx, card, a2aclient.WithJSONRPCTransport(httpClient)) onerr explain "a2a client"
+    return Agent{Card: card, Client: client}, empty
+
+# New starts a new request builder for the given agent.
+func New(agent Agent) Request
+    return Request{agent: agent}
+
+# Text sets the message text on the request builder.
+func Text(req Request, text string) Request
+    req.text = text
+    return req
+
+# Context sets the context ID for multi-turn conversations.
+func Context(req Request, id string) Request
+    req.contextID = id
+    return req
+
+# OnText sets a callback for streaming text chunks.
+func OnText(req Request, handler TextHandler) Request
+    req.onText = handler
+    return req
+
+# OnStatus sets a callback for streaming status updates.
+func OnStatus(req Request, handler StatusHandler) Request
+    req.onStatus = handler
+    return req
+
+# Close destroys the client resources for the agent.
+func Close(agent Agent) error
+    return agent.Client.Destroy()
+
+# Skills returns the list of skills from the agent's card.
+func Skills(agent Agent) list of Skill
+    skills := make(list of Skill, len(agent.Card.Skills))
+    for i, s in agent.Card.Skills
+        skills[i] = Skill{Name: s.Name, Description: s.Description, Examples: s.Examples}
+    return skills

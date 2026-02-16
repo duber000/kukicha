@@ -357,6 +357,12 @@ func (g *Generator) generateDeclaration(decl ast.Declaration) {
 }
 
 func (g *Generator) generateTypeDecl(decl *ast.TypeDecl) {
+	// Type alias (e.g., type Handler func(string))
+	if decl.AliasType != nil {
+		g.writeLine(fmt.Sprintf("type %s %s", decl.Name.Value, g.generateTypeAnnotation(decl.AliasType)))
+		return
+	}
+
 	g.write(fmt.Sprintf("type %s struct {", decl.Name.Value))
 	g.writeLine("")
 	g.indent++

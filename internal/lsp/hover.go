@@ -152,6 +152,10 @@ func formatFunctionDecl(decl *ast.FunctionDecl) string {
 
 // formatTypeDecl formats a type declaration for hover display
 func formatTypeDecl(decl *ast.TypeDecl) string {
+	if decl.AliasType != nil {
+		return fmt.Sprintf("type %s %s", decl.Name.Value, formatTypeAnnotation(decl.AliasType))
+	}
+
 	result := fmt.Sprintf("type %s\n", decl.Name.Value)
 
 	if len(decl.Fields) > 0 {

@@ -326,6 +326,17 @@ func (p *Parser) parseTypeDecl() ast.Declaration {
 	name := p.parseIdentifier()
 	p.skipNewlines()
 
+	// Check for type alias: type Name func(...) ...
+	if p.check(lexer.TOKEN_FUNC) {
+		aliasType := p.parseTypeAnnotation()
+		p.skipNewlines()
+		return &ast.TypeDecl{
+			Token:     token,
+			Name:      name,
+			AliasType: aliasType,
+		}
+	}
+
 	fields := []*ast.FieldDecl{}
 
 	// Expect INDENT for fields
@@ -667,13 +678,27 @@ func (p *Parser) parseTypeAnnotation() ast.TypeAnnotation {
 
 		p.consume(lexer.TOKEN_RPAREN, "expected ')' after function parameters")
 
-		// Parse return types
+		// Parse return types (single or parenthesized multiple)
 		var returns []ast.TypeAnnotation
 		if p.peekToken().Type != lexer.TOKEN_NEWLINE &&
 			p.peekToken().Type != lexer.TOKEN_COMMA &&
 			p.peekToken().Type != lexer.TOKEN_RPAREN &&
-			p.peekToken().Type != lexer.TOKEN_EOF {
-			returns = append(returns, p.parseTypeAnnotation())
+			p.peekToken().Type != lexer.TOKEN_EOF &&
+			p.peekToken().Type != lexer.TOKEN_INDENT &&
+			p.peekToken().Type != lexer.TOKEN_DEDENT {
+			if p.check(lexer.TOKEN_LPAREN) {
+				// Multiple return types: (T, error)
+				p.advance() // consume '('
+				for {
+					returns = append(returns, p.parseTypeAnnotation())
+					if !p.match(lexer.TOKEN_COMMA) {
+						break
+					}
+				}
+				p.consume(lexer.TOKEN_RPAREN, "expected ')' after return types")
+			} else {
+				returns = append(returns, p.parseTypeAnnotation())
+			}
 		}
 
 		return &ast.FunctionType{

@@ -72,6 +72,12 @@ func (p *Printer) printDeclaration(decl ast.Declaration) {
 }
 
 func (p *Printer) printTypeDecl(decl *ast.TypeDecl) {
+	// Type alias (e.g., type Handler func(string))
+	if decl.AliasType != nil {
+		p.writeLine(fmt.Sprintf("type %s %s", decl.Name.Value, p.typeAnnotationToString(decl.AliasType)))
+		return
+	}
+
 	p.writeLine(fmt.Sprintf("type %s", decl.Name.Value))
 	p.indentLevel++
 
@@ -199,6 +205,22 @@ func (p *Printer) typeAnnotationToString(typeAnn ast.TypeAnnotation) string {
 		return fmt.Sprintf("map of %s to %s", keyType, valueType)
 	case *ast.ChannelType:
 		return "channel of " + p.typeAnnotationToString(t.ElementType)
+	case *ast.FunctionType:
+		var paramTypes []string
+		for _, param := range t.Parameters {
+			paramTypes = append(paramTypes, p.typeAnnotationToString(param))
+		}
+		result := "func(" + strings.Join(paramTypes, ", ") + ")"
+		if len(t.Returns) == 1 {
+			result += " " + p.typeAnnotationToString(t.Returns[0])
+		} else if len(t.Returns) > 1 {
+			var returnTypes []string
+			for _, ret := range t.Returns {
+				returnTypes = append(returnTypes, p.typeAnnotationToString(ret))
+			}
+			result += " (" + strings.Join(returnTypes, ", ") + ")"
+		}
+		return result
 	default:
 		return "any"
 	}

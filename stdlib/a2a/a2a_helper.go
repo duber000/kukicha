@@ -3,93 +3,10 @@ package a2a
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/a2aproject/a2a-go/a2a"
-	"github.com/a2aproject/a2a-go/a2aclient"
-	"github.com/a2aproject/a2a-go/a2aclient/agentcard"
 )
-
-// Agent wraps a resolved agent card and its corresponding client.
-type Agent struct {
-	Card   *a2a.AgentCard
-	Client *a2aclient.Client
-}
-
-// TextHandler is a callback for streaming text chunks.
-type TextHandler func(string)
-
-// StatusHandler is a callback for streaming status updates.
-type StatusHandler func(StatusUpdate)
-
-// Request is a builder struct for constructing A2A requests via pipe-chaining.
-type Request struct {
-	agent     Agent
-	text      string
-	contextID string
-	onText    TextHandler
-	onStatus  StatusHandler
-}
-
-// Discover resolves an agent card from a URL and creates a client.
-func Discover(url string) (Agent, error) {
-	ctx := context.Background()
-	card, err := agentcard.DefaultResolver.Resolve(ctx, url)
-	if err != nil {
-		return Agent{}, fmt.Errorf("a2a discover: %w", err)
-	}
-	client, err := a2aclient.NewFromCard(ctx, card)
-	if err != nil {
-		return Agent{}, fmt.Errorf("a2a client: %w", err)
-	}
-	return Agent{Card: card, Client: client}, nil
-}
-
-// DiscoverGuarded resolves an agent card and creates a client using a custom HTTP client.
-// Use with netguard.HTTPClient() to restrict which hosts the A2A client can reach.
-func DiscoverGuarded(url string, httpClient *http.Client) (Agent, error) {
-	ctx := context.Background()
-	resolver := agentcard.NewResolver(httpClient)
-	card, err := resolver.Resolve(ctx, url)
-	if err != nil {
-		return Agent{}, fmt.Errorf("a2a discover: %w", err)
-	}
-	client, err := a2aclient.NewFromCard(ctx, card, a2aclient.WithJSONRPCTransport(httpClient))
-	if err != nil {
-		return Agent{}, fmt.Errorf("a2a client: %w", err)
-	}
-	return Agent{Card: card, Client: client}, nil
-}
-
-// New starts a new request builder for the given agent.
-func New(agent Agent) Request {
-	return Request{agent: agent}
-}
-
-// Text sets the message text on the request builder.
-func Text(req Request, text string) Request {
-	req.text = text
-	return req
-}
-
-// Context sets the context ID for multi-turn conversations.
-func Context(req Request, id string) Request {
-	req.contextID = id
-	return req
-}
-
-// OnText sets a callback for streaming text chunks.
-func OnText(req Request, handler TextHandler) Request {
-	req.onText = handler
-	return req
-}
-
-// OnStatus sets a callback for streaming status updates.
-func OnStatus(req Request, handler StatusHandler) Request {
-	req.onStatus = handler
-	return req
-}
 
 // Send executes a blocking request and returns the task result.
 func Send(req Request) (Task, error) {
@@ -130,24 +47,6 @@ func Cancel(agent Agent, taskID string) (Task, error) {
 		return Task{}, fmt.Errorf("a2a cancel: %w", err)
 	}
 	return taskFromA2A(t), nil
-}
-
-// Close destroys the client resources for the agent.
-func Close(agent Agent) error {
-	return agent.Client.Destroy()
-}
-
-// Skills returns the list of skills from the agent's card.
-func Skills(agent Agent) []Skill {
-	skills := make([]Skill, len(agent.Card.Skills))
-	for i, s := range agent.Card.Skills {
-		skills[i] = Skill{
-			Name:        s.Name,
-			Description: s.Description,
-			Examples:    s.Examples,
-		}
-	}
-	return skills
 }
 
 // sendRequest sends a blocking message to an agent and returns a simplified Task.

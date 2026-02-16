@@ -7,28 +7,24 @@ This document explains why some stdlib packages still contain hand-written Go he
 
 | Package | File | Reason |
 |---------|------|--------|
-| `stdlib/a2a` | `a2a_helper.go` | Function types, range-over-func |
+| `stdlib/a2a` | `a2a_helper.go` | Range-over-func, type switch |
 | `stdlib/container` | `container_helper.go` | Functional options, streaming I/O |
-| `stdlib/kube` | `kube_helper.go` | Complex API client construction |
-| `stdlib/mcp` | `mcp_tool.go` | SDK callback closures |
+| `stdlib/mcp` | `mcp_tool.go` | Multi-statement SDK callback closure |
 
 ---
 
-## 1. Function Types
+## ~~1. Function Types~~ (Resolved)
 
-Kukicha has no syntax for declaring a named function type:
+Kukicha now supports named function type aliases:
 
-```go
-// Go — not expressible in Kukicha
+```kukicha
 type TextHandler func(string)
 type StatusHandler func(StatusUpdate)
+type ToolHandler func(map of string to any) (any, error)
 ```
 
-This blocks moving `stdlib/a2a` to pure Kukicha, because `Request` holds `onText` and
-`onStatus` fields of these callback types, and the streaming functions dispatch to them.
-
-**Workaround until resolved:** Keep the type declarations and functions that use them in
-`a2a_helper.go`.
+This unblocked moving most of `stdlib/a2a` and the `ToolHandler` type from `stdlib/mcp` to
+pure Kukicha.
 
 ---
 
@@ -49,8 +45,7 @@ cli, err := client.NewClientWithOpts(opts...)
 Kukicha's `many` keyword handles variadic arguments but cannot build a `[]client.Opt` slice
 incrementally and pass it with spread syntax when the element type is a function type.
 
-**Affects:** `container.Connect`, `container.ConnectRemote`, `container.Open`,
-`kube.Connect`, `kube.Open`.
+**Affects:** `container.Connect`, `container.ConnectRemote`, `container.Open`.
 
 ---
 
@@ -70,12 +65,14 @@ for event, err := range client.SendStreamingMessage(ctx, params) {
 
 ---
 
-## 4. SDK Callback Closures
+## 4. Multi-Statement SDK Callback Closures
 
-Some Go SDK APIs require passing a `func(ctx context.Context, req *T) (*R, error)` callback
-at registration time. Kukicha lambdas (`(x T) => expr`) work for simple expression lambdas
-but multi-statement closures that capture external state and use SDK-specific types are
-awkward to express without full closure syntax.
+Some Go SDK APIs require passing a multi-statement `func(ctx, req) (resp, error)` callback
+at registration time. Kukicha has function literals and block lambdas, but the MCP SDK's
+`server.AddTool` requires a closure that captures variables, unmarshals JSON, dispatches to
+a handler, and wraps the response — a pattern that spans many statements with SDK-specific
+types. The named function type (`ToolHandler`) is now expressible in Kukicha, but the
+multi-statement closure body of the `Tool` function itself remains in Go.
 
 **Affects:** `mcp.Tool` — the MCP SDK's `server.AddTool` requires a context-aware callback.
 
@@ -108,6 +105,6 @@ declarations inline in function bodies.
 These limitations are tracked in `docs/PLAN-Drop-Go-Helpers.md`. The planned language
 additions that would eliminate most remaining helpers:
 
-- **Function types** — `type Handler func(string)` — eliminates A2A and MCP helpers
+- ~~**Function types**~~ — `type Handler func(string)` — **implemented**
 - **Anonymous struct literals** — enables inline JSON decode targets
 - **Range-over-func** — enables iterator-based streaming APIs

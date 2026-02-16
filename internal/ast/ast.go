@@ -103,9 +103,10 @@ func (d *ImportDecl) Pos() Position {
 func (d *ImportDecl) declNode() {}
 
 type TypeDecl struct {
-	Token  lexer.Token // The 'type' token
-	Name   *Identifier
-	Fields []*FieldDecl
+	Token     lexer.Token    // The 'type' token
+	Name      *Identifier
+	Fields    []*FieldDecl   // nil for type aliases
+	AliasType TypeAnnotation // non-nil for type aliases (e.g., func(...) ...)
 }
 
 func (d *TypeDecl) TokenLiteral() string { return d.Token.Lexeme }
