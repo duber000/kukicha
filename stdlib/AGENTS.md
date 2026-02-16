@@ -15,6 +15,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/cast` | Type casting utilities | ToString, ToInt, ToFloat, ToBool |
 | `stdlib/cli` | CLI argument parsing | New, String, Int, Bool, Parse |
 | `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
+| `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, Run, Stop, Remove, Build, Logs |
 | `stdlib/datetime` | Named formats, duration helpers | Format, Seconds, Minutes, Hours |
 | `stdlib/env` | Typed env vars with onerr | Get, GetInt, GetBool, GetFloat, GetOr, Set |
 | `stdlib/fetch` | HTTP client (Builder, Auth, Sessions) | Get, Post, New/Header/Timeout/Do, BearerAuth, BasicAuth, FormData, NewSession |
@@ -93,6 +94,21 @@ text := fetch.Text(resp) onerr panic "{error}"
 import "stdlib/netguard"
 guard := netguard.NewSSRFGuard()
 resp := fetch.New(url) |> fetch.Transport(netguard.HTTPTransport(guard)) |> fetch.Do() onerr panic "{error}"
+
+# Container management (Docker/Podman)
+import "stdlib/container"
+engine := container.Connect() onerr panic "not running: {error}"
+defer container.Close(engine)
+images := engine |> container.ListImages() onerr panic "{error}"
+for img in images
+    print("{container.ImageID(img)}: {container.ImageTags(img)}")
+
+# Pull and run a container
+container.Pull(engine, "alpine:latest") onerr panic "{error}"
+id := container.Run(engine, "alpine:latest", list of string{"echo", "hello"}) onerr panic "{error}"
+logs := container.Logs(engine, id) onerr panic "{error}"
+print(logs)
+container.Remove(engine, id) onerr discard
 ```
 
 ## Module Structure
@@ -105,7 +121,7 @@ Examples: `slice`, `string`, `validate`, `env`, `must`, `fetch`
 
 ### Kukicha types + Go helper (types in .kuki, implementation in _helper.go)
 Used when wrapping complex Go libraries. The `.kuki` file defines types visible to Kukicha code, and the `_helper.go` provides the implementation in Go.
-Examples: `a2a`, `netguard`, `sandbox`, `pg`, `kube`
+Examples: `a2a`, `container`, `netguard`, `sandbox`, `pg`, `kube`
 
 ## Critical Rules
 

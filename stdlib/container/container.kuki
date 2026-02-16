@@ -1,0 +1,56 @@
+# Kukicha Standard Library - Container (Docker/Podman Client)
+# Provides a pipe-friendly wrapper around the Docker SDK with Podman auto-detection.
+#
+# Examples:
+#   # Simple connection (auto-detects Docker or Podman socket)
+#   engine := container.Connect() onerr panic "not running: {error}"
+#   defer container.Close(engine)
+#
+#   # Builder pattern
+#   engine := container.New()
+#       |> container.Host("unix:///var/run/docker.sock")
+#       |> container.Open()
+#       onerr panic "{error}"
+#
+#   # List images
+#   images := engine |> container.ListImages() onerr panic "{error}"
+#   for img in images
+#       print("{container.ImageID(img)}: {container.ImageTags(img)}")
+
+petiole container
+
+import "github.com/docker/docker/client"
+
+# Engine wraps a Docker/Podman client connection
+type Engine
+    cli reference client.Client
+
+# Config is a builder for connection options
+type Config
+    host string
+    apiVersion string
+
+# ContainerInfo holds information about a container
+type ContainerInfo
+    id string
+    image string
+    status string
+    state string
+    names list of string
+
+# ImageInfo holds information about an image
+type ImageInfo
+    id string
+    tags list of string
+    size int64
+
+# BuildOutput holds the result of an image build
+type BuildOutput
+    imageID string
+    output string
+
+# Auth holds registry authentication credentials
+type Auth
+    username string
+    password string
+    serverAddress string
