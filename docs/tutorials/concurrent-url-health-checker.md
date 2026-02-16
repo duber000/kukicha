@@ -13,6 +13,7 @@ In this tutorial, we'll build a high-performance **URL Health Checker**. You'll 
 - How to launch **Goroutines** with the `go` keyword
 - How to coordinate work using **Channels** (`send`, `receive`, `close`)
 - How to implement the **Fan-out** pattern for parallel processing
+- How to wrap errors with context using **`stdlib/errors`**
 
 ---
 
@@ -197,13 +198,15 @@ Finally, let's log these results to a file with timestamps.
 ```kukicha
 import "stdlib/files"
 import "stdlib/datetime"
+import "stdlib/errors"
 
 function logResult(res Result)
     now := datetime.Now() |> datetime.Format(datetime.RFC3339)
     line := "{now} | [{res.status}] {res.url} | {res.latency}\n"
-    
-    # Append to log file
-    files.Append("health.log", list of byte(line)) onerr print "Log failed"
+
+    # Append to log file — wrap the error with context if it fails
+    files.AppendString("health.log", line) onerr
+        print(errors.Wrap(error, "log write failed"))
 ```
 
 ---
@@ -219,6 +222,7 @@ Congratulations! You've built a concurrent system in Kukicha.
 | **`go`** | Starts a light-weight background thread (goroutine) |
 | **`channel`** | Safe communication between goroutines |
 | **`send`/`receive`** | Moving data through channels |
+| **`stdlib/errors`** | Wrap errors with context (`errors.Wrap`) |
 
 ### Next Steps
 

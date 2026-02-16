@@ -668,6 +668,68 @@ s.FetchLinkResult(code)
 
 Use `result` when you want success/failure as a first-class value you can return, pass, or store, instead of only using multiple return values.
 
+### Error Context with `errors`
+
+```kukicha
+import "stdlib/errors"
+
+function LoadConfig(path string) (Config, error)
+    data := files.ReadString(path) onerr return Config{}, errors.Wrap(error, "load config")
+    cfg := Config{}
+    json.Unmarshal(data, reference of cfg) onerr return Config{}, errors.Wrap(error, "parse config")
+    return cfg, empty
+```
+
+`errors.Wrap(err, "context")` produces `"context: <original>"`, preserving the full error chain for logging. Use `errors.Is(err, target)` to check for specific errors deep in a wrapped chain — useful in middleware that needs to translate a `sql.ErrNoRows` into a 404 without leaking the detail to the user:
+
+```kukicha
+import "stdlib/errors"
+import "database/sql"
+
+function handleGet on s reference Server(w http.ResponseWriter, r reference http.Request)
+    link, err := s.db.GetLink(code)
+    if errors.Is(err, sql.ErrNoRows)
+        httphelper.JSONNotFound(w, "Link not found")
+        return
+    if err not equals empty
+        httphelper.JSONError(w, 500, "Database error")
+        return
+    httphelper.JSON(w, link)
+```
+
+### IP Utilities with `net`
+
+```kukicha
+import "stdlib/net" as netutil
+
+# Validate an IP from a request header (e.g., X-Forwarded-For)
+function TrustedIP(ipStr string) bool
+    ip := netutil.ParseIP(ipStr)
+    if netutil.IsNil(ip)
+        return false
+    # Reject requests from loopback/private ranges in production
+    return not netutil.IsPrivate(ip) and not netutil.IsLoopback(ip)
+```
+
+`stdlib/net` wraps Go's `net` package with null-safe helpers and readable names. Useful for IP-based rate limiting, access control, and SSRF protection alongside `stdlib/netguard`.
+
+### Token Encoding with `encoding`
+
+```kukicha
+import "stdlib/encoding"
+
+# Encode an API key as a URL-safe base64 string (e.g. for webhook tokens)
+function GenerateWebhookToken(secret string) string
+    return encoding.Base64URLEncode(secret as list of byte)
+
+# Decode and verify
+function VerifyToken(token string) (string, error)
+    raw := encoding.Base64URLDecode(token) onerr return "", errors.Wrap(error, "invalid token")
+    return raw as string, empty
+```
+
+`stdlib/encoding` also provides `HexEncode`/`HexDecode` for checksums and content hashes.
+
 ### Resilient HTTP Calls with `retry`
 
 ```kukicha
@@ -760,7 +822,7 @@ You've completed the full Kukicha tutorial series!
 | ✅ **2. Data & AI Scripting** | Maps (Key-Value), parsing CSVs, shell commands, AI scripting |
 | ✅ **3. CLI Explorer** | Types, methods (`on`), API data, arrow lambdas, `fetch` + `json` |
 | ✅ **4. Link Shortener** | HTTP servers, JSON, REST APIs, maps, redirects |
-| ✅ **5. Production** | Databases, concurrency, Go conventions, `env`/`must`, `validate`, `http`, `result`, `retry` |
+| ✅ **5. Production** | Databases, concurrency, Go conventions, `env`/`must`, `validate`, `http`, `result`, `retry`, `errors`, `net`, `encoding` |
 
 ---
 

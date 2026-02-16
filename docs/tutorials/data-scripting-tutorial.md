@@ -36,11 +36,16 @@ function main()
     print(Sum(1, 2, 3))       # Prints: 6
     print(Sum(10, 20))        # Prints: 30
     print(Sum())              # Prints: 0
+
+    # Spread an existing list with 'many' at the call site
+    values := list of int{4, 5, 6}
+    print(Sum(many values))   # Prints: 15
 ```
 
 **Key points:**
-- `many` goes before the parameter name.
+- `many` goes before the parameter name in the declaration.
 - Inside the function, the parameter acts like a standard list.
+- To spread an existing list into a variadic call, use `many` at the call site too: `Sum(many values)`.
 
 ---
 
@@ -223,6 +228,35 @@ kukicha run git_check.kuki
 
 ---
 
+## Part 3b: Wrapping Errors with `stdlib/errors`
+
+When a shell command fails, you often want to add context to the error before surfacing it to the caller. The `stdlib/errors` package makes this clean:
+
+```kukicha
+import "stdlib/shell"
+import "stdlib/errors"
+
+function GitDiff() (string, error)
+    diff := shell.Output("git", "diff", "--staged") onerr return "", errors.Wrap(error, "git diff failed")
+    return diff, empty
+```
+
+`errors.Wrap(err, "message")` produces `"message: <original error>"` — the same pattern as Go's `fmt.Errorf("message: %w", err)` but without the format string boilerplate.
+
+You can also check whether a specific error occurred deep in a call stack:
+
+```kukicha
+import "stdlib/errors"
+import "io"
+
+data := readSomething() onerr
+    if errors.Is(error, io.EOF)
+        return "", empty  # EOF is normal — treat as empty
+    return "", errors.Wrap(error, "read failed")
+```
+
+---
+
 ## Part 4: AI Scripting (The Fun Part)
 
 Now, let's combine **Shell** commands with **AI**. We'll build a script that looks at your code changes and writes a commit message for you.
@@ -342,3 +376,5 @@ Next, we'll build a full interactive application that fetches data from the inte
 | **Parse CSV** | `parse.CsvWithHeader()` | Turns string keys into field names |
 | **Shell** | `shell.Output()` | API to run `git`, `ls`, etc. |
 | **LLM** | `llm.New() \|> ...` | Easy AI integration |
+| **Variadic spread** | `Sum(many values)` | Spread a list into a variadic call |
+| **Error wrapping** | `errors.Wrap(err, "msg")` | Add context to errors |

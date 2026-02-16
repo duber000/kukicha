@@ -367,7 +367,7 @@ import "stdlib/json"
 import "stdlib/string"
 import "stdlib/slice"
 import "stdlib/input"
-import "strconv"
+import "stdlib/cast"
 
 # --- Type Definitions ---
 
@@ -539,8 +539,7 @@ function main()
                     print("Usage: fav <number>")
                     continue
                 # Parse the number — print a message and skip if it's not valid
-                id, idErr := strconv.Atoi(parts[1])
-                if idErr not equals empty
+                id := cast.ToInt(parts[1]) onerr
                     print("Invalid number: {parts[1]}")
                     continue
                 ex.AddFavorite(id)
@@ -725,6 +724,31 @@ if input equals ""
 
 When the user presses Enter without typing anything, `continue` skips the rest of the loop body and goes straight back to the `>` prompt.
 
+### `cast.ToInt` and `stdlib/cast`
+
+```kukicha
+id := cast.ToInt(parts[1]) onerr
+    print("Invalid number: {parts[1]}")
+    continue
+```
+
+`stdlib/cast` provides type conversion utilities that return errors instead of panicking. `cast.ToInt` converts any value to `int` — strings, floats, booleans. It's cleaner than calling `strconv.Atoi` directly and works with `onerr` naturally.
+
+### Multi-Value Destructuring (3+ values)
+
+Kukicha supports destructuring three or more values at once. This comes up when wrapping Go standard library functions:
+
+```kukicha
+import "net"
+
+# Three-value destructuring: discard first, keep ipNet and err
+_, ipNet, err := net.ParseCIDR("192.168.0.0/16")
+if err not equals empty
+    print("Invalid CIDR")
+```
+
+You can discard any position with `_`. The `stdlib/net` package wraps these patterns so you rarely need to do it directly.
+
 ### `empty` for Null Checking
 
 ```kukicha
@@ -732,7 +756,7 @@ if idErr not equals empty
     print("Invalid number: {parts[1]}")
 ```
 
-In Kukicha, **`empty`** represents "no value" (called `nil` in many other languages). When `strconv.Atoi` fails to convert text to a number, it returns an error. If the error `not equals empty`, something went wrong.
+In Kukicha, **`empty`** represents "no value" (called `nil` in many other languages). When a function fails, it returns an error. If the error `not equals empty`, something went wrong.
 
 ---
 
@@ -904,6 +928,8 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | **Command Loop** | Read input, bare `for`, `break`, and `continue` |
 | **`fetch` + `json`** | Fetch and parse data from web APIs |
 | **`cli`** | Build one-shot command interfaces with args, flags, and actions |
+| **`cast`** | Convert strings/values to typed numbers with `onerr` |
+| **Multi-value destructuring** | `_, ipNet, err :=` captures 3+ return values |
 | **`iterator`** | Functional iteration tools (advanced; optional for this project) |
 
 ---
