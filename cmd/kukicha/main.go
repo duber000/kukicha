@@ -120,7 +120,7 @@ func loadAndAnalyze(filename string) (*ast.Program, map[ast.Expression]int, erro
 		return nil, nil, fmt.Errorf("Parse errors:\n%s", strings.Join(msgs, "\n"))
 	}
 
-	analyzer := semantic.New(program)
+	analyzer := semantic.NewWithFile(program, filename)
 	semanticErrors := analyzer.Analyze()
 	if len(semanticErrors) > 0 {
 		var msgs []string

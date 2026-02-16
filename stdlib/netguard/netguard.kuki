@@ -11,12 +11,91 @@
 #
 #   # Allow only specific CIDRs
 #   guard, err := netguard.NewAllow(["93.184.216.0/24"])
+#
+#   # Check a single IP
+#   if netguard.Check(guard, "10.0.0.1")
+#       print("allowed")
 
 petiole netguard
 
 import "net"
+import "fmt"
+import "stdlib/net" as netutil
 
 type Guard
     networks list of reference net.IPNet
     blockPrivate bool
     mode string
+
+# parseCIDRs parses a list of CIDR strings, returning the networks or an error.
+func parseCIDRs(cidrs list of string) (list of reference net.IPNet, error)
+    nets := make(list of reference net.IPNet, 0)
+    for cidr in cidrs
+        network, err := netutil.ParseCIDR(cidr)
+        if err != empty
+            return empty, fmt.Errorf("netguard: invalid CIDR %q: %w", cidr, err)
+        nets = append(nets, network)
+    return nets, empty
+
+# checkIP tests whether an IP is allowed by the guard policy.
+func checkIP(g Guard, ip net.IP) bool
+    matched := false
+    for n in g.networks
+        if netutil.Contains(n, ip)
+            matched = true
+            break
+
+    switch g.mode
+        when "allow"
+            return matched
+        when "block"
+            return not matched
+        otherwise
+            return false
+
+# NewAllow creates a Guard that only permits connections to the listed CIDRs.
+func NewAllow(cidrs list of string) (Guard, error)
+    nets, err := parseCIDRs(cidrs)
+    if err != empty
+        return Guard{}, err
+    return Guard{networks: nets, mode: "allow"}, empty
+
+# NewBlock creates a Guard that blocks connections to the listed CIDRs.
+func NewBlock(cidrs list of string) (Guard, error)
+    nets, err := parseCIDRs(cidrs)
+    if err != empty
+        return Guard{}, err
+    return Guard{networks: nets, mode: "block"}, empty
+
+# NewSSRFGuard creates a Guard that blocks all private, loopback, link-local,
+# CGN, multicast, and reserved IP ranges — the standard SSRF protection set.
+func NewSSRFGuard() Guard
+    ssrfCIDRs := list of string{
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "127.0.0.0/8",
+        "169.254.0.0/16",
+        "::1/128",
+        "fc00::/7",
+        "fe80::/10",
+        "0.0.0.0/8",
+        "100.64.0.0/10",
+        "192.0.0.0/24",
+        "192.0.2.0/24",
+        "198.18.0.0/15",
+        "198.51.100.0/24",
+        "203.0.113.0/24",
+        "224.0.0.0/4",
+        "240.0.0.0/4",
+    }
+    nets, _ := parseCIDRs(ssrfCIDRs)
+    return Guard{networks: nets, blockPrivate: true, mode: "block"}
+
+# Check validates a single IP string against the guard policy.
+# Returns true if the IP is allowed, false if blocked.
+func Check(g Guard, ipStr string) bool
+    ip := netutil.ParseIP(ipStr)
+    if netutil.IsNil(ip)
+        return false
+    return checkIP(g, ip)

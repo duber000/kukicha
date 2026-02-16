@@ -66,3 +66,41 @@ type NamespaceList struct {
 type NamespaceItem struct {
 	ns any
 }
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:74
+func New() Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:75
+	return Config{}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:78
+func Kubeconfig(cfg Config, path string) Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:79
+	cfg.kubeconfig = path
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:80
+	return cfg
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:83
+func Context(cfg Config, name string) Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:84
+	cfg.context = name
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:85
+	return cfg
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:88
+func InCluster(cfg Config) Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:89
+	cfg.inCluster = true
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:90
+	return cfg
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:93
+func Namespace(c Cluster, ns string) Cluster {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:94
+	c.namespace = ns
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:95
+	return c
+}

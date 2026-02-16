@@ -139,6 +139,43 @@ repos |> slice.Filter((r Repo) =>
 )
 ```
 
+### Variadic Arguments (`many`)
+```kukicha
+# Declare: "many" before param name
+func Sum(many numbers int) int
+    total := 0
+    for n in numbers
+        total = total + n
+    return total
+
+# Call with individual args
+result := Sum(1, 2, 3)
+
+# Spread a slice with "many" at call site
+args := list of int{1, 2, 3}
+result := Sum(many args)
+```
+
+### Type Assertions
+```kukicha
+# Two-value form (safe)
+result, ok := value.(string)
+if ok
+    print("string: {result}")
+
+# Direct assertion (panics if wrong type)
+s := value.(string)
+```
+
+### Multi-Value Destructuring
+```kukicha
+# 2-value (common)
+data, err := os.ReadFile(path)
+
+# 3-value (supported)
+_, ipNet, err := net.ParseCIDR("192.168.0.0/16")
+```
+
 ### Concurrency
 ```kukicha
 ch := make channel of string

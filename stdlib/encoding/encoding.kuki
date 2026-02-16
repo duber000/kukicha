@@ -1,0 +1,56 @@
+# Kukicha Standard Library - Encoding
+# Base64 and hex encoding/decoding utilities.
+# Useful for encoding binary data for HTTP headers, registry auth, etc.
+#
+# Examples:
+#   encoded := encoding.Base64Encode(data)
+#   decoded := encoding.Base64Decode(encoded) onerr panic "invalid base64: {error}"
+#
+#   # Registry auth header
+#   auth := encoding.Base64Encode("user:password" as list of byte)
+#
+#   # Hex encoding
+#   hex := encoding.HexEncode(hashBytes)
+
+petiole encoding
+
+import "encoding/base64"
+import "encoding/hex"
+
+# Base64Encode encodes data using standard base64 encoding (with padding).
+# Returns the encoded string.
+func Base64Encode(data list of byte) string
+    return base64.StdEncoding.EncodeToString(data)
+
+# Base64Decode decodes a standard base64 encoded string.
+# Returns the decoded bytes or an error for invalid input.
+func Base64Decode(s string) (list of byte, error)
+    return base64.StdEncoding.DecodeString(s)
+
+# Base64URLEncode encodes data using URL-safe base64 encoding (with padding).
+# Uses the alternate base64 alphabet: - and _ instead of + and /.
+func Base64URLEncode(data list of byte) string
+    return base64.URLEncoding.EncodeToString(data)
+
+# Base64URLDecode decodes a URL-safe base64 encoded string.
+# Returns the decoded bytes or an error for invalid input.
+func Base64URLDecode(s string) (list of byte, error)
+    return base64.URLEncoding.DecodeString(s)
+
+# Base64RawEncode encodes data using raw standard base64 encoding (no padding).
+func Base64RawEncode(data list of byte) string
+    return base64.RawStdEncoding.EncodeToString(data)
+
+# Base64RawURLEncode encodes data using raw URL-safe base64 encoding (no padding).
+func Base64RawURLEncode(data list of byte) string
+    return base64.RawURLEncoding.EncodeToString(data)
+
+# HexEncode encodes data as a lowercase hexadecimal string.
+# Each byte is represented as two hex characters.
+func HexEncode(data list of byte) string
+    return hex.EncodeToString(data)
+
+# HexDecode decodes a hexadecimal string into bytes.
+# Returns an error if src contains invalid hex characters or an odd length.
+func HexDecode(s string) (list of byte, error)
+    return hex.DecodeString(s)

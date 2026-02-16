@@ -47,3 +47,16 @@ func Required(schema any, names list of string) any
         return schema
     s["required"] = names
     return s
+
+# TextResult creates a successful tool result containing the given text.
+func TextResult(text string) any
+    return reference of mcp.CallToolResult{
+        Content: list of mcp.Content{reference of mcp.TextContent{Text: text}},
+    }
+
+# ErrorResult creates an error tool result containing the given message.
+func ErrorResult(msg string) any
+    return reference of mcp.CallToolResult{
+        Content: list of mcp.Content{reference of mcp.TextContent{Text: msg}},
+        IsError: true,
+    }

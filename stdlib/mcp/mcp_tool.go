@@ -53,19 +53,3 @@ func Tool(server *mcp.Server, name, description string, schema any, handler Tool
 	})
 }
 
-func TextResult(text string) any {
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			&mcp.TextContent{Text: text},
-		},
-	}
-}
-
-func ErrorResult(msg string) any {
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			&mcp.TextContent{Text: msg},
-		},
-		IsError: true,
-	}
-}

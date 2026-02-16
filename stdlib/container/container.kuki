@@ -19,7 +19,13 @@
 
 petiole container
 
+import "context"
+import "fmt"
 import "github.com/docker/docker/client"
+import "github.com/docker/docker/api/types/container" as dockercontainer
+import "github.com/docker/docker/api/types/image" as dockerimage
+import "encoding/json"
+import "encoding/base64"
 
 # Engine wraps a Docker/Podman client connection
 type Engine
@@ -54,3 +60,118 @@ type Auth
     username string
     password string
     serverAddress string
+
+# New starts a configuration builder.
+func New() Config
+    return Config{}
+
+# Host sets the Docker host URL on the config builder.
+func Host(cfg Config, host string) Config
+    cfg.host = host
+    return cfg
+
+# APIVersion sets an explicit API version on the config builder.
+func APIVersion(cfg Config, version string) Config
+    cfg.apiVersion = version
+    return cfg
+
+# Close closes the Docker client connection.
+func Close(engine Engine) error
+    return engine.cli.Close()
+
+# ListContainers lists all containers (including stopped).
+func ListContainers(engine Engine) (list of ContainerInfo, error)
+    containers, err := engine.cli.ContainerList(context.Background(), dockercontainer.ListOptions{All: true})
+    if err != empty
+        return empty, fmt.Errorf("container list: %w", err)
+    result := make(list of ContainerInfo, len(containers))
+    for i, c in containers
+        result[i] = ContainerInfo{
+            id: c.ID,
+            image: c.Image,
+            status: c.Status,
+            state: c.State,
+            names: c.Names,
+        }
+    return result, empty
+
+# ListImages lists all images on the host.
+func ListImages(engine Engine) (list of ImageInfo, error)
+    images, err := engine.cli.ImageList(context.Background(), dockerimage.ListOptions{All: true})
+    if err != empty
+        return empty, fmt.Errorf("container list images: %w", err)
+    result := make(list of ImageInfo, len(images))
+    for i, img in images
+        result[i] = ImageInfo{
+            id: img.ID,
+            tags: img.RepoTags,
+            size: img.Size,
+        }
+    return result, empty
+
+# Stop stops a running container.
+func Stop(engine Engine, containerID string) error
+    err := engine.cli.ContainerStop(context.Background(), containerID, dockercontainer.StopOptions{})
+    if err != empty
+        return fmt.Errorf("container stop: %w", err)
+    return empty
+
+# Remove removes a container.
+func Remove(engine Engine, containerID string) error
+    err := engine.cli.ContainerRemove(context.Background(), containerID, dockercontainer.RemoveOptions{})
+    if err != empty
+        return fmt.Errorf("container remove: %w", err)
+    return empty
+
+# Login creates an Auth with the given credentials.
+func Login(username string, password string, server string) Auth
+    return Auth{username: username, password: password, serverAddress: server}
+
+# AuthEncode encodes auth credentials as a base64 JSON string for Docker registry headers.
+func AuthEncode(auth Auth) string
+    authJSON, _ := json.Marshal(map of string to string{
+        "username": auth.username,
+        "password": auth.password,
+        "serveraddress": auth.serverAddress,
+    })
+    return base64.URLEncoding.EncodeToString(authJSON)
+
+# ContainerID returns the container's ID.
+func ContainerID(c ContainerInfo) string
+    return c.id
+
+# ContainerImage returns the container's image name.
+func ContainerImage(c ContainerInfo) string
+    return c.image
+
+# ContainerStatus returns the container's status string.
+func ContainerStatus(c ContainerInfo) string
+    return c.status
+
+# ContainerState returns the container's state (running, exited, etc.).
+func ContainerState(c ContainerInfo) string
+    return c.state
+
+# ContainerNames returns the container's names.
+func ContainerNames(c ContainerInfo) list of string
+    return c.names
+
+# ImageID returns the image's ID.
+func ImageID(img ImageInfo) string
+    return img.id
+
+# ImageTags returns the image's tags.
+func ImageTags(img ImageInfo) list of string
+    return img.tags
+
+# ImageSize returns the image's size in bytes.
+func ImageSize(img ImageInfo) int64
+    return img.size
+
+# BuildImageID returns the image ID from a build result.
+func BuildImageID(b BuildOutput) string
+    return b.imageID
+
+# BuildLog returns the build output log.
+func BuildLog(b BuildOutput) string
+    return b.output

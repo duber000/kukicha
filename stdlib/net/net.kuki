@@ -1,0 +1,74 @@
+# Kukicha Standard Library - Net
+# Wraps Go's net package for IP address parsing, CIDR operations, and host utilities.
+# Useful for network validation, SSRF protection, and address manipulation.
+#
+# Examples:
+#   ip := net.ParseIP("192.168.1.1")
+#   if net.IsNil(ip)
+#       panic("invalid IP")
+#
+#   network := net.ParseCIDR("192.168.0.0/16") onerr panic "{error}"
+#   if net.Contains(network, ip)
+#       print("in private range")
+#
+#   host, port, err := net.SplitHostPort("example.com:8080")
+
+petiole net
+
+import "net"
+
+# ParseIP parses s as an IP address, returning the result.
+# The string s can be in dotted decimal ("192.0.2.1"), IPv6 ("2001:db8::1"),
+# or IPv6 zone ("2001:db8::1%eth0") form.
+# Returns empty if s is not a valid textual representation of an IP address.
+func ParseIP(s string) net.IP
+    return net.ParseIP(s)
+
+# ParseCIDR parses s as a CIDR notation IP address and prefix length.
+# Returns the network described by the CIDR, or an error.
+# Examples: "192.168.0.0/16", "2001:db8::/32"
+func ParseCIDR(s string) (reference net.IPNet, error)
+    _, ipNet, err := net.ParseCIDR(s)
+    return ipNet, err
+
+# Contains reports whether the network n includes the IP address ip.
+func Contains(n reference net.IPNet, ip net.IP) bool
+    return n.Contains(ip)
+
+# SplitHostPort splits a network address of the form "host:port",
+# "[host]:port" or "[host%zone]:port" into host (or host%zone) and port.
+func SplitHostPort(hostport string) (string, string, error)
+    return net.SplitHostPort(hostport)
+
+# JoinHostPort combines host and port into a network address of the form
+# "host:port". If host contains a colon (IPv6), it wraps host in brackets.
+func JoinHostPort(host string, port string) string
+    return net.JoinHostPort(host, port)
+
+# LookupHost looks up the given host using the local resolver.
+# Returns a list of IP address strings for the given host.
+func LookupHost(host string) (list of string, error)
+    return net.LookupHost(host)
+
+# IsLoopback reports whether ip is a loopback address.
+# For IPv4, loopback is 127.0.0.0/8. For IPv6, it is ::1.
+func IsLoopback(ip net.IP) bool
+    return ip.IsLoopback()
+
+# IsPrivate reports whether ip is a private address, according to
+# RFC 1918 (IPv4 addresses) and RFC 4193 (IPv6 addresses).
+func IsPrivate(ip net.IP) bool
+    return ip.IsPrivate()
+
+# IsMulticast reports whether ip is a multicast address.
+func IsMulticast(ip net.IP) bool
+    return ip.IsMulticast()
+
+# IsNil reports whether ip is nil/empty (invalid or unset).
+# Use this to check if ParseIP returned a valid result.
+func IsNil(ip net.IP) bool
+    return ip == empty
+
+# IPString returns the string form of the IP address ip.
+func IPString(ip net.IP) string
+    return ip.String()

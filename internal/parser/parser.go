@@ -1211,8 +1211,9 @@ func (p *Parser) parseExpressionOrAssignmentStmt() ast.Statement {
 }
 
 func (p *Parser) checkMultiValueAssignment() bool {
-	// Look ahead to see if we have a pattern like: ident, ident := expr, expr
-	// or: ident, ident = expr, expr
+	// Look ahead for: ident [, ident]+ := or =
+	// Supports 2 or more identifiers on the left-hand side.
+	// Examples: a, b := ...   or   _, ipNet, err := ...
 
 	// Check if we have an identifier at current position
 	currentToken := p.peekToken()
@@ -1233,26 +1234,23 @@ func (p *Parser) checkMultiValueAssignment() bool {
 		return idx, lexer.Token{Type: lexer.TOKEN_EOF}
 	}
 
-	// Look for pattern: identifier, identifier := or =
-	// Start from pos + 1 (next token after current identifier)
-	nextIdx, nextToken := skipIgnored(p.pos + 1)
-	if nextToken.Type != lexer.TOKEN_COMMA {
+	// Must have at least one comma after the first identifier
+	idx, tok := skipIgnored(p.pos + 1)
+	if tok.Type != lexer.TOKEN_COMMA {
 		return false
 	}
 
-	// After comma, should be another identifier
-	afterCommaIdx, afterCommaToken := skipIgnored(nextIdx + 1)
-	if afterCommaToken.Type != lexer.TOKEN_IDENTIFIER {
-		return false
+	// Consume (comma, identifier) pairs until we reach an assignment operator
+	for tok.Type == lexer.TOKEN_COMMA {
+		idx, tok = skipIgnored(idx + 1)
+		if tok.Type != lexer.TOKEN_IDENTIFIER {
+			return false // Comma must be followed by an identifier
+		}
+		idx, tok = skipIgnored(idx + 1)
 	}
 
-	// After second identifier, should be assignment operator
-	_, assignmentToken := skipIgnored(afterCommaIdx + 1)
-	if assignmentToken.Type != lexer.TOKEN_ASSIGN && assignmentToken.Type != lexer.TOKEN_WALRUS {
-		return false
-	}
-
-	return true
+	// After all identifiers, must be an assignment operator
+	return tok.Type == lexer.TOKEN_ASSIGN || tok.Type == lexer.TOKEN_WALRUS
 }
 
 func (p *Parser) parseMultiValueAssignmentStmt() ast.Statement {

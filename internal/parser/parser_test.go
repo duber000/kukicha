@@ -1403,3 +1403,39 @@ func TestParseOnErrWithHandlerAndExplain(t *testing.T) {
 		t.Errorf("expected explain 'Expected a positive integer', got '%s'", varDecl.OnErr.Explain)
 	}
 }
+
+func TestParseThreeValueAssignment(t *testing.T) {
+	input := `func Test()
+    _, ipNet, err := net.ParseCIDR("192.168.0.0/16")
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	varDecl, ok := fn.Body.Statements[0].(*ast.VarDeclStmt)
+	if !ok {
+		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
+	}
+
+	if len(varDecl.Names) != 3 {
+		t.Errorf("expected 3 names, got %d", len(varDecl.Names))
+	}
+
+	if varDecl.Names[0].Value != "_" {
+		t.Errorf("expected first name '_', got %s", varDecl.Names[0].Value)
+	}
+	if varDecl.Names[1].Value != "ipNet" {
+		t.Errorf("expected second name 'ipNet', got %s", varDecl.Names[1].Value)
+	}
+	if varDecl.Names[2].Value != "err" {
+		t.Errorf("expected third name 'err', got %s", varDecl.Names[2].Value)
+	}
+}

@@ -17,6 +17,7 @@ type Analyzer struct {
 	loopDepth        int                    // Track loop nesting for break/continue
 	switchDepth      int                    // Track switch nesting for break
 	exprReturnCounts map[ast.Expression]int // Inferred return counts for expressions (used by codegen)
+	sourceFile       string                 // Source file path, used to detect stdlib context
 }
 
 // New creates a new semantic analyzer
@@ -25,6 +26,17 @@ func New(program *ast.Program) *Analyzer {
 		program:     program,
 		symbolTable: NewSymbolTable(),
 		errors:      []error{},
+	}
+}
+
+// NewWithFile creates a new semantic analyzer with the source file path.
+// The file path is used to allow Kukicha stdlib packages to use Go stdlib names.
+func NewWithFile(program *ast.Program, sourceFile string) *Analyzer {
+	return &Analyzer{
+		program:     program,
+		symbolTable: NewSymbolTable(),
+		errors:      []error{},
+		sourceFile:  sourceFile,
 	}
 }
 
@@ -66,6 +78,12 @@ func (a *Analyzer) checkPackageName() {
 	}
 
 	name := a.program.PetioleDecl.Name.Value
+
+	// Kukicha's own stdlib packages are allowed to use Go stdlib names.
+	// Detect stdlib packages by the "stdlib/" prefix in the source file path.
+	if strings.Contains(a.sourceFile, "stdlib/") {
+		return
+	}
 
 	// List of reserved Go standard library packages
 	reservedPackages := map[string]bool{

@@ -1,0 +1,44 @@
+# Kukicha Standard Library - Errors
+# Error wrapping, inspection, and creation utilities.
+# Complements Kukicha's built-in onerr/explain syntax with programmatic error handling.
+#
+# Examples:
+#   err := errors.Wrap(originalErr, "loading config")
+#   # err.Error() == "loading config: <original message>"
+#
+#   if errors.Is(err, io.EOF)
+#       print("end of file")
+#
+#   wrapped := errors.New("something went wrong")
+
+petiole errors
+
+import "errors" as goerrors
+import "fmt"
+
+# Wrap wraps err with a message prefix, creating a new error that includes
+# the original as its cause. Equivalent to fmt.Errorf("%s: %w", msg, err).
+# The resulting error can be unwrapped with Unwrap or matched with Is.
+func Wrap(err error, msg string) error
+    return fmt.Errorf("%s: %w", msg, err)
+
+# Is reports whether any error in err's unwrap chain matches target.
+# Equivalent to Go's errors.Is(err, target).
+func Is(err error, target error) bool
+    return goerrors.Is(err, target)
+
+# Unwrap returns the result of calling the Unwrap method on err,
+# if err's type contains an Unwrap method returning error.
+# Otherwise, Unwrap returns empty.
+func Unwrap(err error) error
+    return goerrors.Unwrap(err)
+
+# New returns an error with the given message.
+# For inline error creation, the built-in `error "message"` syntax is preferred.
+func New(msg string) error
+    return goerrors.New(msg)
+
+# Join returns an error that wraps the given errors. Any nil values are
+# discarded. Returns empty if all values are nil.
+func Join(many items error) error
+    return goerrors.Join(many items)

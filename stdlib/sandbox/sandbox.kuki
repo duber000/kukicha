@@ -1,13 +1,176 @@
 # Kukicha Standard Library - Sandbox (os.Root Filesystem Sandboxing)
 # Confines file operations to a directory tree, preventing symlink escapes
-# and path traversal attacks. Wraps Go 1.24+ os.Root.
+# and path traversal attacks. Wraps Go 1.26+ os.Root.
+#
+# Examples:
+#   box := sandbox.New("/tmp/workdir") onerr panic "sandbox: {error}"
+#   defer sandbox.Close(box)
+#   data := sandbox.ReadString(box, "config.json") onerr panic "{error}"
+#   sandbox.WriteString(box, "hello", "output.txt") onerr panic "{error}"
+#   if sandbox.Exists(box, "data/")
+#       names := sandbox.List(box, "data/") onerr panic "{error}"
 
 petiole sandbox
 
 import "os"
+import "fmt"
+import "io/fs"
+import "stdlib/json"
 
-# Root wraps an os.Root to provide sandboxed file operations
-# All file access is confined to the directory used to create the Root
+# Root wraps an os.Root to provide sandboxed file operations.
+# All file access is confined to the directory used to create the Root.
 type Root
     root reference os.Root
     path string
+
+# New creates a new sandboxed Root at the given directory path.
+# All file operations on the returned Root are confined to this directory.
+func New(path string) (Root, error)
+    r, err := os.OpenRoot(path)
+    if err != empty
+        return Root{}, fmt.Errorf("sandbox open: %w", err)
+    return Root{root: r, path: path}, empty
+
+# Close releases the resources associated with the Root.
+func Close(r Root) error
+    return r.root.Close()
+
+# Read reads the entire contents of a file within the sandbox as bytes.
+func Read(r Root, path string) (list of byte, error)
+    data, err := r.root.ReadFile(path)
+    if err != empty
+        return empty, fmt.Errorf("sandbox read: %w", err)
+    return data, empty
+
+# ReadString reads the entire contents of a file within the sandbox as a string.
+func ReadString(r Root, path string) (string, error)
+    data, err := r.root.ReadFile(path)
+    if err != empty
+        return "", fmt.Errorf("sandbox read: %w", err)
+    return data as string, empty
+
+# WriteString writes a string to a file within the sandbox, creating it if needed.
+func WriteString(r Root, data string, path string) error
+    err := r.root.WriteFile(path, data as list of byte, 0644)
+    if err != empty
+        return fmt.Errorf("sandbox write: %w", err)
+    return empty
+
+# Write marshals data to JSON and writes it to a file within the sandbox.
+func Write(r Root, data any, path string) error
+    jsonData, err := json.MarshalPretty(data)
+    if err != empty
+        return fmt.Errorf("sandbox write marshal: %w", err)
+    writeErr := r.root.WriteFile(path, jsonData, 0644)
+    if writeErr != empty
+        return fmt.Errorf("sandbox write: %w", writeErr)
+    return empty
+
+# AppendString appends a string to a file within the sandbox, creating it if needed.
+func AppendString(r Root, data string, path string) error
+    f, err := r.root.OpenFile(path, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644)
+    if err != empty
+        return fmt.Errorf("sandbox append: %w", err)
+    defer f.Close()
+    _, writeErr := f.Write(data as list of byte)
+    if writeErr != empty
+        return fmt.Errorf("sandbox append: %w", writeErr)
+    return empty
+
+# Append marshals data to JSON and appends it (with newline) to a file within the sandbox.
+func Append(r Root, data any, path string) error
+    jsonData, err := json.Marshal(data)
+    if err != empty
+        return fmt.Errorf("sandbox append marshal: %w", err)
+    jsonData = append(jsonData, '\n')
+    f, openErr := r.root.OpenFile(path, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644)
+    if openErr != empty
+        return fmt.Errorf("sandbox append: %w", openErr)
+    defer f.Close()
+    _, writeErr := f.Write(jsonData)
+    if writeErr != empty
+        return fmt.Errorf("sandbox append: %w", writeErr)
+    return empty
+
+# MkDir creates a directory within the sandbox.
+func MkDir(r Root, path string) error
+    err := r.root.Mkdir(path, 0755)
+    if err != empty
+        return fmt.Errorf("sandbox mkdir: %w", err)
+    return empty
+
+# MkDirAll creates a directory and all necessary parents within the sandbox.
+func MkDirAll(r Root, path string) error
+    err := r.root.MkdirAll(path, 0755)
+    if err != empty
+        return fmt.Errorf("sandbox mkdirall: %w", err)
+    return empty
+
+# List returns the names of files and directories within a directory in the sandbox.
+func List(r Root, path string) (list of string, error)
+    f, err := r.root.Open(path)
+    if err != empty
+        return empty, fmt.Errorf("sandbox list: %w", err)
+    defer f.Close()
+    entries, readErr := f.ReadDir(-1)
+    if readErr != empty
+        return empty, fmt.Errorf("sandbox list: %w", readErr)
+    names := make(list of string, len(entries))
+    for i, e in entries
+        names[i] = e.Name()
+    return names, empty
+
+# Exists checks if a file or directory exists within the sandbox.
+func Exists(r Root, path string) bool
+    _, err := r.root.Stat(path)
+    return err == empty
+
+# IsDir checks if a path is a directory within the sandbox.
+func IsDir(r Root, path string) bool
+    info, err := r.root.Stat(path)
+    if err != empty
+        return false
+    return info.IsDir()
+
+# IsFile checks if a path is a regular file within the sandbox.
+func IsFile(r Root, path string) bool
+    info, err := r.root.Stat(path)
+    if err != empty
+        return false
+    return not info.IsDir()
+
+# Stat returns file info for a path within the sandbox.
+func Stat(r Root, path string) (os.FileInfo, error)
+    info, err := r.root.Stat(path)
+    if err != empty
+        return empty, fmt.Errorf("sandbox stat: %w", err)
+    return info, empty
+
+# Delete removes a file or empty directory within the sandbox.
+func Delete(r Root, path string) error
+    err := r.root.Remove(path)
+    if err != empty
+        return fmt.Errorf("sandbox delete: %w", err)
+    return empty
+
+# DeleteAll removes a file or directory tree within the sandbox.
+func DeleteAll(r Root, path string) error
+    err := r.root.RemoveAll(path)
+    if err != empty
+        return fmt.Errorf("sandbox deleteall: %w", err)
+    return empty
+
+# Rename renames a file or directory within the sandbox.
+func Rename(r Root, oldpath string, newpath string) error
+    err := r.root.Rename(oldpath, newpath)
+    if err != empty
+        return fmt.Errorf("sandbox rename: %w", err)
+    return empty
+
+# Path returns the root directory path of the sandbox.
+func Path(r Root) string
+    return r.path
+
+# FS returns an fs.FS scoped to the sandbox root for use with Go stdlib.
+func FS(r Root) fs.FS
+    return r.root.FS()

@@ -9,60 +9,6 @@ import (
 	"time"
 )
 
-// NewAllow creates a Guard that only permits connections to the listed CIDRs.
-func NewAllow(cidrs []string) (Guard, error) {
-	nets, err := parseCIDRs(cidrs)
-	if err != nil {
-		return Guard{}, err
-	}
-	return Guard{networks: nets, mode: "allow"}, nil
-}
-
-// NewBlock creates a Guard that blocks connections to the listed CIDRs.
-func NewBlock(cidrs []string) (Guard, error) {
-	nets, err := parseCIDRs(cidrs)
-	if err != nil {
-		return Guard{}, err
-	}
-	return Guard{networks: nets, mode: "block"}, nil
-}
-
-// NewSSRFGuard creates a Guard that blocks all private, loopback, link-local,
-// CGN, multicast, and reserved IP ranges — the standard SSRF protection set.
-func NewSSRFGuard() Guard {
-	cidrs := []string{
-		"10.0.0.0/8",
-		"172.16.0.0/12",
-		"192.168.0.0/16",
-		"127.0.0.0/8",
-		"169.254.0.0/16",
-		"::1/128",
-		"fc00::/7",
-		"fe80::/10",
-		"0.0.0.0/8",
-		"100.64.0.0/10",
-		"192.0.0.0/24",
-		"192.0.2.0/24",
-		"198.18.0.0/15",
-		"198.51.100.0/24",
-		"203.0.113.0/24",
-		"224.0.0.0/4",
-		"240.0.0.0/4",
-	}
-	nets, _ := parseCIDRs(cidrs) // known-good CIDRs, cannot fail
-	return Guard{networks: nets, blockPrivate: true, mode: "block"}
-}
-
-// Check validates a single IP string against the guard policy.
-// Returns true if the IP is allowed, false if blocked.
-func Check(g Guard, ipStr string) bool {
-	ip := net.ParseIP(ipStr)
-	if ip == nil {
-		return false // unparseable IPs are never allowed
-	}
-	return checkIP(g, ip)
-}
-
 // DialContext resolves the address, validates ALL resolved IPs against the
 // guard, then dials the first allowed IP directly (preventing DNS rebinding).
 // Uses net.Dialer Control as defense-in-depth to re-check at syscall level.
@@ -122,38 +68,5 @@ func HTTPTransport(g Guard) *http.Transport {
 func HTTPClient(g Guard) *http.Client {
 	return &http.Client{
 		Transport: HTTPTransport(g),
-	}
-}
-
-// parseCIDRs parses a list of CIDR strings into []*net.IPNet.
-func parseCIDRs(cidrs []string) ([]*net.IPNet, error) {
-	nets := make([]*net.IPNet, 0, len(cidrs))
-	for _, cidr := range cidrs {
-		_, ipNet, err := net.ParseCIDR(cidr)
-		if err != nil {
-			return nil, fmt.Errorf("netguard: invalid CIDR %q: %w", cidr, err)
-		}
-		nets = append(nets, ipNet)
-	}
-	return nets, nil
-}
-
-// checkIP tests whether an IP is allowed by the guard policy.
-func checkIP(g Guard, ip net.IP) bool {
-	matched := false
-	for _, n := range g.networks {
-		if n.Contains(ip) {
-			matched = true
-			break
-		}
-	}
-
-	switch g.mode {
-	case "allow":
-		return matched // only listed CIDRs are permitted
-	case "block":
-		return !matched // listed CIDRs are blocked
-	default:
-		return false
 	}
 }

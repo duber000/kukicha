@@ -138,6 +138,31 @@ todo |> json.MarshalWrite(response, _)  # Becomes: json.MarshalWrite(response, t
 
 ## General Questions
 
+### Does the Kukicha standard library depend on third-party packages?
+
+Wherever possible, Kukicha's stdlib is built on Go's standard library alone. Most packages —
+`slice`, `string`, `json`, `files`, `net`, `errors`, `encoding`, `fetch`, `llm`, `shell`,
+`env`, `validate`, and others — use only packages that ship with Go itself.
+
+The exceptions are packages that wrap functionality Go's stdlib simply does not provide:
+
+| Package | Third-party dependency | Why no stdlib alternative |
+|---------|----------------------|--------------------------|
+| `stdlib/parse` | `gopkg.in/yaml.v3` | Go has no built-in YAML parser |
+| `stdlib/pg` | `github.com/jackc/pgx/v5` | Go has no built-in PostgreSQL driver |
+| `stdlib/container` | `github.com/docker/docker/client` | Go has no built-in Docker/Podman SDK |
+| `stdlib/kube` | `k8s.io/client-go` | Go has no built-in Kubernetes client |
+| `stdlib/mcp` | `github.com/modelcontextprotocol/go-sdk/mcp` | Go has no built-in MCP support |
+| `stdlib/a2a` | `github.com/a2aproject/a2a-go` | Go has no built-in A2A protocol |
+
+`stdlib/json` uses `encoding/json/v2`, which is part of Go 1.26+ (enabled via
+`GOEXPERIMENT=jsonv2`) rather than a third-party package.
+
+When you import one of the exception packages, `go mod tidy` will pull in the corresponding
+dependency automatically.
+
+---
+
 ### Does Kukicha have a runtime?
 
 No. Kukicha has zero runtime overhead. The compiler transpiles your code into standard, idiomatic Go. Once compiled by the Go toolchain, there is no trace of Kukicha left - just a native Go binary.

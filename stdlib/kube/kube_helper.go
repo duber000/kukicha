@@ -35,29 +35,6 @@ func Connect() (Cluster, error) {
 	return Cluster{client: clientset, namespace: "default"}, nil
 }
 
-// New starts a configuration builder.
-func New() Config {
-	return Config{}
-}
-
-// Kubeconfig sets the path to the kubeconfig file.
-func Kubeconfig(cfg Config, path string) Config {
-	cfg.kubeconfig = path
-	return cfg
-}
-
-// Context sets the kubeconfig context name.
-func Context(cfg Config, name string) Config {
-	cfg.context = name
-	return cfg
-}
-
-// InCluster configures the client for in-cluster pod authentication.
-func InCluster(cfg Config) Config {
-	cfg.inCluster = true
-	return cfg
-}
-
 // Open creates a Cluster from the builder configuration.
 func Open(cfg Config) (Cluster, error) {
 	var restConfig *rest.Config
@@ -93,12 +70,6 @@ func Open(cfg Config) (Cluster, error) {
 		return Cluster{}, fmt.Errorf("kube open: %w", err)
 	}
 	return Cluster{client: clientset, namespace: "default"}, nil
-}
-
-// Namespace returns a copy of the Cluster scoped to the given namespace.
-func Namespace(c Cluster, ns string) Cluster {
-	c.namespace = ns
-	return c
 }
 
 func clientset(c Cluster) *kubernetes.Clientset {

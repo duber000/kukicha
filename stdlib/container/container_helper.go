@@ -278,23 +278,6 @@ func ConnectRemote(host string) (Engine, error) {
 	return Engine{cli: cli}, nil
 }
 
-// New starts a configuration builder.
-func New() Config {
-	return Config{}
-}
-
-// Host sets the Docker host URL on the config builder.
-func Host(cfg Config, host string) Config {
-	cfg.host = host
-	return cfg
-}
-
-// APIVersion sets an explicit API version on the config builder.
-func APIVersion(cfg Config, version string) Config {
-	cfg.apiVersion = version
-	return cfg
-}
-
 // Open creates an Engine from the builder configuration.
 func Open(cfg Config) (Engine, error) {
 	opts := []client.Opt{
@@ -312,47 +295,6 @@ func Open(cfg Config) (Engine, error) {
 		return Engine{}, fmt.Errorf("container open: %w", err)
 	}
 	return Engine{cli: cli}, nil
-}
-
-// Close closes the Docker client connection.
-func Close(engine Engine) error {
-	return engine.cli.Close()
-}
-
-// ListContainers lists all containers (including stopped).
-func ListContainers(engine Engine) ([]ContainerInfo, error) {
-	containers, err := engine.cli.ContainerList(context.Background(), dockercontainer.ListOptions{All: true})
-	if err != nil {
-		return nil, fmt.Errorf("container list: %w", err)
-	}
-	result := make([]ContainerInfo, len(containers))
-	for i, c := range containers {
-		result[i] = ContainerInfo{
-			id:    c.ID,
-			image: c.Image,
-			status: c.Status,
-			state:  c.State,
-			names:  c.Names,
-		}
-	}
-	return result, nil
-}
-
-// ListImages lists all images on the host.
-func ListImages(engine Engine) ([]ImageInfo, error) {
-	images, err := engine.cli.ImageList(context.Background(), image.ListOptions{All: true})
-	if err != nil {
-		return nil, fmt.Errorf("container list images: %w", err)
-	}
-	result := make([]ImageInfo, len(images))
-	for i, img := range images {
-		result[i] = ImageInfo{
-			id:   img.ID,
-			tags: img.RepoTags,
-			size: img.Size,
-		}
-	}
-	return result, nil
 }
 
 // Pull pulls an image from a registry. Returns the image digest.
@@ -443,24 +385,6 @@ func Run(engine Engine, img string, cmd []string) (string, error) {
 	return resp.ID, nil
 }
 
-// Stop stops a running container.
-func Stop(engine Engine, containerID string) error {
-	err := engine.cli.ContainerStop(context.Background(), containerID, dockercontainer.StopOptions{})
-	if err != nil {
-		return fmt.Errorf("container stop: %w", err)
-	}
-	return nil
-}
-
-// Remove removes a container.
-func Remove(engine Engine, containerID string) error {
-	err := engine.cli.ContainerRemove(context.Background(), containerID, dockercontainer.RemoveOptions{})
-	if err != nil {
-		return fmt.Errorf("container remove: %w", err)
-	}
-	return nil
-}
-
 // Build builds a Docker image from a directory. Returns imageID and build output.
 func Build(engine Engine, path string, tag string) (BuildOutput, error) {
 	imageID, output, err := buildImage(engine.cli, path, tag)
@@ -489,50 +413,3 @@ func LoginFromConfig(server string) (Auth, error) {
 	return Auth{username: username, password: password, serverAddress: addr}, nil
 }
 
-// --- Accessors ---
-
-// ContainerID returns the container's ID.
-func ContainerID(c ContainerInfo) string { return c.id }
-
-// ContainerImage returns the container's image name.
-func ContainerImage(c ContainerInfo) string { return c.image }
-
-// ContainerStatus returns the container's status string.
-func ContainerStatus(c ContainerInfo) string { return c.status }
-
-// ContainerState returns the container's state (running, exited, etc.).
-func ContainerState(c ContainerInfo) string { return c.state }
-
-// ContainerNames returns the container's names.
-func ContainerNames(c ContainerInfo) []string { return c.names }
-
-// ImageID returns the image's ID.
-func ImageID(img ImageInfo) string { return img.id }
-
-// ImageTags returns the image's tags.
-func ImageTags(img ImageInfo) []string { return img.tags }
-
-// ImageSize returns the image's size in bytes.
-func ImageSize(img ImageInfo) int64 { return img.size }
-
-// BuildImageID returns the image ID from a build result.
-func BuildImageID(b BuildOutput) string { return b.imageID }
-
-// BuildLog returns the build output log.
-func BuildLog(b BuildOutput) string { return b.output }
-
-// Login creates an Auth with the given credentials.
-func Login(username string, password string, server string) Auth {
-	return Auth{username: username, password: password, serverAddress: server}
-}
-
-// AuthEncode encodes auth credentials as a base64 JSON string
-// for use with Docker registry API headers.
-func AuthEncode(auth Auth) string {
-	authJSON, _ := json.Marshal(map[string]string{
-		"username":      auth.username,
-		"password":      auth.password,
-		"serveraddress": auth.serverAddress,
-	})
-	return base64.URLEncoding.EncodeToString(authJSON)
-}

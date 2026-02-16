@@ -69,3 +69,27 @@ type NamespaceList
 # NamespaceItem wraps a single namespace
 type NamespaceItem
     ns any
+
+# New starts a configuration builder.
+func New() Config
+    return Config{}
+
+# Kubeconfig sets the path to the kubeconfig file.
+func Kubeconfig(cfg Config, path string) Config
+    cfg.kubeconfig = path
+    return cfg
+
+# Context sets the kubeconfig context name.
+func Context(cfg Config, name string) Config
+    cfg.context = name
+    return cfg
+
+# InCluster configures the client for in-cluster pod authentication.
+func InCluster(cfg Config) Config
+    cfg.inCluster = true
+    return cfg
+
+# Namespace returns a copy of the Cluster scoped to the given namespace.
+func Namespace(c Cluster, ns string) Cluster
+    c.namespace = ns
+    return c
