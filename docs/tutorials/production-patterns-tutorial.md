@@ -750,8 +750,7 @@ function FetchReposResilient(username string) list of Repo
         fetch.Get(url)
             |> fetch.CheckStatus()
             |> fetch.Bytes()
-            |> json.Unmarshal(reference of repos)
-            onerr
+            |> json.Unmarshal(reference of repos) onerr
                 fetchOk = false
 
         if fetchOk

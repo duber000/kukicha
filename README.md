@@ -119,8 +119,7 @@ func main()
     fetch.Get("https://api.github.com/users/golang/repos")
         |> fetch.CheckStatus()
         |> fetch.Bytes()
-        |> json.Unmarshal(reference repos)
-        onerr panic "API call failed: {error}"
+        |> json.Unmarshal(reference of repos) onerr panic "API call failed: {error}"
 
     for repo in repos[:5]
         print("- {repo.Name}: {repo.Stars} stars")
@@ -160,8 +159,7 @@ func main()
 
     message := llm.New("gpt-5-nano")
         |> llm.System("Write a concise git commit message for this diff.")
-        |> llm.Ask(diff)
-        onerr panic "AI Error: {error}"
+        |> llm.Ask(diff) onerr panic "AI Error: {error}"
 
     print("Suggested: {message}")
 ```

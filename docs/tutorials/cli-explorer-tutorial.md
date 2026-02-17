@@ -133,8 +133,7 @@ function FetchRepos(username string) list of Repo
     fetch.Get(url)
         |> fetch.CheckStatus()
         |> fetch.Bytes()
-        |> json.Unmarshal(reference of repos)
-        onerr
+        |> json.Unmarshal(reference of repos) onerr
             print("Failed to fetch repos for '{username}': {error}")
             return empty list of Repo
 
@@ -401,8 +400,7 @@ function FetchRepos(username string) list of Repo
     fetch.Get(url)
         |> fetch.CheckStatus()
         |> fetch.Bytes()
-        |> json.Unmarshal(reference of repos)
-        onerr
+        |> json.Unmarshal(reference of repos) onerr
             print("Failed to fetch repos for '{username}': {error}")
             return empty list of Repo
     return repos
