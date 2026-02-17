@@ -128,8 +128,8 @@ function main()
 function main()
     urls := list of string{"https://google.com", "https://github.com"}
     
-    # Create a channel that carries 'Result' types
-    results := make channel of Result
+    # Create an unbuffered channel — sends block until the receiver is ready
+    results := make(channel of Result)
     
     for url in urls
         u := url # Shadow the variable for the goroutine
@@ -146,7 +146,7 @@ function main()
 ```
 
 ### Key Concepts:
-1. **`make channel of T`**: Creates a new channel.
+1. **`make(channel of T)`**: Creates an unbuffered channel (sends block until a receiver is ready). Add a size for a buffered channel: `make(channel of T, 10)`.
 2. **`send channel, value`**: Pushes a value into the pipe.
 3. **`receive from channel`**: Pulls a value out. This blocks the current goroutine until something is available.
 
@@ -157,7 +157,7 @@ function main()
 Launching 10,000 goroutines for 10,000 URLs is fine for local tests, but in production, you might want to limit yourself to eg. 10 workers at a time. This is called **Fan-out**.
 
 ```kukicha
-func worker(id int, jobs channel of string, results channel of Result)
+function worker(id int, jobs channel of string, results channel of Result)
     for
         # Receive a URL from the jobs channel
         url := receive from jobs onerr break # Exit loop if channel is closed
@@ -169,6 +169,7 @@ function main()
     numWorkers := 3
     urls := list of string{"https://google.com", "https://github.com", "https://go.dev"}
 
+    # Buffered channels — hold all items without blocking the sender
     jobs := make(channel of string, len(urls))
     results := make(channel of Result, len(urls))
 
