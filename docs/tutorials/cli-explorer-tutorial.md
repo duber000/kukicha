@@ -133,7 +133,7 @@ function FetchRepos(username string) list of Repo
     fetch.Get(url)
         |> fetch.CheckStatus()
         |> fetch.Bytes()
-        |> json.Unmarshal(reference repos)
+        |> json.Unmarshal(reference of repos)
         onerr
             print("Failed to fetch repos for '{username}': {error}")
             return empty list of Repo
@@ -148,13 +148,13 @@ This is a **data pipeline** using the pipe operator `|>`. Read it left to right:
 1. `fetch.Get(url)` — Make an HTTP request to GitHub's API
 2. `|> fetch.CheckStatus()` — Verify we got a success response (not a 404)
 3. `|> fetch.Bytes()` — Read the response body as raw bytes
-4. `|> json.Unmarshal(reference repos)` — Parse the JSON bytes into our `list of Repo`
+4. `|> json.Unmarshal(reference of repos)` — Parse the JSON bytes into our `list of Repo`
 
 Each step's output flows into the next step's input. Without pipes, you'd need to store each intermediate result in a temporary variable and check for errors at every step — roughly 12 lines instead of 4.
 
 **`onerr` in action:** If *any* step in the pipeline fails (network error, bad status code, invalid JSON), execution jumps to the `onerr` block. One clause handles errors from four operations.
 
-**`reference repos`** is needed because `json.Unmarshal` needs to *modify* the `repos` variable (fill it with data). We'll explore `reference` more in Step 4.
+**`reference of repos`** is needed because `json.Unmarshal` needs to *modify* the `repos` variable (fill it with data). We'll explore `reference` more in Step 4.
 
 ### Let's Try It
 
@@ -401,7 +401,7 @@ function FetchRepos(username string) list of Repo
     fetch.Get(url)
         |> fetch.CheckStatus()
         |> fetch.Bytes()
-        |> json.Unmarshal(reference repos)
+        |> json.Unmarshal(reference of repos)
         onerr
             print("Failed to fetch repos for '{username}': {error}")
             return empty list of Repo
@@ -629,7 +629,7 @@ GitHub's API returns `"stargazers_count"` in its JSON response. The tag `json:"s
 ### Pipe Pipelines — Real Data Transformation
 
 ```kukicha
-fetch.Get(url) |> fetch.CheckStatus() |> fetch.Bytes() |> json.Unmarshal(reference repos) onerr ...
+fetch.Get(url) |> fetch.CheckStatus() |> fetch.Bytes() |> json.Unmarshal(reference of repos) onerr ...
 ```
 
 This four-step pipeline is the heart of the program. Each `|>` passes the result of one operation to the next. Without pipes, you'd write:
@@ -641,7 +641,7 @@ resp2, err2 := fetch.CheckStatus(resp)
 # check err2...
 bytes, err3 := fetch.Bytes(resp2)
 # check err3...
-err4 := json.Unmarshal(bytes, reference repos)
+err4 := json.Unmarshal(bytes, reference of repos)
 # check err4...
 ```
 

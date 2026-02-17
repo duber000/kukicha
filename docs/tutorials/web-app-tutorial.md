@@ -133,7 +133,7 @@ Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks 
 > ```kukicha
 > import "encoding/json/v2"
 > json.MarshalWrite(response, data)            # Write JSON directly to response
-> json.UnmarshalRead(request.Body, reference result)  # Read JSON from request
+> json.UnmarshalRead(request.Body, reference of result)  # Read JSON from request
 >
 > # With pipe placeholder (_), pipe data into any argument position:
 > data |> json.MarshalWrite(response, _)       # _ marks where piped value goes
@@ -309,7 +309,7 @@ function sendError on store reference LinkStore(response http.ResponseWriter, st
 > import "stdlib/http" as httphelper
 > httphelper.JSON(response, link)              # Send JSON with correct headers
 > httphelper.JSONError(response, 400, "...")   # Send error as JSON
-> httphelper.ReadJSON(request, reference link) # Parse request body
+> httphelper.ReadJSON(request, reference of link) # Parse request body
 > ```
 > See the [Production Patterns Tutorial](production-patterns-tutorial.md) for more.
 
