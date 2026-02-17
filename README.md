@@ -107,19 +107,17 @@ Fetch and parse real data with zero boilerplate. The pipe operator (`|>`) and `o
 
 ```kukicha
 import "stdlib/fetch"
-import "stdlib/json"
 
 type Repo
-    Name string json:"name"
-    Stars int json:"stargazers_count"
+    Name string as "name"
+    Stars int as "stargazers_count"
 
 func main()
-    # Fetch, check status, and parse JSON in one pipeline
+    # Fetch, check status, and decode JSON in one pipeline
     repos := empty list of Repo
     fetch.Get("https://api.github.com/users/golang/repos")
         |> fetch.CheckStatus()
-        |> fetch.Bytes()
-        |> json.Unmarshal(reference of repos) onerr panic "API call failed: {error}"
+        |> fetch.JsonAs(_, reference of repos) onerr panic "API call failed: {error}"
 
     for repo in repos[:5]
         print("- {repo.Name}: {repo.Stars} stars")

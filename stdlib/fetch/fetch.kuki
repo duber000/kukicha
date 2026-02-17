@@ -21,6 +21,7 @@ import "time"
 import "io"
 import "bytes"
 import "fmt"
+import "strings"
 import "stdlib/json"
 import "stdlib/sandbox"
 
@@ -177,15 +178,74 @@ func Bytes(resp reference http.Response) (list of byte, error)
     return bodyBytes, empty
 
 # Json reads the response body and unmarshals it as JSON
-# Returns the parsed data as any type (typically map of string to any)
+# Returns parsed JSON as any (map/list/scalar based on payload shape)
 # Example: data, err := resp |> fetch.Json()
 func Json(resp reference http.Response) (any, error)
     defer resp.Body.Close()
-    data := make(map of string to any)
+    data := empty any
     err := json.UnmarshalRead(resp.Body, reference of data)
     if err != empty
         return empty, err
     return data, empty
+
+# Decode reads the response body and unmarshals JSON into a typed target
+# Target must be a pointer (use "reference of" in Kukicha)
+# Example:
+#   repos := empty list of Repo
+#   fetch.Get(url) |> fetch.CheckStatus() |> fetch.Decode(_, reference of repos) onerr panic "{error}"
+func Decode(resp reference http.Response, target any) error
+    defer resp.Body.Close()
+    return json.UnmarshalRead(resp.Body, target)
+
+# JsonAs is a typed decode helper for JSON responses.
+# Target must be a pointer (use "reference of" in Kukicha).
+# Example:
+#   repos := empty list of Repo
+#   fetch.Get(url) |> fetch.CheckStatus() |> fetch.JsonAs(_, reference of repos) onerr panic "{error}"
+func JsonAs(resp reference http.Response, target any) error
+    return Decode(resp, target)
+
+# DecodeAs is an alias for Decode with naming that mirrors JsonAs.
+# Target must be a pointer (use "reference of" in Kukicha).
+func DecodeAs(resp reference http.Response, target any) error
+    return Decode(resp, target)
+
+# PathEscape escapes user-provided path segments for safe URL construction.
+# Example: safe := fetch.PathEscape("acme/dev team")
+func PathEscape(value string) string
+    return url.PathEscape(value)
+
+# QueryEscape escapes user-provided query values for safe URL construction.
+# Example: safe := fetch.QueryEscape("go lang")
+func QueryEscape(value string) string
+    return url.QueryEscape(value)
+
+# URLTemplate safely fills {name} placeholders using path escaping by default.
+# Any unresolved placeholders cause an error to enforce explicit mapping.
+# Example:
+#   url := fetch.URLTemplate("https://api.github.com/users/{username}/repos", map of string to string{"username": username}) onerr panic "{error}"
+func URLTemplate(tmpl string, params map of string to string) (string, error)
+    result := tmpl
+    for key, value in params
+        placeholder := fmt.Sprintf("%c%s%c", 123, key, 125)
+        result = strings.ReplaceAll(result, placeholder, url.PathEscape(value))
+
+    if strings.Contains(result, "{") or strings.Contains(result, "}")
+        return "", error "unresolved URL template placeholders: {result}"
+    return result, empty
+
+# URLWithQuery adds query parameters with proper encoding.
+# Example:
+#   withQuery := fetch.URLWithQuery(base, map of string to string{"q": search}) onerr panic "{error}"
+func URLWithQuery(baseURL string, params map of string to string) (string, error)
+    parsed, err := url.Parse(baseURL)
+    if err != empty
+        return "", err
+    query := parsed.Query()
+    for key, value in params
+        query.Set(key, value)
+    parsed.RawQuery = query.Encode()
+    return parsed.String(), empty
 
 # ============================================================================
 # P1: Auth Helpers

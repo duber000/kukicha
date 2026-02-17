@@ -74,6 +74,32 @@ func TestTypeDeclaration(t *testing.T) {
 	}
 }
 
+func TestTypeDeclarationFieldAliasGeneratesJSONTag(t *testing.T) {
+	input := `type Repo
+    Stars int as "stargazers_count"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "Stars int `json:\"stargazers_count\"`") {
+		t.Errorf("expected generated json tag from field alias, got: %s", output)
+	}
+}
+
 func TestFunctionTypeAlias(t *testing.T) {
 	tests := []struct {
 		name     string

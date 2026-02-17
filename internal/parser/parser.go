@@ -354,9 +354,15 @@ func (p *Parser) parseTypeDecl() ast.Declaration {
 
 		fieldName := p.parseIdentifier()
 		fieldType := p.parseTypeAnnotation()
+		alias := p.parseFieldAlias()
 
 		// Parse optional struct tag (e.g., json:"name")
 		tag := p.parseStructTag()
+		if alias != "" && tag != "" {
+			p.error(p.peekToken(), "cannot combine field alias and explicit struct tag on the same field")
+		} else if alias != "" {
+			tag = `json:"` + alias + `"`
+		}
 
 		fields = append(fields, &ast.FieldDecl{
 			Name: fieldName,
@@ -2423,6 +2429,21 @@ func (p *Parser) parseStructTag() string {
 
 	// Return formatted tag: json:"name"
 	return tagKey + ":" + `"` + tagValue + `"`
+}
+
+// parseFieldAlias parses optional field alias syntax: as "json_name"
+// Returns empty string when no alias is present.
+func (p *Parser) parseFieldAlias() string {
+	if !p.match(lexer.TOKEN_AS) {
+		return ""
+	}
+
+	if !p.check(lexer.TOKEN_STRING) {
+		p.error(p.peekToken(), "expected string value after 'as' in field alias")
+		return ""
+	}
+
+	return p.advance().Lexeme
 }
 func (p *Parser) parseReturnExpr() ast.Expression {
 	token := p.advance() // consume 'return'

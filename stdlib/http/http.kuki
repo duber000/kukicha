@@ -6,6 +6,7 @@ petiole http
 import "net/http"
 import "stdlib/json"
 import "stdlib/string"
+import "stdlib/fetch"
 import "io"
 import "strconv"
 import "fmt"
@@ -194,6 +195,16 @@ func Redirect(w http.ResponseWriter, r reference http.Request, url string)
 # Example: http.RedirectPermanent(w, r, "/new-location")
 func RedirectPermanent(w http.ResponseWriter, r reference http.Request, url string)
     http.Redirect(w, r, url, 301)
+
+# SafeURL builds URLs with safe-by-default escaping semantics.
+# Path parameters use URL path escaping; query params are encoded.
+# Example:
+#   safeURL := http.SafeURL("/users/{name}", map of string to string{"name": user}, map of string to string{"tab": "repos"}) onerr return
+func SafeURL(tmpl string, pathParams map of string to string, queryParams map of string to string) (string, error)
+    base, err := fetch.URLTemplate(tmpl, pathParams)
+    if err != empty
+        return "", err
+    return fetch.URLWithQuery(base, queryParams)
 
 # Text writes a plain text response with status 200
 # Sets Content-Type to text/plain

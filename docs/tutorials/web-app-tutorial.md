@@ -276,10 +276,10 @@ type ShortenRequest
 type ShortenResponse
     code string
     url string
-    shortUrl string json:"short_url"
+    shortUrl string as "short_url"
 
 type ErrorResponse
-    err string json:"error"
+    err string as "error"
 
 # --- Store ---
 # (In the Production tutorial, we'll replace this with a database)

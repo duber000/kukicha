@@ -78,6 +78,50 @@ func TestParseTypeDeclaration(t *testing.T) {
 	}
 }
 
+func TestParseTypeDeclarationFieldAlias(t *testing.T) {
+	input := `type Repo
+    Stars int as "stargazers_count"
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	typeDecl, ok := program.Declarations[0].(*ast.TypeDecl)
+	if !ok {
+		t.Fatalf("expected TypeDecl, got %T", program.Declarations[0])
+	}
+	if len(typeDecl.Fields) != 1 {
+		t.Fatalf("expected 1 field, got %d", len(typeDecl.Fields))
+	}
+	if typeDecl.Fields[0].Tag != `json:"stargazers_count"` {
+		t.Fatalf("expected json tag from alias, got %q", typeDecl.Fields[0].Tag)
+	}
+}
+
+func TestParseTypeDeclarationFieldAliasWithExplicitTagErrors(t *testing.T) {
+	input := `type Repo
+    Stars int as "stargazers_count" json:"stars"
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	_, errors := p.Parse()
+	if len(errors) == 0 {
+		t.Fatal("expected parser errors for alias + explicit tag combination")
+	}
+	if !strings.Contains(errors[0].Error(), "cannot combine field alias and explicit struct tag") {
+		t.Fatalf("unexpected parser error: %v", errors[0])
+	}
+}
+
 func TestParseFunctionTypeAlias(t *testing.T) {
 	tests := []struct {
 		name       string

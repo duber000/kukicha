@@ -61,6 +61,135 @@ func TestJson(t reference testing.T)
     if data == empty
         t.Error("Expected non-nil data")
 
+# TestJsonArray verifies that fetch.Json supports top-level JSON arrays
+func TestJsonArray(t reference testing.T)
+    jsonBytes := "[{\"message\":\"a\",\"count\":1},{\"message\":\"b\",\"count\":2}]" as list of byte
+
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+        w.Write(jsonBytes)
+    ))
+    defer server.Close()
+
+    resp, err := fetch.Get(server.URL)
+    if err != empty
+        t.Fatalf("fetch.Get failed: {err}")
+
+    data, jsonErr := fetch.Json(resp)
+    if jsonErr != empty
+        t.Fatalf("fetch.Json failed for array payload: {jsonErr}")
+    if data == empty
+        t.Error("Expected non-empty parsed array data")
+
+# TestDecode verifies that fetch.Decode can unmarshal directly into typed targets
+func TestDecode(t reference testing.T)
+    testData := list of TestData{
+        TestData{Message: "typed", Count: 7},
+        TestData{Message: "decode", Count: 9},
+    }
+    jsonBytes, marshalErr := json.Marshal(testData)
+    if marshalErr != empty
+        t.Fatalf("json.Marshal failed: {marshalErr}")
+
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+        w.Write(jsonBytes)
+    ))
+    defer server.Close()
+
+    resp, err := fetch.Get(server.URL)
+    if err != empty
+        t.Fatalf("fetch.Get failed: {err}")
+
+    decoded := empty list of TestData
+    decodeErr := fetch.Decode(resp, reference of decoded)
+    if decodeErr != empty
+        t.Fatalf("fetch.Decode failed: {decodeErr}")
+
+    if len(decoded) != 2
+        t.Fatalf("Expected 2 decoded items, got {len(decoded)}")
+    if decoded[0].Message != "typed" or decoded[1].Count != 9
+        t.Errorf("Decoded data mismatch: {decoded}")
+
+# TestJsonAs verifies typed decode helper alias
+func TestJsonAs(t reference testing.T)
+    testData := list of TestData{
+        TestData{Message: "jsonas", Count: 1},
+    }
+    jsonBytes, marshalErr := json.Marshal(testData)
+    if marshalErr != empty
+        t.Fatalf("json.Marshal failed: {marshalErr}")
+
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+        w.Write(jsonBytes)
+    ))
+    defer server.Close()
+
+    resp, err := fetch.Get(server.URL)
+    if err != empty
+        t.Fatalf("fetch.Get failed: {err}")
+
+    decoded := empty list of TestData
+    jsonAsErr := fetch.JsonAs(resp, reference of decoded)
+    if jsonAsErr != empty
+        t.Fatalf("fetch.JsonAs failed: {jsonAsErr}")
+    if len(decoded) != 1 or decoded[0].Message != "jsonas"
+        t.Errorf("Unexpected JsonAs decode result: {decoded}")
+
+# TestDecodeAs verifies alias helper for typed decode
+func TestDecodeAs(t reference testing.T)
+    testData := TestData{Message: "decodeas", Count: 3}
+    jsonBytes, marshalErr := json.Marshal(testData)
+    if marshalErr != empty
+        t.Fatalf("json.Marshal failed: {marshalErr}")
+
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+        w.Write(jsonBytes)
+    ))
+    defer server.Close()
+
+    resp, err := fetch.Get(server.URL)
+    if err != empty
+        t.Fatalf("fetch.Get failed: {err}")
+
+    decoded := TestData{}
+    decodeAsErr := fetch.DecodeAs(resp, reference of decoded)
+    if decodeAsErr != empty
+        t.Fatalf("fetch.DecodeAs failed: {decodeAsErr}")
+    if decoded.Message != "decodeas" or decoded.Count != 3
+        t.Errorf("Unexpected DecodeAs decode result: {decoded}")
+
+# TestURLTemplate verifies safe path placeholder expansion
+func TestURLTemplate(t reference testing.T)
+    builtURL, err := fetch.URLTemplate("https://api.example.com/users/{username}/repos/{repo}", map of string to string{"username": "acme/dev team", "repo": "hello world"})
+    if err != empty
+        t.Fatalf("URLTemplate failed: {err}")
+
+    expected := "https://api.example.com/users/acme%2Fdev%20team/repos/hello%20world"
+    if builtURL != expected
+        t.Errorf("Expected URL '{expected}', got '{builtURL}'")
+
+# TestURLTemplateMissingPlaceholder verifies unresolved placeholders error
+func TestURLTemplateMissingPlaceholder(t reference testing.T)
+    _, err := fetch.URLTemplate("https://api.example.com/users/{username}/repos/{repo}", map of string to string{"username": "golang"})
+    if err == empty
+        t.Fatal("Expected error for unresolved URL template placeholder")
+
+# TestURLWithQuery verifies safe query encoding
+func TestURLWithQuery(t reference testing.T)
+    builtURL, err := fetch.URLWithQuery("https://api.example.com/search", map of string to string{"q": "go lang", "sort": "stars desc"})
+    if err != empty
+        t.Fatalf("URLWithQuery failed: {err}")
+
+    if builtURL != "https://api.example.com/search?q=go+lang&sort=stars+desc" and builtURL != "https://api.example.com/search?sort=stars+desc&q=go+lang"
+        t.Errorf("Unexpected query URL: {builtURL}")
+
 # TestText verifies that fetch.Text can read response body as string
 func TestText(t reference testing.T)
     expectedText := "Hello, Kukicha!"

@@ -193,7 +193,7 @@ type Link
     code string
     url string
     clicks int
-    createdAt string json:"created_at"
+    createdAt string as "created_at"
 
 # Open the database and create the table if needed
 function OpenDatabase(filename string) (Database, error)
@@ -314,7 +314,7 @@ type Link
     code string
     url string
     clicks int
-    createdAt string json:"created_at"
+    createdAt string as "created_at"
 
 type Server
     db Database
@@ -327,11 +327,11 @@ type ShortenRequest
 type ShortenResponse
     code string
     url string
-    shortUrl string json:"short_url"
+    shortUrl string as "short_url"
     clicks int
 
 type ErrorResponse
-    err string json:"error"
+    err string as "error"
 
 # --- Server Constructor ---
 
@@ -749,8 +749,7 @@ function FetchReposResilient(username string) list of Repo
 
         fetch.Get(url)
             |> fetch.CheckStatus()
-            |> fetch.Bytes()
-            |> json.Unmarshal(reference of repos) onerr
+            |> fetch.JsonAs(_, reference of repos) onerr
                 fetchOk = false
 
         if fetchOk

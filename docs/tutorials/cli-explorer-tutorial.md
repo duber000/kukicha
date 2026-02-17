@@ -92,16 +92,17 @@ Create a file called `explorer.kuki`:
 
 ```kukicha
 import "stdlib/fetch"
-import "stdlib/json"
+import "stdlib/string"
+import "stdlib/slice"
 
 # A Repo represents a GitHub repository
-# The json:"..." tags tell the JSON parser which API field maps to which field
+# The `as "..."` aliases map API JSON field names to readable field names
 type Repo
-    Name string json:"name"
-    Description string json:"description"
-    Stars int json:"stargazers_count"
-    Language string json:"language"
-    URL string json:"html_url"
+    Name string as "name"
+    Description string as "description"
+    Stars int as "stargazers_count"
+    Language string as "language"
+    URL string as "html_url"
 ```
 
 **What's new here?**
@@ -113,7 +114,7 @@ We're defining a custom **type** called `Repo` — a blueprint for GitHub reposi
 - `Language` — Primary programming language
 - `URL` — Link to view it on GitHub
 
-The **`json:"..."`** part after each field is a **struct tag**. GitHub's API returns JSON with fields like `"stargazers_count"`. The tag tells Kukicha: "when you see `stargazers_count` in the JSON data, put it in the `Stars` field." This lets you use clean names in your code while still matching the API's naming conventions.
+The **`as "..."`** part after each field is a JSON alias. GitHub's API returns fields like `"stargazers_count"`, and the alias maps that data into your readable `Stars` field.
 
 ---
 
@@ -130,10 +131,9 @@ function FetchRepos(username string) list of Repo
 
     fetch.Get(url)
         |> fetch.CheckStatus()
-        |> fetch.Bytes()
-        |> json.Unmarshal(reference of repos) onerr
-        print("Failed to fetch repos for '{username}': {error}")
-        return empty list of Repo
+        |> fetch.JsonAs(_, reference of repos) onerr
+            print("Failed to fetch repos for '{username}': {error}")
+            return empty list of Repo
 
     return repos
 ```
@@ -144,14 +144,13 @@ This is a **data pipeline** using the pipe operator `|>`. Read it left to right:
 
 1. `fetch.Get(url)` — Make an HTTP request to GitHub's API
 2. `|> fetch.CheckStatus()` — Verify we got a success response (not a 404)
-3. `|> fetch.Bytes()` — Read the response body as raw bytes
-4. `|> json.Unmarshal(reference of repos)` — Parse the JSON bytes into our `list of Repo`
+3. `|> fetch.JsonAs(_, reference of repos)` — Decode JSON directly into our `list of Repo`
 
 Each step's output flows into the next step's input. Without pipes, you'd need to store each intermediate result in a temporary variable and check for errors at every step — roughly 12 lines instead of 4.
 
 **`onerr` in action:** If *any* step in the pipeline fails (network error, bad status code, invalid JSON), execution jumps to the `onerr` block. One clause handles errors from four operations.
 
-**`reference of repos`** is needed because `json.Unmarshal` needs to *modify* the `repos` variable (fill it with data). We'll explore `reference` more in Step 4.
+**`reference of repos`** is needed because `fetch.JsonAs` fills the `repos` variable directly. We'll explore `reference` more in Step 4.
 
 ### Let's Try It
 
@@ -362,7 +361,6 @@ Replace the contents of `explorer.kuki` with the complete program:
 
 ```kukicha
 import "stdlib/fetch"
-import "stdlib/json"
 import "stdlib/string"
 import "stdlib/slice"
 import "stdlib/input"
@@ -371,11 +369,11 @@ import "stdlib/cast"
 # --- Type Definitions ---
 
 type Repo
-    Name string json:"name"
-    Description string json:"description"
-    Stars int json:"stargazers_count"
-    Language string json:"language"
-    URL string json:"html_url"
+    Name string as "name"
+    Description string as "description"
+    Stars int as "stargazers_count"
+    Language string as "language"
+    URL string as "html_url"
 
 type Explorer
     repos list of Repo
@@ -399,8 +397,7 @@ function FetchRepos(username string) list of Repo
     repos := empty list of Repo
     fetch.Get(url)
         |> fetch.CheckStatus()
-        |> fetch.Bytes()
-        |> json.Unmarshal(reference of repos) onerr
+        |> fetch.JsonAs(_, reference of repos) onerr
             print("Failed to fetch repos for '{username}': {error}")
             return empty list of Repo
     return repos
@@ -615,19 +612,19 @@ Goodbye!
 
 The final program introduced several concepts that deserve a closer look. Let's walk through them.
 
-### JSON Tags — Mapping API Data to Types
+### JSON Aliases — Mapping API Data to Types
 
 ```kukicha
 type Repo
-    Stars int json:"stargazers_count"
+    Stars int as "stargazers_count"
 ```
 
-GitHub's API returns `"stargazers_count"` in its JSON response. The tag `json:"stargazers_count"` tells the JSON parser: "when you see `stargazers_count` in the data, put it in the `Stars` field." This lets you use clean names in your code while mapping to the API's conventions.
+GitHub's API returns `"stargazers_count"` in its JSON response. The alias `as "stargazers_count"` tells the JSON parser: "when you see `stargazers_count` in the data, put it in the `Stars` field." This keeps your type fields readable while matching API conventions.
 
 ### Pipe Pipelines — Real Data Transformation
 
 ```kukicha
-fetch.Get(url) |> fetch.CheckStatus() |> fetch.Bytes() |> json.Unmarshal(reference of repos) onerr ...
+fetch.Get(url) |> fetch.CheckStatus() |> fetch.JsonAs(_, reference of repos) onerr ...
 ```
 
 This four-step pipeline is the heart of the program. Each `|>` passes the result of one operation to the next. Without pipes, you'd write:
@@ -637,10 +634,8 @@ resp, err1 := fetch.Get(url)
 # check err1...
 resp2, err2 := fetch.CheckStatus(resp)
 # check err2...
-bytes, err3 := fetch.Bytes(resp2)
+err3 := fetch.JsonAs(resp2, reference of repos)
 # check err3...
-err4 := json.Unmarshal(bytes, reference of repos)
-# check err4...
 ```
 
 With pipes + `onerr`, four operations and their error handling compress into a readable pipeline.
@@ -915,7 +910,7 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | **Single Binary** | Compile your app for any OS with `kukicha build` |
 | **Concurrency** | Run tasks in parallel with `concurrent.Map` |
 | **Custom Types** | Define your own data structures with `type Name` |
-| **JSON Tags** | Map API fields to your type's fields with `json:"..."` |
+| **JSON Aliases** | Map API fields to your type's fields with `as "..."` |
 | **Methods** | Attach functions to types with `function Name on receiver Type` |
 | **`reference`** | Modify the original value, not a copy |
 | **`onerr`** | Handle errors gracefully with fallback values |

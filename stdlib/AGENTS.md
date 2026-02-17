@@ -20,9 +20,9 @@ Import with: `import "stdlib/slice"`
 | `stdlib/encoding` | Base64 and hex encoding/decoding | Base64Encode, Base64Decode, Base64URLEncode, HexEncode, HexDecode |
 | `stdlib/env` | Typed env vars with onerr | Get, GetInt, GetBool, GetFloat, GetOr, Set |
 | `stdlib/errors` | Error wrapping and inspection | Wrap, Is, Unwrap, New, Join |
-| `stdlib/fetch` | HTTP client (Builder, Auth, Sessions) | Get, Post, New/Header/Timeout/Do, BearerAuth, BasicAuth, FormData, NewSession |
+| `stdlib/fetch` | HTTP client (Builder, Auth, Sessions, Safe URL helpers) | Get, Post, Json, JsonAs, Decode/DecodeAs, URLTemplate, URLWithQuery, PathEscape, QueryEscape, New/Header/Timeout/Do, BearerAuth, BasicAuth, FormData, NewSession |
 | `stdlib/files` | File I/O operations | Read, Write, Append, Exists, Copy, Move, Delete, Watch |
-| `stdlib/http` | HTTP response helpers | JSON, JSONError, JSONNotFound, ReadJSON |
+| `stdlib/http` | HTTP response helpers | JSON, JSONError, JSONNotFound, ReadJSON, SafeURL |
 | `stdlib/input` | User input utilities | Line, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration | Map, Filter, Reduce |
 | `stdlib/json` | jsonv2 wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite |
@@ -92,6 +92,14 @@ for pod in kube.Pods(pods)
 import "stdlib/fetch"
 resp := fetch.New(url) |> fetch.BearerAuth(token) |> fetch.Timeout(30000000000) |> fetch.Do() onerr panic "{error}"
 text := fetch.Text(resp) onerr panic "{error}"
+
+# Typed JSON decode (readable API flow)
+repos := empty list of Repo
+fetch.Get(url) |> fetch.CheckStatus() |> fetch.JsonAs(_, reference of repos) onerr panic "{error}"
+
+# Safe URL construction (path + query encoding)
+base := fetch.URLTemplate("https://api.github.com/users/{username}/repos", map of string to string{"username": username}) onerr panic "{error}"
+safeURL := fetch.URLWithQuery(base, map of string to string{"per_page": "30", "sort": "stars"}) onerr panic "{error}"
 
 # Network-restricted fetch (SSRF protection)
 import "stdlib/netguard"
