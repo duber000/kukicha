@@ -1,5 +1,13 @@
 # Kukicha Standard Library - Ctx (Context and Cancellation)
 # Pragmatic timeout/cancellation helpers for long-running DevOps tasks.
+#
+# IMPORTANT: Always call ctx.Cancel(handle) when you are done with a
+# timeout or deadline handle. Forgetting to cancel leaks internal
+# resources until the timer fires. A typical pattern:
+#
+#   h := ctx.WithTimeout(ctx.Background(), 30)
+#   result := doWork(h) onerr ...
+#   ctx.Cancel(h)
 
 petiole ctx
 
@@ -11,14 +19,28 @@ type Handle
     ctx context.Context
     cancel func()
 
-# Background returns a base context.
+# Background returns a base context with no timeout or deadline.
 func Background() Handle
     return Handle{
         ctx: context.Background(),
         cancel: empty,
     }
 
-# WithTimeoutMs creates a child context that auto-cancels after timeoutMs.
+# WithTimeout creates a child context that auto-cancels after the given seconds.
+# Always call ctx.Cancel(handle) when done to avoid resource leaks.
+func WithTimeout(parent Handle, seconds int64) Handle
+    base := parent.ctx
+    if base equals empty
+        base = context.Background()
+    timeout := time.Duration(seconds) * time.Second
+    child, cancel := context.WithTimeout(base, timeout)
+    return Handle{
+        ctx: child,
+        cancel: cancel,
+    }
+
+# WithTimeoutMs creates a child context that auto-cancels after timeoutMs milliseconds.
+# Always call ctx.Cancel(handle) when done to avoid resource leaks.
 func WithTimeoutMs(parent Handle, timeoutMs int64) Handle
     base := parent.ctx
     if base equals empty
@@ -31,6 +53,7 @@ func WithTimeoutMs(parent Handle, timeoutMs int64) Handle
     }
 
 # WithDeadlineUnix creates a child context that cancels at unixSeconds (UTC).
+# Always call ctx.Cancel(handle) when done to avoid resource leaks.
 func WithDeadlineUnix(parent Handle, unixSeconds int64) Handle
     base := parent.ctx
     if base equals empty
@@ -42,10 +65,13 @@ func WithDeadlineUnix(parent Handle, unixSeconds int64) Handle
         cancel: cancel,
     }
 
-# Cancel triggers cancellation if the handle has a cancel function.
-func Cancel(handle Handle)
+# Cancel triggers cancellation and releases resources.
+# Returns true if the handle had a cancel function, false otherwise.
+func Cancel(handle Handle) bool
     if handle.cancel not equals empty
         handle.cancel()
+        return true
+    return false
 
 # Done reports whether the context has been canceled.
 func Done(handle Handle) bool

@@ -583,23 +583,12 @@ func NamespaceName(n NamespaceItem) string { return nsItem(n).Name }
 // --- Logs ---
 
 // PodLogs retrieves the full log output from a pod's first container.
-func PodLogs(c Cluster, name string) (string, error) {
-	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{})
-	stream, err := req.Stream(context.Background())
-	if err != nil {
-		return "", fmt.Errorf("kube pod logs: %w", err)
+// An optional ctx.Handle can be passed for cancellation support.
+func PodLogs(c Cluster, name string, handles ...ctxpkg.Handle) (string, error) {
+	ctx := context.Background()
+	if len(handles) > 0 {
+		ctx = ctxpkg.Value(handles[0])
 	}
-	defer stream.Close()
-	data, err := io.ReadAll(stream)
-	if err != nil {
-		return "", fmt.Errorf("kube pod logs read: %w", err)
-	}
-	return string(data), nil
-}
-
-// PodLogsCtx retrieves full pod logs and can be canceled via context handle.
-func PodLogsCtx(c Cluster, h ctxpkg.Handle, name string) (string, error) {
-	ctx := ctxpkg.Value(h)
 	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{})
 	stream, err := req.Stream(ctx)
 	if err != nil {
