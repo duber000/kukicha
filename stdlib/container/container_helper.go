@@ -63,6 +63,11 @@ func buildImage(cli *client.Client, contextPath string, tag string) (string, str
 			return filepath.SkipDir
 		}
 
+		// Skip symlinks to prevent including files outside the build context
+		if d.Type()&os.ModeSymlink != 0 {
+			return nil
+		}
+
 		relPath, err := filepath.Rel(contextPath, path)
 		if err != nil {
 			return err
@@ -302,8 +307,13 @@ func Open(cfg Config) (Engine, error) {
 }
 
 // Pull pulls an image from a registry. Returns the image digest.
-func Pull(engine Engine, ref string) (string, error) {
-	reader, err := engine.cli.ImagePull(context.Background(), ref, image.PullOptions{})
+// An optional ctx.Handle can be passed for cancellation support.
+func Pull(engine Engine, ref string, handles ...ctxpkg.Handle) (string, error) {
+	ctx := context.Background()
+	if len(handles) > 0 {
+		ctx = ctxpkg.Value(handles[0])
+	}
+	reader, err := engine.cli.ImagePull(ctx, ref, image.PullOptions{})
 	if err != nil {
 		return "", fmt.Errorf("container pull: %w", err)
 	}
@@ -465,91 +475,12 @@ func Wait(engine Engine, containerID string, timeoutSeconds int64) (int64, error
 }
 
 // Exec runs a command in an existing container and returns combined stdout/stderr.
-func Exec(engine Engine, containerID string, cmd []string) (string, error) {
-	createResp, err := engine.cli.ContainerExecCreate(context.Background(), containerID, types.ExecConfig{
-		Cmd:          cmd,
-		AttachStdout: true,
-		AttachStderr: true,
-	})
-	if err != nil {
-		return "", fmt.Errorf("container exec create: %w", err)
+// An optional ctx.Handle can be passed for cancellation support.
+func Exec(engine Engine, containerID string, cmd []string, handles ...ctxpkg.Handle) (string, error) {
+	ctx := context.Background()
+	if len(handles) > 0 {
+		ctx = ctxpkg.Value(handles[0])
 	}
-
-	attachResp, err := engine.cli.ContainerExecAttach(context.Background(), createResp.ID, types.ExecStartCheck{})
-	if err != nil {
-		return "", fmt.Errorf("container exec attach: %w", err)
-	}
-	defer attachResp.Close()
-
-	var stdout, stderr bytes.Buffer
-	_, err = stdcopy.StdCopy(&stdout, &stderr, attachResp.Reader)
-	if err != nil {
-		raw, readErr := io.ReadAll(attachResp.Reader)
-		if readErr != nil {
-			return "", fmt.Errorf("container exec read: %w", err)
-		}
-		return string(raw), nil
-	}
-
-	inspect, err := engine.cli.ContainerExecInspect(context.Background(), createResp.ID)
-	if err != nil {
-		return "", fmt.Errorf("container exec inspect: %w", err)
-	}
-	combined := stdout.String()
-	if stderr.Len() > 0 {
-		combined += stderr.String()
-	}
-	if inspect.ExitCode != 0 {
-		return combined, fmt.Errorf("container exec exit %d", inspect.ExitCode)
-	}
-	return combined, nil
-}
-
-// PullCtx pulls an image using the provided context handle.
-func PullCtx(engine Engine, h ctxpkg.Handle, ref string) (string, error) {
-	ctx := ctxpkg.Value(h)
-	reader, err := engine.cli.ImagePull(ctx, ref, image.PullOptions{})
-	if err != nil {
-		return "", fmt.Errorf("container pull: %w", err)
-	}
-	defer reader.Close()
-
-	var digest string
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		var msg struct {
-			Status string `json:"status"`
-		}
-		if err := json.Unmarshal(scanner.Bytes(), &msg); err == nil {
-			if strings.HasPrefix(msg.Status, "Digest:") {
-				digest = strings.TrimPrefix(msg.Status, "Digest: ")
-			}
-		}
-	}
-	if digest == "" {
-		digest = ref
-	}
-	return digest, nil
-}
-
-// WaitCtx blocks until container exits or the provided context is canceled.
-func WaitCtx(engine Engine, h ctxpkg.Handle, containerID string) (int64, error) {
-	ctx := ctxpkg.Value(h)
-	waitCh, errCh := engine.cli.ContainerWait(ctx, containerID, dockercontainer.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			return -1, fmt.Errorf("container wait: %w", err)
-		}
-		return -1, fmt.Errorf("container wait: unknown wait error")
-	case res := <-waitCh:
-		return int64(res.StatusCode), nil
-	}
-}
-
-// ExecCtx runs a command in a container with cancelable context.
-func ExecCtx(engine Engine, h ctxpkg.Handle, containerID string, cmd []string) (string, error) {
-	ctx := ctxpkg.Value(h)
 	createResp, err := engine.cli.ContainerExecCreate(ctx, containerID, types.ExecConfig{
 		Cmd:          cmd,
 		AttachStdout: true,
@@ -587,6 +518,21 @@ func ExecCtx(engine Engine, h ctxpkg.Handle, containerID string, cmd []string) (
 		return combined, fmt.Errorf("container exec exit %d", inspect.ExitCode)
 	}
 	return combined, nil
+}
+
+// WaitCtx blocks until container exits or the provided context is canceled.
+func WaitCtx(engine Engine, h ctxpkg.Handle, containerID string) (int64, error) {
+	ctx := ctxpkg.Value(h)
+	waitCh, errCh := engine.cli.ContainerWait(ctx, containerID, dockercontainer.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return -1, fmt.Errorf("container wait: %w", err)
+		}
+		return -1, fmt.Errorf("container wait: unknown wait error")
+	case res := <-waitCh:
+		return int64(res.StatusCode), nil
+	}
 }
 
 // Events collects runtime events for a bounded duration.
@@ -647,13 +593,13 @@ func convertEvent(msg dockerevents.Message) ContainerEvent {
 }
 
 // CopyFrom copies files from a container path to a local destination path.
-func CopyFrom(engine Engine, containerID string, sourcePath string, destPath string) error {
-	return copyFromWithContext(engine, context.Background(), containerID, sourcePath, destPath)
-}
-
-// CopyFromCtx copies files from a container path to local destination with cancellation support.
-func CopyFromCtx(engine Engine, h ctxpkg.Handle, containerID string, sourcePath string, destPath string) error {
-	return copyFromWithContext(engine, ctxpkg.Value(h), containerID, sourcePath, destPath)
+// An optional ctx.Handle can be passed for cancellation support.
+func CopyFrom(engine Engine, containerID string, sourcePath string, destPath string, handles ...ctxpkg.Handle) error {
+	ctx := context.Background()
+	if len(handles) > 0 {
+		ctx = ctxpkg.Value(handles[0])
+	}
+	return copyFromWithContext(engine, ctx, containerID, sourcePath, destPath)
 }
 
 func copyFromWithContext(engine Engine, ctx context.Context, containerID string, sourcePath string, destPath string) error {
@@ -672,13 +618,13 @@ func copyFromWithContext(engine Engine, ctx context.Context, containerID string,
 }
 
 // CopyTo copies a local file or directory into a container destination directory.
-func CopyTo(engine Engine, containerID string, sourcePath string, destPath string) error {
-	return copyToWithContext(engine, context.Background(), containerID, sourcePath, destPath)
-}
-
-// CopyToCtx copies a local path into a container destination with cancellation support.
-func CopyToCtx(engine Engine, h ctxpkg.Handle, containerID string, sourcePath string, destPath string) error {
-	return copyToWithContext(engine, ctxpkg.Value(h), containerID, sourcePath, destPath)
+// An optional ctx.Handle can be passed for cancellation support.
+func CopyTo(engine Engine, containerID string, sourcePath string, destPath string, handles ...ctxpkg.Handle) error {
+	ctx := context.Background()
+	if len(handles) > 0 {
+		ctx = ctxpkg.Value(handles[0])
+	}
+	return copyToWithContext(engine, ctx, containerID, sourcePath, destPath)
 }
 
 func copyToWithContext(engine Engine, ctx context.Context, containerID string, sourcePath string, destPath string) error {
@@ -700,9 +646,13 @@ func createTarFromPath(sourcePath string) (io.Reader, error) {
 	if err != nil {
 		return nil, fmt.Errorf("container copy to abs path: %w", err)
 	}
-	info, err := os.Stat(sourcePath)
+	// Use Lstat to detect symlinks at the top level
+	info, err := os.Lstat(sourcePath)
 	if err != nil {
 		return nil, fmt.Errorf("container copy to stat: %w", err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return nil, fmt.Errorf("container copy to: source path is a symlink: %s", sourcePath)
 	}
 
 	var buf bytes.Buffer
@@ -710,6 +660,10 @@ func createTarFromPath(sourcePath string) (io.Reader, error) {
 	baseDir := filepath.Base(sourcePath)
 
 	addFile := func(path string, fi os.FileInfo) error {
+		// Skip symlinks to prevent archiving files outside the source tree
+		if fi.Mode()&os.ModeSymlink != 0 {
+			return nil
+		}
 		header, err := tar.FileInfoHeader(fi, "")
 		if err != nil {
 			return err
@@ -739,9 +693,17 @@ func createTarFromPath(sourcePath string) (io.Reader, error) {
 	}
 
 	if info.IsDir() {
-		if err := filepath.Walk(sourcePath, func(path string, fi os.FileInfo, walkErr error) error {
+		if err := filepath.WalkDir(sourcePath, func(path string, d os.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return walkErr
+			}
+			// Skip symlinks to prevent traversal outside the source tree
+			if d.Type()&os.ModeSymlink != 0 {
+				return nil
+			}
+			fi, err := d.Info()
+			if err != nil {
+				return err
 			}
 			return addFile(path, fi)
 		}); err != nil {
@@ -774,6 +736,7 @@ func createTarFromPath(sourcePath string) (io.Reader, error) {
 
 func extractTar(reader io.Reader, destPath string) error {
 	tr := tar.NewReader(reader)
+	cleanDest := filepath.Clean(destPath)
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -784,7 +747,7 @@ func extractTar(reader io.Reader, destPath string) error {
 		}
 		cleanName := filepath.Clean(header.Name)
 		target := filepath.Join(destPath, cleanName)
-		if !strings.HasPrefix(target, filepath.Clean(destPath)+string(filepath.Separator)) && filepath.Clean(target) != filepath.Clean(destPath) {
+		if !strings.HasPrefix(target, cleanDest+string(filepath.Separator)) && filepath.Clean(target) != cleanDest {
 			return fmt.Errorf("invalid archive path: %s", header.Name)
 		}
 
@@ -808,6 +771,10 @@ func extractTar(reader io.Reader, destPath string) error {
 			if err := f.Close(); err != nil {
 				return err
 			}
+		case tar.TypeSymlink, tar.TypeLink:
+			return fmt.Errorf("archive contains unsupported link entry: %s", header.Name)
+		default:
+			return fmt.Errorf("archive contains unsupported entry type %d: %s", header.Typeflag, header.Name)
 		}
 	}
 	return nil

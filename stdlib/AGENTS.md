@@ -15,7 +15,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/cast` | Type casting utilities | ToString, ToInt, ToFloat, ToBool |
 | `stdlib/cli` | CLI argument parsing | New, String, Int, Bool, Parse |
 | `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
-| `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec/ExecCtx, Events/EventsCtx, CopyFrom/CopyFromCtx, CopyTo/CopyToCtx |
+| `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
 | `stdlib/ctx` | Context timeout/cancellation helpers | Background, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err |
 | `stdlib/datetime` | Named formats, duration helpers | Format, Seconds, Minutes, Hours |
 | `stdlib/encoding` | Base64 and hex encoding/decoding | Base64Encode, Base64Decode, Base64URLEncode, HexEncode, HexDecode |
@@ -27,7 +27,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/input` | User input utilities | Line, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration | Map, Filter, Reduce |
 | `stdlib/json` | jsonv2 wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
-| `stdlib/kube` | Kubernetes client via client-go | Connect, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs/PodLogsCtx |
+| `stdlib/kube` | Kubernetes client via client-go | Connect, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs |
 | `stdlib/llm` | Large language model client | Chat, Stream, System, User |
 | `stdlib/maps` | Map utilities | Keys, Values, Has, Merge |
 | `stdlib/mcp` | Model Context Protocol support | NewServer, Tool, Resource, Prompt |
@@ -72,7 +72,7 @@ logger |> obs.Info("starting deployment", map of string to any{"app": "billing"}
 
 # Context timeout helpers
 import "stdlib/ctx"
-c := ctx.Background() |> ctx.WithTimeoutMs(30000)
+c := ctx.Background() |> ctx.WithTimeout(30)
 defer ctx.Cancel(c)
 if ctx.Done(c)
     print("request canceled: {ctx.Err(c)}")
