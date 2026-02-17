@@ -73,13 +73,19 @@ data := fetchData() onerr 0 explain "fetch failed"        # With handler: wraps 
 ```kukicha
 type Todo
     id int64
-    title string json:"title"       # Struct tags supported
+    title string as "title"         # JSON alias sugar
     tags list of string
     meta map of string to string
 
 # Function type aliases
 type Handler func(string)
 type Transform func(int) (string, error)
+```
+
+```kukicha
+# Typed JSON decode (preferred over bytes + unmarshal boilerplate)
+items := empty list of Todo
+fetch.Get(url) |> fetch.CheckStatus() |> fetch.JsonAs(_, reference of items) onerr panic "{error}"
 ```
 
 ### Collections

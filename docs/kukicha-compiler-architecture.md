@@ -758,7 +758,7 @@ func (p *Parser) parseOrExpression() Expr {
 
 func (p *Parser) parsePipeExpression() Expr {
     left := p.parseAndExpression()
-    
+
     for p.match(TOKEN_PIPE) {
         right := p.parseAndExpression()
         left = &PipeExpr{
@@ -771,6 +771,20 @@ func (p *Parser) parsePipeExpression() Expr {
     return left
 }
 ```
+
+### Current Syntax Notes (v0.0.4+)
+
+The architecture snippets above are illustrative and may use simplified names.
+Current compiler behavior includes:
+
+- Type fields support JSON alias sugar:
+  - `Stars int as "stargazers_count"`
+  - lowered by parser/codegen to a standard Go struct tag: `` `json:"stargazers_count"` ``
+- Field alias and explicit struct tag cannot be combined on one field.
+- `as` remains context-sensitive:
+  - import alias: `import "pkg" as p`
+  - type cast: `value as Type`
+  - field alias: `field Type as "json_name"` (type-field context only)
 
 ---
 

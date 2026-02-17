@@ -49,7 +49,12 @@ TypeDeclaration ::=
 
 FieldList ::= Field { Field }
 
-Field ::= IDENTIFIER TypeAnnotation { StructTag } NEWLINE
+Field ::= IDENTIFIER TypeAnnotation [ FieldAlias ] { StructTag } NEWLINE
+
+FieldAlias ::= "as" StringLiteral
+    # Sugar for JSON mapping, e.g., Stars int as "stargazers_count"
+    # Equivalent generated Go tag: `json:"stargazers_count"`
+    # Constraint: do not combine FieldAlias with explicit StructTag on the same field
 
 StructTag ::= IDENTIFIER ":" StringLiteral
     # e.g., json:"id" or db:"user_name"
