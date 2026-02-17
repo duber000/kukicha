@@ -135,7 +135,7 @@ user := User
     active: true
 ```
 
-### 10. Switch with English Branches
+### 10. Switch Statements
 Use `when` and `otherwise` for readable branching.
 
 ```kukicha
@@ -146,6 +146,15 @@ switch command
         print("Help")
     otherwise
         print("Unknown command")
+
+# Type switch
+switch event as e
+    when reference a2a.TaskStatusUpdateEvent
+        print(e.Status.State)
+    when string
+        print(e)
+    otherwise
+        print("Unknown event")
 ```
 
 ### 11. Arrow Lambdas
@@ -330,6 +339,7 @@ func Connect(host string, port int = 8080, timeout int = 30)
 | `go func() { ... }()` | `go` + indented block |
 | `func(x T) T { return expr }` | `(x T) => expr` |
 | `switch x { case a: ... }` | `switch x` / `when a` / `otherwise` |
+| `switch v := x.(type) { case *T: ... }` | `switch x as v` / `when reference T` |
 | (no equivalent) | `foo(name: value)` (named arguments) |
 | (no equivalent) | `func F(x int = 10)` (default parameters) |
 

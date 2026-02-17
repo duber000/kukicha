@@ -53,26 +53,26 @@ func Schema(props []SchemaProperty) map[string]any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:47
 func Required(schema any, names []string) any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:48
-	s, ok := schema.(map[string]any)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:49
-	if !ok {
+	switch s := schema.(type) {
+	case map[string]any:
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:50
+		s["required"] = names
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:51
+		return s
+	default:
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:53
 		return schema
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:51
-	s["required"] = names
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:52
-	return s
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:55
-func TextResult(text string) any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:56
+func TextResult(text string) any {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:57
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: text}}}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:61
-func ErrorResult(msg string) any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:62
+func ErrorResult(msg string) any {
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:63
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: msg}}, IsError: true}
 }

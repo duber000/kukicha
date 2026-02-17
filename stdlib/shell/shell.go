@@ -138,14 +138,14 @@ func getExitCode(err error) int {
 		return 0
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:107
-	exitErr, ok := err.(*exec.ExitError)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:108
-	if ok {
+	switch exitErr := err.(type) {
+	case *exec.ExitError:
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:109
 		return exitErr.ExitCode()
-	}
+	default:
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:111
-	return 1
+		return 1
+	}
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:117

@@ -104,11 +104,11 @@ func getExitCode(err error) int
     if err == empty
         return 0
 
-    exitErr, ok := err as reference exec.ExitError
-    if ok
-        return exitErr.ExitCode()
-
-    return 1
+    switch err as exitErr
+        when reference exec.ExitError
+            return exitErr.ExitCode()
+        otherwise
+            return 1
 
 # Result Helper Functions
 

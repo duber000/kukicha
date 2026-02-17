@@ -96,7 +96,7 @@ function identify(c Checker)
         print("This is some other type of check")
 ```
 
-In Kukicha, `c as T` returns two values: the converted value and a boolean `ok` indicating success.
+In expression context, `c as T` returns two values: the converted value and a boolean `ok` indicating success. (In `switch expr as binding`, `as` introduces a type switch binding.)
 
 ---
 

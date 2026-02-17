@@ -146,6 +146,13 @@ func collectStmtLines(stmt ast.Statement, lines map[int]bool) {
 		if s.Otherwise != nil {
 			collectBlockLines(s.Otherwise.Body, lines)
 		}
+	case *ast.TypeSwitchStmt:
+		for _, c := range s.Cases {
+			collectBlockLines(c.Body, lines)
+		}
+		if s.Otherwise != nil {
+			collectBlockLines(s.Otherwise.Body, lines)
+		}
 	}
 }
 
@@ -303,6 +310,13 @@ func attachCommentsToStmt(comments []Comment, idx *int, stmt ast.Statement, cm C
 	case *ast.ForConditionStmt:
 		attachCommentsToBlock(comments, idx, s.Body, cm)
 	case *ast.SwitchStmt:
+		for _, c := range s.Cases {
+			attachCommentsToBlock(comments, idx, c.Body, cm)
+		}
+		if s.Otherwise != nil {
+			attachCommentsToBlock(comments, idx, s.Otherwise.Body, cm)
+		}
+	case *ast.TypeSwitchStmt:
 		for _, c := range s.Cases {
 			attachCommentsToBlock(comments, idx, c.Body, cm)
 		}

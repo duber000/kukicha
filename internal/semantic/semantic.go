@@ -458,6 +458,8 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 		a.analyzeIfStmt(s)
 	case *ast.SwitchStmt:
 		a.analyzeSwitchStmt(s)
+	case *ast.TypeSwitchStmt:
+		a.analyzeTypeSwitchStmt(s)
 	case *ast.ForRangeStmt:
 		a.analyzeForRangeStmt(s)
 	case *ast.ForNumericStmt:
@@ -510,6 +512,40 @@ func (a *Analyzer) analyzeSwitchStmt(stmt *ast.SwitchStmt) {
 
 	if stmt.Otherwise != nil {
 		a.analyzeBlock(stmt.Otherwise.Body)
+	}
+}
+
+func (a *Analyzer) analyzeTypeSwitchStmt(stmt *ast.TypeSwitchStmt) {
+	a.analyzeExpression(stmt.Expression)
+
+	a.switchDepth++
+	defer func() { a.switchDepth-- }()
+
+	for _, c := range stmt.Cases {
+		// Define the binding variable in a new scope for each case body
+		a.symbolTable.EnterScope()
+		bindingSymbol := &Symbol{
+			Name:    stmt.Binding.Value,
+			Kind:    SymbolVariable,
+			Type:    &TypeInfo{Kind: TypeKindUnknown},
+			Defined: stmt.Binding.Pos(),
+		}
+		a.symbolTable.Define(bindingSymbol)
+		a.analyzeBlock(c.Body)
+		a.symbolTable.ExitScope()
+	}
+
+	if stmt.Otherwise != nil {
+		a.symbolTable.EnterScope()
+		bindingSymbol := &Symbol{
+			Name:    stmt.Binding.Value,
+			Kind:    SymbolVariable,
+			Type:    &TypeInfo{Kind: TypeKindUnknown},
+			Defined: stmt.Binding.Pos(),
+		}
+		a.symbolTable.Define(bindingSymbol)
+		a.analyzeBlock(stmt.Otherwise.Body)
+		a.symbolTable.ExitScope()
 	}
 }
 

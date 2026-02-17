@@ -177,6 +177,17 @@ switch
         print("Growing")
     otherwise
         print("New")
+
+# Type switch
+switch event as e
+    when reference a2a.TaskStatusUpdateEvent
+        print(e.Status.State)
+    when reference a2a.Task
+        print(e.ID)
+    when string
+        print(e)
+    otherwise
+        print("Unknown event")
 ```
 
 ### Types
@@ -337,6 +348,7 @@ evens := Filter(list of int{1, 2, 3, 4}, isEven)
 | `(r Repo) => r.Stars > 100` | `func(r Repo) bool { return r.Stars > 100 }` |
 | `go` + indented block | `go func() { ... }()` |
 | `switch x` / `when a, b` / `otherwise` | `switch x { case a, b: ... default: ... }` |
+| `switch x as v` / `when reference T` | `switch v := x.(type) { case *T: ... }` |
 
 ## Standard Library
 

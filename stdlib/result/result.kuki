@@ -172,24 +172,22 @@ func Flatten(opt Optional) Optional
     if not opt.hasValue
         return None()
 
-    # Check if the value is itself an Optional
-    inner, ok := opt.value as Optional
-    if ok
-        return inner
-
-    return opt
+    switch opt.value as inner
+        when Optional
+            return inner
+        otherwise
+            return opt
 
 # FlattenResult flattens a nested Result (Result[Result[T]] -> Result[T])
 func FlattenResult(res Result) Result
     if not res.isOk
         return res
 
-    # Check if the value is itself a Result
-    inner, ok := res.value as Result
-    if ok
-        return inner
-
-    return res
+    switch res.value as inner
+        when Result
+            return inner
+        otherwise
+            return res
 
 # All checks if all Results in a list are Ok
 # Returns Ok with a list of values if all are Ok

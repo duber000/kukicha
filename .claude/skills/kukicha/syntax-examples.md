@@ -153,6 +153,20 @@ func handleResource(w http.ResponseWriter, r reference http.Request)
             httphelper.MethodNotAllowed(w)
 ```
 
+### Type Switch
+```kukicha
+func handleEvent(event any)
+    switch event as e
+        when reference a2a.TaskStatusUpdateEvent
+            print("status: {e.Status.State}")
+        when reference a2a.TaskArtifactUpdateEvent
+            print("artifact update")
+        when string
+            print("text: {e}")
+        otherwise
+            print("unknown event")
+```
+
 ---
 
 ## Arrow Lambdas (`=>`)

@@ -2,7 +2,7 @@
 
 Kukicha standard library reference. Each package lives in `stdlib/<name>/` with:
 - `<name>.kuki` — Kukicha source (types, function signatures, inline implementations)
-- `<name>_helper.go` — Go implementation (for packages that wrap Go libraries)
+- optional `<name>_helper.go` / `<name>_tool.go` — hand-written Go for cases not yet expressible in Kukicha
 - `<name>.go` — **Generated** by `make generate` from the `.kuki` file. Never edit directly.
 
 Import with: `import "stdlib/slice"`
@@ -145,20 +145,20 @@ Each stdlib module follows one of two patterns:
 
 ### Pure Kukicha (types + logic in .kuki)
 Used when the implementation is straightforward Kukicha code.
-Examples: `slice`, `string`, `validate`, `env`, `must`, `fetch`, `net`, `errors`, `encoding`
+Examples: `a2a`, `slice`, `string`, `validate`, `env`, `must`, `fetch`, `net`, `errors`, `encoding`
 
 ### Kukicha types + Go helper (types in .kuki, implementation in _helper.go)
 Used when wrapping complex Go libraries. The `.kuki` file defines types visible to Kukicha code, and the `_helper.go` provides the implementation in Go.
-Function type aliases (`type Handler func(string)`) are supported in `.kuki` files, enabling callback types for packages like `a2a` and `mcp`.
-Examples: `a2a`, `container`, `sandbox`, `pg`, `kube`
+Function type aliases (`type Handler func(string)`) are supported in `.kuki` files, enabling callback types for packages like `mcp`.
+Examples: `container`, `kube`
 
 ### Mixed (most logic in .kuki, thin Go helper for syscall-level ops)
 Used when most logic can be pure Kukicha but some low-level Go operations are needed.
-Examples: `netguard` (IP/CIDR logic in .kuki, DNS+dialer in _helper.go)
+Examples: `netguard` (IP/CIDR logic in .kuki, DNS+dialer in `_helper.go`), `mcp` (core in `.kuki`, callback bridge in `_tool.go`)
 
 ## Critical Rules
 
-1. **Never edit `*.go` files in stdlib** — edit `.kuki` source, then `make generate`
-2. **Helper files are hand-written Go** — `*_helper.go` files are NOT generated
+1. **Never edit generated `*.go` files in stdlib** — edit `.kuki` source, then `make generate`
+2. **Helper/tool files are hand-written Go** — `*_helper.go` and `*_tool.go` are NOT generated
 3. **Types must be defined in `.kuki`** — so the Kukicha compiler knows about them
-4. **Functions in `_helper.go` must match exported signatures** — field names must match the `.kuki` struct definitions exactly (lowercase)
+4. **Functions in helper/tool files must match exported signatures** — field names must match the `.kuki` struct definitions exactly (lowercase)

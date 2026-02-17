@@ -1125,16 +1125,14 @@ func GetResponseText(resp Response) string
     for _, item in resp.Output
         if item.Type == "message"
             for _, content in item.Content
-                contentMap, ok := content.(map of string to any)
-                if ok
-                    contentType, hasType := contentMap["type"]
-                    if hasType
-                        contentTypeStr, isStr := contentType as string
-                        if isStr and contentTypeStr == "output_text"
-                            text, hasText := contentMap["text"]
-                            if hasText
-                                textStr, _ := text as string
-                                return textStr
+                switch content as contentMap
+                    when map of string to any
+                        switch contentMap["type"] as contentTypeStr
+                            when string
+                                if contentTypeStr == "output_text"
+                                    switch contentMap["text"] as textStr
+                                        when string
+                                            return textStr
     return ""
 
 # GetFunctionCalls extracts function call output items from a Response

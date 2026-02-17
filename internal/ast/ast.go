@@ -408,6 +408,28 @@ type OtherwiseCase struct {
 	Body  *BlockStmt
 }
 
+// TypeSwitchStmt: switch expr as binding
+type TypeSwitchStmt struct {
+	Token      lexer.Token    // The 'switch' token
+	Expression Expression     // The expression to switch on
+	Binding    *Identifier    // The binding variable (e.g., e in "switch event as e")
+	Cases      []*TypeCase    // Type cases
+	Otherwise  *OtherwiseCase // Optional default branch
+}
+
+func (s *TypeSwitchStmt) TokenLiteral() string { return s.Token.Lexeme }
+func (s *TypeSwitchStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *TypeSwitchStmt) stmtNode() {}
+
+// TypeCase: when reference SomeType / when SomeType
+type TypeCase struct {
+	Token lexer.Token    // The 'when' token
+	Type  TypeAnnotation // The type to match
+	Body  *BlockStmt
+}
+
 // ForRangeStmt: for item in collection
 type ForRangeStmt struct {
 	Token      lexer.Token // The 'for' token

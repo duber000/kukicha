@@ -1153,6 +1153,8 @@ func (g *Generator) generateStatement(stmt ast.Statement) {
 		g.generateIfStmt(s)
 	case *ast.SwitchStmt:
 		g.generateSwitchStmt(s)
+	case *ast.TypeSwitchStmt:
+		g.generateTypeSwitchStmt(s)
 	case *ast.ForRangeStmt:
 		g.generateForRangeStmt(s)
 	case *ast.ForNumericStmt:
@@ -1749,6 +1751,31 @@ func (g *Generator) generateSwitchStmt(stmt *ast.SwitchStmt) {
 			caseValues[i] = g.exprToString(value)
 		}
 		g.writeLine(fmt.Sprintf("case %s:", strings.Join(caseValues, ", ")))
+
+		g.indent++
+		g.generateBlock(c.Body)
+		g.indent--
+	}
+
+	if stmt.Otherwise != nil {
+		g.writeLine("default:")
+		g.indent++
+		g.generateBlock(stmt.Otherwise.Body)
+		g.indent--
+	}
+	g.indent--
+	g.writeLine("}")
+}
+
+func (g *Generator) generateTypeSwitchStmt(stmt *ast.TypeSwitchStmt) {
+	expr := g.exprToString(stmt.Expression)
+	binding := stmt.Binding.Value
+	g.writeLine(fmt.Sprintf("switch %s := %s.(type) {", binding, expr))
+
+	g.indent++
+	for _, c := range stmt.Cases {
+		typeStr := g.generateTypeAnnotation(c.Type)
+		g.writeLine(fmt.Sprintf("case %s:", typeStr))
 
 		g.indent++
 		g.generateBlock(c.Body)
@@ -2693,6 +2720,18 @@ func (g *Generator) checkStmtForInterpolation(stmt ast.Statement) bool {
 		if s.Otherwise != nil && s.Otherwise.Body != nil {
 			return g.checkBlockForInterpolation(s.Otherwise.Body)
 		}
+	case *ast.TypeSwitchStmt:
+		if g.checkExprForInterpolation(s.Expression) {
+			return true
+		}
+		for _, c := range s.Cases {
+			if c.Body != nil && g.checkBlockForInterpolation(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil {
+			return g.checkBlockForInterpolation(s.Otherwise.Body)
+		}
 	case *ast.ForRangeStmt:
 		if s.Body != nil {
 			return g.checkBlockForInterpolation(s.Body)
@@ -2887,6 +2926,18 @@ func (g *Generator) checkStmtForPrint(stmt ast.Statement) bool {
 		if s.Otherwise != nil && s.Otherwise.Body != nil {
 			return g.checkBlockForPrint(s.Otherwise.Body)
 		}
+	case *ast.TypeSwitchStmt:
+		if g.checkExprForPrint(s.Expression) {
+			return true
+		}
+		for _, c := range s.Cases {
+			if c.Body != nil && g.checkBlockForPrint(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil {
+			return g.checkBlockForPrint(s.Otherwise.Body)
+		}
 	case *ast.ForRangeStmt:
 		if s.Body != nil {
 			return g.checkBlockForPrint(s.Body)
@@ -3052,6 +3103,16 @@ func (g *Generator) scanStmtForAutoImports(stmt ast.Statement) {
 			for _, v := range c.Values {
 				g.scanExprForAutoImports(v)
 			}
+			if c.Body != nil {
+				g.scanBlockForAutoImports(c.Body)
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil {
+			g.scanBlockForAutoImports(s.Otherwise.Body)
+		}
+	case *ast.TypeSwitchStmt:
+		g.scanExprForAutoImports(s.Expression)
+		for _, c := range s.Cases {
 			if c.Body != nil {
 				g.scanBlockForAutoImports(c.Body)
 			}
@@ -3271,6 +3332,18 @@ func (g *Generator) checkStmtForErrors(stmt ast.Statement) bool {
 					return true
 				}
 			}
+			if c.Body != nil && g.checkBlockForErrors(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil {
+			return g.checkBlockForErrors(s.Otherwise.Body)
+		}
+	case *ast.TypeSwitchStmt:
+		if g.checkExprForErrors(s.Expression) {
+			return true
+		}
+		for _, c := range s.Cases {
 			if c.Body != nil && g.checkBlockForErrors(c.Body) {
 				return true
 			}

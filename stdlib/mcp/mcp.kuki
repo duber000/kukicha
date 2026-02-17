@@ -45,11 +45,12 @@ func Schema(props list of SchemaProperty) map of string to any
 
 # Required adds a list of required property names to a schema
 func Required(schema any, names list of string) any
-    s, ok := schema.(map of string to any)
-    if not ok
-        return schema
-    s["required"] = names
-    return s
+    switch schema as s
+        when map of string to any
+            s["required"] = names
+            return s
+        otherwise
+            return schema
 
 # TextResult creates a successful tool result containing the given text.
 func TextResult(text string) any

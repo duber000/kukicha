@@ -102,12 +102,11 @@ func Do(req Request) (*http.Response, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:93
 	if req.body != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:95
-		bodyStr, isString := req.body.(string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:96
-		if isString {
+		switch bodyStr := req.body.(type) {
+		case string:
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:97
 			bodyData = []byte(bodyStr)
-		} else {
+		default:
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:100
 			jsonBytes, marshalErr := json.Marshal(req.body)
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:101
@@ -346,12 +345,11 @@ func SessionDo(s Session, req Request) (*http.Response, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:273
 	if req.body != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:275
-		bodyStr, isString := req.body.(string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:276
-		if isString {
+		switch bodyStr := req.body.(type) {
+		case string:
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:277
 			bodyData = []byte(bodyStr)
-		} else {
+		default:
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:279
 			jsonBytes, marshalErr := json.Marshal(req.body)
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:280

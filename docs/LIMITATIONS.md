@@ -7,7 +7,6 @@ This document explains why some stdlib packages still contain hand-written Go he
 
 | Package | File | Reason |
 |---------|------|--------|
-| `stdlib/a2a` | `a2a_helper.go` | Type switch (range-over-func now supported) |
 | `stdlib/container` | `container_helper.go` | Functional options, streaming I/O |
 | `stdlib/mcp` | `mcp_tool.go` | Multi-statement SDK callback closure |
 
@@ -40,8 +39,8 @@ Kukicha's `for-in` loop supports range-over-func iterators (`iter.Seq` and `iter
 The `stdlib/iterator` package demonstrates this throughout — e.g. `Filter`, `Map`, `Enumerate`,
 and `Zip` all produce and consume iterator functions via `for item in seq`.
 
-The A2A streaming helper (`a2a.streamRequest`) can be rewritten in pure Kukicha when
-convenient; the language limitation no longer applies.
+`stdlib/a2a` has now been consolidated into `a2a.kuki`; this language limitation no longer
+applies there.
 
 ---
 

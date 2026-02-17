@@ -4,6 +4,7 @@ petiole a2a
 
 import "context"
 import "net/http"
+import "strings"
 import "github.com/a2aproject/a2a-go/a2a"
 import "github.com/a2aproject/a2a-go/a2aclient"
 import "github.com/a2aproject/a2a-go/a2aclient/agentcard"
@@ -102,3 +103,114 @@ func Skills(agent Agent) list of Skill
     for i, s in agent.Card.Skills
         skills[i] = Skill{Name: s.Name, Description: s.Description, Examples: s.Examples}
     return skills
+
+# Send executes a blocking request and returns the task result.
+func Send(req Request) (Task, error)
+    return sendRequest(req.agent, req.text, req.contextID)
+
+# Stream executes a streaming request with callbacks.
+func Stream(req Request) (Task, error)
+    return streamRequest(req.agent, req.text, req.contextID, req.onText, req.onStatus)
+
+# Ask is a one-shot convenience: send text and get the reply text back.
+func Ask(agent Agent, text string) (string, error)
+    task := sendRequest(agent, text, "") onerr explain "a2a ask"
+    return task.Text, empty
+
+# GetTask queries a task by ID from the agent.
+func GetTask(agent Agent, taskID string) (Task, error)
+    params := a2a.TaskQueryParams{ID: a2a.TaskID(taskID)}
+    t := agent.Client.GetTask(context.Background(), reference of params) onerr explain "a2a get task"
+    return taskFromA2A(t), empty
+
+# Cancel cancels a task by ID.
+func Cancel(agent Agent, taskID string) (Task, error)
+    params := a2a.TaskIDParams{ID: a2a.TaskID(taskID)}
+    t := agent.Client.CancelTask(context.Background(), reference of params) onerr explain "a2a cancel"
+    return taskFromA2A(t), empty
+
+# sendRequest sends a blocking message to an agent and returns a simplified Task.
+func sendRequest(agent Agent, text string, contextID string) (Task, error)
+    msg := a2a.NewMessage(a2a.MessageRoleUser, a2a.TextPart{Text: text})
+    if contextID != ""
+        msg.ContextID = contextID
+    params := a2a.MessageSendParams{Message: msg}
+    resp := agent.Client.SendMessage(context.Background(), reference of params) onerr explain "a2a send"
+    return resultToTask(resp), empty
+
+# streamRequest sends a streaming message to an agent, dispatching to callbacks.
+func streamRequest(agent Agent, text string, contextID string, onText TextHandler, onStatus StatusHandler) (Task, error)
+    msg := a2a.NewMessage(a2a.MessageRoleUser, a2a.TextPart{Text: text})
+    if contextID != ""
+        msg.ContextID = contextID
+
+    result := empty Task
+    params := a2a.MessageSendParams{Message: msg}
+    for event, err in agent.Client.SendStreamingMessage(context.Background(), reference of params)
+        if err != empty
+            return result, error("a2a stream: {err}")
+        switch event as e
+            when reference a2a.TaskStatusUpdateEvent
+                if onStatus != empty
+                    statusMsg := ""
+                    if e.Status.Message != empty
+                        statusMsg = extractPartsText(e.Status.Message.Parts)
+                    onStatus(StatusUpdate{TaskID: e.TaskID as string, State: e.Status.State as string, Message: statusMsg, Final: e.Final})
+                result.ID = e.TaskID as string
+                result.ContextID = e.ContextID
+                result.State = e.Status.State as string
+            when reference a2a.TaskArtifactUpdateEvent
+                if e.Artifact != empty
+                    artText := extractPartsText(e.Artifact.Parts)
+                    if onText != empty and artText != ""
+                        onText(artText)
+                    result.Artifacts = append(result.Artifacts, Artifact{Name: e.Artifact.Name, Text: artText})
+                result.ID = e.TaskID as string
+                result.ContextID = e.ContextID
+            when reference a2a.Task
+                result = taskFromA2A(e)
+            when reference a2a.Message
+                msgText := extractPartsText(e.Parts)
+                if onText != empty and msgText != ""
+                    onText(msgText)
+                result.Text = msgText
+    return result, empty
+
+# resultToTask converts a SendMessageResult (union of *Task or *Message) to our simplified Task.
+func resultToTask(result a2a.SendMessageResult) Task
+    switch result as r
+        when reference a2a.Task
+            return taskFromA2A(r)
+        when reference a2a.Message
+            return Task{ID: r.TaskID as string, ContextID: r.ContextID, Text: extractPartsText(r.Parts)}
+        otherwise
+            return empty Task
+
+# taskFromA2A converts an a2a.Task to our simplified Task type.
+func taskFromA2A(t reference a2a.Task) Task
+    result := Task{ID: t.ID as string, ContextID: t.ContextID, State: t.Status.State as string}
+
+    for _, art in t.Artifacts
+        artText := extractPartsText(art.Parts)
+        result.Artifacts = append(result.Artifacts, Artifact{Name: art.Name, Text: artText})
+
+    texts := empty list of string
+    if t.Status.Message != empty
+        msg := extractPartsText(t.Status.Message.Parts)
+        if msg != ""
+            texts = append(texts, msg)
+    for _, art in result.Artifacts
+        if art.Text != ""
+            texts = append(texts, art.Text)
+    result.Text = strings.Join(texts, "\n")
+
+    return result
+
+# extractPartsText concatenates all TextPart content from a list of parts.
+func extractPartsText(parts list of a2a.Part) string
+    texts := empty list of string
+    for _, p in parts
+        switch p as tp
+            when a2a.TextPart
+                texts = append(texts, tp.Text)
+    return strings.Join(texts, "")

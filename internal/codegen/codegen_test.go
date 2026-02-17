@@ -1555,3 +1555,83 @@ func foo() (int, error)
 		t.Errorf("expected default value assignment '= 0' in output, got: %s", output)
 	}
 }
+
+func TestTypeSwitchStatement(t *testing.T) {
+	input := `func Handle(event any)
+    switch event as e
+        when reference a2a.TaskStatusUpdateEvent
+            print(e.Status.State)
+        when string
+            print(e)
+        otherwise
+            print("unknown")
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "switch e := event.(type) {") {
+		t.Errorf("expected type switch, got: %s", output)
+	}
+	if !strings.Contains(output, "case *a2a.TaskStatusUpdateEvent:") {
+		t.Errorf("expected pointer type case, got: %s", output)
+	}
+	if !strings.Contains(output, "case string:") {
+		t.Errorf("expected string type case, got: %s", output)
+	}
+	if !strings.Contains(output, "default:") {
+		t.Errorf("expected default branch, got: %s", output)
+	}
+}
+
+func TestTypeSwitchNoOtherwise(t *testing.T) {
+	input := `func Handle(event any)
+    switch event as e
+        when int
+            print(e)
+        when string
+            print(e)
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "switch e := event.(type) {") {
+		t.Errorf("expected type switch, got: %s", output)
+	}
+	if !strings.Contains(output, "case int:") {
+		t.Errorf("expected int type case, got: %s", output)
+	}
+	if !strings.Contains(output, "case string:") {
+		t.Errorf("expected string type case, got: %s", output)
+	}
+	if strings.Contains(output, "default:") {
+		t.Errorf("should not have default branch, got: %s", output)
+	}
+}

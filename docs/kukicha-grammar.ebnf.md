@@ -184,11 +184,23 @@ ElseClause ::=
     | "else" IfStatement
 
 SwitchStatement ::=
+    | RegularSwitchStatement
+    | TypeSwitchStatement
+
+RegularSwitchStatement ::=
     "switch" [ Expression ] NEWLINE
     INDENT { WhenClause } [ OtherwiseClause ] DEDENT
 
+TypeSwitchStatement ::=
+    "switch" Expression "as" IDENTIFIER NEWLINE
+    INDENT { TypeWhenClause } [ OtherwiseClause ] DEDENT
+
 WhenClause ::=
     "when" Expression { "," Expression } NEWLINE
+    INDENT StatementList DEDENT
+
+TypeWhenClause ::=
+    "when" TypeAnnotation NEWLINE
     INDENT StatementList DEDENT
 
 OtherwiseClause ::=

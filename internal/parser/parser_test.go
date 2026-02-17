@@ -1556,3 +1556,113 @@ func TestParseThreeValueAssignment(t *testing.T) {
 		t.Errorf("expected third name 'err', got %s", varDecl.Names[2].Value)
 	}
 }
+
+func TestParseTypeSwitchStatement(t *testing.T) {
+	input := `func Handle(event any)
+    switch event as e
+        when reference a2a.TaskStatusUpdateEvent
+            print(e.Status.State)
+        when reference a2a.Task
+            result := taskFromA2A(e)
+        when string
+            print(e)
+        otherwise
+            print("unknown")
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	tsStmt, ok := fn.Body.Statements[0].(*ast.TypeSwitchStmt)
+	if !ok {
+		t.Fatalf("expected TypeSwitchStmt, got %T", fn.Body.Statements[0])
+	}
+
+	// Check expression
+	ident, ok := tsStmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("expected Identifier expression, got %T", tsStmt.Expression)
+	}
+	if ident.Value != "event" {
+		t.Errorf("expected expression 'event', got %s", ident.Value)
+	}
+
+	// Check binding
+	if tsStmt.Binding.Value != "e" {
+		t.Errorf("expected binding 'e', got %s", tsStmt.Binding.Value)
+	}
+
+	// Check cases
+	if len(tsStmt.Cases) != 3 {
+		t.Fatalf("expected 3 type cases, got %d", len(tsStmt.Cases))
+	}
+
+	// First case: reference a2a.TaskStatusUpdateEvent
+	refType, ok := tsStmt.Cases[0].Type.(*ast.ReferenceType)
+	if !ok {
+		t.Fatalf("expected ReferenceType for case 0, got %T", tsStmt.Cases[0].Type)
+	}
+	named, ok := refType.ElementType.(*ast.NamedType)
+	if !ok {
+		t.Fatalf("expected NamedType inside ReferenceType, got %T", refType.ElementType)
+	}
+	if named.Name != "a2a.TaskStatusUpdateEvent" {
+		t.Errorf("expected type 'a2a.TaskStatusUpdateEvent', got %s", named.Name)
+	}
+
+	// Third case: plain type (string)
+	primType, ok := tsStmt.Cases[2].Type.(*ast.PrimitiveType)
+	if !ok {
+		t.Fatalf("expected PrimitiveType for case 2, got %T", tsStmt.Cases[2].Type)
+	}
+	if primType.Name != "string" {
+		t.Errorf("expected type 'string', got %s", primType.Name)
+	}
+
+	// Check otherwise
+	if tsStmt.Otherwise == nil {
+		t.Fatal("expected otherwise branch, got nil")
+	}
+}
+
+func TestParseTypeSwitchNoOtherwise(t *testing.T) {
+	input := `func Handle(event any)
+    switch event as e
+        when int
+            print(e)
+        when string
+            print(e)
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	tsStmt, ok := fn.Body.Statements[0].(*ast.TypeSwitchStmt)
+	if !ok {
+		t.Fatalf("expected TypeSwitchStmt, got %T", fn.Body.Statements[0])
+	}
+
+	if len(tsStmt.Cases) != 2 {
+		t.Fatalf("expected 2 type cases, got %d", len(tsStmt.Cases))
+	}
+
+	if tsStmt.Otherwise != nil {
+		t.Error("expected no otherwise branch")
+	}
+}

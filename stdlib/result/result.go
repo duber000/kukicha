@@ -255,67 +255,67 @@ func Flatten(opt Optional) Optional {
 //line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:173
 		return None()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:176
-	inner, ok := opt.value.(Optional)
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:175
+	switch inner := opt.value.(type) {
+	case Optional:
 //line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:177
-	if ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:178
 		return inner
+	default:
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:179
+		return opt
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:180
-	return opt
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:182
 func FlattenResult(res Result) Result {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:183
 	if !res.isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:184
 		return res
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:186
+	switch inner := res.value.(type) {
+	case Result:
 //line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:188
-	inner, ok := res.value.(Result)
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:189
-	if ok {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:190
 		return inner
+	default:
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:190
+		return res
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:192
-	return res
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:195
 func All(results []Result) Result {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:196
 	values := make([]any, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:198
 	for _, res := range results {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:199
 		if !res.isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:200
 			return res
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:201
 		values = append(values, res.value)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:203
 	return Ok(values)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:209
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:207
 func Any(results []Result) Result {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:210
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:208
 	lastErr := errors.New("no results provided")
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:212
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:210
 	for _, res := range results {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:211
 		if res.isOk {
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:212
 			return res
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:213
 		lastErr = res.err
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:217
+//line /var/home/tluker/repos/go/kukicha/stdlib/result/result.kuki:215
 	return Err(lastErr)
 }

@@ -244,6 +244,8 @@ func (p *Printer) printStatement(stmt ast.Statement) {
 		p.printIfStmt(s)
 	case *ast.SwitchStmt:
 		p.printSwitchStmt(s)
+	case *ast.TypeSwitchStmt:
+		p.printTypeSwitchStmt(s)
 	case *ast.ForRangeStmt:
 		p.printForRangeStmt(s)
 	case *ast.ForNumericStmt:
@@ -424,6 +426,26 @@ func (p *Printer) printSwitchStmt(stmt *ast.SwitchStmt) {
 			values[i] = p.exprToString(v)
 		}
 		p.writeLine(fmt.Sprintf("when %s", strings.Join(values, ", ")))
+		p.indentLevel++
+		p.printBlock(c.Body)
+		p.indentLevel--
+	}
+
+	if stmt.Otherwise != nil {
+		p.writeLine("otherwise")
+		p.indentLevel++
+		p.printBlock(stmt.Otherwise.Body)
+		p.indentLevel--
+	}
+	p.indentLevel--
+}
+
+func (p *Printer) printTypeSwitchStmt(stmt *ast.TypeSwitchStmt) {
+	p.writeLine(fmt.Sprintf("switch %s as %s", p.exprToString(stmt.Expression), stmt.Binding.Value))
+
+	p.indentLevel++
+	for _, c := range stmt.Cases {
+		p.writeLine(fmt.Sprintf("when %s", p.typeAnnotationToString(c.Type)))
 		p.indentLevel++
 		p.printBlock(c.Body)
 		p.indentLevel--

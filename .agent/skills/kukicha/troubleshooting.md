@@ -140,6 +140,22 @@ switch command
 
 **Note:** `default` is accepted as an alias for `otherwise`, but `case` is not a keyword — use `when`.
 
+### "unexpected token in expression: REFERENCE" (inside switch)
+
+**Cause:** Using type-style `when` branches (`when reference T`) in a regular value switch.
+
+```kukicha
+# Wrong — this is parsed as a value switch
+switch event
+    when reference a2a.TaskStatusUpdateEvent
+        print("status")
+
+# Correct — type switch form
+switch event as e
+    when reference a2a.TaskStatusUpdateEvent
+        print("status: {e.Status.State}")
+```
+
 ### "'when' branch after 'otherwise' will never execute"
 
 **Cause:** Placing a `when` branch after `otherwise`. The `otherwise` branch catches everything, so later `when` branches are unreachable.

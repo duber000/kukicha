@@ -92,15 +92,15 @@ func Do(req Request) (reference http.Response, error)
     bodyData := empty
     if req.body != empty
         # Check if body is already a string (form data) or needs JSON marshaling
-        bodyStr, isString := req.body.(string)
-        if isString
-            bodyData = bodyStr as list of byte
-        else
-            # Marshal body to JSON (stdlib/json uses jsonv2 for performance)
-            jsonBytes, marshalErr := json.Marshal(req.body)
-            if marshalErr != empty
-                return empty, marshalErr
-            bodyData = jsonBytes
+        switch req.body as bodyStr
+            when string
+                bodyData = bodyStr as list of byte
+            otherwise
+                # Marshal body to JSON (stdlib/json uses jsonv2 for performance)
+                jsonBytes, marshalErr := json.Marshal(req.body)
+                if marshalErr != empty
+                    return empty, marshalErr
+                bodyData = jsonBytes
 
     httpReq, reqErr := createHTTPRequest(req.method, req.url, bodyData)
     if reqErr != empty
@@ -272,14 +272,14 @@ func SessionDo(s Session, req Request) (reference http.Response, error)
     bodyData := empty
     if req.body != empty
         # Check if body is already a string (form data) or needs JSON marshaling
-        bodyStr, isString := req.body.(string)
-        if isString
-            bodyData = bodyStr as list of byte
-        else
-            jsonBytes, marshalErr := json.Marshal(req.body)
-            if marshalErr != empty
-                return empty, marshalErr
-            bodyData = jsonBytes
+        switch req.body as bodyStr
+            when string
+                bodyData = bodyStr as list of byte
+            otherwise
+                jsonBytes, marshalErr := json.Marshal(req.body)
+                if marshalErr != empty
+                    return empty, marshalErr
+                bodyData = jsonBytes
 
     httpReq, reqErr := createHTTPRequest(req.method, req.url, bodyData)
     if reqErr != empty

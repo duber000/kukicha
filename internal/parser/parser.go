@@ -786,7 +786,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case lexer.TOKEN_IF:
 		return p.parseIfStmt()
 	case lexer.TOKEN_SWITCH:
-		return p.parseSwitchStmt()
+		return p.parseSwitchOrTypeSwitchStmt()
 	case lexer.TOKEN_FOR:
 		return p.parseForStmt()
 	case lexer.TOKEN_DEFER:
@@ -932,18 +932,36 @@ func (p *Parser) parseIfStmt() *ast.IfStmt {
 	return stmt
 }
 
-func (p *Parser) parseSwitchStmt() *ast.SwitchStmt {
+func (p *Parser) parseSwitchOrTypeSwitchStmt() ast.Statement {
 	token := p.advance() // consume 'switch'
 
-	stmt := &ast.SwitchStmt{
-		Token: token,
-		Cases: []*ast.WhenCase{},
+	// Parse optional expression
+	var expr ast.Expression
+	if !p.check(lexer.TOKEN_NEWLINE) && !p.check(lexer.TOKEN_INDENT) && !p.isAtEnd() {
+		expr = p.parseExpression()
 	}
 
-	// Optional expression for value switch.
-	// If omitted, this is a condition switch.
-	if !p.check(lexer.TOKEN_NEWLINE) && !p.check(lexer.TOKEN_INDENT) && !p.isAtEnd() {
-		stmt.Expression = p.parseExpression()
+	// Check if this is a type switch: switch expr as binding
+	// parseExpression will have parsed "expr as binding" as a TypeCastExpr
+	// where TargetType is a simple NamedType (the binding name)
+	if cast, ok := expr.(*ast.TypeCastExpr); ok {
+		if named, ok := cast.TargetType.(*ast.NamedType); ok {
+			return p.parseTypeSwitchBody(token, cast.Expression, &ast.Identifier{
+				Token: named.Token,
+				Value: named.Name,
+			})
+		}
+	}
+
+	// Regular switch statement
+	return p.parseSwitchBody(token, expr)
+}
+
+func (p *Parser) parseSwitchBody(token lexer.Token, expr ast.Expression) *ast.SwitchStmt {
+	stmt := &ast.SwitchStmt{
+		Token:      token,
+		Expression: expr,
+		Cases:      []*ast.WhenCase{},
 	}
 
 	p.skipNewlines()
@@ -997,6 +1015,66 @@ func (p *Parser) parseSwitchStmt() *ast.SwitchStmt {
 	}
 
 	p.consume(lexer.TOKEN_DEDENT, "expected dedent after switch block")
+	p.skipNewlines()
+	return stmt
+}
+
+func (p *Parser) parseTypeSwitchBody(token lexer.Token, expr ast.Expression, binding *ast.Identifier) *ast.TypeSwitchStmt {
+	stmt := &ast.TypeSwitchStmt{
+		Token:      token,
+		Expression: expr,
+		Binding:    binding,
+		Cases:      []*ast.TypeCase{},
+	}
+
+	p.skipNewlines()
+	if !p.match(lexer.TOKEN_INDENT) {
+		p.error(p.peekToken(), "expected indented block after type switch")
+		return stmt
+	}
+
+	for !p.check(lexer.TOKEN_DEDENT) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(lexer.TOKEN_DEDENT) {
+			break
+		}
+
+		if p.match(lexer.TOKEN_CASE) {
+			caseToken := p.previousToken()
+			if stmt.Otherwise != nil {
+				p.error(caseToken, "'when' branch after 'otherwise' will never execute")
+			}
+			typeAnn := p.parseTypeAnnotation()
+
+			p.skipNewlines()
+			body := p.parseBlock()
+			stmt.Cases = append(stmt.Cases, &ast.TypeCase{
+				Token: caseToken,
+				Type:  typeAnn,
+				Body:  body,
+			})
+			continue
+		}
+
+		if p.match(lexer.TOKEN_DEFAULT) {
+			otherwiseToken := p.previousToken()
+			if stmt.Otherwise != nil {
+				p.error(otherwiseToken, "type switch can only have one otherwise branch")
+			}
+
+			p.skipNewlines()
+			stmt.Otherwise = &ast.OtherwiseCase{
+				Token: otherwiseToken,
+				Body:  p.parseBlock(),
+			}
+			continue
+		}
+
+		p.error(p.peekToken(), "expected 'when' or 'otherwise' in type switch block")
+		p.advance()
+	}
+
+	p.consume(lexer.TOKEN_DEDENT, "expected dedent after type switch block")
 	p.skipNewlines()
 	return stmt
 }
