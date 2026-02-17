@@ -1122,6 +1122,36 @@ func Json(resp reference http.Response, sample any) (any, error)
 	}
 }
 
+func TestJSONDecodeReadGenerics(t *testing.T) {
+	input := `petiole json
+
+func DecodeRead(reader io.Reader, sample any) (any, error)
+    data := sample
+    return data, empty
+`
+
+	p, err := parser.New(input, "stdlib/json/json.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	gen.SetSourceFile("stdlib/json/json.kuki")
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func DecodeRead[T any](reader io.Reader, sample T) (T, error)") {
+		t.Errorf("expected json.DecodeRead generic signature, got: %s", output)
+	}
+}
+
 func TestStdlibImportRewriting(t *testing.T) {
 	tests := []struct {
 		name           string

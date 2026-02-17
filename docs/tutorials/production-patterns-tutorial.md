@@ -139,9 +139,7 @@ function CreateLink on s reference Server(url string) (Link, error)
             break
         code = random.String(6)
 
-    link, err := s.db.InsertLink(code, url)
-    if err not equals empty
-        return Link{}, err
+    link := s.db.InsertLink(code, url) onerr return Link{}, error "{error}"
 
     return link, empty
 
@@ -150,9 +148,7 @@ function GetLink on s reference Server(code string) (Link, bool)
     s.mu.RLock()             # Shared access for reading
     defer s.mu.RUnlock()
 
-    link, err := s.db.GetLink(code)
-    if err not equals empty
-        return Link{}, false
+    link := s.db.GetLink(code) onerr return Link{}, false
     return link, true
 
 # RecordClick increments the click counter for a link
@@ -197,9 +193,7 @@ type Link
 
 # Open the database and create the table if needed
 function OpenDatabase(filename string) (Database, error)
-    db, err := sql.Open("sqlite3", filename)
-    if err not equals empty
-        return empty, err
+    db := sql.Open("sqlite3", filename) onerr return empty, error "{error}"
 
     # Create the links table
     createTable := `
@@ -225,10 +219,8 @@ function Close on d Database()
 ```kukicha
 # InsertLink creates a new link in the database
 function InsertLink on d Database(code string, url string) (Link, error)
-    _, execErr := d.db.Exec(
-        "INSERT INTO links (code, url) VALUES (?, ?)", code, url)
-    if execErr not equals empty
-        return Link{}, execErr
+    d.db.Exec(
+        "INSERT INTO links (code, url) VALUES (?, ?)", code, url) onerr return Link{}, error "{error}"
 
     return d.GetLink(code)
 
@@ -238,34 +230,28 @@ function GetLink on d Database(code string) (Link, error)
         "SELECT code, url, clicks, created_at FROM links WHERE code = ?", code)
 
     link := Link{}
-    scanErr := row.Scan(
+    row.Scan(
         reference of link.code,
         reference of link.url,
         reference of link.clicks,
-        reference of link.createdAt)
-    if scanErr not equals empty
-        return Link{}, scanErr
+        reference of link.createdAt) onerr return Link{}, error "{error}"
 
     return link, empty
 
 # GetAllLinks returns all links, newest first
 function GetAllLinks on d Database() (list of Link, error)
-    rows, queryErr := d.db.Query(
-        "SELECT code, url, clicks, created_at FROM links ORDER BY created_at DESC")
-    if queryErr not equals empty
-        return empty, queryErr
+    rows := d.db.Query(
+        "SELECT code, url, clicks, created_at FROM links ORDER BY created_at DESC") onerr return empty, error "{error}"
     defer rows.Close()
 
     links := empty list of Link
     for rows.Next()
         link := Link{}
-        scanErr := rows.Scan(
+        rows.Scan(
             reference of link.code,
             reference of link.url,
             reference of link.clicks,
-            reference of link.createdAt)
-        if scanErr not equals empty
-            continue
+            reference of link.createdAt) onerr continue
         links = append(links, link)
 
     return links, empty
@@ -425,13 +411,12 @@ function handleListLinks on s reference Server(w http.ResponseWriter, r referenc
         return
 
     s.mu.RLock()
-    links, err := s.db.GetAllLinks()
-    s.mu.RUnlock()
-
-    if err not equals empty
-        log.Printf("Error fetching links: %v", err)
+    links := s.db.GetAllLinks() onerr
+        s.mu.RUnlock()
+        log.Printf("Error fetching links: %v", error)
         httphelper.JSONError(w, 500, "Failed to fetch links")
         return
+    s.mu.RUnlock()
 
     httphelper.JSON(w, links)
 
@@ -445,21 +430,21 @@ function handleLinkDetail on s reference Server(w http.ResponseWriter, r referen
     switch r.Method
         when "GET"
             s.mu.RLock()
-            link, err := s.db.GetLink(code)
-            s.mu.RUnlock()
-            if err not equals empty
+            link := s.db.GetLink(code) onerr
+                s.mu.RUnlock()
                 httphelper.JSONNotFound(w, "Link not found")
                 return
+            s.mu.RUnlock()
             httphelper.JSON(w, link)
 
         when "DELETE"
             s.mu.Lock()
-            deleteErr := s.db.DeleteLink(code)
-            s.mu.Unlock()
-            if deleteErr not equals empty
-                log.Printf("Error deleting link: %v", deleteErr)
+            s.db.DeleteLink(code) onerr
+                s.mu.Unlock()
+                log.Printf("Error deleting link: %v", error)
                 httphelper.JSONError(w, 500, "Failed to delete link")
                 return
+            s.mu.Unlock()
             w |> .WriteHeader(204)
 
         otherwise
@@ -646,16 +631,14 @@ if result.IsSome(opt)
 ```kukicha
 # Pattern 2: Result for operations that can fail
 function FetchLinkResult on s reference Server(code string) result.Result
-    link, err := s.db.GetLink(code)
-    if err not equals empty
-        return result.Err(err)
+    link := s.db.GetLink(code) onerr return result.Err(error)
     return result.Ok(link)
 
 # Usage with Match for clean dispatch
 result.Match(
     s.FetchLinkResult(code),
     (link any) => httphelper.JSON(w, link),
-    (err error) => httphelper.JSONNotFound(w, "Link not found")
+    (cause error) => httphelper.JSONNotFound(w, "Link not found")
 )
 ```
 
@@ -680,18 +663,17 @@ function LoadConfig(path string) (Config, error)
     return cfg, empty
 ```
 
-`errors.Wrap(err, "context")` produces `"context: <original>"`, preserving the full error chain for logging. Use `errors.Is(err, target)` to check for specific errors deep in a wrapped chain — useful in middleware that needs to translate a `sql.ErrNoRows` into a 404 without leaking the detail to the user:
+`errors.Wrap(error, "context")` produces `"context: <original>"`, preserving the full error chain for logging. Use `errors.Is(error, target)` to check for specific errors deep in a wrapped chain — useful in middleware that needs to translate a `sql.ErrNoRows` into a 404 without leaking the detail to the user:
 
 ```kukicha
 import "stdlib/errors"
 import "database/sql"
 
 function handleGet on s reference Server(w http.ResponseWriter, r reference http.Request)
-    link, err := s.db.GetLink(code)
-    if errors.Is(err, sql.ErrNoRows)
-        httphelper.JSONNotFound(w, "Link not found")
-        return
-    if err not equals empty
+    link := s.db.GetLink(code) onerr
+        if errors.Is(error, sql.ErrNoRows)
+            httphelper.JSONNotFound(w, "Link not found")
+            return
         httphelper.JSONError(w, 500, "Database error")
         return
     httphelper.JSON(w, link)
@@ -792,9 +774,9 @@ function RecoveryMiddleware(next http.Handler) http.Handler
     return http.HandlerFunc(function(w http.ResponseWriter, r reference http.Request)
         # Defer a function that calls recover()
         defer function()
-            err := recover()
-            if err not equals empty
-                log.Printf("PANIC RECOVERED: %v", err)
+            recovered := recover()
+            if recovered not equals empty
+                log.Printf("PANIC RECOVERED: %v", recovered)
                 http.Error(w, "Internal Server Error", 500)
         () # Call the deferred function
 

@@ -624,12 +624,9 @@ fetch.Get(url) |> fetch.CheckStatus() |> fetch.Json(list of Repo) onerr ...
 This four-step pipeline is the heart of the program. Each `|>` passes the result of one operation to the next. Without pipes, you'd write:
 
 ```kukicha
-resp, err1 := fetch.Get(url)
-# check err1...
-resp2, err2 := fetch.CheckStatus(resp)
-# check err2...
-repos, err3 := fetch.Json(resp2, list of Repo)
-# check err3...
+resp := fetch.Get(url) onerr ...
+resp2 := fetch.CheckStatus(resp) onerr ...
+repos := fetch.Json(resp2, list of Repo) onerr ...
 ```
 
 With pipes + `onerr`, four operations and their error handling compress into a readable pipeline.
@@ -728,9 +725,9 @@ Kukicha supports destructuring three or more values at once. This comes up when 
 ```kukicha
 import "net"
 
-# Three-value destructuring: discard first, keep ipNet and err
-_, ipNet, err := net.ParseCIDR("192.168.0.0/16")
-if err not equals empty
+# Three-value destructuring: discard first, keep ipNet and parseErr
+_, ipNet, parseErr := net.ParseCIDR("192.168.0.0/16")
+if parseErr not equals empty
     print("Invalid CIDR")
 ```
 
@@ -916,7 +913,7 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | **`fetch` + `json`** | Fetch and parse data from web APIs |
 | **`cli`** | Build one-shot command interfaces with args, flags, and actions |
 | **`cast`** | Convert strings/values to typed numbers with `onerr` |
-| **Multi-value destructuring** | `_, ipNet, err :=` captures 3+ return values |
+| **Multi-value destructuring** | `_, ipNet, parseErr :=` captures 3+ return values |
 | **`iterator`** | Functional iteration tools (advanced; optional for this project) |
 
 ---

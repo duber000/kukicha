@@ -192,7 +192,7 @@ type ShortenRequest
 function handleShorten(response http.ResponseWriter, request reference http.Request)
     # Parse the incoming JSON — DecodeRead uses the sample pattern
     # so we don't need a pre-declared variable
-    input := request.Body |> json.DecodeRead(_, empty ShortenRequest) onerr
+    input := request.Body |> json.DecodeRead(empty ShortenRequest) onerr
         response |> .WriteHeader(400)
         response |> fmt.Fprintln("Invalid JSON")
         return
@@ -317,7 +317,7 @@ function handleShorten on store reference LinkStore(response http.ResponseWriter
         return
 
     # Parse the incoming JSON
-    input := request.Body |> json.DecodeRead(_, empty ShortenRequest) onerr
+    input := request.Body |> json.DecodeRead(empty ShortenRequest) onerr
         store.sendError(response, 400, "Invalid JSON")
         return
 

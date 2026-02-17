@@ -126,13 +126,13 @@ func UnmarshalRead(reader io.Reader, target any) error {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:129
-func DecodeRead(reader io.Reader, sample any) (any, error) {
+func DecodeRead[T any](reader io.Reader, sample T) (T, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:130
 	data := sample
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:131
 	if err_1 := json.UnmarshalRead(reader, &data); err_1 != nil {
 		err_1 = fmt.Errorf("failed to decode json: %w", err_1)
-		return *new(any), err_1
+		return *new(T), err_1
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:132
 	return data, nil

@@ -5,11 +5,35 @@
 import "stdlib/mcp"
 import "stdlib/sandbox"
 
+func readFileTool(box sandbox.Root, args map of string to any) (any, error)
+    path := args["path"].(string)
+    data, readErr := sandbox.ReadString(box, path)
+    if readErr != empty
+        return mcp.ErrorResult(readErr.Error()), empty
+    return data as any, empty
+
+func writeFileTool(box sandbox.Root, args map of string to any) (any, error)
+    path := args["path"].(string)
+    content := args["content"].(string)
+    writeErr := content |> sandbox.WriteString(box, path)
+    if writeErr != empty
+        return mcp.ErrorResult(writeErr.Error()), empty
+    return "wrote {path}" as any, empty
+
+func listFilesTool(box sandbox.Root, args map of string to any) (any, error)
+    path := "."
+    p, ok := args["path"].(string)
+    if ok
+        path = p
+    names, listErr := sandbox.List(box, path)
+    if listErr != empty
+        return mcp.ErrorResult(listErr.Error()), empty
+    return names as any, empty
+
 func main()
     # Create a sandbox rooted at /tmp/workspace
-    box, err := sandbox.New("/tmp/workspace")
-    if err != empty
-        print("Failed to create sandbox: {err}")
+    box := sandbox.New("/tmp/workspace") onerr
+        print("Failed to create sandbox: {error}")
         return
     defer sandbox.Close(box)
 
@@ -21,11 +45,7 @@ func main()
     readSchema = mcp.Required(readSchema, list of string{"path"}).(map of string to any)
 
     server |> mcp.Tool("read_file", "Read a file from the sandbox", readSchema, func(args map of string to any) (any, error)
-        path := args["path"].(string)
-        data, readErr := sandbox.ReadString(box, path)
-        if readErr != empty
-            return mcp.ErrorResult(readErr.Error()), empty
-        return data as any, empty
+        return readFileTool(box, args)
     )
 
     # write_file tool
@@ -34,12 +54,7 @@ func main()
     writeSchema = mcp.Required(writeSchema, list of string{"path", "content"}).(map of string to any)
 
     server |> mcp.Tool("write_file", "Write a file to the sandbox", writeSchema, func(args map of string to any) (any, error)
-        path := args["path"].(string)
-        content := args["content"].(string)
-        writeErr := content |> sandbox.WriteString(box, path)
-        if writeErr != empty
-            return mcp.ErrorResult(writeErr.Error()), empty
-        return "wrote {path}" as any, empty
+        return writeFileTool(box, args)
     )
 
     # list_files tool
@@ -47,13 +62,7 @@ func main()
     listSchema := mcp.Schema(listProps)
 
     server |> mcp.Tool("list_files", "List files in the sandbox", listSchema, func(args map of string to any) (any, error)
-        path := "."
-        if p, ok := args["path"].(string); ok
-            path = p
-        names, listErr := sandbox.List(box, path)
-        if listErr != empty
-            return mcp.ErrorResult(listErr.Error()), empty
-        return names as any, empty
+        return listFilesTool(box, args)
     )
 
     print("Sandboxed MCP Server starting (root: {sandbox.Path(box)})")

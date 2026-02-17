@@ -487,6 +487,12 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 		for _, tp := range typeParams {
 			g.placeholderMap[tp.Placeholder] = tp.Name
 		}
+	} else if g.isStdlibJSON() {
+		// Generate type parameters for selected json helpers (e.g., DecodeRead)
+		typeParams = g.inferJSONTypeParameters(decl)
+		for _, tp := range typeParams {
+			g.placeholderMap[tp.Placeholder] = tp.Name
+		}
 	}
 
 	// Generate function signature
@@ -793,6 +799,11 @@ func (g *Generator) isStdlibFetch() bool {
 	return strings.Contains(g.sourceFile, "stdlib/fetch/") || strings.Contains(g.sourceFile, "stdlib\\fetch\\")
 }
 
+// isStdlibJSON checks if we're generating code in stdlib/json.
+func (g *Generator) isStdlibJSON() bool {
+	return strings.Contains(g.sourceFile, "stdlib/json/") || strings.Contains(g.sourceFile, "stdlib\\json\\")
+}
+
 // inferSliceTypeParameters infers type parameters for stdlib/slice functions like GroupBy
 // GroupBy needs two type parameters: T (element type) and K (key type, must be comparable)
 func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
@@ -821,6 +832,41 @@ func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypePara
 // Json uses placeholders to produce: func Json[T any](resp *http.Response, sample T) (T, error)
 func (g *Generator) inferFetchTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
 	if decl.Name == nil || decl.Name.Value != "Json" {
+		return nil
+	}
+
+	usesAny := false
+	for _, param := range decl.Parameters {
+		if g.typeContainsPlaceholder(param.Type, "any") {
+			usesAny = true
+			break
+		}
+	}
+	if !usesAny {
+		for _, ret := range decl.Returns {
+			if g.typeContainsPlaceholder(ret, "any") {
+				usesAny = true
+				break
+			}
+		}
+	}
+	if !usesAny {
+		return nil
+	}
+
+	return []*TypeParameter{
+		{
+			Name:        "T",
+			Placeholder: "any",
+			Constraint:  "any",
+		},
+	}
+}
+
+// inferJSONTypeParameters infers type parameters for selected stdlib/json helpers.
+// DecodeRead uses placeholders to produce: func DecodeRead[T any](reader io.Reader, sample T) (T, error)
+func (g *Generator) inferJSONTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
+	if decl.Name == nil || decl.Name.Value != "DecodeRead" {
 		return nil
 	}
 

@@ -68,6 +68,27 @@ declarations inline in function bodies.
 
 ---
 
+## 4. `onerr` + Multi-Value `return` Inside Inline Callback Bodies
+
+In some inline callback/lambda contexts (for example, handler functions passed directly to
+APIs like `mcp.Tool`), parser/codegen handling is still limited when `onerr` is followed by
+a multi-value `return` in the same inline function body.
+
+Example pattern that may fail in inline callback bodies:
+
+```kukicha
+func(args map of string to any) (any, error)
+    data := sandbox.ReadString(box, path) onerr return mcp.ErrorResult(error.Error()), empty
+    return data as any, empty
+```
+
+Current workaround: use explicit error variables in the inline callback body, or move logic
+to a named helper function and return from there.
+
+**Affects:** Inline tool/handler callbacks that need `(value, error)` fallback returns.
+
+---
+
 ## Roadmap
 
 Additions that would eliminate most remaining helpers:

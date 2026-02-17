@@ -30,6 +30,5 @@ func main()
     print("MCP Server starting...")
 
     # Serve on stdio (blocking)
-    err := mcp.Serve(server)
-    if err != empty
-        print("Server finished with error: {err}")
+    mcp.Serve(server) onerr
+        print("Server finished with error: {error}")
