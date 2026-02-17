@@ -33,18 +33,7 @@ incrementally and pass it with spread syntax when the element type is a function
 
 ---
 
-## 2. ~~Range-over-Func (Go 1.23+)~~ — RESOLVED
-
-Kukicha's `for-in` loop supports range-over-func iterators (`iter.Seq` and `iter.Seq2`).
-The `stdlib/iterator` package demonstrates this throughout — e.g. `Filter`, `Map`, `Enumerate`,
-and `Zip` all produce and consume iterator functions via `for item in seq`.
-
-`stdlib/a2a` has now been consolidated into `a2a.kuki`; this language limitation no longer
-applies there.
-
----
-
-## 3. Multi-Statement SDK Callback Closures
+## 2. Multi-Statement SDK Callback Closures
 
 Some Go SDK APIs require passing a multi-statement `func(ctx, req) (resp, error)` callback
 at registration time. Kukicha has function literals and block lambdas, but the MCP SDK's
@@ -57,7 +46,7 @@ multi-statement closure body of the `Tool` function itself remains in Go.
 
 ---
 
-## 4. Complex Streaming I/O
+## 3. Complex Streaming I/O
 
 Some helper functions mix `bufio.Scanner`, anonymous struct JSON targets, and multi-pass
 stream processing that is idiomatic in Go but verbose in Kukicha:
