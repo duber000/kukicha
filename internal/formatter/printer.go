@@ -162,7 +162,11 @@ func (p *Printer) parametersToString(params []*ast.Parameter) string {
 	parts := make([]string, len(params))
 	for i, param := range params {
 		paramType := p.typeAnnotationToString(param.Type)
-		parts[i] = fmt.Sprintf("%s %s", param.Name.Value, paramType)
+		if param.Variadic {
+			parts[i] = fmt.Sprintf("%s many %s", param.Name.Value, paramType)
+		} else {
+			parts[i] = fmt.Sprintf("%s %s", param.Name.Value, paramType)
+		}
 	}
 
 	return strings.Join(parts, ", ")
@@ -269,6 +273,10 @@ func (p *Printer) printStatement(stmt ast.Statement) {
 		channel := p.exprToString(s.Channel)
 		value := p.exprToString(s.Value)
 		p.writeLine(fmt.Sprintf("send %s to %s", value, channel))
+	case *ast.BreakStmt:
+		p.writeLine("break")
+	case *ast.ContinueStmt:
+		p.writeLine("continue")
 	case *ast.ExpressionStmt:
 		p.writeLine(p.exprToString(s.Expression) + p.onErrSuffix(s.OnErr))
 	}
@@ -534,6 +542,10 @@ func (p *Printer) exprToString(expr ast.Expression) string {
 		return "recover"
 	case *ast.ArrowLambda:
 		return p.arrowLambdaToString(e)
+	case *ast.AddressOfExpr:
+		return "reference of " + p.exprToString(e.Operand)
+	case *ast.DerefExpr:
+		return "dereference " + p.exprToString(e.Operand)
 	default:
 		return ""
 	}
@@ -593,6 +605,9 @@ func (p *Printer) methodCallExprToString(expr *ast.MethodCallExpr) string {
 	method := expr.Method.Value
 
 	if len(expr.Arguments) == 0 {
+		if expr.IsCall {
+			return fmt.Sprintf("%s.%s()", object, method)
+		}
 		return fmt.Sprintf("%s.%s", object, method)
 	}
 
