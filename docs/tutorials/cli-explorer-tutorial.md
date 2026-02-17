@@ -93,8 +93,6 @@ Create a file called `explorer.kuki`:
 ```kukicha
 import "stdlib/fetch"
 import "stdlib/json"
-import "stdlib/string"
-import "stdlib/slice"
 
 # A Repo represents a GitHub repository
 # The json:"..." tags tell the JSON parser which API field maps to which field
@@ -134,8 +132,8 @@ function FetchRepos(username string) list of Repo
         |> fetch.CheckStatus()
         |> fetch.Bytes()
         |> json.Unmarshal(reference of repos) onerr
-            print("Failed to fetch repos for '{username}': {error}")
-            return empty list of Repo
+        print("Failed to fetch repos for '{username}': {error}")
+        return empty list of Repo
 
     return repos
 ```
@@ -234,6 +232,8 @@ Arrow lambdas let you write the same thing in one line. The expression after `=>
 **💡 Pipe Pipelines:** Notice how `r.Language |> string.ToLower() |> string.Contains(...)` reads like a sentence: "take the language, make it lowercase, check if it contains our search term." This is cleaner than nesting function calls like `string.Contains(string.ToLower(r.Language), ...)`.
 
 ### Let's Try It
+
+Add import "stdlib/string" and import "stdlib/slice" to the imports at the top
 
 Update `main` to display and filter repos:
 
