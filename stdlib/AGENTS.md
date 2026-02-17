@@ -25,7 +25,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/http` | HTTP response helpers | JSON, JSONError, JSONNotFound, ReadJSON, SafeURL |
 | `stdlib/input` | User input utilities | Line, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration | Map, Filter, Reduce |
-| `stdlib/json` | jsonv2 wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite |
+| `stdlib/json` | jsonv2 wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
 | `stdlib/kube` | Kubernetes client via client-go | Connect, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, PodLogs |
 | `stdlib/llm` | Large language model client | Chat, Stream, System, User |
 | `stdlib/maps` | Map utilities | Keys, Values, Has, Merge |

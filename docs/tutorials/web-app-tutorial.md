@@ -139,7 +139,7 @@ Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks 
 > data |> json.MarshalWrite(response, _)       # _ marks where piped value goes
 > ```
 >
-> **Rule of thumb:** Use `json.NewEncoder()` / `json.NewDecoder()` for streaming (web servers), and `json.Marshal()` / `json.Unmarshal()` for in-memory conversion.
+> **Rule of thumb:** Use `json.DecodeRead()` for reading JSON from request bodies. Use `json.MarshalWrite()` for writing JSON to response bodies. Use `json.Marshal()` / `json.Unmarshal()` for in-memory conversion.
 
 Let's define our `Link` type and send one as JSON:
 
@@ -190,15 +190,9 @@ type ShortenRequest
     url string
 
 function handleShorten(response http.ResponseWriter, request reference http.Request)
-    # Create an empty request to fill with the incoming data
-    input := ShortenRequest{}
-
-    # Parse the JSON from the request body — pipe it through decoder
-    # "reference of" gets a pointer so the decoder can fill in our struct
-    decodeErr := request.Body
-        |> json.NewDecoder()
-        |> json.Decode(_, reference of input)
-    if decodeErr not equals empty
+    # Parse the incoming JSON — DecodeRead uses the sample pattern
+    # so we don't need a pre-declared variable
+    input := request.Body |> json.DecodeRead(_, empty ShortenRequest) onerr
         response |> .WriteHeader(400)
         response |> fmt.Fprintln("Invalid JSON")
         return
@@ -209,9 +203,9 @@ function handleShorten(response http.ResponseWriter, request reference http.Requ
     # We'll generate a short code and send it back (next step)
 ```
 
-**What's `reference of`?**
+**What's `json.DecodeRead`?**
 
-When we write `reference of input`, we're giving the JSON decoder a way to **fill in** our struct variable. Without it, the decoder would only have a copy and couldn't modify our actual `input`.
+`json.DecodeRead` reads JSON from any `io.Reader` (like a request body) and returns a typed value. You pass an `empty ShortenRequest` as a "sample" so it knows what type to decode into. The `onerr` block handles invalid JSON gracefully.
 
 > **💡 Tip: The `_` placeholder.** By default, the piped value becomes the first argument. Use `_` to place it elsewhere:
 > ```kukicha
@@ -323,11 +317,7 @@ function handleShorten on store reference LinkStore(response http.ResponseWriter
         return
 
     # Parse the incoming JSON
-    input := ShortenRequest{}
-    decodeErr := request.Body
-        |> json.NewDecoder()
-        |> json.Decode(_, reference of input)
-    if decodeErr not equals empty
+    input := request.Body |> json.DecodeRead(_, empty ShortenRequest) onerr
         store.sendError(response, 400, "Invalid JSON")
         return
 

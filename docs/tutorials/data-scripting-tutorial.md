@@ -181,7 +181,7 @@ function main()
     print("First user: {firstUser["Name"]} is a {firstUser["Role"]}")
 
     # Print everything as JSON to see the structure
-    users |> json.MarshalIndent("", "  ") |> print
+    users |> json.MarshalPretty() |> print
 ```
 
 **Try it:**

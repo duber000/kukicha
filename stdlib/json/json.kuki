@@ -122,3 +122,11 @@ func MarshalWrite(writer io.Writer, value any) error
 # Example: request.Body |> json.UnmarshalRead(_, reference todo) onerr return
 func UnmarshalRead(reader io.Reader, target any) error
     return json.UnmarshalRead(reader, target)
+
+# DecodeRead reads JSON from an io.Reader into a typed value using the sample pattern.
+# Pass a typed empty value to drive type inference — no pre-declared variable needed.
+# Example: input := request.Body |> json.DecodeRead(_, empty ShortenRequest) onerr ...
+func DecodeRead(reader io.Reader, sample any) (any, error)
+    data := sample
+    json.UnmarshalRead(reader, reference of data) onerr explain "failed to decode json"
+    return data, empty

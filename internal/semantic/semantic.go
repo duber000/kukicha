@@ -1344,7 +1344,8 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 			"fetch.Json":        2,
 			"fetch.Decode":      1,
 			// stdlib/json
-			"json.Marshal": 2,
+			"json.Marshal":     2,
+			"json.DecodeRead":  2,
 			// Go stdlib
 			"os.ReadFile":        2,
 			"os.Create":          2,
