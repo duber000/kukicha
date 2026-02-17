@@ -8,10 +8,10 @@ In the first tutorial, you learned about lists—ordered collections of items. B
 
 In this tutorial, you will learn:
 1.  **Variadic Functions**: Functions that take any number of items (`many`).
-2.  **String Superpowers**: Chaining operations with the Pipe Operator (`|>`).
+2.  **String Superpowers**: More on chaining operations with the Pipe Operator (`|>`).
 3.  **Maps**: How to store Key-Value data (like a dictionary).
 4.  **Parsing**: How to turn raw text (like CSVs) into structured data.
-5.  **Shell Commands**: How to run system tools from Kukicha.
+5.  **Shell Commands**: More on how to run system tools from Kukicha.
 6.  **AI Scripting**: How to pipe data into an LLM to automate tasks.
 
 This is the "glue" code that makes Kukicha a powerful scripting language.
