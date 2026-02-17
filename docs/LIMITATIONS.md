@@ -1,13 +1,15 @@
 # Kukicha Language Limitations
 
 This document explains why some stdlib packages still contain hand-written Go helper files
-(`*_helper.go`) or tool files (`*_tool.go`) rather than being expressed purely in Kukicha.
+(`*_helper.go`) or tool files (`*_tool.go`) rather than being expressed purely in Kukicha,
+and notes areas where the stdlib overlaps with dedicated tooling.
 
 ## Current Packages with Go Helpers
 
 | Package | File | Reason |
 |---------|------|--------|
-| `stdlib/container` | `container_helper.go` | Functional options, streaming I/O |
+| `stdlib/container` | `container_helper.go` | Functional options, streaming I/O, tar archive handling |
+| `stdlib/kube` | `kube_helper.go` | client-go SDK types, watch/wait polling loops |
 | `stdlib/mcp` | `mcp_tool.go` | Multi-statement SDK callback closure |
 
 ---
@@ -86,6 +88,42 @@ Current workaround: use explicit error variables in the inline callback body, or
 to a named helper function and return from there.
 
 **Affects:** Inline tool/handler callbacks that need `(value, error)` fallback returns.
+
+---
+
+## 5. Kube Operations That Overlap with GitOps Controllers (ArgoCD, Flux)
+
+Several `stdlib/kube` functions perform imperative mutations that, in production clusters
+managed by ArgoCD or Flux, will be reverted or cause drift alerts. These functions are
+useful for local dev clusters, CI test environments, and one-off scripts, but should
+**not** be used against GitOps-managed namespaces.
+
+| Function | What it does | ArgoCD conflict |
+|----------|-------------|-----------------|
+| `ScaleDeployment` | Imperatively sets replica count | ArgoCD will revert to the count in the Git manifest on the next sync. Use `argocd app set` or edit the manifest repo instead. |
+| `DeleteDeployment` | Deletes a deployment by name | ArgoCD will recreate it on the next sync since the manifest still exists in Git. For actual removal, delete from the manifest repo. |
+| `DeletePod` | Deletes a pod by name | Generally safe (the controller recreates it), but in ArgoCD "self-heal" mode this may trigger an unnecessary sync. |
+| `RolloutRestart` | Patches the pod template annotation to trigger a rollout | ArgoCD will detect the annotation drift. In ArgoCD-managed apps, use `argocd app actions run <app> restart --kind Deployment` instead. |
+
+### Functions that are safe alongside ArgoCD
+
+These are **read-only** or **observe-only** and do not conflict with GitOps controllers:
+
+- `Connect`, `Open`, `Namespace` — connection setup
+- `ListPods`, `GetPod`, `ListDeployments`, `GetDeployment` — read-only queries
+- `ListServices`, `GetService`, `ListNodes`, `GetNode`, `ListNamespaces` — read-only queries
+- `PodLogs`, `PodLogsTail` — read-only log retrieval
+- `WatchPods`, `WatchPodsCtx` — read-only event streaming
+- `WaitDeploymentReady`, `WaitPodReady` (and Ctx variants) — read-only polling
+- All accessor functions (`PodName`, `PodStatus`, `DeploymentImage`, etc.) — pure data extraction
+
+### Recommendation
+
+If your cluster uses ArgoCD or Flux, treat the mutating kube functions as **dev/test
+only**. For production deployments, push changes to your Git manifest repo and let the
+GitOps controller reconcile. The read-only and observability functions in `stdlib/kube`
+remain valuable for dashboards, health checks, and CI verification scripts that run
+*after* ArgoCD has synced.
 
 ---
 
