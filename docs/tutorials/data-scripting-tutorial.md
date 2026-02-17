@@ -4,15 +4,15 @@
 **Time:** 15 minutes
 **Prerequisite:** [Beginner Tutorial](beginner-tutorial.md)
 
-In the first tutorial, you learned about lists—ordered collections of items. But often, data isn't just a list; it's structured. Detailed records, configuration settings, and data from files often come as "Key-Value" pairs.
+In the first tutorial, you learned the core syntax: variables, lists, loops, pipes, shell commands, and `onerr`. This tutorial builds on that foundation for data-heavy scripting workflows.
 
 In this tutorial, you will learn:
 1.  **Variadic Functions**: Functions that take any number of items (`many`).
-2.  **String Superpowers**: More on chaining operations with the Pipe Operator (`|>`).
+2.  **Data Cleaning Pipelines**: Practical text-cleaning flows for messy inputs.
 3.  **Maps**: How to store Key-Value data (like a dictionary).
 4.  **Parsing**: How to turn raw text (like CSVs) into structured data.
-5.  **Shell Commands**: More on how to run system tools from Kukicha.
-6.  **AI Scripting**: How to pipe data into an LLM to automate tasks.
+5.  **Error Context**: How to wrap lower-level errors with useful messages.
+6.  **AI Scripting**: How to combine shell output + LLM calls to automate tasks.
 
 This is the "glue" code that makes Kukicha a powerful scripting language.
 
@@ -49,55 +49,22 @@ function main()
 
 ---
 
-## Part 2: String Superpowers & Pipes
+## Part 2: Data Cleaning Pipelines
 
-Kukicha includes a **string petiole** (package) with powerful functions for working with text. When combined with the **pipe operator** (`|>`), it makes data cleaning a breeze.
+You already know pipes from Tutorial 1. Here we'll use them for realistic cleaning tasks.
 
-### The Pipe Operator (`|>`)
-
-The pipe operator lets you pass the result of one function directly into the next. It reads like a natural flow: "take X, then do Y, then do Z."
-
-Instead of nesting functions:
-`lower := string.ToLower(string.TrimSpace(text))`
-
-You write a pipeline:
-`lower := text |> string.TrimSpace() |> string.ToLower()`
-
-### Common String Operations
+### Cleaning Delimited Input
 
 Create `strings.kuki`:
 
 ```kukicha
+import "stdlib/env"
 import "stdlib/string"
 
 function main()
-    text := "  HELLO world  "
-
-    # 1. Cleaning up
-    clean := text |> string.TrimSpace() |> string.ToLower() |> string.Title()
-    print("Clean: [{clean}]") # Prints: Clean: [Hello World]
-
-    # 2. Searching
-    if clean |> string.Contains("Hello")
-        print("Found greeting!")
-
-    # 3. Splitting and Joining
-    parts := "apple,banana,cherry" |> string.Split(",")
-    joined := parts |> string.Join(" | ")
-    print(joined) # Prints: apple | banana | cherry
-```
-
-### Advanced: Splitting AND Trimming
-
-When you split strings with messy spacing, you often need to trim each piece. The `env` package has a utility for this:
-
-```kukicha
-import "stdlib/env"
-
-function main()
-    messy := "one,  two , three "
-    cleanList := messy |> env.SplitAndTrim(",")
-    # Result: ["one", "two", "three"] (no spaces!)
+    raw := "analytics,  batch jobs,ops , ai "
+    tags := raw |> env.SplitAndTrim(",")
+    print(tags |> string.Join(" | "))  # analytics | batch jobs | ops | ai
 ```
 
 ---
@@ -154,9 +121,9 @@ For `map of string to string`, a missing key returns `""` (empty string). For `m
 
 ---
 
-## Part 2: Parsing Data (CSV)
+## Part 4: Parsing Data (CSV)
 
-Real data often comes in messy formats like CSV (Comma Separated Values). Let's parse some user data using `stdib/parse`.
+Real data often comes in messy formats like CSV (Comma Separated Values). Let's parse some user data using `stdlib/parse`.
 
 Create `parser.kuki`:
 
@@ -199,36 +166,7 @@ This is incredibly powerful for processing spreadsheets or data exports!
 
 ---
 
-## Part 3: Shell Commands
-
-Kukicha can run any command you can type in your terminal. This is great for automating workflows.
-
-Create `git_check.kuki`:
-
-```kukicha
-import "stdlib/shell"
-import "stdlib/string"
-
-function main()
-    # Run 'git status' and capture the output
-    status := shell.Output("git", "status", "--short") onerr ""
-
-    if status equals ""
-        print("Directory is clean (or not a git repo).")
-        return
-
-    print("Changed files:")
-    print(status)
-```
-
-**Try it** (in a git folder):
-```bash
-kukicha run git_check.kuki
-```
-
----
-
-## Part 3b: Wrapping Errors with `stdlib/errors`
+## Part 5: Wrapping Errors with `stdlib/errors`
 
 When a shell command fails, you often want to add context to the error before surfacing it to the caller. The `stdlib/errors` package makes this clean:
 
@@ -257,7 +195,7 @@ data := readSomething() onerr
 
 ---
 
-## Part 4: AI Scripting (The Fun Part)
+## Part 6: AI Scripting (The Fun Part)
 
 Now, let's combine **Shell** commands with **AI**. We'll build a script that looks at your code changes and writes a commit message for you.
 
@@ -301,7 +239,7 @@ function main()
 3.  `kukicha run autocommit.kuki`
 
 ### How it works
-This shows the power of the **Pipe Operator (`|>`)**:
+This composes a simple data pipeline:
 `Data (diff)` -> `LLM` -> `Result`.
 
 You can use this pattern for anything:
@@ -311,7 +249,7 @@ You can use this pattern for anything:
 
 ---
 
-## Part 5: Putting It All Together
+## Part 7: Putting It All Together
 
 Let's build a "Data Cleaner". It will:
 1.  Read a CSV of names.

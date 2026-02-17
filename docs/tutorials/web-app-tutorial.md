@@ -12,7 +12,7 @@ In this tutorial, you'll discover how to:
 - Create a **web server** that responds to requests
 - Send and receive **JSON data** (the language of web APIs)
 - Build **endpoints** for creating, reading, and deleting links
-- Handle **different request types** (GET, POST, DELETE) with `switch`/`when`
+- Handle **different request types** (GET, POST, DELETE) in web handlers
 - Perform **HTTP redirects** — the core of a link shortener
 
 By the end, you'll have a working link shortener API that anyone can use!
@@ -51,7 +51,7 @@ kukicha init    # Extracts stdlib for JSON, etc.
 
 ## Step 1: Your First Web Server
 
-Let's start with the simplest possible web server:
+Let's start with the smallest possible web server so we can focus on HTTP flow before adding routing and JSON:
 
 ```kukicha
 import "fmt"
@@ -66,7 +66,6 @@ function main()
 
 # This function handles requests to "/"
 function sayHello(response http.ResponseWriter, request reference http.Request)
-    # Use pipe to send response!
     response |> fmt.Fprintln("Hello from Kukicha!")
 ```
 
@@ -89,7 +88,7 @@ Then open your browser to `http://localhost:8080` — you should see "Hello from
 
 ---
 
-## Step 2: Understanding Handlers
+## Step 2: HTTP Handlers and Methods
 
 A **handler** is a function that responds to web requests. Every handler receives:
 
@@ -99,7 +98,7 @@ function myHandler(response http.ResponseWriter, request reference http.Request)
     # request - contains info about the incoming request
 ```
 
-We can check what **method** (GET, POST, etc.) the user is using:
+Inside a handler, branch on request method to decide behavior:
 
 ```kukicha
 function myHandler(response http.ResponseWriter, request reference http.Request)
@@ -203,25 +202,13 @@ function handleShorten(response http.ResponseWriter, request reference http.Requ
     # We'll generate a short code and send it back (next step)
 ```
 
-**What's `json.DecodeRead`?**
-
-`json.DecodeRead` reads JSON from any `io.Reader` (like a request body) and returns a typed value. You pass an `empty ShortenRequest` as a "sample" so it knows what type to decode into. The `onerr` block handles invalid JSON gracefully.
-
-> **💡 Tip: The `_` placeholder.** By default, the piped value becomes the first argument. Use `_` to place it elsewhere:
-> ```kukicha
-> # Default: piped value is first argument
-> text |> string.ToLower()                      # → string.ToLower(text)
->
-> # With _: piped value goes where _ is
-> data |> json.MarshalWrite(response, _)        # → json.MarshalWrite(response, data)
-> ```
-> You'll see this pattern throughout this tutorial.
+`json.DecodeRead` reads JSON from any `io.Reader` (like a request body) and returns a typed value. You pass `empty ShortenRequest` as a sample so it knows the target type. The `onerr` block handles invalid JSON gracefully.
 
 ---
 
 ## Step 5: Building the Link Store
 
-Let's create a type to hold our links. Instead of a list, we'll use a **map** — a key-value store where the key is the short code and the value is the `Link`. This gives us instant lookup by code:
+Let's create a type to hold our links. We'll use a map keyed by short code for constant-time lookups:
 
 ```kukicha
 type LinkStore
@@ -518,13 +505,11 @@ Congratulations! You've built a real web service. Let's review:
 | Concept | What It Does |
 |---------|--------------|
 | **HTTP Server** | `http.ListenAndServe()` starts a web server |
-| **Pipe Operator** | Cleanly chain functions (like JSON encoders) with `|>` |
 | **Method Values** | Pass `store.handleShorten` directly as an HTTP handler |
 | **Handlers** | Functions that respond to web requests |
-| **`switch`/`when`** | Dispatch HTTP methods and routes with clean branching |
 | **JSON** | Data format for web APIs (`encoding/json/v2`) |
 | **Status Codes** | Numbers that indicate success, failure, or redirect |
-| **Maps** | Key-value storage with `map of string to Link` |
+| **Map-backed Store** | Use `map of string to Link` for fast code lookup |
 | **HTTP Redirects** | `http.Redirect()` sends browsers to another URL |
 
 ---
@@ -626,4 +611,4 @@ You now have a working web service! But it's not production-ready yet. In the ne
 
 ---
 
-**You've built a link shortener! 🔗**
+You've built a link shortener.

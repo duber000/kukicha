@@ -12,11 +12,9 @@ In this tutorial, you'll discover how to:
 - Create **custom types** to organize related data
 - Write **methods** that belong to types
 - Use `reference` to modify data in place
-- Handle errors gracefully with **`onerr`**
-- Use the **Pipe Operator (`|>`)** to build data transformation pipelines
+- Apply familiar **`onerr` + pipeline** patterns to larger programs
 - Write concise inline functions with **arrow lambdas (`=>`)** for filtering and mapping
 - **Fetch data** from a web API and parse **JSON**
-- Use **`switch`/`when`/`otherwise`** for clean command dispatch
 - Build a simple **command loop** for a console app
 
 Let's build something useful!
@@ -76,15 +74,7 @@ kukicha init    # Extracts stdlib for imports like "stdlib/fetch"
 
 ## Step 1: Creating a Repo Type
 
-> **📝 Reminder:** This tutorial builds on the beginner tutorial. Here are the key concepts you'll need:
-> - **`:=`** creates a new variable, **`=`** updates an existing one
-> - **Maps:** Key-Value storage (e.g., `map of string to int`) for complex data
-> - **String interpolation:** Use `{variable}` inside strings to insert values
-> - **`print()`** outputs to the console
-> - **Functions** (starting with `function`) take parameters and can return values
-> - **Comments** start with `#`
->
-> If you need a refresher, [revisit the beginner tutorial](beginner-tutorial.md)!
+> **Reminder:** This tutorial assumes Tutorials 1 and 2. If you need a refresher on core syntax, [revisit the beginner tutorial](beginner-tutorial.md).
 
 In the beginner tutorial, you learned about basic types like `string`, `int`, and `bool`. Now let's create our own type to represent a GitHub repository.
 
@@ -137,15 +127,13 @@ function FetchRepos(username string) list of Repo
 
 **What's happening here?**
 
-This is a **data pipeline** using the pipe operator `|>`. Read it left to right:
+This reuses the same pipeline pattern from Tutorial 2, now applied to live API data:
 
 1. `fetch.Get(url)` — Make an HTTP request to GitHub's API
 2. `|> fetch.CheckStatus()` — Verify we got a success response (not a 404)
 3. `|> fetch.Json(list of Repo)` — Decode JSON directly into our `list of Repo`
 
-Each step's output flows into the next step's input. Without pipes, you'd need to store each intermediate result in a temporary variable and check for errors at every step — roughly 12 lines instead of 4.
-
-**`onerr` in action:** If *any* step in the pipeline fails (network error, bad status code, invalid JSON), execution jumps to the `onerr` block. One clause handles errors from four operations.
+**`onerr` in action:** If *any* step fails (network error, bad status code, invalid JSON), execution jumps to the `onerr` block.
 
 ### Let's Try It
 
@@ -213,17 +201,7 @@ function FilterByLanguage(repos list of Repo, language string) list of Repo
 
 **What's new here?**
 
-The `(r Repo) => ...` is an **arrow lambda** — a short inline function. Instead of writing:
-```kukicha
-# The verbose way (still valid, but wordy):
-repos |> slice.Filter(function(r Repo) bool
-    return r.Language |> string.ToLower() |> string.Contains(language |> string.ToLower())
-)
-```
-
-Arrow lambdas let you write the same thing in one line. The expression after `=>` is automatically returned — no `return` keyword needed.
-
-**💡 Pipe Pipelines:** Notice how `r.Language |> string.ToLower() |> string.Contains(...)` reads like a sentence: "take the language, make it lowercase, check if it contains our search term." This is cleaner than nesting function calls like `string.Contains(string.ToLower(r.Language), ...)`.
+The `(r Repo) => ...` form is an **arrow lambda** — a concise inline function used heavily with `slice.Filter` and `slice.Map`.
 
 ### Let's Try It
 
@@ -604,7 +582,7 @@ Goodbye!
 
 ## Understanding the New Concepts
 
-The final program introduced several concepts that deserve a closer look. Let's walk through them.
+The final program introduced several concepts that deserve a closer look.
 
 ### JSON Aliases — Mapping API Data to Types
 
@@ -614,22 +592,6 @@ type Repo
 ```
 
 GitHub's API returns `"stargazers_count"` in its JSON response. The alias `as "stargazers_count"` tells the JSON parser: "when you see `stargazers_count` in the data, put it in the `Stars` field." This keeps your type fields readable while matching API conventions.
-
-### Pipe Pipelines — Real Data Transformation
-
-```kukicha
-fetch.Get(url) |> fetch.CheckStatus() |> fetch.Json(list of Repo) onerr ...
-```
-
-This four-step pipeline is the heart of the program. Each `|>` passes the result of one operation to the next. Without pipes, you'd write:
-
-```kukicha
-resp := fetch.Get(url) onerr ...
-resp2 := fetch.CheckStatus(resp) onerr ...
-repos := fetch.Json(resp2, list of Repo) onerr ...
-```
-
-With pipes + `onerr`, four operations and their error handling compress into a readable pipeline.
 
 ### Bare `for` — The Infinite Loop
 
@@ -686,19 +648,6 @@ Arrow lambdas come in two forms:
 
 They're especially useful with `slice.Filter`, `slice.Map`, and other functional helpers where a full `function(...)` literal would be verbose.
 
-### `onerr` — Graceful Error Handling
-
-```kukicha
-line := input.ReadLine("> ") onerr ""
-```
-
-Some operations can fail — reading input might hit an error if the terminal closes. The **`onerr`** clause says "if this fails, use this value instead." Here, if `ReadLine` fails, `line` gets set to an empty string.
-
-You can use `onerr` with different fallback strategies:
-- `onerr ""` or `onerr 0` — use a default value
-- `onerr return` — exit the current function
-- `onerr panic "message"` — crash with an error message (for truly unexpected failures)
-
 ### `continue` in Context
 
 ```kukicha
@@ -717,30 +666,6 @@ id := cast.ToInt(parts[1]) onerr
 ```
 
 `stdlib/cast` provides type conversion utilities that return errors instead of panicking. `cast.ToInt` converts any value to `int` — strings, floats, booleans. It's cleaner than calling `strconv.Atoi` directly and works with `onerr` naturally.
-
-### Multi-Value Destructuring (3+ values)
-
-Kukicha supports destructuring three or more values at once. This comes up when wrapping Go standard library functions:
-
-```kukicha
-import "net"
-
-# Three-value destructuring: discard first, keep ipNet and parseErr
-_, ipNet, parseErr := net.ParseCIDR("192.168.0.0/16")
-if parseErr not equals empty
-    print("Invalid CIDR")
-```
-
-You can discard any position with `_`. The `stdlib/net` package wraps these patterns so you rarely need to do it directly.
-
-### `empty` for Null Checking
-
-```kukicha
-if idErr not equals empty
-    print("Invalid number: {parts[1]}")
-```
-
-In Kukicha, **`empty`** represents "no value" (called `nil` in many other languages). When a function fails, it returns an error. If the error `not equals empty`, something went wrong.
 
 ---
 
@@ -913,8 +838,6 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | **`fetch` + `json`** | Fetch and parse data from web APIs |
 | **`cli`** | Build one-shot command interfaces with args, flags, and actions |
 | **`cast`** | Convert strings/values to typed numbers with `onerr` |
-| **Multi-value destructuring** | `_, ipNet, parseErr :=` captures 3+ return values |
-| **`iterator`** | Functional iteration tools (advanced; optional for this project) |
 
 ---
 
@@ -935,8 +858,6 @@ You now have solid programming skills with Kukicha! Continue with the tutorial s
 
 ### Tutorial Path
 
-### Tutorial Path
-
 | # | Tutorial | What You'll Learn |
 |---|----------|-------------------|
 | 1 | **[Beginner Tutorial](beginner-tutorial.md)** | Variables, functions, strings, decisions, lists, loops, pipes |
@@ -952,4 +873,4 @@ You now have solid programming skills with Kukicha! Continue with the tutorial s
 
 ---
 
-**Great job! You've built a real tool that talks to the internet! 🎉**
+Great job. You've built a real tool that talks to the internet.
