@@ -6,11 +6,11 @@ and notes areas where the stdlib overlaps with dedicated tooling.
 
 ## Current Packages with Go Helpers
 
-| Package | File | Reason |
-|---------|------|--------|
-| `stdlib/container` | `container_helper.go` | Functional options, streaming I/O, tar archive handling |
-| `stdlib/kube` | `kube_helper.go` | client-go SDK types, watch/wait polling loops |
-| `stdlib/mcp` | `mcp_tool.go` | Multi-statement SDK callback closure |
+| Package | File | Lines | Reason |
+|---------|------|-------|--------|
+| `stdlib/container` | `container_helper.go` | ~600 | Functional options, streaming I/O, tar archive handling |
+| `stdlib/kube` | `kube_helper.go` | 69 | `select` statement in `watchPodsWithContext` (+ 2 callers) |
+| `stdlib/mcp` | `mcp_tool.go` | ~50 | Multi-statement SDK callback closure |
 
 ---
 
@@ -139,9 +139,12 @@ Kukicha has no `select` keyword. This blocks 4 functions that wait on channels:
 
 - `container.Wait` / `container.WaitCtx` — select on wait channel vs error channel
 - `container.eventsWithContext` — select on ctx.Done vs error vs message channels
-- `kube.watchPodsWithContext` — select on ctx.Done vs watcher result channel
+- `kube.watchPodsWithContext` — select on ctx.Done vs watcher result channel (69 lines remaining in `kube_helper.go`)
 
 Without `select`, any function that multiplexes channels must stay in Go.
+Note: the kube `WatchPods`/`WatchPodsCtx` wrappers also remain in Go because the
+Kukicha semantic checker only resolves identifiers within `.kuki` files, so they
+cannot call the Go-only `watchPodsWithContext`.
 
 ### Blocker 2: Anonymous struct literals
 
@@ -174,31 +177,46 @@ express simple closures but not the full dispatch pattern needed here.
 
 This blocks 1 function: `mcp.Tool`.
 
-### Already expressible — could migrate to .kuki today
+### Migrated to .kuki (completed)
 
-The **majority of kube helper functions** use only patterns Kukicha already supports.
-These could be moved to `kube.kuki` with appropriate imports:
+41 kube helper functions were migrated from `kube_helper.go` to `kube.kuki`,
+reducing the Go helper from 621 lines to 69 lines. Only `watchPodsWithContext`
+(which uses `select`) and its two callers remain in Go.
 
 | Category | Functions | Count |
 |----------|-----------|-------|
-| CRUD operations | ListPods, GetPod, DeletePod, ListDeployments, GetDeployment, DeleteDeployment, ScaleDeployment, ListServices, GetService, ListNodes, GetNode, ListNamespaces | 12 |
-| Mutation ops | RolloutRestart | 1 |
-| Wait/poll loops | WaitDeploymentReady, WaitPodReady (and Ctx variants) | 4 |
-| Log retrieval | PodLogs, PodLogsTail | 2 |
-| Type accessors | Pods, Deployments, Services, Nodes, Namespaces, pod, deployment, service, node, nsItem, and all Pod*/Deployment*/Service*/Node*/Namespace* | ~25 |
-| Connection | Connect, Open | 2 |
+| Connection | Connect, Open, clientset | 3 |
+| Pod CRUD | ListPods, ListPodsLabeled, GetPod, DeletePod | 4 |
+| Deployment CRUD | ListDeployments, GetDeployment, ScaleDeployment, DeleteDeployment | 4 |
+| Mutation | RolloutRestart | 1 |
+| Wait/poll | WaitDeploymentReady, WaitPodReady, WaitDeploymentReadyCtx, WaitPodReadyCtx | 4 |
+| Services | ListServices, GetService | 2 |
+| Nodes | ListNodes, GetNode | 2 |
+| Namespaces | ListNamespaces | 1 |
+| List accessors | Pods, Deployments, Services, Nodes, Namespaces | 5 |
+| Pod accessors | pod, PodName, PodStatus, PodIP, PodNode, PodAge, PodReady, PodRestarts, PodLabels | 9 |
+| Deployment accessors | deployment, DeploymentName, DeploymentReplicas, DeploymentReady, DeploymentImage | 5 |
+| Service accessors | service, ServiceName, ServiceType, ServiceClusterIP, ServicePorts | 5 |
+| Node accessors | node, NodeName, NodeReady, NodeRoles, NodeVersion | 5 |
+| Namespace accessors | nsItem, NamespaceName | 2 |
+| Logs | PodLogs, PodLogsTail | 2 |
 
-These only need: struct literals with named SDK types, type assertions (`value.(Type)`),
-pointer dereferencing (`dereference`), `reference of`, loops, and conditionals — all
-of which Kukicha supports. The main requirement is adding `k8s.io/...` imports to
-`kube.kuki`.
+Patterns used: `reference of` (address-of), `dereference` (pointer deref),
+`as` (type assertions), struct literals with external SDK types, bare `for` loops,
+`many` (variadic params), and `k8s.io/...` imports with `as` aliases.
+
+### Still in Go — remaining blockers
+
+| Function | Blocker | File |
+|----------|---------|------|
+| `watchPodsWithContext` | `select` statement | `kube_helper.go` |
+| `WatchPods`, `WatchPodsCtx` | Call `watchPodsWithContext` (semantic checker only sees .kuki) | `kube_helper.go` |
 
 ### Impact summary
 
 | Blocker | Helpers it would unlock | Effort |
 |---------|------------------------|--------|
-| Migrate already-expressible kube funcs | ~44 functions (most of kube_helper.go) | Low — just rewrite in .kuki syntax |
-| `select` statement | 4 functions (channel multiplexing) | Medium — new keyword, parser, codegen |
-| Anonymous struct literals | 5 functions (streaming JSON decode) | Medium — parser + codegen |
+| `select` statement | 4 functions (kube watch + container wait/events) | Medium — new keyword, parser, codegen |
+| Anonymous struct literals | 5 functions (streaming JSON decode in container) | Medium — parser + codegen |
 | Variadic interface spreading | 3 functions (Docker client init) | Low-medium — extend `many` |
 | Multi-statement closure callbacks | 1 function (MCP tool registration) | Medium — extend block lambdas |
