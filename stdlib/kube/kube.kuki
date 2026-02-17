@@ -19,6 +19,21 @@
 
 petiole kube
 
+import "context"
+import "fmt"
+import "io"
+import "os"
+import "path/filepath"
+import "strings"
+import "time"
+import "stdlib/ctx"
+import "k8s.io/api/apps/v1" as appsv1
+import "k8s.io/api/core/v1" as corev1
+import "k8s.io/apimachinery/pkg/apis/meta/v1" as metav1
+import "k8s.io/client-go/kubernetes"
+import "k8s.io/client-go/rest"
+import "k8s.io/client-go/tools/clientcmd"
+
 # Cluster wraps a Kubernetes clientset and namespace context
 type Cluster
     client any
@@ -78,6 +93,8 @@ type PodEvent
     phase string
     ready bool
 
+# --- Builder ---
+
 # New starts a configuration builder.
 func New() Config
     return Config{}
@@ -102,6 +119,8 @@ func Namespace(c Cluster, ns string) Cluster
     c.namespace = ns
     return c
 
+# --- Event accessors ---
+
 # PodEventType returns the event type (ADDED, MODIFIED, DELETED).
 func PodEventType(event PodEvent) string
     return event.eventType
@@ -121,3 +140,461 @@ func PodEventPhase(event PodEvent) string
 # PodEventReady returns whether the pod was Ready in the event snapshot.
 func PodEventReady(event PodEvent) bool
     return event.ready
+
+# --- Private type accessors ---
+
+func clientset(c Cluster) reference kubernetes.Clientset
+    return c.client.(reference kubernetes.Clientset)
+
+func pod(p Pod) reference corev1.Pod
+    return p.pod.(reference corev1.Pod)
+
+func deployment(d Deployment) reference appsv1.Deployment
+    return d.dep.(reference appsv1.Deployment)
+
+func service(s Service) reference corev1.Service
+    return s.svc.(reference corev1.Service)
+
+func node(n Node) reference corev1.Node
+    return n.node.(reference corev1.Node)
+
+func nsItem(n NamespaceItem) reference corev1.Namespace
+    return n.ns.(reference corev1.Namespace)
+
+# --- Connection ---
+
+# Connect creates a Cluster using the default kubeconfig (~/.kube/config).
+func Connect() (Cluster, error)
+    home, err := os.UserHomeDir()
+    if err != empty
+        return Cluster{}, fmt.Errorf("kube connect: %w", err)
+    kubeconfig := filepath.Join(home, ".kube", "config")
+    config, cfgErr := clientcmd.BuildConfigFromFlags("", kubeconfig)
+    if cfgErr != empty
+        return Cluster{}, fmt.Errorf("kube connect: %w", cfgErr)
+    cs, csErr := kubernetes.NewForConfig(config)
+    if csErr != empty
+        return Cluster{}, fmt.Errorf("kube connect: %w", csErr)
+    return Cluster{client: cs, namespace: "default"}, empty
+
+# Open creates a Cluster from the builder configuration.
+func Open(cfg Config) (Cluster, error)
+    if cfg.inCluster
+        restConfig, err := rest.InClusterConfig()
+        if err != empty
+            return Cluster{}, fmt.Errorf("kube in-cluster: %w", err)
+        cs, csErr := kubernetes.NewForConfig(restConfig)
+        if csErr != empty
+            return Cluster{}, fmt.Errorf("kube open: %w", csErr)
+        return Cluster{client: cs, namespace: "default"}, empty
+    kubeconfig := cfg.kubeconfig
+    if kubeconfig == ""
+        home, homeErr := os.UserHomeDir()
+        if homeErr != empty
+            return Cluster{}, fmt.Errorf("kube config: %w", homeErr)
+        kubeconfig = filepath.Join(home, ".kube", "config")
+    loadingRules := reference of clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig}
+    overrides := reference of clientcmd.ConfigOverrides{}
+    if cfg.context != ""
+        overrides.CurrentContext = cfg.context
+    restConfig, rcErr := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides).ClientConfig()
+    if rcErr != empty
+        return Cluster{}, fmt.Errorf("kube open: %w", rcErr)
+    cs, csErr := kubernetes.NewForConfig(restConfig)
+    if csErr != empty
+        return Cluster{}, fmt.Errorf("kube open: %w", csErr)
+    return Cluster{client: cs, namespace: "default"}, empty
+
+# --- Pods ---
+
+# ListPods lists all pods in the cluster's current namespace.
+func ListPods(c Cluster) (PodList, error)
+    pods, err := clientset(c).CoreV1().Pods(c.namespace).List(context.Background(), metav1.ListOptions{})
+    if err != empty
+        return PodList{}, fmt.Errorf("kube list pods: %w", err)
+    return PodList{items: pods}, empty
+
+# ListPodsLabeled lists pods matching a label selector.
+func ListPodsLabeled(c Cluster, selector string) (PodList, error)
+    pods, err := clientset(c).CoreV1().Pods(c.namespace).List(context.Background(), metav1.ListOptions{LabelSelector: selector})
+    if err != empty
+        return PodList{}, fmt.Errorf("kube list pods labeled: %w", err)
+    return PodList{items: pods}, empty
+
+# GetPod retrieves a single pod by name.
+func GetPod(c Cluster, name string) (Pod, error)
+    p, err := clientset(c).CoreV1().Pods(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+    if err != empty
+        return Pod{}, fmt.Errorf("kube get pod: %w", err)
+    return Pod{pod: p}, empty
+
+# DeletePod deletes a pod by name.
+func DeletePod(c Cluster, name string) error
+    err := clientset(c).CoreV1().Pods(c.namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+    if err != empty
+        return fmt.Errorf("kube delete pod: %w", err)
+    return empty
+
+# --- Deployments ---
+
+# ListDeployments lists all deployments in the cluster's current namespace.
+func ListDeployments(c Cluster) (DeploymentList, error)
+    deps, err := clientset(c).AppsV1().Deployments(c.namespace).List(context.Background(), metav1.ListOptions{})
+    if err != empty
+        return DeploymentList{}, fmt.Errorf("kube list deployments: %w", err)
+    return DeploymentList{items: deps}, empty
+
+# GetDeployment retrieves a single deployment by name.
+func GetDeployment(c Cluster, name string) (Deployment, error)
+    dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+    if err != empty
+        return Deployment{}, fmt.Errorf("kube get deployment: %w", err)
+    return Deployment{dep: dep}, empty
+
+# ScaleDeployment updates the replica count of a deployment.
+func ScaleDeployment(c Cluster, name string, replicas int32) error
+    scale, err := clientset(c).AppsV1().Deployments(c.namespace).GetScale(context.Background(), name, metav1.GetOptions{})
+    if err != empty
+        return fmt.Errorf("kube scale get: %w", err)
+    scale.Spec.Replicas = replicas
+    _, updateErr := clientset(c).AppsV1().Deployments(c.namespace).UpdateScale(context.Background(), name, scale, metav1.UpdateOptions{})
+    if updateErr != empty
+        return fmt.Errorf("kube scale update: %w", updateErr)
+    return empty
+
+# DeleteDeployment deletes a deployment by name.
+func DeleteDeployment(c Cluster, name string) error
+    err := clientset(c).AppsV1().Deployments(c.namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+    if err != empty
+        return fmt.Errorf("kube delete deployment: %w", err)
+    return empty
+
+# RolloutRestart triggers a rollout restart by patching the pod template annotation.
+func RolloutRestart(c Cluster, name string) error
+    dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+    if err != empty
+        return fmt.Errorf("kube rollout restart get: %w", err)
+    if dep.Spec.Template.ObjectMeta.Annotations == empty
+        dep.Spec.Template.ObjectMeta.Annotations = map of string to string{}
+    dep.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().UTC().Format(time.RFC3339)
+    _, updateErr := clientset(c).AppsV1().Deployments(c.namespace).Update(context.Background(), dep, metav1.UpdateOptions{})
+    if updateErr != empty
+        return fmt.Errorf("kube rollout restart update: %w", updateErr)
+    return empty
+
+# --- Wait / Poll ---
+
+# WaitDeploymentReady waits for a deployment to reach desired ready replicas.
+# timeoutSeconds <= 0 defaults to 300 seconds.
+func WaitDeploymentReady(c Cluster, name string, timeoutSeconds int64) error
+    if timeoutSeconds <= 0
+        timeoutSeconds = 300
+    deadline := time.Now().Add(time.Duration(timeoutSeconds) * time.Second)
+    for
+        dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+        if err != empty
+            return fmt.Errorf("kube wait deployment get: %w", err)
+        desired := 1 as int32
+        if dep.Spec.Replicas != empty
+            desired = dereference dep.Spec.Replicas
+        if dep.Status.ObservedGeneration >= dep.Generation and dep.Status.ReadyReplicas >= desired and dep.Status.UpdatedReplicas >= desired
+            return empty
+        if time.Now().After(deadline)
+            return fmt.Errorf("kube wait deployment: timed out after %ds (ready=%d desired=%d updated=%d)", timeoutSeconds, dep.Status.ReadyReplicas, desired, dep.Status.UpdatedReplicas)
+        time.Sleep(2 * time.Second)
+
+# WaitPodReady waits for a pod to become Ready.
+# timeoutSeconds <= 0 defaults to 180 seconds.
+func WaitPodReady(c Cluster, name string, timeoutSeconds int64) error
+    if timeoutSeconds <= 0
+        timeoutSeconds = 180
+    deadline := time.Now().Add(time.Duration(timeoutSeconds) * time.Second)
+    for
+        p, err := clientset(c).CoreV1().Pods(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+        if err != empty
+            return fmt.Errorf("kube wait pod get: %w", err)
+        ready := false
+        for _, cond in p.Status.Conditions
+            if cond.Type == corev1.PodReady
+                ready = cond.Status == corev1.ConditionTrue
+                break
+        if ready
+            return empty
+        if time.Now().After(deadline)
+            return fmt.Errorf("kube wait pod: timed out after %ds", timeoutSeconds)
+        time.Sleep(1 * time.Second)
+
+# WaitDeploymentReadyCtx waits for deployment readiness until the provided context is canceled.
+func WaitDeploymentReadyCtx(c Cluster, h ctx.Handle, name string) error
+    goCtx := ctx.Value(h)
+    for
+        dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(goCtx, name, metav1.GetOptions{})
+        if err != empty
+            return fmt.Errorf("kube wait deployment get: %w", err)
+        desired := 1 as int32
+        if dep.Spec.Replicas != empty
+            desired = dereference dep.Spec.Replicas
+        if dep.Status.ObservedGeneration >= dep.Generation and dep.Status.ReadyReplicas >= desired and dep.Status.UpdatedReplicas >= desired
+            return empty
+        ctxErr := goCtx.Err()
+        if ctxErr != empty
+            return fmt.Errorf("kube wait deployment: %w", ctxErr)
+        time.Sleep(2 * time.Second)
+
+# WaitPodReadyCtx waits for pod readiness until the provided context is canceled.
+func WaitPodReadyCtx(c Cluster, h ctx.Handle, name string) error
+    goCtx := ctx.Value(h)
+    for
+        p, err := clientset(c).CoreV1().Pods(c.namespace).Get(goCtx, name, metav1.GetOptions{})
+        if err != empty
+            return fmt.Errorf("kube wait pod get: %w", err)
+        ready := false
+        for _, cond in p.Status.Conditions
+            if cond.Type == corev1.PodReady
+                ready = cond.Status == corev1.ConditionTrue
+                break
+        if ready
+            return empty
+        ctxErr := goCtx.Err()
+        if ctxErr != empty
+            return fmt.Errorf("kube wait pod: %w", ctxErr)
+        time.Sleep(1 * time.Second)
+
+# --- Services ---
+
+# ListServices lists all services in the cluster's current namespace.
+func ListServices(c Cluster) (ServiceList, error)
+    svcs, err := clientset(c).CoreV1().Services(c.namespace).List(context.Background(), metav1.ListOptions{})
+    if err != empty
+        return ServiceList{}, fmt.Errorf("kube list services: %w", err)
+    return ServiceList{items: svcs}, empty
+
+# GetService retrieves a single service by name.
+func GetService(c Cluster, name string) (Service, error)
+    svc, err := clientset(c).CoreV1().Services(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+    if err != empty
+        return Service{}, fmt.Errorf("kube get service: %w", err)
+    return Service{svc: svc}, empty
+
+# --- Nodes ---
+
+# ListNodes lists all nodes in the cluster.
+func ListNodes(c Cluster) (NodeList, error)
+    nodes, err := clientset(c).CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+    if err != empty
+        return NodeList{}, fmt.Errorf("kube list nodes: %w", err)
+    return NodeList{items: nodes}, empty
+
+# GetNode retrieves a single node by name.
+func GetNode(c Cluster, name string) (Node, error)
+    n, err := clientset(c).CoreV1().Nodes().Get(context.Background(), name, metav1.GetOptions{})
+    if err != empty
+        return Node{}, fmt.Errorf("kube get node: %w", err)
+    return Node{node: n}, empty
+
+# --- Namespaces ---
+
+# ListNamespaces lists all namespaces in the cluster.
+func ListNamespaces(c Cluster) (NamespaceList, error)
+    nsList, err := clientset(c).CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
+    if err != empty
+        return NamespaceList{}, fmt.Errorf("kube list namespaces: %w", err)
+    return NamespaceList{items: nsList}, empty
+
+# --- List accessors ---
+
+# Pods returns the list of Pod items from a PodList.
+func Pods(pl PodList) list of Pod
+    podList := pl.items.(reference corev1.PodList)
+    result := make(list of Pod, len(podList.Items))
+    for i from 0 to len(podList.Items)
+        result[i] = Pod{pod: reference of podList.Items[i]}
+    return result
+
+# Deployments returns the list of Deployment items from a DeploymentList.
+func Deployments(dl DeploymentList) list of Deployment
+    depList := dl.items.(reference appsv1.DeploymentList)
+    result := make(list of Deployment, len(depList.Items))
+    for i from 0 to len(depList.Items)
+        result[i] = Deployment{dep: reference of depList.Items[i]}
+    return result
+
+# Services returns the list of Service items from a ServiceList.
+func Services(sl ServiceList) list of Service
+    svcList := sl.items.(reference corev1.ServiceList)
+    result := make(list of Service, len(svcList.Items))
+    for i from 0 to len(svcList.Items)
+        result[i] = Service{svc: reference of svcList.Items[i]}
+    return result
+
+# Nodes returns the list of Node items from a NodeList.
+func Nodes(nl NodeList) list of Node
+    nodeList := nl.items.(reference corev1.NodeList)
+    result := make(list of Node, len(nodeList.Items))
+    for i from 0 to len(nodeList.Items)
+        result[i] = Node{node: reference of nodeList.Items[i]}
+    return result
+
+# Namespaces returns the list of NamespaceItem items from a NamespaceList.
+func Namespaces(nsl NamespaceList) list of NamespaceItem
+    nsList := nsl.items.(reference corev1.NamespaceList)
+    result := make(list of NamespaceItem, len(nsList.Items))
+    for i from 0 to len(nsList.Items)
+        result[i] = NamespaceItem{ns: reference of nsList.Items[i]}
+    return result
+
+# --- Pod accessors ---
+
+# PodName returns the name of the pod.
+func PodName(p Pod) string
+    return pod(p).Name
+
+# PodStatus returns the phase of the pod (Running, Pending, etc.).
+func PodStatus(p Pod) string
+    return pod(p).Status.Phase as string
+
+# PodIP returns the pod's IP address.
+func PodIP(p Pod) string
+    return pod(p).Status.PodIP
+
+# PodNode returns the name of the node the pod is running on.
+func PodNode(p Pod) string
+    return pod(p).Spec.NodeName
+
+# PodAge returns a human-readable age string for the pod.
+func PodAge(p Pod) string
+    d := time.Since(pod(p).CreationTimestamp.Time)
+    if d.Hours() >= 24
+        days := d.Hours() / 24
+        return fmt.Sprintf("%dd", days as int)
+    if d.Hours() >= 1
+        return fmt.Sprintf("%dh", d.Hours() as int)
+    return fmt.Sprintf("%dm", d.Minutes() as int)
+
+# PodReady returns whether all containers in the pod are ready.
+func PodReady(p Pod) bool
+    for _, cond in pod(p).Status.Conditions
+        if cond.Type == corev1.PodReady
+            return cond.Status == corev1.ConditionTrue
+    return false
+
+# PodRestarts returns the total restart count across all containers.
+func PodRestarts(p Pod) int32
+    total := 0 as int32
+    for _, cs in pod(p).Status.ContainerStatuses
+        total = total + cs.RestartCount
+    return total
+
+# PodLabels returns the pod's labels.
+func PodLabels(p Pod) map of string to string
+    return pod(p).Labels
+
+# --- Deployment accessors ---
+
+# DeploymentName returns the deployment name.
+func DeploymentName(d Deployment) string
+    return deployment(d).Name
+
+# DeploymentReplicas returns the desired replica count.
+func DeploymentReplicas(d Deployment) int32
+    if deployment(d).Spec.Replicas != empty
+        return dereference deployment(d).Spec.Replicas
+    return 1
+
+# DeploymentReady returns the number of ready replicas.
+func DeploymentReady(d Deployment) int32
+    return deployment(d).Status.ReadyReplicas
+
+# DeploymentImage returns the image of the first container.
+func DeploymentImage(d Deployment) string
+    containers := deployment(d).Spec.Template.Spec.Containers
+    if len(containers) > 0
+        return containers[0].Image
+    return ""
+
+# --- Service accessors ---
+
+# ServiceName returns the service name.
+func ServiceName(s Service) string
+    return service(s).Name
+
+# ServiceType returns the service type (ClusterIP, NodePort, LoadBalancer).
+func ServiceType(s Service) string
+    return service(s).Spec.Type as string
+
+# ServiceClusterIP returns the cluster IP address.
+func ServiceClusterIP(s Service) string
+    return service(s).Spec.ClusterIP
+
+# ServicePorts returns a list of port descriptions like "80/TCP".
+func ServicePorts(s Service) list of string
+    ports := service(s).Spec.Ports
+    result := make(list of string, len(ports))
+    for i, p in ports
+        result[i] = fmt.Sprintf("%d/%s", p.Port, p.Protocol)
+    return result
+
+# --- Node accessors ---
+
+# NodeName returns the node name.
+func NodeName(n Node) string
+    return node(n).Name
+
+# NodeReady returns whether the node is in Ready condition.
+func NodeReady(n Node) bool
+    for _, cond in node(n).Status.Conditions
+        if cond.Type == corev1.NodeReady
+            return cond.Status == corev1.ConditionTrue
+    return false
+
+# NodeRoles returns the roles of the node (e.g., "control-plane", "worker").
+func NodeRoles(n Node) list of string
+    roles := make(list of string, 0)
+    for label, _ in node(n).Labels
+        if strings.HasPrefix(label, "node-role.kubernetes.io/")
+            role := strings.TrimPrefix(label, "node-role.kubernetes.io/")
+            if role != ""
+                roles = append(roles, role)
+    if len(roles) == 0
+        roles = append(roles, "<none>")
+    return roles
+
+# NodeVersion returns the kubelet version of the node.
+func NodeVersion(n Node) string
+    return node(n).Status.NodeInfo.KubeletVersion
+
+# --- Namespace accessors ---
+
+# NamespaceName returns the namespace name.
+func NamespaceName(n NamespaceItem) string
+    return nsItem(n).Name
+
+# --- Logs ---
+
+# PodLogs retrieves the full log output from a pod's first container.
+# An optional ctx.Handle can be passed for cancellation support.
+func PodLogs(c Cluster, name string, many handles ctx.Handle) (string, error)
+    goCtx := context.Background()
+    if len(handles) > 0
+        goCtx = ctx.Value(handles[0])
+    req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, reference of corev1.PodLogOptions{})
+    stream, err := req.Stream(goCtx)
+    if err != empty
+        return "", fmt.Errorf("kube pod logs: %w", err)
+    defer stream.Close()
+    data, readErr := io.ReadAll(stream)
+    if readErr != empty
+        return "", fmt.Errorf("kube pod logs read: %w", readErr)
+    return data as string, empty
+
+# PodLogsTail retrieves the last N lines of log output from a pod.
+func PodLogsTail(c Cluster, name string, lines int64) (string, error)
+    req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, reference of corev1.PodLogOptions{TailLines: reference of lines})
+    stream, err := req.Stream(context.Background())
+    if err != empty
+        return "", fmt.Errorf("kube pod logs tail: %w", err)
+    defer stream.Close()
+    data, readErr := io.ReadAll(stream)
+    if readErr != empty
+        return "", fmt.Errorf("kube pod logs tail read: %w", readErr)
+    return data as string, empty
