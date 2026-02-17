@@ -70,6 +70,14 @@ type NamespaceList
 type NamespaceItem
     ns any
 
+# PodEvent represents a pod watch event.
+type PodEvent
+    eventType string
+    name string
+    namespace string
+    phase string
+    ready bool
+
 # New starts a configuration builder.
 func New() Config
     return Config{}
@@ -93,3 +101,23 @@ func InCluster(cfg Config) Config
 func Namespace(c Cluster, ns string) Cluster
     c.namespace = ns
     return c
+
+# PodEventType returns the event type (ADDED, MODIFIED, DELETED).
+func PodEventType(event PodEvent) string
+    return event.eventType
+
+# PodEventName returns the pod name from the event.
+func PodEventName(event PodEvent) string
+    return event.name
+
+# PodEventNamespace returns the namespace from the event.
+func PodEventNamespace(event PodEvent) string
+    return event.namespace
+
+# PodEventPhase returns the pod phase captured in the event.
+func PodEventPhase(event PodEvent) string
+    return event.phase
+
+# PodEventReady returns whether the pod was Ready in the event snapshot.
+func PodEventReady(event PodEvent) bool
+    return event.ready

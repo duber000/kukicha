@@ -12,11 +12,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	dockercontainer "github.com/docker/docker/api/types/container"
+	dockerevents "github.com/docker/docker/api/types/events"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
+	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
 
 	types "github.com/docker/docker/api/types"
 )
@@ -413,3 +417,398 @@ func LoginFromConfig(server string) (Auth, error) {
 	return Auth{username: username, password: password, serverAddress: addr}, nil
 }
 
+// Inspect returns high-level container metadata.
+func Inspect(engine Engine, containerID string) (ContainerInfo, error) {
+	info, err := engine.cli.ContainerInspect(context.Background(), containerID)
+	if err != nil {
+		return ContainerInfo{}, fmt.Errorf("container inspect: %w", err)
+	}
+	names := []string{}
+	if info.Name != "" {
+		names = append(names, strings.TrimPrefix(info.Name, "/"))
+	}
+	status := ""
+	state := ""
+	if info.State != nil {
+		status = info.State.Status
+		state = info.State.Status
+	}
+	return ContainerInfo{
+		id:     info.ID,
+		image:  info.Config.Image,
+		status: status,
+		state:  state,
+		names:  names,
+	}, nil
+}
+
+// Wait blocks until a container exits and returns its exit code.
+// timeoutSeconds <= 0 waits indefinitely.
+func Wait(engine Engine, containerID string, timeoutSeconds int64) (int64, error) {
+	ctx := context.Background()
+	cancel := func() {}
+	if timeoutSeconds > 0 {
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
+	}
+	defer cancel()
+
+	waitCh, errCh := engine.cli.ContainerWait(ctx, containerID, dockercontainer.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return -1, fmt.Errorf("container wait: %w", err)
+		}
+		return -1, fmt.Errorf("container wait: unknown wait error")
+	case res := <-waitCh:
+		return int64(res.StatusCode), nil
+	}
+}
+
+// Exec runs a command in an existing container and returns combined stdout/stderr.
+func Exec(engine Engine, containerID string, cmd []string) (string, error) {
+	createResp, err := engine.cli.ContainerExecCreate(context.Background(), containerID, types.ExecConfig{
+		Cmd:          cmd,
+		AttachStdout: true,
+		AttachStderr: true,
+	})
+	if err != nil {
+		return "", fmt.Errorf("container exec create: %w", err)
+	}
+
+	attachResp, err := engine.cli.ContainerExecAttach(context.Background(), createResp.ID, types.ExecStartCheck{})
+	if err != nil {
+		return "", fmt.Errorf("container exec attach: %w", err)
+	}
+	defer attachResp.Close()
+
+	var stdout, stderr bytes.Buffer
+	_, err = stdcopy.StdCopy(&stdout, &stderr, attachResp.Reader)
+	if err != nil {
+		raw, readErr := io.ReadAll(attachResp.Reader)
+		if readErr != nil {
+			return "", fmt.Errorf("container exec read: %w", err)
+		}
+		return string(raw), nil
+	}
+
+	inspect, err := engine.cli.ContainerExecInspect(context.Background(), createResp.ID)
+	if err != nil {
+		return "", fmt.Errorf("container exec inspect: %w", err)
+	}
+	combined := stdout.String()
+	if stderr.Len() > 0 {
+		combined += stderr.String()
+	}
+	if inspect.ExitCode != 0 {
+		return combined, fmt.Errorf("container exec exit %d", inspect.ExitCode)
+	}
+	return combined, nil
+}
+
+// PullCtx pulls an image using the provided context handle.
+func PullCtx(engine Engine, h ctxpkg.Handle, ref string) (string, error) {
+	ctx := ctxpkg.Value(h)
+	reader, err := engine.cli.ImagePull(ctx, ref, image.PullOptions{})
+	if err != nil {
+		return "", fmt.Errorf("container pull: %w", err)
+	}
+	defer reader.Close()
+
+	var digest string
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		var msg struct {
+			Status string `json:"status"`
+		}
+		if err := json.Unmarshal(scanner.Bytes(), &msg); err == nil {
+			if strings.HasPrefix(msg.Status, "Digest:") {
+				digest = strings.TrimPrefix(msg.Status, "Digest: ")
+			}
+		}
+	}
+	if digest == "" {
+		digest = ref
+	}
+	return digest, nil
+}
+
+// WaitCtx blocks until container exits or the provided context is canceled.
+func WaitCtx(engine Engine, h ctxpkg.Handle, containerID string) (int64, error) {
+	ctx := ctxpkg.Value(h)
+	waitCh, errCh := engine.cli.ContainerWait(ctx, containerID, dockercontainer.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return -1, fmt.Errorf("container wait: %w", err)
+		}
+		return -1, fmt.Errorf("container wait: unknown wait error")
+	case res := <-waitCh:
+		return int64(res.StatusCode), nil
+	}
+}
+
+// ExecCtx runs a command in a container with cancelable context.
+func ExecCtx(engine Engine, h ctxpkg.Handle, containerID string, cmd []string) (string, error) {
+	ctx := ctxpkg.Value(h)
+	createResp, err := engine.cli.ContainerExecCreate(ctx, containerID, types.ExecConfig{
+		Cmd:          cmd,
+		AttachStdout: true,
+		AttachStderr: true,
+	})
+	if err != nil {
+		return "", fmt.Errorf("container exec create: %w", err)
+	}
+
+	attachResp, err := engine.cli.ContainerExecAttach(ctx, createResp.ID, types.ExecStartCheck{})
+	if err != nil {
+		return "", fmt.Errorf("container exec attach: %w", err)
+	}
+	defer attachResp.Close()
+
+	var stdout, stderr bytes.Buffer
+	_, err = stdcopy.StdCopy(&stdout, &stderr, attachResp.Reader)
+	if err != nil {
+		raw, readErr := io.ReadAll(attachResp.Reader)
+		if readErr != nil {
+			return "", fmt.Errorf("container exec read: %w", err)
+		}
+		return string(raw), nil
+	}
+
+	inspect, err := engine.cli.ContainerExecInspect(ctx, createResp.ID)
+	if err != nil {
+		return "", fmt.Errorf("container exec inspect: %w", err)
+	}
+	combined := stdout.String()
+	if stderr.Len() > 0 {
+		combined += stderr.String()
+	}
+	if inspect.ExitCode != 0 {
+		return combined, fmt.Errorf("container exec exit %d", inspect.ExitCode)
+	}
+	return combined, nil
+}
+
+// Events collects runtime events for a bounded duration.
+// timeoutSeconds <= 0 defaults to 15 seconds.
+func Events(engine Engine, timeoutSeconds int64) ([]ContainerEvent, error) {
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = 15
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+	return eventsWithContext(engine, ctx)
+}
+
+// EventsCtx collects runtime events until the provided context is canceled.
+func EventsCtx(engine Engine, h ctxpkg.Handle) ([]ContainerEvent, error) {
+	ctx := ctxpkg.Value(h)
+	return eventsWithContext(engine, ctx)
+}
+
+func eventsWithContext(engine Engine, ctx context.Context) ([]ContainerEvent, error) {
+	eventFilters := filters.NewArgs()
+	msgCh, errCh := engine.cli.Events(ctx, types.EventsOptions{
+		Filters: eventFilters,
+	})
+
+	events := []ContainerEvent{}
+	for {
+		select {
+		case <-ctx.Done():
+			return events, nil
+		case err := <-errCh:
+			if err == nil || ctx.Err() != nil {
+				return events, nil
+			}
+			return events, fmt.Errorf("container events: %w", err)
+		case msg, ok := <-msgCh:
+			if !ok {
+				return events, nil
+			}
+			events = append(events, convertEvent(msg))
+		}
+	}
+}
+
+func convertEvent(msg dockerevents.Message) ContainerEvent {
+	when := time.Unix(msg.Time, 0).UTC().Format(time.RFC3339)
+	actor := msg.Actor.ID
+	if name, ok := msg.Actor.Attributes["name"]; ok && name != "" {
+		actor = name
+	}
+	return ContainerEvent{
+		id:       msg.ID,
+		resource: string(msg.Type),
+		action:   string(msg.Action),
+		actor:    actor,
+		time:     when,
+	}
+}
+
+// CopyFrom copies files from a container path to a local destination path.
+func CopyFrom(engine Engine, containerID string, sourcePath string, destPath string) error {
+	return copyFromWithContext(engine, context.Background(), containerID, sourcePath, destPath)
+}
+
+// CopyFromCtx copies files from a container path to local destination with cancellation support.
+func CopyFromCtx(engine Engine, h ctxpkg.Handle, containerID string, sourcePath string, destPath string) error {
+	return copyFromWithContext(engine, ctxpkg.Value(h), containerID, sourcePath, destPath)
+}
+
+func copyFromWithContext(engine Engine, ctx context.Context, containerID string, sourcePath string, destPath string) error {
+	reader, _, err := engine.cli.CopyFromContainer(ctx, containerID, sourcePath)
+	if err != nil {
+		return fmt.Errorf("container copy from: %w", err)
+	}
+	defer reader.Close()
+	if err := os.MkdirAll(destPath, 0o755); err != nil {
+		return fmt.Errorf("container copy from mkdir: %w", err)
+	}
+	if err := extractTar(reader, destPath); err != nil {
+		return fmt.Errorf("container copy from extract: %w", err)
+	}
+	return nil
+}
+
+// CopyTo copies a local file or directory into a container destination directory.
+func CopyTo(engine Engine, containerID string, sourcePath string, destPath string) error {
+	return copyToWithContext(engine, context.Background(), containerID, sourcePath, destPath)
+}
+
+// CopyToCtx copies a local path into a container destination with cancellation support.
+func CopyToCtx(engine Engine, h ctxpkg.Handle, containerID string, sourcePath string, destPath string) error {
+	return copyToWithContext(engine, ctxpkg.Value(h), containerID, sourcePath, destPath)
+}
+
+func copyToWithContext(engine Engine, ctx context.Context, containerID string, sourcePath string, destPath string) error {
+	archive, err := createTarFromPath(sourcePath)
+	if err != nil {
+		return err
+	}
+	opts := dockercontainer.CopyToContainerOptions{
+		AllowOverwriteDirWithFile: true,
+	}
+	if err := engine.cli.CopyToContainer(ctx, containerID, destPath, archive, opts); err != nil {
+		return fmt.Errorf("container copy to: %w", err)
+	}
+	return nil
+}
+
+func createTarFromPath(sourcePath string) (io.Reader, error) {
+	sourcePath, err := filepath.Abs(sourcePath)
+	if err != nil {
+		return nil, fmt.Errorf("container copy to abs path: %w", err)
+	}
+	info, err := os.Stat(sourcePath)
+	if err != nil {
+		return nil, fmt.Errorf("container copy to stat: %w", err)
+	}
+
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	baseDir := filepath.Base(sourcePath)
+
+	addFile := func(path string, fi os.FileInfo) error {
+		header, err := tar.FileInfoHeader(fi, "")
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(filepath.Dir(sourcePath), path)
+		if err != nil {
+			return err
+		}
+		header.Name = filepath.ToSlash(rel)
+		if fi.IsDir() {
+			header.Name += "/"
+		}
+		if err := tw.WriteHeader(header); err != nil {
+			return err
+		}
+		if fi.Mode().IsRegular() {
+			f, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			if _, err := io.Copy(tw, f); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if info.IsDir() {
+		if err := filepath.Walk(sourcePath, func(path string, fi os.FileInfo, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			return addFile(path, fi)
+		}); err != nil {
+			return nil, fmt.Errorf("container copy to walk: %w", err)
+		}
+	} else {
+		header, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return nil, fmt.Errorf("container copy to header: %w", err)
+		}
+		header.Name = filepath.ToSlash(baseDir)
+		if err := tw.WriteHeader(header); err != nil {
+			return nil, fmt.Errorf("container copy to write header: %w", err)
+		}
+		f, err := os.Open(sourcePath)
+		if err != nil {
+			return nil, fmt.Errorf("container copy to open: %w", err)
+		}
+		defer f.Close()
+		if _, err := io.Copy(tw, f); err != nil {
+			return nil, fmt.Errorf("container copy to write file: %w", err)
+		}
+	}
+
+	if err := tw.Close(); err != nil {
+		return nil, fmt.Errorf("container copy to close tar: %w", err)
+	}
+	return &buf, nil
+}
+
+func extractTar(reader io.Reader, destPath string) error {
+	tr := tar.NewReader(reader)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		cleanName := filepath.Clean(header.Name)
+		target := filepath.Join(destPath, cleanName)
+		if !strings.HasPrefix(target, filepath.Clean(destPath)+string(filepath.Separator)) && filepath.Clean(target) != filepath.Clean(destPath) {
+			return fmt.Errorf("invalid archive path: %s", header.Name)
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, os.FileMode(header.Mode)); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				return err
+			}
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(f, tr); err != nil {
+				f.Close()
+				return err
+			}
+			if err := f.Close(); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}

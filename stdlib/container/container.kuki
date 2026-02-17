@@ -61,6 +61,14 @@ type Auth
     password string
     serverAddress string
 
+# ContainerEvent represents a container runtime event.
+type ContainerEvent
+    id string
+    resource string
+    action string
+    actor string
+    time string
+
 # New starts a configuration builder.
 func New() Config
     return Config{}
@@ -175,3 +183,23 @@ func BuildImageID(b BuildOutput) string
 # BuildLog returns the build output log.
 func BuildLog(b BuildOutput) string
     return b.output
+
+# EventID returns the container ID for the event.
+func EventID(event ContainerEvent) string
+    return event.id
+
+# EventResource returns the resource type (container, image, network, etc).
+func EventResource(event ContainerEvent) string
+    return event.resource
+
+# EventAction returns the event action (start, stop, die, pull, etc).
+func EventAction(event ContainerEvent) string
+    return event.action
+
+# EventActor returns the actor name for the event, when available.
+func EventActor(event ContainerEvent) string
+    return event.actor
+
+# EventTime returns the RFC3339 timestamp for the event.
+func EventTime(event ContainerEvent) string
+    return event.time

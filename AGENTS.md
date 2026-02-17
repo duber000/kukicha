@@ -262,4 +262,4 @@ Import with: `import "stdlib/slice"`
 - `.claude/skills/kukicha/` - Same content, Claude Code-specific location
 - `docs/kukicha-grammar.ebnf.md` - Formal grammar
 - `docs/kukicha-compiler-architecture.md` - Compiler internals
-- `docs/tutorial/` - Progressive tutorials
+- `docs/tutorials/` - Progressive tutorials

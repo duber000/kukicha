@@ -68,39 +68,78 @@ type NamespaceItem struct {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:74
+type PodEvent struct {
+	eventType string
+	name      string
+	namespace string
+	phase     string
+	ready     bool
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:82
 func New() Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:83
 	return Config{}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:86
 func Kubeconfig(cfg Config, path string) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:87
 	cfg.kubeconfig = path
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:80
-	return cfg
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:83
-func Context(cfg Config, name string) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:84
-	cfg.context = name
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:85
-	return cfg
-}
-
 //line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:88
-func InCluster(cfg Config) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:89
-	cfg.inCluster = true
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:90
 	return cfg
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:91
+func Context(cfg Config, name string) Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:92
+	cfg.context = name
 //line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:93
+	return cfg
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:96
+func InCluster(cfg Config) Config {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:97
+	cfg.inCluster = true
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:98
+	return cfg
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:101
 func Namespace(c Cluster, ns string) Cluster {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:102
 	c.namespace = ns
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:103
 	return c
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:106
+func PodEventType(event PodEvent) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:107
+	return event.eventType
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:110
+func PodEventName(event PodEvent) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:111
+	return event.name
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:114
+func PodEventNamespace(event PodEvent) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:115
+	return event.namespace
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:118
+func PodEventPhase(event PodEvent) string {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:119
+	return event.phase
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:122
+func PodEventReady(event PodEvent) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:123
+	return event.ready
 }

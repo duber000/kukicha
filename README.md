@@ -213,7 +213,7 @@ See [Contributing Guide](docs/contributing.md) for development setup, tests, and
 
 **Version:** 0.0.4
 **Status:** Ready for testing
-**Go:** 1.25+ required
+**Go:** 1.26+ required
 
 ---
 

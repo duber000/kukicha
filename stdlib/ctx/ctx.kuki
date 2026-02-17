@@ -1,0 +1,66 @@
+# Kukicha Standard Library - Ctx (Context and Cancellation)
+# Pragmatic timeout/cancellation helpers for long-running DevOps tasks.
+
+petiole ctx
+
+import "context"
+import "time"
+
+# Handle wraps a context and its optional cancel function.
+type Handle
+    ctx context.Context
+    cancel func()
+
+# Background returns a base context.
+func Background() Handle
+    return Handle{
+        ctx: context.Background(),
+        cancel: empty,
+    }
+
+# WithTimeoutMs creates a child context that auto-cancels after timeoutMs.
+func WithTimeoutMs(parent Handle, timeoutMs int64) Handle
+    base := parent.ctx
+    if base equals empty
+        base = context.Background()
+    timeout := time.Duration(timeoutMs) * time.Millisecond
+    child, cancel := context.WithTimeout(base, timeout)
+    return Handle{
+        ctx: child,
+        cancel: cancel,
+    }
+
+# WithDeadlineUnix creates a child context that cancels at unixSeconds (UTC).
+func WithDeadlineUnix(parent Handle, unixSeconds int64) Handle
+    base := parent.ctx
+    if base equals empty
+        base = context.Background()
+    deadline := time.Unix(unixSeconds, 0)
+    child, cancel := context.WithDeadline(base, deadline)
+    return Handle{
+        ctx: child,
+        cancel: cancel,
+    }
+
+# Cancel triggers cancellation if the handle has a cancel function.
+func Cancel(handle Handle)
+    if handle.cancel not equals empty
+        handle.cancel()
+
+# Done reports whether the context has been canceled.
+func Done(handle Handle) bool
+    if handle.ctx equals empty
+        return false
+    return handle.ctx.Err() not equals empty
+
+# Err returns the context cancellation error, if any.
+func Err(handle Handle) error
+    if handle.ctx equals empty
+        return empty
+    return handle.ctx.Err()
+
+# Value exposes the wrapped context for bridge/helper calls.
+func Value(handle Handle) context.Context
+    if handle.ctx equals empty
+        return context.Background()
+    return handle.ctx

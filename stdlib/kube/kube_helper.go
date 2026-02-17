@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -147,6 +148,189 @@ func ScaleDeployment(c Cluster, name string, replicas int32) error {
 		return fmt.Errorf("kube scale update: %w", err)
 	}
 	return nil
+}
+
+// DeleteDeployment deletes a deployment by name.
+func DeleteDeployment(c Cluster, name string) error {
+	if err := clientset(c).AppsV1().Deployments(c.namespace).Delete(context.Background(), name, metav1.DeleteOptions{}); err != nil {
+		return fmt.Errorf("kube delete deployment: %w", err)
+	}
+	return nil
+}
+
+// RolloutRestart triggers a rollout restart by patching the pod template annotation.
+func RolloutRestart(c Cluster, name string) error {
+	dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("kube rollout restart get: %w", err)
+	}
+	if dep.Spec.Template.ObjectMeta.Annotations == nil {
+		dep.Spec.Template.ObjectMeta.Annotations = map[string]string{}
+	}
+	dep.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().UTC().Format(time.RFC3339)
+	_, err = clientset(c).AppsV1().Deployments(c.namespace).Update(context.Background(), dep, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("kube rollout restart update: %w", err)
+	}
+	return nil
+}
+
+// WaitDeploymentReady waits for a deployment to reach desired ready replicas.
+// timeoutSeconds <= 0 defaults to 300 seconds.
+func WaitDeploymentReady(c Cluster, name string, timeoutSeconds int64) error {
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = 300
+	}
+	deadline := time.Now().Add(time.Duration(timeoutSeconds) * time.Second)
+	for {
+		dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("kube wait deployment get: %w", err)
+		}
+		desired := int32(1)
+		if dep.Spec.Replicas != nil {
+			desired = *dep.Spec.Replicas
+		}
+		if dep.Status.ObservedGeneration >= dep.Generation && dep.Status.ReadyReplicas >= desired && dep.Status.UpdatedReplicas >= desired {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("kube wait deployment: timed out after %ds (ready=%d desired=%d updated=%d)",
+				timeoutSeconds, dep.Status.ReadyReplicas, desired, dep.Status.UpdatedReplicas)
+		}
+		time.Sleep(2 * time.Second)
+	}
+}
+
+// WaitPodReady waits for a pod to become Ready.
+// timeoutSeconds <= 0 defaults to 180 seconds.
+func WaitPodReady(c Cluster, name string, timeoutSeconds int64) error {
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = 180
+	}
+	deadline := time.Now().Add(time.Duration(timeoutSeconds) * time.Second)
+	for {
+		p, err := clientset(c).CoreV1().Pods(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("kube wait pod get: %w", err)
+		}
+		ready := false
+		for _, cond := range p.Status.Conditions {
+			if cond.Type == corev1.PodReady {
+				ready = cond.Status == corev1.ConditionTrue
+				break
+			}
+		}
+		if ready {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("kube wait pod: timed out after %ds", timeoutSeconds)
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+// WaitDeploymentReadyCtx waits for deployment readiness until the provided context is canceled.
+func WaitDeploymentReadyCtx(c Cluster, h ctxpkg.Handle, name string) error {
+	ctx := ctxpkg.Value(h)
+	for {
+		dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("kube wait deployment get: %w", err)
+		}
+		desired := int32(1)
+		if dep.Spec.Replicas != nil {
+			desired = *dep.Spec.Replicas
+		}
+		if dep.Status.ObservedGeneration >= dep.Generation && dep.Status.ReadyReplicas >= desired && dep.Status.UpdatedReplicas >= desired {
+			return nil
+		}
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("kube wait deployment: %w", err)
+		}
+		time.Sleep(2 * time.Second)
+	}
+}
+
+// WaitPodReadyCtx waits for pod readiness until the provided context is canceled.
+func WaitPodReadyCtx(c Cluster, h ctxpkg.Handle, name string) error {
+	ctx := ctxpkg.Value(h)
+	for {
+		p, err := clientset(c).CoreV1().Pods(c.namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("kube wait pod get: %w", err)
+		}
+		ready := false
+		for _, cond := range p.Status.Conditions {
+			if cond.Type == corev1.PodReady {
+				ready = cond.Status == corev1.ConditionTrue
+				break
+			}
+		}
+		if ready {
+			return nil
+		}
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("kube wait pod: %w", err)
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+// WatchPods streams pod events for the namespace and returns collected events until timeout.
+// timeoutSeconds <= 0 defaults to 30 seconds.
+func WatchPods(c Cluster, timeoutSeconds int64) ([]PodEvent, error) {
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = 30
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+	return watchPodsWithContext(ctx, c)
+}
+
+// WatchPodsCtx streams pod events until the provided context is canceled.
+func WatchPodsCtx(c Cluster, h ctxpkg.Handle) ([]PodEvent, error) {
+	ctx := ctxpkg.Value(h)
+	return watchPodsWithContext(ctx, c)
+}
+
+func watchPodsWithContext(ctx context.Context, c Cluster) ([]PodEvent, error) {
+	watcher, err := clientset(c).CoreV1().Pods(c.namespace).Watch(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("kube watch pods: %w", err)
+	}
+	defer watcher.Stop()
+
+	events := []PodEvent{}
+	for {
+		select {
+		case <-ctx.Done():
+			return events, nil
+		case event, ok := <-watcher.ResultChan():
+			if !ok {
+				return events, nil
+			}
+			p, ok := event.Object.(*corev1.Pod)
+			if !ok {
+				continue
+			}
+			ready := false
+			for _, cond := range p.Status.Conditions {
+				if cond.Type == corev1.PodReady {
+					ready = cond.Status == corev1.ConditionTrue
+					break
+				}
+			}
+			events = append(events, PodEvent{
+				eventType: string(event.Type),
+				name:      p.Name,
+				namespace: p.Namespace,
+				phase:     string(p.Status.Phase),
+				ready:     ready,
+			})
+		}
+	}
 }
 
 // --- Services ---
@@ -402,6 +586,22 @@ func NamespaceName(n NamespaceItem) string { return nsItem(n).Name }
 func PodLogs(c Cluster, name string) (string, error) {
 	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{})
 	stream, err := req.Stream(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("kube pod logs: %w", err)
+	}
+	defer stream.Close()
+	data, err := io.ReadAll(stream)
+	if err != nil {
+		return "", fmt.Errorf("kube pod logs read: %w", err)
+	}
+	return string(data), nil
+}
+
+// PodLogsCtx retrieves full pod logs and can be canceled via context handle.
+func PodLogsCtx(c Cluster, h ctxpkg.Handle, name string) (string, error) {
+	ctx := ctxpkg.Value(h)
+	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{})
+	stream, err := req.Stream(ctx)
 	if err != nil {
 		return "", fmt.Errorf("kube pod logs: %w", err)
 	}

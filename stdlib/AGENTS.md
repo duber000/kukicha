@@ -15,7 +15,8 @@ Import with: `import "stdlib/slice"`
 | `stdlib/cast` | Type casting utilities | ToString, ToInt, ToFloat, ToBool |
 | `stdlib/cli` | CLI argument parsing | New, String, Int, Bool, Parse |
 | `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
-| `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, Run, Stop, Remove, Build, Logs |
+| `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec/ExecCtx, Events/EventsCtx, CopyFrom/CopyFromCtx, CopyTo/CopyToCtx |
+| `stdlib/ctx` | Context timeout/cancellation helpers | Background, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err |
 | `stdlib/datetime` | Named formats, duration helpers | Format, Seconds, Minutes, Hours |
 | `stdlib/encoding` | Base64 and hex encoding/decoding | Base64Encode, Base64Decode, Base64URLEncode, HexEncode, HexDecode |
 | `stdlib/env` | Typed env vars with onerr | Get, GetInt, GetBool, GetFloat, GetOr, Set |
@@ -26,13 +27,14 @@ Import with: `import "stdlib/slice"`
 | `stdlib/input` | User input utilities | Line, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration | Map, Filter, Reduce |
 | `stdlib/json` | jsonv2 wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
-| `stdlib/kube` | Kubernetes client via client-go | Connect, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, PodLogs |
+| `stdlib/kube` | Kubernetes client via client-go | Connect, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs/PodLogsCtx |
 | `stdlib/llm` | Large language model client | Chat, Stream, System, User |
 | `stdlib/maps` | Map utilities | Keys, Values, Has, Merge |
 | `stdlib/mcp` | Model Context Protocol support | NewServer, Tool, Resource, Prompt |
 | `stdlib/must` | Panic-on-error startup helpers | Env, EnvInt, EnvIntOr, Do, OkMsg |
 | `stdlib/net` | IP address and CIDR utilities | ParseIP, ParseCIDR, Contains, SplitHostPort, LookupHost, IsLoopback, IsPrivate |
 | `stdlib/netguard` | Network restriction & SSRF protection | NewSSRFGuard, NewAllow, NewBlock, Check, HTTPTransport |
+| `stdlib/obs` | Structured observability helpers | New, Component, WithCorrelation, NewCorrelationID, Info, Warn, Error, Start, Stop, Fail |
 | `stdlib/parse` | CSV and YAML parsing | CSV, YAML |
 | `stdlib/pg` | PostgreSQL client via pgx | Connect, Query, QueryRow, Exec, Begin, Commit, Rollback, ScanRow, CollectRows |
 | `stdlib/random` | Random number generation | Int, IntRange, Float, String, Choice |
@@ -62,6 +64,22 @@ port := must.EnvIntOr("PORT", 8080)
 import "stdlib/env"
 debug := env.GetBoolOrDefault("DEBUG", false)
 
+# Structured logs with correlation IDs
+import "stdlib/obs"
+logger := obs.New("deployctl", "prod") |> obs.Component("rollout")
+logger = logger |> obs.WithCorrelation(obs.NewCorrelationID())
+logger |> obs.Info("starting deployment", map of string to any{"app": "billing"})
+
+# Context timeout helpers
+import "stdlib/ctx"
+c := ctx.Background() |> ctx.WithTimeoutMs(30000)
+defer ctx.Cancel(c)
+if ctx.Done(c)
+    print("request canceled: {ctx.Err(c)}")
+# Use ctx-enabled operations for cancellable waits/streams
+kube.WaitDeploymentReadyCtx(cluster, c, "api") onerr panic "{error}"
+container.EventsCtx(engine, c) onerr panic "{error}"
+
 # HTTP responses
 import "stdlib/http" as httphelper
 httphelper.JSON(w, data)
@@ -87,6 +105,12 @@ cluster := kube.Connect() onerr panic "k8s: {error}"
 pods := kube.Namespace(cluster, "default") |> kube.ListPods() onerr panic "{error}"
 for pod in kube.Pods(pods)
     print("{kube.PodName(pod)}: {kube.PodStatus(pod)}")
+# Collect pod events for 20 seconds
+events := kube.WatchPods(kube.Namespace(cluster, "default"), 20) onerr panic "{error}"
+for event in events
+    print("{kube.PodEventType(event)} {kube.PodEventName(event)} ready={kube.PodEventReady(event)}")
+# For apply/patch workflows, prefer GitOps tools (e.g., Argo CD) and use kube stdlib
+# for operational reads, rollout actions, and watches.
 
 # HTTP fetch with builder
 import "stdlib/fetch"
@@ -118,6 +142,11 @@ container.Pull(engine, "alpine:latest") onerr panic "{error}"
 id := container.Run(engine, "alpine:latest", list of string{"echo", "hello"}) onerr panic "{error}"
 logs := container.Logs(engine, id) onerr panic "{error}"
 print(logs)
+code := container.Wait(engine, id, 60) onerr panic "{error}"
+print("exit code: {code}")
+events := container.Events(engine, 5) onerr panic "{error}"
+for event in events
+    print("{container.EventTime(event)} {container.EventAction(event)} {container.EventID(event)}")
 container.Remove(engine, id) onerr discard
 
 # IP address and CIDR utilities

@@ -1,0 +1,113 @@
+# Kukicha Standard Library - Obs (Observability Helpers)
+# Structured logs and lightweight timing helpers for operational scripts.
+
+petiole obs
+
+import "encoding/json"
+import "fmt"
+import "time"
+import "stdlib/random"
+
+# Logger holds default fields for structured log events.
+type Logger
+    service string
+    environment string
+    component string
+    correlationID string
+
+# Timer tracks duration for a unit of work.
+type Timer
+    logger Logger
+    operation string
+    startedAt time.Time
+
+# New creates a logger with service and environment metadata.
+func New(service string, environment string) Logger
+    return Logger{
+        service: service,
+        environment: environment,
+        component: "",
+        correlationID: "",
+    }
+
+# Component sets the component field on the logger.
+func Component(logger Logger, component string) Logger
+    logger.component = component
+    return logger
+
+# WithCorrelation sets an explicit correlation ID on the logger.
+func WithCorrelation(logger Logger, correlationID string) Logger
+    logger.correlationID = correlationID
+    return logger
+
+# NewCorrelationID creates a random correlation ID for request/job traces.
+func NewCorrelationID() string
+    return random.String(16)
+
+# Debug emits a debug-level structured log line.
+func Debug(logger Logger, message string, fields map of string to any)
+    logger |> Log("debug", message, fields)
+
+# Info emits an info-level structured log line.
+func Info(logger Logger, message string, fields map of string to any)
+    logger |> Log("info", message, fields)
+
+# Warn emits a warn-level structured log line.
+func Warn(logger Logger, message string, fields map of string to any)
+    logger |> Log("warn", message, fields)
+
+# Error emits an error-level structured log line.
+func Error(logger Logger, message string, fields map of string to any)
+    logger |> Log("error", message, fields)
+
+# Log emits a structured JSON log line with common metadata and custom fields.
+func Log(logger Logger, level string, message string, fields map of string to any)
+    payload := map of string to any{
+        "ts": time.Now().Format(time.RFC3339Nano),
+        "level": level,
+        "message": message,
+    }
+    if logger.service not equals ""
+        payload["service"] = logger.service
+    if logger.environment not equals ""
+        payload["environment"] = logger.environment
+    if logger.component not equals ""
+        payload["component"] = logger.component
+    if logger.correlationID not equals ""
+        payload["correlation_id"] = logger.correlationID
+    if fields not equals empty
+        for key, value in fields
+            payload[key] = value
+
+    line, err := json.Marshal(payload)
+    if err not equals empty
+        print("[obs:{level}] {message}")
+        return
+    fmt.Printf("%s\n", line)
+
+# Start begins a timer for an operation.
+func Start(logger Logger, operation string) Timer
+    return Timer{
+        logger: logger,
+        operation: operation,
+        startedAt: time.Now(),
+    }
+
+# Stop records a successful timer completion with duration in milliseconds.
+func Stop(timer Timer, fields map of string to any)
+    elapsedMs := time.Since(timer.startedAt).Milliseconds()
+    if fields equals empty
+        fields = map of string to any{}
+    fields["operation"] = timer.operation
+    fields["duration_ms"] = elapsedMs
+    timer.logger |> Info("operation complete", fields)
+
+# Fail records a failed timer completion with duration and error details.
+func Fail(timer Timer, reason string, fields map of string to any)
+    elapsedMs := time.Since(timer.startedAt).Milliseconds()
+    if fields equals empty
+        fields = map of string to any{}
+    fields["operation"] = timer.operation
+    fields["duration_ms"] = elapsedMs
+    fields["reason"] = reason
+    timer.logger |> Error("operation failed", fields)
