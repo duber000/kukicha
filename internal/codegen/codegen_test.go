@@ -1310,7 +1310,11 @@ func Load(url string) list of Repo
 		t.Fatalf("parse errors: %v", parseErrors)
 	}
 
+	analyzer := semantic.New(program)
+	analyzer.Analyze()
+
 	gen := New(program)
+	gen.SetExprReturnCounts(analyzer.ReturnCounts())
 	output, err := gen.Generate()
 	if err != nil {
 		t.Fatalf("codegen error: %v", err)
@@ -1327,6 +1331,50 @@ func Load(url string) list of Repo
 	}
 	if !strings.Contains(output, "pipe_5, err_6 := fetch.Json(pipe_3, []Repo{})") {
 		t.Fatalf("expected explicit fetch.Json error capture, got: %s", output)
+	}
+}
+
+func TestOnErrPipeChainUserDefinedMultiReturn(t *testing.T) {
+	input := `import "strconv"
+
+func GetInput() string
+    return "42"
+
+func Parse(data string) (int, error)
+    return strconv.Atoi(data)
+
+func Run() int
+    result := GetInput() |> Parse() onerr return 0
+    return result
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.New(program)
+	analyzer.Analyze()
+
+	gen := New(program)
+	gen.SetExprReturnCounts(analyzer.ReturnCounts())
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	// GetInput() returns 1 value, so no error capture
+	if !strings.Contains(output, "pipe_1 := GetInput()") {
+		t.Fatalf("expected simple assignment for GetInput(), got: %s", output)
+	}
+	// Parse() returns (int, error), so should capture error
+	if !strings.Contains(output, "pipe_2, err_3 := Parse(pipe_1)") {
+		t.Fatalf("expected error capture for user-defined Parse(), got: %s", output)
 	}
 }
 

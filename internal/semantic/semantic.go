@@ -1328,16 +1328,54 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 	// Handle known stdlib method return types
 	methodName := expr.Method.Value
 
-	// Known package-level functions parsed as MethodCallExpr (e.g., os.LookupEnv)
+	// Known package-level functions parsed as MethodCallExpr (e.g., os.LookupEnv, fetch.Get)
 	if objID, ok := expr.Object.(*ast.Identifier); ok {
 		qualifiedName := objID.Value + "." + methodName
-		switch qualifiedName {
-		case "os.LookupEnv":
-			types := []*TypeInfo{
-				{Kind: TypeKindString},
-				{Kind: TypeKindBool},
+
+		// Registry of known external function return counts
+		knownExternalReturns := map[string]int{
+			// stdlib/fetch
+			"fetch.Get":         2,
+			"fetch.Post":        2,
+			"fetch.Do":          2,
+			"fetch.CheckStatus": 2,
+			"fetch.Text":        2,
+			"fetch.Bytes":       2,
+			"fetch.Json":        2,
+			"fetch.Decode":      1,
+			// stdlib/json
+			"json.Marshal": 2,
+			// Go stdlib
+			"os.ReadFile":        2,
+			"os.Create":          2,
+			"os.Open":            2,
+			"os.LookupEnv":       2,
+			"strconv.Atoi":       2,
+			"strconv.ParseInt":   2,
+			"strconv.ParseFloat": 2,
+			"url.Parse":          2,
+			"fmt.Fprintf":        2,
+			"fmt.Sprintf":        1,
+			"net.ParseCIDR":      3,
+		}
+
+		if count, ok := knownExternalReturns[qualifiedName]; ok {
+			types := make([]*TypeInfo, count)
+			for i := range types {
+				types[i] = &TypeInfo{Kind: TypeKindUnknown}
 			}
-			a.recordReturnCount(expr, len(types))
+			// Provide specific type info for well-known cases
+			switch qualifiedName {
+			case "os.LookupEnv":
+				types[0] = &TypeInfo{Kind: TypeKindString}
+				types[1] = &TypeInfo{Kind: TypeKindBool}
+			case "fmt.Sprintf":
+				types[0] = &TypeInfo{Kind: TypeKindString}
+			case "strconv.Atoi":
+				types[0] = &TypeInfo{Kind: TypeKindInt}
+				types[1] = &TypeInfo{Kind: TypeKindNamed, Name: "error"}
+			}
+			a.recordReturnCount(expr, count)
 			return types
 		}
 	}

@@ -1550,6 +1550,17 @@ func (g *Generator) generatePipedStepCall(right ast.Expression, leftExpr string)
 		return "", false
 	}
 
+	args := g.buildPipeArgs(leftExpr, arguments)
+
+	if isVariadic {
+		return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", ")), true
+	}
+	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", ")), true
+}
+
+// buildPipeArgs builds the argument list for a piped function call.
+// It handles placeholder substitution (_), context-first insertion, and default data-first insertion.
+func (g *Generator) buildPipeArgs(leftExpr string, arguments []ast.Expression) []string {
 	placeholderIndex := -1
 	for i, arg := range arguments {
 		if ident, isIdent := arg.(*ast.Identifier); isIdent && ident.Value == "_" {
@@ -1571,22 +1582,13 @@ func (g *Generator) generatePipedStepCall(right ast.Expression, leftExpr string)
 				args = append(args, g.exprToString(arg))
 			}
 		}
-	} else if g.isContextExpr(&ast.Identifier{Value: leftExpr}) {
-		args = append(args, leftExpr)
-		for _, arg := range arguments {
-			args = append(args, g.exprToString(arg))
-		}
 	} else {
 		args = append(args, leftExpr)
 		for _, arg := range arguments {
 			args = append(args, g.exprToString(arg))
 		}
 	}
-
-	if isVariadic {
-		return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", ")), true
-	}
-	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", ")), true
+	return args
 }
 
 func (g *Generator) generateOnErrPipeChain(pipe *ast.PipeExpr, clause *ast.OnErrClause, names []*ast.Identifier) (string, bool) {
@@ -1597,7 +1599,7 @@ func (g *Generator) generateOnErrPipeChain(pipe *ast.PipeExpr, clause *ast.OnErr
 
 	current := g.uniqueId("pipe")
 	baseExpr := g.exprToString(base)
-	if _, isMulti := g.getMultiReturnType(base); isMulti {
+	if count, ok := g.inferReturnCount(base); ok && count >= 2 {
 		errVar := g.uniqueId("err")
 		g.writeLine(fmt.Sprintf("%s, %s := %s", current, errVar, baseExpr))
 		g.writeOnErrCheck(clause, errVar, names)
@@ -1612,7 +1614,7 @@ func (g *Generator) generateOnErrPipeChain(pipe *ast.PipeExpr, clause *ast.OnErr
 		}
 
 		next := g.uniqueId("pipe")
-		if _, isMulti := g.getMultiReturnType(step); isMulti {
+		if count, ok := g.inferReturnCount(step); ok && count >= 2 {
 			errVar := g.uniqueId("err")
 			g.writeLine(fmt.Sprintf("%s, %s := %s", next, errVar, callExpr))
 			g.writeOnErrCheck(clause, errVar, names)
@@ -2369,45 +2371,6 @@ func (g *Generator) isContextExpr(expr ast.Expression) bool {
 	return false
 }
 
-func (g *Generator) getMultiReturnType(expr ast.Expression) (string, bool) {
-	// List of known stdlib/fetch functions that return multiple values
-	// Maps function name to its primary return type
-	multiReturnFuncs := map[string]string{
-		"fetch.Get":         "*http.Response",
-		"fetch.Post":        "*http.Response",
-		"fetch.Do":          "*http.Response",
-		"fetch.CheckStatus": "*http.Response",
-		"fetch.Text":        "string",
-		"fetch.Bytes":       "[]byte",
-		"fetch.Json":        "any",
-	}
-
-	var funcName string
-	if call, ok := expr.(*ast.CallExpr); ok {
-		if id, ok := call.Function.(*ast.Identifier); ok {
-			funcName = id.Value
-		}
-	} else if methodCall, ok := expr.(*ast.MethodCallExpr); ok {
-		// Handle package.Function() calls which are parsed as MethodCallExpr
-		if obj, ok := methodCall.Object.(*ast.Identifier); ok {
-			funcName = obj.Value + "." + methodCall.Method.Value
-		}
-	} else if pipe, ok := expr.(*ast.PipeExpr); ok {
-		// For pipe expression, check the right-most function
-		return g.getMultiReturnType(pipe.Right)
-	}
-
-	if typeName, ok := multiReturnFuncs[funcName]; ok {
-		// Add auto-import if needed
-		if strings.Contains(typeName, "http.") {
-			g.addImport("net/http")
-		}
-		return typeName, true
-	}
-
-	return "", false
-}
-
 // generatePipeExpr transforms pipe expressions into function calls.
 //
 // ARCHITECTURE NOTE: Kukicha's pipe operator (|>) supports three strategies
@@ -2432,10 +2395,14 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 
 	// Calculate Left expression first, handling multi-return values if needed
 	leftExpr := g.exprToString(expr.Left)
-	if retType, isMulti := g.getMultiReturnType(expr.Left); isMulti {
+	if count, ok := g.inferReturnCount(expr.Left); ok && count >= 2 {
 		// Wrap in a function call to only take the first return value
-		// e.g., func() *http.Response { val, _ := fetch.Get(...); return val }()
-		leftExpr = fmt.Sprintf("func() %s { val, _ := %s; return val }()", retType, leftExpr)
+		// e.g., func() any { val, _ := fetch.Get(...); return val }()
+		blanks := make([]string, count-1)
+		for i := range blanks {
+			blanks[i] = "_"
+		}
+		leftExpr = fmt.Sprintf("func() any { val, %s := %s; return val }()", strings.Join(blanks, ", "), leftExpr)
 	}
 
 	// Right side can be a CallExpr or MethodCallExpr
@@ -2495,63 +2462,17 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 		return leftExpr + " |> " + g.exprToString(expr.Right)
 	}
 
-	// Scan arguments for the placeholder "_" (either Identifier or DiscardExpr)
-	placeholderIndex := -1
-	for i, arg := range arguments {
-		if ident, isIdent := arg.(*ast.Identifier); isIdent && ident.Value == "_" {
-			placeholderIndex = i
-			break
-		}
-		if _, isDiscard := arg.(*ast.DiscardExpr); isDiscard {
-			placeholderIndex = i
-			break
-		}
-	}
+	// Build the argument list using the shared helper
+	args := g.buildPipeArgs(leftExpr, arguments)
 
-	// Build the argument list
-	var args []string
-
+	// MCP special case: prepend os.Stderr for fmt.Fprintln
 	if g.mcpTarget && funcName == "fmt.Fprintln" {
-		args = append(args, "os.Stderr")
-	}
-
-	if placeholderIndex != -1 {
-		// STRATEGY A: Explicit placeholder found (e.g., json.MarshalWrite(w, _))
-		// Replace "_" with the piped expression
-		for i, arg := range arguments {
-			if i == placeholderIndex {
-				args = append(args, leftExpr)
-			} else {
-				args = append(args, g.exprToString(arg))
-			}
-		}
-	} else if g.isContextExpr(expr.Left) {
-		// STRATEGY C: Context-First Pipe
-		// If Left is a Context, it ALWAYS goes to the first argument position
-		args = append(args, leftExpr)
-		for _, arg := range arguments {
-			args = append(args, g.exprToString(arg))
-		}
-	} else {
-		// STRATEGY B: No placeholder -> Default "Data First" pipe
-		// Inject piped expr as the VERY FIRST argument
-		args = append(args, leftExpr)
-		for _, arg := range arguments {
-			args = append(args, g.exprToString(arg))
-		}
+		args = append([]string{"os.Stderr"}, args...)
 	}
 
 	if isVariadic {
 		return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", "))
 	}
-
-	// If the piped expression (Left) is a call that returns multiple values,
-	// we only want the first one for the next call in the chain.
-	// We use a temporary variable if it's a multi-value return.
-	// Since we are in exprToString which returns a string, we can't easily
-	// inject statements here.
-	// However, we can use a helper function or a more complex expression.
-	// For now, let's keep it simple - this is a known limitation of the current expr-based codegen.
 
 	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", "))
 }
