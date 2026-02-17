@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/duber000/kukicha/stdlib/shell"
 	kukistring "github.com/duber000/kukicha/stdlib/string"
+	"slices"
 	"testing"
 )
 
@@ -85,11 +86,8 @@ func TestEnv(t *testing.T) {
 	}
 	found := false
 	envs := shell.Environ()
-	for _, e := range envs {
-		if e == fmt.Sprintf("%v=%v", key, val) {
-			found = true
-			break
-		}
+	if slices.Contains(envs, fmt.Sprintf("%v=%v", key, val)) {
+		found = true
 	}
 	if !found {
 		t.Error("Expected to find variable in Environ()")

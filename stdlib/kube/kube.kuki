@@ -551,10 +551,9 @@ func NodeReady(n Node) bool
 func NodeRoles(n Node) list of string
     roles := make(list of string, 0)
     for label, _ in node(n).Labels
-        if strings.HasPrefix(label, "node-role.kubernetes.io/")
-            role := strings.TrimPrefix(label, "node-role.kubernetes.io/")
-            if role != ""
-                roles = append(roles, role)
+        role, found := strings.CutPrefix(label, "node-role.kubernetes.io/")
+        if found and role != ""
+            roles = append(roles, role)
     if len(roles) == 0
         roles = append(roles, "<none>")
     return roles

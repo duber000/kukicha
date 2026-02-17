@@ -78,9 +78,7 @@ func Chunk(items list of any, size int) list of list of any
     i := 0
 
     for i < length
-        end := i + size
-        if end > length
-            end = length
+        end := min(i + size, length)
         chunk := items[i:end]
         result = append(result, chunk)
         i = i + size

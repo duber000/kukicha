@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -168,11 +169,9 @@ func (p *Parser) check(tokenType lexer.TokenType) bool {
 }
 
 func (p *Parser) match(types ...lexer.TokenType) bool {
-	for _, t := range types {
-		if p.check(t) {
-			p.advance()
-			return true
-		}
+	if slices.ContainsFunc(types, p.check) {
+		p.advance()
+		return true
 	}
 	return false
 }

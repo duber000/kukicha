@@ -5,6 +5,7 @@ petiole obs
 
 import "encoding/json"
 import "fmt"
+import "maps"
 import "time"
 import "stdlib/random"
 
@@ -76,8 +77,7 @@ func Log(logger Logger, level string, message string, fields map of string to an
     if logger.correlationID not equals ""
         payload["correlation_id"] = logger.correlationID
     if fields not equals empty
-        for key, value in fields
-            payload[key] = value
+        maps.Copy(payload, fields)
 
     line, err := json.Marshal(payload)
     if err not equals empty

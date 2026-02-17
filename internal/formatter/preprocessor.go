@@ -59,9 +59,9 @@ func (p *Preprocessor) Process() string {
 // hasGoStyleBraces checks if the source uses Go-style braces for blocks
 // (not just for struct/map literals)
 func (p *Preprocessor) hasGoStyleBraces(source string) bool {
-	lines := strings.Split(source, "\n")
+	lines := strings.SplitSeq(source, "\n")
 
-	for _, line := range lines {
+	for line := range lines {
 		trimmed := strings.TrimSpace(line)
 
 		// Skip empty lines and comments
@@ -120,8 +120,8 @@ func (p *Preprocessor) processLine(line string, indentLevel *int, lineIdx int, a
 	currentIndent := strings.Repeat(p.indentStr, *indentLevel)
 
 	// Remove trailing semicolon
-	if strings.HasSuffix(trimmed, ";") {
-		trimmed = strings.TrimSuffix(trimmed, ";")
+	if before, ok := strings.CutSuffix(trimmed, ";"); ok {
+		trimmed = before
 		trimmed = strings.TrimSpace(trimmed)
 	}
 

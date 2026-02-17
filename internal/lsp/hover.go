@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
 	"github.com/duber000/kukicha/internal/semantic"
@@ -89,15 +90,17 @@ func (s *Server) getHoverContent(doc *Document, word string, pos lsp.Position) s
 // getBuiltinInfo returns documentation for builtin functions
 func getBuiltinInfo(name string) string {
 	builtins := map[string]string{
-		"print":  "func print(args ...any)\nPrints values to stdout",
-		"len":    "func len(v any) int\nReturns the length of a string, list, or map",
-		"append": "func append(slice []T, elems ...T) []T\nAppends elements to a slice",
-		"make":   "func make(T type, size ...int) T\nCreates a slice, map, or channel",
-		"close":  "func close(ch chan T)\nCloses a channel",
-		"panic":  "func panic(v any)\nStops normal execution and begins panicking",
+		"print":   "func print(args ...any)\nPrints values to stdout",
+		"len":     "func len(v any) int\nReturns the length of a string, list, or map",
+		"append":  "func append(slice []T, elems ...T) []T\nAppends elements to a slice",
+		"make":    "func make(T type, size ...int) T\nCreates a slice, map, or channel",
+		"min":     "func min(x T, y T, rest ...T) T\nReturns the minimum of its arguments (Go 1.21+)",
+		"max":     "func max(x T, y T, rest ...T) T\nReturns the maximum of its arguments (Go 1.21+)",
+		"close":   "func close(ch chan T)\nCloses a channel",
+		"panic":   "func panic(v any)\nStops normal execution and begins panicking",
 		"recover": "func recover() any\nRegains control of a panicking goroutine",
-		"empty":  "empty T\nReturns the zero value of type T",
-		"error":  "error \"message\"\nCreates a new error with the given message",
+		"empty":   "empty T\nReturns the zero value of type T",
+		"error":   "error \"message\"\nCreates a new error with the given message",
 	}
 
 	if info, ok := builtins[name]; ok {
@@ -108,46 +111,46 @@ func getBuiltinInfo(name string) string {
 
 // formatFunctionDecl formats a function declaration for hover display
 func formatFunctionDecl(decl *ast.FunctionDecl) string {
-	var result string
+	var result strings.Builder
 
 	// Add receiver if it's a method
 	if decl.Receiver != nil {
-		result += fmt.Sprintf("func (%s %s) ", decl.Receiver.Name.Value, formatTypeAnnotation(decl.Receiver.Type))
+		result.WriteString(fmt.Sprintf("func (%s %s) ", decl.Receiver.Name.Value, formatTypeAnnotation(decl.Receiver.Type)))
 	} else {
-		result += "func "
+		result.WriteString("func ")
 	}
 
-	result += decl.Name.Value + "("
+	result.WriteString(decl.Name.Value + "(")
 
 	// Parameters
 	for i, param := range decl.Parameters {
 		if i > 0 {
-			result += ", "
+			result.WriteString(", ")
 		}
 		if param.Variadic {
-			result += "many "
+			result.WriteString("many ")
 		}
-		result += param.Name.Value + " " + formatTypeAnnotation(param.Type)
+		result.WriteString(param.Name.Value + " " + formatTypeAnnotation(param.Type))
 	}
-	result += ")"
+	result.WriteString(")")
 
 	// Returns
 	if len(decl.Returns) > 0 {
 		if len(decl.Returns) == 1 {
-			result += " " + formatTypeAnnotation(decl.Returns[0])
+			result.WriteString(" " + formatTypeAnnotation(decl.Returns[0]))
 		} else {
-			result += " ("
+			result.WriteString(" (")
 			for i, ret := range decl.Returns {
 				if i > 0 {
-					result += ", "
+					result.WriteString(", ")
 				}
-				result += formatTypeAnnotation(ret)
+				result.WriteString(formatTypeAnnotation(ret))
 			}
-			result += ")"
+			result.WriteString(")")
 		}
 	}
 
-	return result
+	return result.String()
 }
 
 // formatTypeDecl formats a type declaration for hover display
@@ -156,47 +159,49 @@ func formatTypeDecl(decl *ast.TypeDecl) string {
 		return fmt.Sprintf("type %s %s", decl.Name.Value, formatTypeAnnotation(decl.AliasType))
 	}
 
-	result := fmt.Sprintf("type %s\n", decl.Name.Value)
+	var result strings.Builder
+	result.WriteString(fmt.Sprintf("type %s\n", decl.Name.Value))
 
 	if len(decl.Fields) > 0 {
-		result += "Fields:\n"
+		result.WriteString("Fields:\n")
 		for _, field := range decl.Fields {
-			result += fmt.Sprintf("  %s %s\n", field.Name.Value, formatTypeAnnotation(field.Type))
+			result.WriteString(fmt.Sprintf("  %s %s\n", field.Name.Value, formatTypeAnnotation(field.Type)))
 		}
 	}
 
-	return result
+	return result.String()
 }
 
 // formatInterfaceDecl formats an interface declaration for hover display
 func formatInterfaceDecl(decl *ast.InterfaceDecl) string {
-	result := fmt.Sprintf("interface %s\n", decl.Name.Value)
+	var result strings.Builder
+	result.WriteString(fmt.Sprintf("interface %s\n", decl.Name.Value))
 
 	if len(decl.Methods) > 0 {
-		result += "Methods:\n"
+		result.WriteString("Methods:\n")
 		for _, method := range decl.Methods {
-			result += fmt.Sprintf("  %s(", method.Name.Value)
+			result.WriteString(fmt.Sprintf("  %s(", method.Name.Value))
 			for i, param := range method.Parameters {
 				if i > 0 {
-					result += ", "
+					result.WriteString(", ")
 				}
-				result += param.Name.Value + " " + formatTypeAnnotation(param.Type)
+				result.WriteString(param.Name.Value + " " + formatTypeAnnotation(param.Type))
 			}
-			result += ")"
+			result.WriteString(")")
 			if len(method.Returns) > 0 {
-				result += " "
+				result.WriteString(" ")
 				for i, ret := range method.Returns {
 					if i > 0 {
-						result += ", "
+						result.WriteString(", ")
 					}
-					result += formatTypeAnnotation(ret)
+					result.WriteString(formatTypeAnnotation(ret))
 				}
 			}
-			result += "\n"
+			result.WriteString("\n")
 		}
 	}
 
-	return result
+	return result.String()
 }
 
 // formatTypeAnnotation converts a type annotation to a string
@@ -219,24 +224,25 @@ func formatTypeAnnotation(t ast.TypeAnnotation) string {
 	case *ast.ChannelType:
 		return "channel of " + formatTypeAnnotation(ta.ElementType)
 	case *ast.FunctionType:
-		result := "func("
+		var result strings.Builder
+		result.WriteString("func(")
 		for i, param := range ta.Parameters {
 			if i > 0 {
-				result += ", "
+				result.WriteString(", ")
 			}
-			result += formatTypeAnnotation(param)
+			result.WriteString(formatTypeAnnotation(param))
 		}
-		result += ")"
+		result.WriteString(")")
 		if len(ta.Returns) > 0 {
-			result += " "
+			result.WriteString(" ")
 			for i, ret := range ta.Returns {
 				if i > 0 {
-					result += ", "
+					result.WriteString(", ")
 				}
-				result += formatTypeAnnotation(ret)
+				result.WriteString(formatTypeAnnotation(ret))
 			}
 		}
-		return result
+		return result.String()
 	default:
 		return "unknown"
 	}

@@ -92,11 +92,11 @@
 (address_of_expression) @function.builtin
 (dereference_expression) @function.builtin
 
-; print builtin (parsed as a regular call, not a dedicated grammar node)
+; print/min/max builtins (parsed as regular calls, not dedicated grammar nodes)
 (call_expression
   function: (primary_expression
     (identifier) @function.builtin
-    (#eq? @function.builtin "print")))
+    (#any-of? @function.builtin "print" "min" "max")))
 
 ; Type assertions and casts
 (type_assertion) @keyword.operator

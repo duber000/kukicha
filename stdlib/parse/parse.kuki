@@ -72,9 +72,7 @@ func CsvWithHeader(data string) (list of map of string to string, error)
         # Process each column
         numHeaders := len(headers)
         numCols := len(row)
-        maxCols := numHeaders
-        if numCols < maxCols
-            maxCols = numCols
+        maxCols := min(numCols, numHeaders)
 
         j := 0
         for j < maxCols

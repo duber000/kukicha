@@ -266,8 +266,8 @@ func TestNumericForLoop(t *testing.T) {
 		t.Fatalf("codegen error: %v", err)
 	}
 
-	if !strings.Contains(output, "for i := 0; i < 10; i++") {
-		t.Errorf("expected numeric for loop with <, got: %s", output)
+	if !strings.Contains(output, "for i := range 10") {
+		t.Errorf("expected range-over-int for loop, got: %s", output)
 	}
 }
 

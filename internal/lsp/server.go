@@ -67,7 +67,7 @@ func (s *Server) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.
 	}
 }
 
-func (s *Server) handleRequest(ctx context.Context, req *jsonrpc2.Request) (interface{}, error) {
+func (s *Server) handleRequest(ctx context.Context, req *jsonrpc2.Request) (any, error) {
 	switch req.Method {
 	case "initialize":
 		return s.handleInitialize(ctx, req)
@@ -124,7 +124,7 @@ func (s *Server) handleInitialize(ctx context.Context, req *jsonrpc2.Request) (*
 	return result, nil
 }
 
-func (s *Server) handleDidOpen(ctx context.Context, req *jsonrpc2.Request) (interface{}, error) {
+func (s *Server) handleDidOpen(ctx context.Context, req *jsonrpc2.Request) (any, error) {
 	var params lsp.DidOpenTextDocumentParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (s *Server) handleDidOpen(ctx context.Context, req *jsonrpc2.Request) (inte
 	return nil, nil
 }
 
-func (s *Server) handleDidChange(ctx context.Context, req *jsonrpc2.Request) (interface{}, error) {
+func (s *Server) handleDidChange(ctx context.Context, req *jsonrpc2.Request) (any, error) {
 	var params lsp.DidChangeTextDocumentParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (s *Server) handleDidChange(ctx context.Context, req *jsonrpc2.Request) (in
 	return nil, nil
 }
 
-func (s *Server) handleDidSave(ctx context.Context, req *jsonrpc2.Request) (interface{}, error) {
+func (s *Server) handleDidSave(ctx context.Context, req *jsonrpc2.Request) (any, error) {
 	var params lsp.DidSaveTextDocumentParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (s *Server) handleDidSave(ctx context.Context, req *jsonrpc2.Request) (inte
 	return nil, nil
 }
 
-func (s *Server) handleDidClose(ctx context.Context, req *jsonrpc2.Request) (interface{}, error) {
+func (s *Server) handleDidClose(ctx context.Context, req *jsonrpc2.Request) (any, error) {
 	var params lsp.DidCloseTextDocumentParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err

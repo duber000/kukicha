@@ -145,10 +145,7 @@ func (doc *Document) OffsetToPosition(offset int) lsp.Position {
 	for line, content := range doc.Lines {
 		lineEnd := currentOffset + len(content) + 1 // +1 for newline
 		if offset < lineEnd {
-			byteInLine := offset - currentOffset
-			if byteInLine < 0 {
-				byteInLine = 0
-			}
+			byteInLine := max(offset-currentOffset, 0)
 			if byteInLine > len(content) {
 				byteInLine = len(content)
 			}

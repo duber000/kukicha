@@ -1049,12 +1049,24 @@ func (a *Analyzer) analyzeIdentifier(ident *ast.Identifier) *TypeInfo {
 		return &TypeInfo{Kind: TypeKindUnknown}
 	}
 
+	// Check symbol table first — local variables/params shadow builtins
 	symbol := a.symbolTable.Resolve(ident.Value)
-	if symbol == nil {
-		a.error(ident.Pos(), fmt.Sprintf("undefined identifier '%s'", ident.Value))
-		return &TypeInfo{Kind: TypeKindUnknown}
+	if symbol != nil {
+		return symbol.Type
 	}
-	return symbol.Type
+
+	// min/max are builtins added in Go 1.21; allow them when not shadowed
+	if ident.Value == "min" || ident.Value == "max" {
+		return &TypeInfo{
+			Kind:     TypeKindFunction,
+			Params:   []*TypeInfo{{Kind: TypeKindUnknown}, {Kind: TypeKindUnknown}},
+			Variadic: true,
+			Returns:  []*TypeInfo{{Kind: TypeKindUnknown}},
+		}
+	}
+
+	a.error(ident.Pos(), fmt.Sprintf("undefined identifier '%s'", ident.Value))
+	return &TypeInfo{Kind: TypeKindUnknown}
 }
 
 func (a *Analyzer) analyzeBinaryExpr(expr *ast.BinaryExpr) *TypeInfo {
@@ -1258,10 +1270,7 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 
 		if funcType.Variadic {
 			// Variadic: must have at least (required params - 1) arguments
-			minArgs := requiredParams - 1
-			if minArgs < 0 {
-				minArgs = 0
-			}
+			minArgs := max(requiredParams-1, 0)
 			if totalProvidedArgs < minArgs {
 				a.error(expr.Pos(), fmt.Sprintf("expected at least %d arguments, got %d", minArgs, totalProvidedArgs))
 			}
@@ -1344,8 +1353,8 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 			"fetch.Json":        2,
 			"fetch.Decode":      1,
 			// stdlib/json
-			"json.Marshal":     2,
-			"json.DecodeRead":  2,
+			"json.Marshal":    2,
+			"json.DecodeRead": 2,
 			// Go stdlib
 			"os.ReadFile":        2,
 			"os.Create":          2,

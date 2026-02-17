@@ -140,8 +140,8 @@ func detectTarget(source string) string {
 			break
 		}
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "# target:") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "# target:"))
+		if after, ok := strings.CutPrefix(line, "# target:"); ok {
+			return strings.TrimSpace(after)
 		}
 	}
 	return ""

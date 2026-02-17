@@ -79,6 +79,8 @@ func (s *Server) getCompletions(doc *Document, pos lsp.Position) []lsp.Completio
 		{"len", "func len(v any) int"},
 		{"append", "func append(slice []T, elems ...T) []T"},
 		{"make", "func make(T type, size ...int) T"},
+		{"min", "func min(x T, y T, rest ...T) T"},
+		{"max", "func max(x T, y T, rest ...T) T"},
 		{"close", "func close(ch chan T)"},
 		{"panic", "func panic(v any)"},
 		{"recover", "func recover() any"},

@@ -2,7 +2,9 @@ package codegen
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -439,7 +441,7 @@ func (g *Generator) generateGlobalVarDecl(stmt *ast.VarDeclStmt) {
 	} else {
 		// No type, no initializer - this is unusual for a global variable
 		// but we'll generate it anyway (will be zero-valued)
-		g.writeLine(fmt.Sprintf("var %s interface{}", namesStr))
+		g.writeLine(fmt.Sprintf("var %s any", namesStr))
 	}
 }
 
@@ -553,9 +555,7 @@ func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
 	g.placeholderMap = make(map[string]string)
 
 	// Inherit placeholders from parent scope
-	for k, v := range oldPlaceholderMap {
-		g.placeholderMap[k] = v
-	}
+	maps.Copy(g.placeholderMap, oldPlaceholderMap)
 
 	// Check if this is a stdlib/iterator function literal that needs special transpilation
 	var typeParams []*TypeParameter
@@ -601,26 +601,27 @@ func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
 		sourceFile:     g.sourceFile,
 	}
 
-	result := signature + " {\n"
+	var result strings.Builder
+	result.WriteString(signature + " {\n")
 
 	if lit.Body != nil {
 		// Generate body statements using temporary generator
 		for _, stmt := range lit.Body.Statements {
 			tempGen.generateStatement(stmt)
 		}
-		result += tempGen.output.String()
+		result.WriteString(tempGen.output.String())
 	}
 
 	// Add proper indentation for closing brace
 	for i := 0; i < g.indent; i++ {
-		result += "\t"
+		result.WriteString("\t")
 	}
-	result += "}"
+	result.WriteString("}")
 
 	// Restore placeholder mapping
 	g.placeholderMap = oldPlaceholderMap
 
-	return result
+	return result.String()
 }
 
 // generateArrowLambda transpiles an arrow lambda to a Go anonymous function.
@@ -1220,7 +1221,7 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 
 		return result
 	default:
-		return "interface{}"
+		return "any"
 	}
 }
 
@@ -1304,8 +1305,8 @@ func (g *Generator) generateVarDeclStmt(stmt *ast.VarDeclStmt) {
 					return
 				}
 			} else {
-				// Untyped empty → var x interface{}
-				g.writeLine(fmt.Sprintf("var %s interface{}", stmt.Names[0].Value))
+				// Untyped empty → var x any
+				g.writeLine(fmt.Sprintf("var %s any", stmt.Names[0].Value))
 				return
 			}
 		}
@@ -2081,14 +2082,18 @@ func (g *Generator) generateForNumericStmt(stmt *ast.ForNumericStmt) {
 	start := g.exprToString(stmt.Start)
 	end := g.exprToString(stmt.End)
 
-	var condition string
-	if stmt.Through {
-		condition = fmt.Sprintf("%s <= %s", varName, end)
+	// for i from 0 to N  →  for i := range N  (range-over-int, Go 1.22+)
+	if !stmt.Through && start == "0" {
+		g.writeLine(fmt.Sprintf("for %s := range %s {", varName, end))
 	} else {
-		condition = fmt.Sprintf("%s < %s", varName, end)
+		var condition string
+		if stmt.Through {
+			condition = fmt.Sprintf("%s <= %s", varName, end)
+		} else {
+			condition = fmt.Sprintf("%s < %s", varName, end)
+		}
+		g.writeLine(fmt.Sprintf("for %s := %s; %s; %s++ {", varName, start, condition, varName))
 	}
-
-	g.writeLine(fmt.Sprintf("for %s := %s; %s; %s++ {", varName, start, condition, varName))
 
 	g.indent++
 	g.generateBlock(stmt.Body)
@@ -2734,7 +2739,7 @@ func (g *Generator) generateListLiteral(expr *ast.ListLiteralExpr) string {
 			elemType := g.generateTypeAnnotation(expr.Type)
 			return fmt.Sprintf("[]%s{}", elemType)
 		}
-		return "[]interface{}{}"
+		return "[]any{}"
 	}
 
 	elements := make([]string, len(expr.Elements))
@@ -2747,7 +2752,7 @@ func (g *Generator) generateListLiteral(expr *ast.ListLiteralExpr) string {
 		elemType := g.generateTypeAnnotation(expr.Type)
 		typePrefix = fmt.Sprintf("[]%s", elemType)
 	} else {
-		typePrefix = "[]interface{}"
+		typePrefix = "[]any"
 	}
 
 	return fmt.Sprintf("%s{%s}", typePrefix, strings.Join(elements, ", "))
@@ -2840,41 +2845,30 @@ func (g *Generator) checkProgramForInterpolation(program *ast.Program) bool {
 }
 
 func (g *Generator) checkBlockForInterpolation(block *ast.BlockStmt) bool {
-	for _, stmt := range block.Statements {
-		if g.checkStmtForInterpolation(stmt) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(block.Statements, g.checkStmtForInterpolation)
 }
 
 func (g *Generator) checkStmtForInterpolation(stmt ast.Statement) bool {
 	switch s := stmt.(type) {
 	case *ast.VarDeclStmt:
-		for _, val := range s.Values {
-			if g.checkExprForInterpolation(val) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.checkExprForInterpolation) {
+			return true
 		}
 		if s.OnErr != nil && g.checkExprForInterpolation(s.OnErr.Handler) {
 			return true
 		}
 		return false
 	case *ast.AssignStmt:
-		for _, val := range s.Values {
-			if g.checkExprForInterpolation(val) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.checkExprForInterpolation) {
+			return true
 		}
 		if s.OnErr != nil && g.checkExprForInterpolation(s.OnErr.Handler) {
 			return true
 		}
 		return false
 	case *ast.ReturnStmt:
-		for _, val := range s.Values {
-			if g.checkExprForInterpolation(val) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.checkExprForInterpolation) {
+			return true
 		}
 	case *ast.IfStmt:
 		if g.checkExprForInterpolation(s.Condition) {
@@ -2891,10 +2885,8 @@ func (g *Generator) checkStmtForInterpolation(stmt ast.Statement) bool {
 			return true
 		}
 		for _, c := range s.Cases {
-			for _, v := range c.Values {
-				if g.checkExprForInterpolation(v) {
-					return true
-				}
+			if slices.ContainsFunc(c.Values, g.checkExprForInterpolation) {
+				return true
 			}
 			if c.Body != nil && g.checkBlockForInterpolation(c.Body) {
 				return true
@@ -2951,10 +2943,8 @@ func (g *Generator) checkExprForInterpolation(expr ast.Expression) bool {
 	case *ast.UnaryExpr:
 		return g.checkExprForInterpolation(e.Right)
 	case *ast.CallExpr:
-		for _, arg := range e.Arguments {
-			if g.checkExprForInterpolation(arg) {
-				return true
-			}
+		if slices.ContainsFunc(e.Arguments, g.checkExprForInterpolation) {
+			return true
 		}
 	case *ast.MethodCallExpr:
 		// For printf-style methods, skip the first argument (format string)
@@ -2992,12 +2982,7 @@ func (g *Generator) needsExplain() bool {
 }
 
 func (g *Generator) blockHasExplain(block *ast.BlockStmt) bool {
-	for _, stmt := range block.Statements {
-		if g.stmtHasExplain(stmt) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(block.Statements, g.stmtHasExplain)
 }
 
 func (g *Generator) stmtHasExplain(stmt ast.Statement) bool {
@@ -3046,41 +3031,30 @@ func (g *Generator) checkProgramForPrint(program *ast.Program) bool {
 }
 
 func (g *Generator) checkBlockForPrint(block *ast.BlockStmt) bool {
-	for _, stmt := range block.Statements {
-		if g.checkStmtForPrint(stmt) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(block.Statements, g.checkStmtForPrint)
 }
 
 func (g *Generator) checkStmtForPrint(stmt ast.Statement) bool {
 	switch s := stmt.(type) {
 	case *ast.VarDeclStmt:
-		for _, val := range s.Values {
-			if g.checkExprForPrint(val) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.checkExprForPrint) {
+			return true
 		}
 		if s.OnErr != nil && g.checkExprForPrint(s.OnErr.Handler) {
 			return true
 		}
 		return false
 	case *ast.AssignStmt:
-		for _, val := range s.Values {
-			if g.checkExprForPrint(val) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.checkExprForPrint) {
+			return true
 		}
 		if s.OnErr != nil && g.checkExprForPrint(s.OnErr.Handler) {
 			return true
 		}
 		return false
 	case *ast.ReturnStmt:
-		for _, val := range s.Values {
-			if g.checkExprForPrint(val) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.checkExprForPrint) {
+			return true
 		}
 	case *ast.IfStmt:
 		if g.checkExprForPrint(s.Condition) {
@@ -3097,10 +3071,8 @@ func (g *Generator) checkStmtForPrint(stmt ast.Statement) bool {
 			return true
 		}
 		for _, c := range s.Cases {
-			for _, v := range c.Values {
-				if g.checkExprForPrint(v) {
-					return true
-				}
+			if slices.ContainsFunc(c.Values, g.checkExprForPrint) {
+				return true
 			}
 			if c.Body != nil && g.checkBlockForPrint(c.Body) {
 				return true
@@ -3169,20 +3141,16 @@ func (g *Generator) checkExprForPrint(expr ast.Expression) bool {
 			}
 		}
 		// Also check arguments recursively
-		for _, arg := range e.Arguments {
-			if g.checkExprForPrint(arg) {
-				return true
-			}
+		if slices.ContainsFunc(e.Arguments, g.checkExprForPrint) {
+			return true
 		}
 	case *ast.BinaryExpr:
 		return g.checkExprForPrint(e.Left) || g.checkExprForPrint(e.Right)
 	case *ast.UnaryExpr:
 		return g.checkExprForPrint(e.Right)
 	case *ast.MethodCallExpr:
-		for _, arg := range e.Arguments {
-			if g.checkExprForPrint(arg) {
-				return true
-			}
+		if slices.ContainsFunc(e.Arguments, g.checkExprForPrint) {
+			return true
 		}
 	case *ast.PipeExpr:
 		return g.checkExprForPrint(e.Left) || g.checkExprForPrint(e.Right)
@@ -3459,41 +3427,30 @@ func (g *Generator) checkProgramForErrors(program *ast.Program) bool {
 }
 
 func (g *Generator) checkBlockForErrors(block *ast.BlockStmt) bool {
-	for _, stmt := range block.Statements {
-		if g.checkStmtForErrors(stmt) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(block.Statements, g.checkStmtForErrors)
 }
 
 func (g *Generator) checkStmtForErrors(stmt ast.Statement) bool {
 	switch s := stmt.(type) {
 	case *ast.VarDeclStmt:
-		for _, val := range s.Values {
-			if g.checkExprForErrors(val) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.checkExprForErrors) {
+			return true
 		}
 		if s.OnErr != nil && g.checkExprForErrors(s.OnErr.Handler) {
 			return true
 		}
 		return false
 	case *ast.AssignStmt:
-		for _, val := range s.Values {
-			if g.checkExprForErrors(val) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.checkExprForErrors) {
+			return true
 		}
 		if s.OnErr != nil && g.checkExprForErrors(s.OnErr.Handler) {
 			return true
 		}
 		return false
 	case *ast.ReturnStmt:
-		for _, val := range s.Values {
-			if g.checkExprForErrors(val) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.checkExprForErrors) {
+			return true
 		}
 	case *ast.IfStmt:
 		if g.checkExprForErrors(s.Condition) {
@@ -3510,10 +3467,8 @@ func (g *Generator) checkStmtForErrors(stmt ast.Statement) bool {
 			return true
 		}
 		for _, c := range s.Cases {
-			for _, v := range c.Values {
-				if g.checkExprForErrors(v) {
-					return true
-				}
+			if slices.ContainsFunc(c.Values, g.checkExprForErrors) {
+				return true
 			}
 			if c.Body != nil && g.checkBlockForErrors(c.Body) {
 				return true
@@ -3580,16 +3535,12 @@ func (g *Generator) checkExprForErrors(expr ast.Expression) bool {
 	case *ast.UnaryExpr:
 		return g.checkExprForErrors(e.Right)
 	case *ast.CallExpr:
-		for _, arg := range e.Arguments {
-			if g.checkExprForErrors(arg) {
-				return true
-			}
+		if slices.ContainsFunc(e.Arguments, g.checkExprForErrors) {
+			return true
 		}
 	case *ast.MethodCallExpr:
-		for _, arg := range e.Arguments {
-			if g.checkExprForErrors(arg) {
-				return true
-			}
+		if slices.ContainsFunc(e.Arguments, g.checkExprForErrors) {
+			return true
 		}
 	case *ast.PipeExpr:
 		return g.checkExprForErrors(e.Left) || g.checkExprForErrors(e.Right)

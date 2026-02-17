@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -142,13 +143,7 @@ func TestDirectoryOperations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
-	found := false
-	for _, n := range names {
-		if n == "subdir" {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(names, "subdir")
 	if !found {
 		t.Errorf("expected 'subdir' in list, got %v", names)
 	}
