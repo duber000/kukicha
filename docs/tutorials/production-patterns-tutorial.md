@@ -810,6 +810,12 @@ function RecoveryMiddleware(next http.Handler) http.Handler
 - `recover()` regains control, but **only** if called inside a `defer` function.
 - If you don't recover, the program exits.
 
+> **💡 Function type aliases in middleware.** The `http.HandlerFunc` used above is a Go function type alias — a named type for a function signature. Kukicha supports defining your own:
+> ```kukicha
+> type Middleware func(http.Handler) http.Handler
+> ```
+> This lets you build middleware chains where each piece has a clear, named type. You'll also see this pattern in the `stdlib/a2a` and `stdlib/mcp` packages, where callback types like `type TextHandler func(string)` and `type ToolHandler func(map of string to any) (any, error)` name the expected function signatures.
+
 ---
 
 ## Summary: The Kukicha Learning Path
@@ -877,6 +883,8 @@ Here's a quick reference for translating between Kukicha and Go:
 | `(r Repo) => r.Stars > 100` | `func(r Repo) bool { return r.Stars > 100 }` |
 | `go` + indented block | `go func() { ... }()` |
 | `switch x` / `when a` / `otherwise` | `switch x { case a: ... default: ... }` |
+| `type Handler func(string)` | `type Handler func(string)` |
+| `type Callback func(int) (string, error)` | `type Callback func(int) (string, error)` |
 
 ---
 

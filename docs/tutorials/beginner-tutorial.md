@@ -647,9 +647,9 @@ Create a file called `log_analyzer.kuki`:
 import "stdlib/string"
 
 function Severity(line string) string
-    if line |> string.Contains("ERROR")
+    if line |> string.Contains("ERROR:")
         return "ERROR"
-    else if line |> string.Contains("WARN")
+    else if line |> string.Contains("WARN:")
         return "WARN"
     return "INFO"
 

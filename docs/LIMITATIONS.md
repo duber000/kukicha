@@ -7,28 +7,13 @@ This document explains why some stdlib packages still contain hand-written Go he
 
 | Package | File | Reason |
 |---------|------|--------|
-| `stdlib/a2a` | `a2a_helper.go` | Range-over-func, type switch |
+| `stdlib/a2a` | `a2a_helper.go` | Type switch (range-over-func now supported) |
 | `stdlib/container` | `container_helper.go` | Functional options, streaming I/O |
 | `stdlib/mcp` | `mcp_tool.go` | Multi-statement SDK callback closure |
 
 ---
 
-## ~~1. Function Types~~ (Resolved)
-
-Kukicha now supports named function type aliases:
-
-```kukicha
-type TextHandler func(string)
-type StatusHandler func(StatusUpdate)
-type ToolHandler func(map of string to any) (any, error)
-```
-
-This unblocked moving most of `stdlib/a2a` and the `ToolHandler` type from `stdlib/mcp` to
-pure Kukicha.
-
----
-
-## 2. Functional Options / Variadic `...T` of Interface Type
+## 1. Functional Options / Variadic `...T` of Interface Type
 
 Go libraries often accept a variadic slice of option functions:
 
@@ -49,23 +34,18 @@ incrementally and pass it with spread syntax when the element type is a function
 
 ---
 
-## 3. Range-over-Func (Go 1.23+)
+## 2. ~~Range-over-Func (Go 1.23+)~~ — RESOLVED
 
-Go 1.23 introduced iterators via `range` over function values. Several Go SDKs expose
-streaming APIs this way:
+Kukicha's `for-in` loop supports range-over-func iterators (`iter.Seq` and `iter.Seq2`).
+The `stdlib/iterator` package demonstrates this throughout — e.g. `Filter`, `Map`, `Enumerate`,
+and `Zip` all produce and consume iterator functions via `for item in seq`.
 
-```go
-// Go — Kukicha for-in does not support this
-for event, err := range client.SendStreamingMessage(ctx, params) {
-    ...
-}
-```
-
-**Affects:** `a2a.streamRequest` — the A2A streaming response is an iterator function.
+The A2A streaming helper (`a2a.streamRequest`) can be rewritten in pure Kukicha when
+convenient; the language limitation no longer applies.
 
 ---
 
-## 4. Multi-Statement SDK Callback Closures
+## 3. Multi-Statement SDK Callback Closures
 
 Some Go SDK APIs require passing a multi-statement `func(ctx, req) (resp, error)` callback
 at registration time. Kukicha has function literals and block lambdas, but the MCP SDK's
@@ -78,7 +58,7 @@ multi-statement closure body of the `Tool` function itself remains in Go.
 
 ---
 
-## 5. Complex Streaming I/O
+## 4. Complex Streaming I/O
 
 Some helper functions mix `bufio.Scanner`, anonymous struct JSON targets, and multi-pass
 stream processing that is idiomatic in Go but verbose in Kukicha:
@@ -102,9 +82,6 @@ declarations inline in function bodies.
 
 ## Roadmap
 
-These limitations are tracked in `docs/PLAN-Drop-Go-Helpers.md`. The planned language
-additions that would eliminate most remaining helpers:
+Additions that would eliminate most remaining helpers:
 
-- ~~**Function types**~~ — `type Handler func(string)` — **implemented**
 - **Anonymous struct literals** — enables inline JSON decode targets
-- **Range-over-func** — enables iterator-based streaming APIs
