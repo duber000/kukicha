@@ -84,8 +84,7 @@ type Transform func(int) (string, error)
 
 ```kukicha
 # Typed JSON decode (preferred over bytes + unmarshal boilerplate)
-items := empty list of Todo
-fetch.Get(url) |> fetch.CheckStatus() |> fetch.JsonAs(_, reference of items) onerr panic "{error}"
+items := fetch.Get(url) |> fetch.CheckStatus() |> fetch.Json(list of Todo) onerr panic "{error}"
 ```
 
 ### Collections

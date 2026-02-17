@@ -391,17 +391,15 @@ text := fetch.Get("https://api.example.com/version")
     onerr
         panic "fetch failed"
 
-# Example 2: Typed JSON with stdlib/json - Simple approach
+# Example 2: Typed JSON with fetch.Json
 type User
     ID int json:"id"
     Name string json:"name"
     Followers int json:"followers"
 
-user := User{}
-fetch.Get("https://api.github.com/users/golang")
+user := fetch.Get("https://api.github.com/users/golang")
     |> fetch.CheckStatus()
-    |> fetch.Bytes()
-    |> json.Unmarshal(reference user)
+    |> fetch.Json(empty User)
     onerr
         panic "fetch failed"
 
@@ -452,8 +450,9 @@ instanceId := fetch.Get("http://169.254.169.254/latest/meta-data/instance-id")
 
 **Design Philosophy:**
 
-- Use `fetch.Bytes()` + `json.Unmarshal()` for typed parsing
-- Use `fetch.Json()` for quick untyped parsing (returns map of string to any)
+- Use `fetch.Json(list of Type)` / `fetch.Json(map of K to V)` for typed parsing in pipelines
+- Use `fetch.Json(empty User)` for struct types
+- Use `fetch.Bytes()` + `json.Unmarshal()` for advanced/manual JSON flows
 - Use streaming with `json.NewDecoder()` for large responses
 - `fetch.Post()` auto-serializes request body using stdlib/json
 

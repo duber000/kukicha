@@ -462,6 +462,18 @@ func TestPipeContinuation(t *testing.T) {
 				TOKEN_DEDENT, TOKEN_EOF,
 			},
 		},
+		{
+			// Allow placing onerr on its own line after a pipe chain.
+			name:  "onerr continuation line",
+			input: "func Test(url string) string\n    data := fetch.Get(url)\n        |> fetch.Text()\n        onerr return \"\"\n    return data\n",
+			expected: []TokenType{
+				TOKEN_FUNC, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_IDENTIFIER, TOKEN_IDENTIFIER, TOKEN_RPAREN, TOKEN_IDENTIFIER, TOKEN_NEWLINE,
+				TOKEN_INDENT, TOKEN_IDENTIFIER, TOKEN_WALRUS, TOKEN_IDENTIFIER, TOKEN_DOT, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_IDENTIFIER, TOKEN_RPAREN, TOKEN_PIPE,
+				TOKEN_IDENTIFIER, TOKEN_DOT, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_ONERR, TOKEN_RETURN, TOKEN_STRING, TOKEN_NEWLINE,
+				TOKEN_RETURN, TOKEN_IDENTIFIER, TOKEN_NEWLINE,
+				TOKEN_DEDENT, TOKEN_EOF,
+			},
+		},
 	}
 
 	for _, tt := range tests {

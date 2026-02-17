@@ -350,6 +350,14 @@ evens := Filter(list of int{1, 2, 3, 4}, isEven)
 | `switch x` / `when a, b` / `otherwise` | `switch x { case a, b: ... default: ... }` |
 | `switch x as v` / `when reference T` | `switch v := x.(type) { case *T: ... }` |
 
+`onerr` can be placed on a continuation line after a pipe chain:
+```kukicha
+result := fetch.Get(url)
+    |> fetch.CheckStatus()
+    |> fetch.Json(list of Repo)
+    onerr return empty list of Repo
+```
+
 ## Standard Library
 
 Located in `stdlib/`:
@@ -379,18 +387,18 @@ Example with stdlib:
 ```kukicha
 import "stdlib/fetch"
 import "stdlib/slice"
-import "stdlib/json"
 
-# Fetch data with pipes (each step can fail, handled at end)
-repos := list of Repo{}
-resp := fetch.Get("https://api.github.com/users/golang/repos") onerr panic "fetch failed"
-resp = resp |> fetch.CheckStatus() onerr panic "bad status"
-data := resp |> fetch.Bytes() onerr panic "read failed"
-json.Unmarshal(data, reference of repos) onerr panic "parse failed"
+# Fetch data with typed JSON decode
+repos := fetch.Get("https://api.github.com/users/golang/repos")
+    |> fetch.CheckStatus()
+    |> fetch.Json(list of Repo) onerr panic "fetch failed"
 
 # Filter with pipes — arrow lambda for concise predicates
 activeRepos := repos |> slice.Filter((r Repo) => r.Stars > 100)
 ```
+
+`fetch.Json(list of Repo)` and `fetch.Json(map of string to string)` are valid typed-empty forms.
+For struct targets, use `fetch.Json(empty Repo)`.
 
 ### Parse Package (jsonv2 powered)
 ```kukicha

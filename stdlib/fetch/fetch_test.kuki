@@ -7,6 +7,7 @@ import "stdlib/fetch"
 import "net/http"
 import "net/http/httptest"
 import "encoding/json"
+import "fmt"
 
 type TestData
     Message string json:"message"
@@ -35,7 +36,7 @@ func TestGet(t reference testing.T)
 
     resp.Body.Close()
 
-# TestJson verifies that fetch.Json can parse JSON responses
+# TestJson verifies that fetch.Json can parse typed JSON responses
 func TestJson(t reference testing.T)
     testData := TestData{Message: "test", Count: 42}
     jsonBytes, _ := json.Marshal(testData)
@@ -53,13 +54,12 @@ func TestJson(t reference testing.T)
     if err != empty
         t.Fatalf("fetch.Get failed: {err}")
 
-    data, jsonErr := fetch.Json(resp)
+    data, jsonErr := fetch.Json(resp, empty TestData)
     if jsonErr != empty
         t.Fatalf("fetch.Json failed: {jsonErr}")
 
-    # Verify the parsed data (would need type assertion in real implementation)
-    if data == empty
-        t.Error("Expected non-nil data")
+    if data.Message != "test" or data.Count != 42
+        t.Errorf("Unexpected parsed data: {data}")
 
 # TestJsonArray verifies that fetch.Json supports top-level JSON arrays
 func TestJsonArray(t reference testing.T)
@@ -76,11 +76,11 @@ func TestJsonArray(t reference testing.T)
     if err != empty
         t.Fatalf("fetch.Get failed: {err}")
 
-    data, jsonErr := fetch.Json(resp)
+    data, jsonErr := fetch.Json(resp, empty list of TestData)
     if jsonErr != empty
         t.Fatalf("fetch.Json failed for array payload: {jsonErr}")
-    if data == empty
-        t.Error("Expected non-empty parsed array data")
+    if len(data) != 2 or data[0].Message != "a" or data[1].Count != 2
+        t.Errorf("Unexpected parsed array data: {data}")
 
 # TestDecode verifies that fetch.Decode can unmarshal directly into typed targets
 func TestDecode(t reference testing.T)
@@ -113,61 +113,10 @@ func TestDecode(t reference testing.T)
     if decoded[0].Message != "typed" or decoded[1].Count != 9
         t.Errorf("Decoded data mismatch: {decoded}")
 
-# TestJsonAs verifies typed decode helper alias
-func TestJsonAs(t reference testing.T)
-    testData := list of TestData{
-        TestData{Message: "jsonas", Count: 1},
-    }
-    jsonBytes, marshalErr := json.Marshal(testData)
-    if marshalErr != empty
-        t.Fatalf("json.Marshal failed: {marshalErr}")
-
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusOK)
-        w.Write(jsonBytes)
-    ))
-    defer server.Close()
-
-    resp, err := fetch.Get(server.URL)
-    if err != empty
-        t.Fatalf("fetch.Get failed: {err}")
-
-    decoded := empty list of TestData
-    jsonAsErr := fetch.JsonAs(resp, reference of decoded)
-    if jsonAsErr != empty
-        t.Fatalf("fetch.JsonAs failed: {jsonAsErr}")
-    if len(decoded) != 1 or decoded[0].Message != "jsonas"
-        t.Errorf("Unexpected JsonAs decode result: {decoded}")
-
-# TestDecodeAs verifies alias helper for typed decode
-func TestDecodeAs(t reference testing.T)
-    testData := TestData{Message: "decodeas", Count: 3}
-    jsonBytes, marshalErr := json.Marshal(testData)
-    if marshalErr != empty
-        t.Fatalf("json.Marshal failed: {marshalErr}")
-
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusOK)
-        w.Write(jsonBytes)
-    ))
-    defer server.Close()
-
-    resp, err := fetch.Get(server.URL)
-    if err != empty
-        t.Fatalf("fetch.Get failed: {err}")
-
-    decoded := TestData{}
-    decodeAsErr := fetch.DecodeAs(resp, reference of decoded)
-    if decodeAsErr != empty
-        t.Fatalf("fetch.DecodeAs failed: {decodeAsErr}")
-    if decoded.Message != "decodeas" or decoded.Count != 3
-        t.Errorf("Unexpected DecodeAs decode result: {decoded}")
-
 # TestURLTemplate verifies safe path placeholder expansion
 func TestURLTemplate(t reference testing.T)
-    builtURL, err := fetch.URLTemplate("https://api.example.com/users/{username}/repos/{repo}", map of string to string{"username": "acme/dev team", "repo": "hello world"})
+    tmpl := fmt.Sprintf("https://api.example.com/users/%cusername%c/repos/%crepo%c", 123, 125, 123, 125)
+    builtURL, err := fetch.URLTemplate(tmpl, map of string to string{"username": "acme/dev team", "repo": "hello world"})
     if err != empty
         t.Fatalf("URLTemplate failed: {err}")
 
@@ -177,7 +126,8 @@ func TestURLTemplate(t reference testing.T)
 
 # TestURLTemplateMissingPlaceholder verifies unresolved placeholders error
 func TestURLTemplateMissingPlaceholder(t reference testing.T)
-    _, err := fetch.URLTemplate("https://api.example.com/users/{username}/repos/{repo}", map of string to string{"username": "golang"})
+    tmpl := fmt.Sprintf("https://api.example.com/users/%cusername%c/repos/%crepo%c", 123, 125, 123, 125)
+    _, err := fetch.URLTemplate(tmpl, map of string to string{"username": "golang"})
     if err == empty
         t.Fatal("Expected error for unresolved URL template placeholder")
 

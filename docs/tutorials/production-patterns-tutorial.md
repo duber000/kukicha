@@ -747,9 +747,9 @@ function FetchReposResilient(username string) list of Repo
         repos := empty list of Repo
         fetchOk := true
 
-        fetch.Get(url)
+        repos = fetch.Get(url)
             |> fetch.CheckStatus()
-            |> fetch.JsonAs(_, reference of repos) onerr
+            |> fetch.Json(list of Repo) onerr
                 fetchOk = false
 
         if fetchOk

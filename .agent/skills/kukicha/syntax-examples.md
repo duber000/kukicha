@@ -383,7 +383,6 @@ func validateAge(age int) error
 ### Data Processing Pipeline
 ```kukicha
 import "stdlib/slice"
-import "stdlib/json"
 import "stdlib/fetch"
 
 type User
@@ -392,19 +391,18 @@ type User
     active bool
 
 func getActiveAdultNames(url string) list of string
-    users := list of User{}
-    resp := fetch.Get(url) onerr return empty list of string
-    resp = resp |> fetch.CheckStatus() onerr return empty list of string
-    data := resp |> fetch.Bytes() onerr return empty list of string
-    unmarshalErr := json.Unmarshal(data, reference of users)
-    if unmarshalErr not equals empty
-        return empty list of string
+    users := fetch.Get(url)
+        |> fetch.CheckStatus()
+        |> fetch.Json(list of User)
+        onerr return empty list of string
 
     return users
         |> slice.Filter((u User) => u.active and u.age >= 18)
         |> slice.Map((u User) => u.name)
         |> slice.Sort()
 ```
+
+`list of User` above is a typed-empty expression form in call arguments.
 
 ### Pipe with Placeholder (Advanced)
 

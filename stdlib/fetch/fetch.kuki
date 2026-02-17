@@ -177,15 +177,13 @@ func Bytes(resp reference http.Response) (list of byte, error)
         return empty, err
     return bodyBytes, empty
 
-# Json reads the response body and unmarshals it as JSON
-# Returns parsed JSON as any (map/list/scalar based on payload shape)
-# Example: data, err := resp |> fetch.Json()
-func Json(resp reference http.Response) (any, error)
+# Json reads the response body and unmarshals it as typed JSON.
+# Pass a typed empty value as the second argument to drive inference.
+# Example: repos := resp |> fetch.Json(list of Repo)
+func Json(resp reference http.Response, sample any) (any, error)
     defer resp.Body.Close()
-    data := empty any
-    err := json.UnmarshalRead(resp.Body, reference of data)
-    if err != empty
-        return empty, err
+    data := sample
+    json.UnmarshalRead(resp.Body, reference of data) onerr explain "failed to decode response json"
     return data, empty
 
 # Decode reads the response body and unmarshals JSON into a typed target
@@ -196,19 +194,6 @@ func Json(resp reference http.Response) (any, error)
 func Decode(resp reference http.Response, target any) error
     defer resp.Body.Close()
     return json.UnmarshalRead(resp.Body, target)
-
-# JsonAs is a typed decode helper for JSON responses.
-# Target must be a pointer (use "reference of" in Kukicha).
-# Example:
-#   repos := empty list of Repo
-#   fetch.Get(url) |> fetch.CheckStatus() |> fetch.JsonAs(_, reference of repos) onerr panic "{error}"
-func JsonAs(resp reference http.Response, target any) error
-    return Decode(resp, target)
-
-# DecodeAs is an alias for Decode with naming that mirrors JsonAs.
-# Target must be a pointer (use "reference of" in Kukicha).
-func DecodeAs(resp reference http.Response, target any) error
-    return Decode(resp, target)
 
 # PathEscape escapes user-provided path segments for safe URL construction.
 # Example: safe := fetch.PathEscape("acme/dev team")

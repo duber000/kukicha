@@ -142,7 +142,7 @@ func (l *Lexer) scanToken() {
 		//
 		// NOTE: parenDepth > 0 does NOT suppress indentation when we're in a function
 		// literal (closure), because closures need INDENT/DEDENT tokens for their body.
-		isLineContinuation := (l.braceDepth > 0) || l.lastTokenType == TOKEN_PIPE || l.isPipeAtStartOfNextLine()
+		isLineContinuation := (l.braceDepth > 0) || l.lastTokenType == TOKEN_PIPE || l.isPipeAtStartOfNextLine() || l.isOnErrAtStartOfNextLine()
 		if isLineContinuation {
 			l.continuationLine = true
 		} else {
@@ -156,7 +156,7 @@ func (l *Lexer) scanToken() {
 		if l.peek() == '\n' {
 			l.advance()
 		}
-		isLineContinuation := (l.braceDepth > 0) || l.lastTokenType == TOKEN_PIPE || l.isPipeAtStartOfNextLine()
+		isLineContinuation := (l.braceDepth > 0) || l.lastTokenType == TOKEN_PIPE || l.isPipeAtStartOfNextLine() || l.isOnErrAtStartOfNextLine()
 		if isLineContinuation {
 			l.continuationLine = true
 		} else {
@@ -615,6 +615,30 @@ func (l *Lexer) isPipeAtStartOfNextLine() bool {
 		// Found non-whitespace
 		if c == '|' && idx+1 < len(l.source) && l.source[idx+1] == '>' {
 			return true
+		}
+		return false
+	}
+	return false
+}
+
+// isOnErrAtStartOfNextLine checks if the next non-whitespace characters
+// on the upcoming line form the keyword "onerr". This lets users place
+// `onerr` on its own line after an expression/pipeline.
+func (l *Lexer) isOnErrAtStartOfNextLine() bool {
+	idx := l.current
+
+	for idx < len(l.source) {
+		c := l.source[idx]
+		if c == ' ' || c == '\t' {
+			idx++
+			continue
+		}
+
+		if idx+5 <= len(l.source) && string(l.source[idx:idx+5]) == "onerr" {
+			// Ensure identifier boundary
+			if idx+5 == len(l.source) || !isLetter(l.source[idx+5]) && !isDigit(l.source[idx+5]) {
+				return true
+			}
 		}
 		return false
 	}

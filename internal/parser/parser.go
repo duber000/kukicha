@@ -2215,11 +2215,23 @@ func (p *Parser) parseListLiteral() *ast.ListLiteralExpr {
 	}
 }
 
-func (p *Parser) parseTypedListLiteral() *ast.ListLiteralExpr {
+func (p *Parser) parseTypedListLiteral() ast.Expression {
 	token := p.advance() // consume 'list'
 	p.consume(lexer.TOKEN_OF, "expected 'of' after 'list'")
 
 	elementType := p.parseTypeAnnotation()
+
+	// Allow "list of T" in expression position as typed-empty shorthand.
+	// This is useful for APIs like fetch.Json(list of Repo).
+	if !p.check(lexer.TOKEN_LBRACE) {
+		return &ast.EmptyExpr{
+			Token: token,
+			Type: &ast.ListType{
+				Token:       token,
+				ElementType: elementType,
+			},
+		}
+	}
 
 	p.consume(lexer.TOKEN_LBRACE, "expected '{' after list type")
 
@@ -2535,16 +2547,24 @@ func (p *Parser) parseVarDeclaration() ast.Declaration {
 	}
 }
 
-func (p *Parser) parseMapLiteral() *ast.MapLiteralExpr {
+func (p *Parser) parseMapLiteral() ast.Expression {
 	token := p.advance() // consume 'map'
 	p.consume(lexer.TOKEN_OF, "expected 'of' after 'map'")
 	keyType := p.parseTypeAnnotation()
 	p.consume(lexer.TOKEN_TO, "expected 'to' after key type")
 	valType := p.parseTypeAnnotation()
 
-	// Handle both Brace-based: { key: val } and Indent-based?
-	// The constraints said "No map literals — map of K to V{...} does not parse".
-	// So explicit braces are requested.
+	// Allow "map of K to V" in expression position as typed-empty shorthand.
+	if !p.check(lexer.TOKEN_LBRACE) {
+		return &ast.EmptyExpr{
+			Token: token,
+			Type: &ast.MapType{
+				Token:     token,
+				KeyType:   keyType,
+				ValueType: valType,
+			},
+		}
+	}
 
 	p.consume(lexer.TOKEN_LBRACE, "expected '{' after map type")
 

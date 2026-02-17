@@ -1092,6 +1092,36 @@ func TestGroupByFunction(t *testing.T) {
 	}
 }
 
+func TestFetchJsonGenerics(t *testing.T) {
+	input := `petiole fetch
+
+func Json(resp reference http.Response, sample any) (any, error)
+    data := sample
+    return data, empty
+`
+
+	p, err := parser.New(input, "stdlib/fetch/fetch.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	gen.SetSourceFile("stdlib/fetch/fetch.kuki")
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func Json[T any](resp *http.Response, sample T) (T, error)") {
+		t.Errorf("expected fetch.Json generic signature, got: %s", output)
+	}
+}
+
 func TestStdlibImportRewriting(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -1254,6 +1284,49 @@ func TestMultiLinePipeCodegen(t *testing.T) {
 	}
 	if !strings.Contains(multiOut, want) {
 		t.Errorf("multi-line output missing %q:\n%s", want, multiOut)
+	}
+}
+
+func TestOnErrPipeChainPreservesIntermediateErrors(t *testing.T) {
+	input := `import "stdlib/fetch"
+
+type Repo
+    name string as "name"
+
+func Load(url string) list of Repo
+    repos := fetch.Get(url)
+        |> fetch.CheckStatus()
+        |> fetch.Json(empty list of Repo) onerr return empty list of Repo
+    return repos
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if strings.Contains(output, "val, _ :=") {
+		t.Fatalf("expected no intermediate error discards in pipe onerr lowering, got: %s", output)
+	}
+	if !strings.Contains(output, "pipe_1, err_2 := fetch.Get(url)") {
+		t.Fatalf("expected explicit fetch.Get error capture, got: %s", output)
+	}
+	if !strings.Contains(output, "pipe_3, err_4 := fetch.CheckStatus(pipe_1)") {
+		t.Fatalf("expected explicit fetch.CheckStatus error capture, got: %s", output)
+	}
+	if !strings.Contains(output, "pipe_5, err_6 := fetch.Json(pipe_3, []Repo{})") {
+		t.Fatalf("expected explicit fetch.Json error capture, got: %s", output)
 	}
 }
 

@@ -47,7 +47,7 @@ type Generator struct {
 	autoImports          map[string]bool          // Tracks auto-imports needed (e.g., "cmp" for generic constraints)
 	pkgAliases           map[string]string        // Maps original package name -> alias when collision detected (e.g., "json" -> "kukijson")
 	funcDefaults         map[string]*FuncDefaults // Maps function names to their default parameter info
-	isStdlibIter         bool                     // True if generating stdlib/iterator or stdlib/slice code (enables generic transpilation)
+	isStdlibIter         bool                     // True if generating stdlib/iterator code (enables iter-specific generic transpilation)
 	sourceFile           string                   // Source file path for detecting stdlib
 	currentFuncName      string                   // Current function being generated (for context-aware decisions)
 	currentReturnTypes   []ast.TypeAnnotation     // Return types of current function (for type coercion in returns)
@@ -481,6 +481,12 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 		for _, tp := range typeParams {
 			g.placeholderMap[tp.Placeholder] = tp.Name
 		}
+	} else if g.isStdlibFetch() {
+		// Generate type parameters for selected fetch helpers (e.g., Json)
+		typeParams = g.inferFetchTypeParameters(decl)
+		for _, tp := range typeParams {
+			g.placeholderMap[tp.Placeholder] = tp.Name
+		}
 	}
 
 	// Generate function signature
@@ -782,6 +788,11 @@ func (g *Generator) isStdlibSlice() bool {
 	return strings.Contains(g.sourceFile, "stdlib/slice/") || strings.Contains(g.sourceFile, "stdlib\\slice\\")
 }
 
+// isStdlibFetch checks if we're generating code in stdlib/fetch.
+func (g *Generator) isStdlibFetch() bool {
+	return strings.Contains(g.sourceFile, "stdlib/fetch/") || strings.Contains(g.sourceFile, "stdlib\\fetch\\")
+}
+
 // inferSliceTypeParameters infers type parameters for stdlib/slice functions like GroupBy
 // GroupBy needs two type parameters: T (element type) and K (key type, must be comparable)
 func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
@@ -804,6 +815,41 @@ func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypePara
 	}
 
 	return typeParams
+}
+
+// inferFetchTypeParameters infers type parameters for selected stdlib/fetch helpers.
+// Json uses placeholders to produce: func Json[T any](resp *http.Response, sample T) (T, error)
+func (g *Generator) inferFetchTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
+	if decl.Name == nil || decl.Name.Value != "Json" {
+		return nil
+	}
+
+	usesAny := false
+	for _, param := range decl.Parameters {
+		if g.typeContainsPlaceholder(param.Type, "any") {
+			usesAny = true
+			break
+		}
+	}
+	if !usesAny {
+		for _, ret := range decl.Returns {
+			if g.typeContainsPlaceholder(ret, "any") {
+				usesAny = true
+				break
+			}
+		}
+	}
+	if !usesAny {
+		return nil
+	}
+
+	return []*TypeParameter{
+		{
+			Name:        "T",
+			Placeholder: "any",
+			Constraint:  "any",
+		},
+	}
 }
 
 // isIterSeqType checks if a type is iter.Seq (to be made generic)
@@ -1265,6 +1311,17 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 	}
 	valueExpr := strings.Join(valuesStr, ", ")
 
+	if len(names) == 1 && len(values) == 1 {
+		if pipe, ok := values[0].(*ast.PipeExpr); ok {
+			// Variable declarations do not have declared targets available inside
+			// onerr handlers yet, so use handler forms that don't assign to names.
+			if finalVar, ok := g.generateOnErrPipeChain(pipe, clause, []*ast.Identifier{}); ok {
+				g.writeLine(fmt.Sprintf("%s := %s", names[0].Value, finalVar))
+				return
+			}
+		}
+	}
+
 	// Check for discard case first - we can skip error handling entirely
 	if clause.Handler != nil {
 		if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
@@ -1426,10 +1483,159 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 	}
 }
 
+func (g *Generator) writeOnErrCheck(clause *ast.OnErrClause, errVar string, names []*ast.Identifier) {
+	g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
+	g.indent++
+	g.generateOnErrExplainWrap(clause, errVar)
+	g.generateOnErrHandler(names, clause.Handler, errVar)
+	g.indent--
+	g.writeLine("}")
+}
+
+func flattenPipeChain(expr ast.Expression) (ast.Expression, []ast.Expression, bool) {
+	pipe, ok := expr.(*ast.PipeExpr)
+	if !ok {
+		return nil, nil, false
+	}
+
+	var steps []ast.Expression
+	var walk func(ast.Expression) (ast.Expression, bool)
+	walk = func(e ast.Expression) (ast.Expression, bool) {
+		if p, ok := e.(*ast.PipeExpr); ok {
+			base, ok := walk(p.Left)
+			if !ok {
+				return nil, false
+			}
+			steps = append(steps, p.Right)
+			return base, true
+		}
+		return e, true
+	}
+
+	base, ok := walk(pipe)
+	return base, steps, ok
+}
+
+func (g *Generator) generatePipedStepCall(right ast.Expression, leftExpr string) (string, bool) {
+	var funcName string
+	var arguments []ast.Expression
+	var isVariadic bool
+
+	if call, ok := right.(*ast.CallExpr); ok {
+		funcName = g.exprToString(call.Function)
+		arguments = call.Arguments
+		isVariadic = call.Variadic
+	} else if method, ok := right.(*ast.MethodCallExpr); ok {
+		objStr := g.exprToString(method.Object)
+		if alias, ok := g.pkgAliases[objStr]; ok {
+			objStr = alias
+		}
+		funcName = objStr + "." + method.Method.Value
+
+		if method.Object == nil {
+			funcName = leftExpr + "." + method.Method.Value
+			if !method.IsCall {
+				return funcName, true
+			}
+			arguments = method.Arguments
+			isVariadic = method.Variadic
+		} else {
+			if !method.IsCall {
+				return funcName, true
+			}
+			arguments = method.Arguments
+			isVariadic = method.Variadic
+		}
+	} else {
+		return "", false
+	}
+
+	placeholderIndex := -1
+	for i, arg := range arguments {
+		if ident, isIdent := arg.(*ast.Identifier); isIdent && ident.Value == "_" {
+			placeholderIndex = i
+			break
+		}
+		if _, isDiscard := arg.(*ast.DiscardExpr); isDiscard {
+			placeholderIndex = i
+			break
+		}
+	}
+
+	var args []string
+	if placeholderIndex != -1 {
+		for i, arg := range arguments {
+			if i == placeholderIndex {
+				args = append(args, leftExpr)
+			} else {
+				args = append(args, g.exprToString(arg))
+			}
+		}
+	} else if g.isContextExpr(&ast.Identifier{Value: leftExpr}) {
+		args = append(args, leftExpr)
+		for _, arg := range arguments {
+			args = append(args, g.exprToString(arg))
+		}
+	} else {
+		args = append(args, leftExpr)
+		for _, arg := range arguments {
+			args = append(args, g.exprToString(arg))
+		}
+	}
+
+	if isVariadic {
+		return fmt.Sprintf("%s(%s...)", funcName, strings.Join(args, ", ")), true
+	}
+	return fmt.Sprintf("%s(%s)", funcName, strings.Join(args, ", ")), true
+}
+
+func (g *Generator) generateOnErrPipeChain(pipe *ast.PipeExpr, clause *ast.OnErrClause, names []*ast.Identifier) (string, bool) {
+	base, steps, ok := flattenPipeChain(pipe)
+	if !ok || base == nil || len(steps) == 0 {
+		return "", false
+	}
+
+	current := g.uniqueId("pipe")
+	baseExpr := g.exprToString(base)
+	if _, isMulti := g.getMultiReturnType(base); isMulti {
+		errVar := g.uniqueId("err")
+		g.writeLine(fmt.Sprintf("%s, %s := %s", current, errVar, baseExpr))
+		g.writeOnErrCheck(clause, errVar, names)
+	} else {
+		g.writeLine(fmt.Sprintf("%s := %s", current, baseExpr))
+	}
+
+	for _, step := range steps {
+		callExpr, ok := g.generatePipedStepCall(step, current)
+		if !ok {
+			return "", false
+		}
+
+		next := g.uniqueId("pipe")
+		if _, isMulti := g.getMultiReturnType(step); isMulti {
+			errVar := g.uniqueId("err")
+			g.writeLine(fmt.Sprintf("%s, %s := %s", next, errVar, callExpr))
+			g.writeOnErrCheck(clause, errVar, names)
+		} else {
+			g.writeLine(fmt.Sprintf("%s := %s", next, callExpr))
+		}
+		current = next
+	}
+
+	return current, true
+}
+
 // generateOnErrStmt handles statement-level onerr
 // e.g., todo |> json.MarshalWrite(w, _) onerr panic("failed")
 // Generates: if err := json.MarshalWrite(w, todo); err != nil { panic("failed") }
 func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClause) {
+	if pipe, ok := expr.(*ast.PipeExpr); ok {
+		if finalVar, ok := g.generateOnErrPipeChain(pipe, clause, []*ast.Identifier{}); ok {
+			g.writeLine(fmt.Sprintf("_ = %s", finalVar))
+			return
+		}
+	}
+
 	// Check for discard case - just execute and ignore error
 	if clause.Handler != nil {
 		if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
@@ -1521,6 +1727,15 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 	for _, t := range stmt.Targets {
 		if ident, ok := t.(*ast.Identifier); ok {
 			names = append(names, ident)
+		}
+	}
+
+	if len(stmt.Targets) == 1 && len(stmt.Values) == 1 {
+		if pipe, ok := stmt.Values[0].(*ast.PipeExpr); ok {
+			if finalVar, ok := g.generateOnErrPipeChain(pipe, clause, names); ok {
+				g.writeLine(fmt.Sprintf("%s = %s", g.exprToString(stmt.Targets[0]), finalVar))
+				return
+			}
 		}
 	}
 
@@ -1914,7 +2129,7 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		if e.Type != nil {
 			targetType := g.generateTypeAnnotation(e.Type)
 			// Check if targetType is a generic type parameter (T, U, K)
-			if g.isStdlibIter && g.placeholderMap != nil {
+			if g.placeholderMap != nil {
 				for _, typeParam := range g.placeholderMap {
 					if targetType == typeParam {
 						return fmt.Sprintf("*new(%s)", targetType)
@@ -2164,6 +2379,7 @@ func (g *Generator) getMultiReturnType(expr ast.Expression) (string, bool) {
 		"fetch.CheckStatus": "*http.Response",
 		"fetch.Text":        "string",
 		"fetch.Bytes":       "[]byte",
+		"fetch.Json":        "any",
 	}
 
 	var funcName string

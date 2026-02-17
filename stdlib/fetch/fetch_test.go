@@ -6,240 +6,538 @@ package fetch_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/duber000/kukicha/stdlib/fetch"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:12
 type TestData struct {
 	Message string `json:"message"`
 	Count   int    `json:"count"`
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:16
 type PostData struct {
 	Name  string `json:"name"`
 	Value int    `json:"value"`
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:21
 func TestGet(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:26
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:24
 		w.WriteHeader(http.StatusOK)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:25
 		w.Write([]byte("Hello, World!"))
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:27
 	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:30
 	resp, err := fetch.Get(server.URL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:31
 	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:32
 		t.Fatalf("fetch.Get failed: %v", err)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:34
 	if resp.StatusCode != http.StatusOK {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:35
 		t.Errorf("Expected status 200, got %v", resp.StatusCode)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:37
 	resp.Body.Close()
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:40
 func TestJson(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:41
 	testData := TestData{Message: "test", Count: 42}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:42
 	jsonBytes, _ := json.Marshal(testData)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:49
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:46
 		w.Header().Set("Content-Type", "application/json")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:47
 		w.WriteHeader(http.StatusOK)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:48
 		w.Write(jsonBytes)
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:50
 	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:53
 	resp, err := fetch.Get(server.URL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:54
 	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:55
 		t.Fatalf("fetch.Get failed: %v", err)
 	}
-	data, jsonErr := fetch.Json(resp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:57
+	data, jsonErr := fetch.Json(resp, *new(TestData))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:58
 	if jsonErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:59
 		t.Fatalf("fetch.Json failed: %v", jsonErr)
 	}
-	if data == nil {
-		t.Error("Expected non-nil data")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:61
+	if (data.Message != "test") || (data.Count != 42) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:62
+		t.Errorf("Unexpected parsed data: %v", data)
 	}
 }
 
-func TestText(t *testing.T) {
-	expectedText := "Hello, Kukicha!"
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:65
+func TestJsonArray(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:66
+	jsonBytes := []byte("[{\"message\":\"a\",\"count\":1},{\"message\":\"b\",\"count\":2}]")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:72
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:69
+		w.Header().Set("Content-Type", "application/json")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:70
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(expectedText))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:71
+		w.Write(jsonBytes)
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:73
 	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:75
 	resp, err := fetch.Get(server.URL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:76
 	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:77
 		t.Fatalf("fetch.Get failed: %v", err)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:79
+	data, jsonErr := fetch.Json(resp, []TestData{})
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:80
+	if jsonErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:81
+		t.Fatalf("fetch.Json failed for array payload: %v", jsonErr)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:82
+	if ((len(data) != 2) || (data[0].Message != "a")) || (data[1].Count != 2) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:83
+		t.Errorf("Unexpected parsed array data: %v", data)
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:86
+func TestDecode(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:90
+	testData := []TestData{TestData{Message: "typed", Count: 7}, TestData{Message: "decode", Count: 9}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:91
+	jsonBytes, marshalErr := json.Marshal(testData)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:92
+	if marshalErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:93
+		t.Fatalf("json.Marshal failed: %v", marshalErr)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:99
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:96
+		w.Header().Set("Content-Type", "application/json")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:97
+		w.WriteHeader(http.StatusOK)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:98
+		w.Write(jsonBytes)
+	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:100
+	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:102
+	resp, err := fetch.Get(server.URL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:103
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:104
+		t.Fatalf("fetch.Get failed: %v", err)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:106
+	decoded := []TestData{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:107
+	decodeErr := fetch.Decode(resp, &decoded)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:108
+	if decodeErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:109
+		t.Fatalf("fetch.Decode failed: %v", decodeErr)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:111
+	if len(decoded) != 2 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:112
+		t.Fatalf("Expected 2 decoded items, got %v", len(decoded))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:113
+	if (decoded[0].Message != "typed") || (decoded[1].Count != 9) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:114
+		t.Errorf("Decoded data mismatch: %v", decoded)
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:117
+func TestURLTemplate(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:118
+	tmpl := fmt.Sprintf("https://api.example.com/users/%cusername%c/repos/%crepo%c", 123, 125, 123, 125)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:119
+	builtURL, err := fetch.URLTemplate(tmpl, map[string]string{"username": "acme/dev team", "repo": "hello world"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:120
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:121
+		t.Fatalf("URLTemplate failed: %v", err)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:123
+	expected := "https://api.example.com/users/acme%2Fdev%20team/repos/hello%20world"
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:124
+	if builtURL != expected {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:125
+		t.Errorf("Expected URL '%v', got '%v'", expected, builtURL)
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:128
+func TestURLTemplateMissingPlaceholder(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:129
+	tmpl := fmt.Sprintf("https://api.example.com/users/%cusername%c/repos/%crepo%c", 123, 125, 123, 125)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:130
+	_, err := fetch.URLTemplate(tmpl, map[string]string{"username": "golang"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:131
+	if err == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:132
+		t.Fatal("Expected error for unresolved URL template placeholder")
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:135
+func TestURLWithQuery(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:136
+	builtURL, err := fetch.URLWithQuery("https://api.example.com/search", map[string]string{"q": "go lang", "sort": "stars desc"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:137
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:138
+		t.Fatalf("URLWithQuery failed: %v", err)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:140
+	if (builtURL != "https://api.example.com/search?q=go+lang&sort=stars+desc") && (builtURL != "https://api.example.com/search?sort=stars+desc&q=go+lang") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:141
+		t.Errorf("Unexpected query URL: %v", builtURL)
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:144
+func TestText(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:145
+	expectedText := "Hello, Kukicha!"
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:151
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:149
+		w.WriteHeader(http.StatusOK)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:150
+		w.Write([]byte(expectedText))
+	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:152
+	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:155
+	resp, err := fetch.Get(server.URL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:156
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:157
+		t.Fatalf("fetch.Get failed: %v", err)
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:159
 	text, textErr := fetch.Text(resp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:160
 	if textErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:161
 		t.Fatalf("fetch.Text failed: %v", textErr)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:163
 	if text != expectedText {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:164
 		t.Errorf("Expected text '%v', got '%v'", expectedText, text)
 	}
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:167
 func TestPost(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:174
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:170
 		if r.Method != "POST" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:171
 			t.Errorf("Expected POST request, got %v", r.Method)
 		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:172
 		w.WriteHeader(http.StatusCreated)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:173
 		w.Write([]byte("created"))
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:175
 	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:178
 	postData := PostData{Name: "test", Value: 123}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:179
 	resp, err := fetch.Post(postData, server.URL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:180
 	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:181
 		t.Fatalf("fetch.Post failed: %v", err)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:183
 	if resp.StatusCode != http.StatusCreated {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:184
 		t.Errorf("Expected status 201, got %v", resp.StatusCode)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:186
 	resp.Body.Close()
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:189
 func TestCheckStatus(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:194
 	server200 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:192
 		w.WriteHeader(http.StatusOK)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:193
 		w.Write([]byte("success"))
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:195
 	defer server200.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:197
 	resp, err := fetch.Get(server200.URL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:198
 	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:199
 		t.Fatalf("fetch.Get failed: %v", err)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:201
 	checkedResp, checkErr := fetch.CheckStatus(resp)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:202
 	if checkErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:203
 		t.Errorf("CheckStatus failed for 200: %v", checkErr)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:204
 	if checkedResp == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:205
 		t.Error("Expected non-nil response")
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:206
 	checkedResp.Body.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:212
 	server404 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:210
 		w.WriteHeader(http.StatusNotFound)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:211
 		w.Write([]byte("not found"))
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:213
 	defer server404.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:215
 	resp404, err404 := fetch.Get(server404.URL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:216
 	if err404 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:217
 		t.Fatalf("fetch.Get failed: %v", err404)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:219
 	_, checkErr404 := fetch.CheckStatus(resp404)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:220
 	if checkErr404 == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:221
 		t.Error("Expected error for 404 status")
 	}
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:224
 func TestRequestBuilder(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:233
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:228
 		auth := r.Header.Get("Authorization")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:229
 		if auth != "Bearer test-token" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:230
 			t.Errorf("Expected Authorization header, got '%v'", auth)
 		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:231
 		w.WriteHeader(http.StatusOK)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:232
 		w.Write([]byte("authorized"))
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:234
 	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:237
 	req := fetch.Header(fetch.New(server.URL), "Authorization", "Bearer test-token")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:239
 	resp, err := fetch.Do(req)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:240
 	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:241
 		t.Fatalf("fetch.Do failed: %v", err)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:243
 	if resp.StatusCode != http.StatusOK {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:244
 		t.Errorf("Expected status 200, got %v", resp.StatusCode)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:246
 	resp.Body.Close()
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:249
 func TestAuthHelpers(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:256
 	serverBearer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:252
 		auth := r.Header.Get("Authorization")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:253
 		if auth != "Bearer my-token" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:254
 			t.Errorf("Expected Bearer token, got '%v'", auth)
 		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:255
 		w.WriteHeader(http.StatusOK)
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:257
 	defer serverBearer.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:259
 	reqBearer := fetch.BearerAuth(fetch.New(serverBearer.URL), "my-token")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:260
 	respBearer, errBearer := fetch.Do(reqBearer)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:261
 	if errBearer != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:262
 		t.Fatalf("BearerAuth request failed: %v", errBearer)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:263
 	respBearer.Body.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:273
 	serverBasic := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:267
 		auth := r.Header.Get("Authorization")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:269
 		expected := "Basic dXNlcjpwYXNz"
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:270
 		if auth != expected {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:271
 			t.Errorf("Expected Basic auth '%v', got '%v'", expected, auth)
 		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:272
 		w.WriteHeader(http.StatusOK)
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:274
 	defer serverBasic.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:276
 	reqBasic := fetch.BasicAuth(fetch.New(serverBasic.URL), "user", "pass")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:277
 	respBasic, errBasic := fetch.Do(reqBasic)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:278
 	if errBasic != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:279
 		t.Fatalf("BasicAuth request failed: %v", errBasic)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:280
 	respBasic.Body.Close()
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:283
 func TestFormData(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:295
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:285
 		contentType := r.Header.Get("Content-Type")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:286
 		if contentType != "application/x-www-form-urlencoded" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:287
 			t.Errorf("Expected form content type, got '%v'", contentType)
 		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:289
 		r.ParseForm()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:290
 		val := r.Form.Get("key")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:291
 		if val != "value" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:292
 			t.Errorf("Expected form value 'value', got '%v'", val)
 		}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:294
 		w.WriteHeader(http.StatusOK)
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:296
 	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:298
 	data := map[string]string{"key": "value"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:299
 	req := fetch.Method(fetch.FormData(fetch.New(server.URL), data), "POST")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:300
 	resp, err := fetch.Do(req)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:301
 	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:302
 		t.Fatalf("FormData request failed: %v", err)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:303
 	resp.Body.Close()
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:306
 func TestSession(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:321
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:309
 		cookie, err := r.Cookie("session_id")
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:310
 		if err == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:312
 			if cookie.Value != "12345" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:313
 				t.Errorf("Expected cookie value 12345, got %v", cookie.Value)
 			}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:314
 			w.WriteHeader(http.StatusOK)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:315
 			w.Write([]byte("logged in"))
 		} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:318
 			http.SetCookie(w, &http.Cookie{Name: "session_id", Value: "12345"})
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:319
 			w.WriteHeader(http.StatusOK)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:320
 			w.Write([]byte("cookie set"))
 		}
 	}))
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:322
 	defer server.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:324
 	session := fetch.NewSession()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:327
 	resp1, err1 := fetch.SessionGet(session, server.URL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:328
 	if err1 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:329
 		t.Fatalf("First session request failed: %v", err1)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:330
 	resp1.Body.Close()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:333
 	resp2, err2 := fetch.SessionGet(session, server.URL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:334
 	if err2 != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:335
 		t.Fatalf("Second session request failed: %v", err2)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:337
 	text, errText := fetch.Text(resp2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:338
 	if errText != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:339
 		t.Fatalf("Text read failed: %v", errText)
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:340
 	if text != "logged in" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:341
 		t.Errorf("Expected 'logged in', got '%v'", text)
 	}
 }
