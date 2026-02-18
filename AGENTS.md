@@ -66,8 +66,13 @@ _ := riskyOp() onerr discard                          # Ignore error
 # Explain syntax - wrap error with hint message
 data := fetchData() onerr explain "failed to fetch data"  # Standalone: returns wrapped error
 data := fetchData() onerr 0 explain "fetch failed"        # With handler: wraps error, then runs handler
+
+# Block-style onerr (multi-statement error handling)
+users := csvData |> parse.CsvWithHeader() onerr
+    print("Failed to parse CSV: {error}")    # {error} refers to the caught error
+    return
 ```
-> **Note:** `error` always requires a message string. Use `error "{error}"` to re-wrap the implicit onerr error variable. Multi-statement error handling is supported via indented blocks following `onerr`.
+> **Note:** `error` always requires a message string. Use `error "{error}"` to re-wrap the implicit onerr error variable. In block-style `onerr`, use `{error}` in string interpolation to reference the caught error variable.
 
 ### Types
 ```kukicha
@@ -128,6 +133,9 @@ result := data |> parse() |> transform()
 
 # Placeholder _ for non-first position
 todo |> json.MarshalWrite(w, _)   # becomes: json.MarshalWrite(w, todo)
+
+# Bare identifier as pipe target (no parentheses needed)
+data |> print                     # becomes: fmt.Println(data)
 ```
 
 ### Arrow Lambdas

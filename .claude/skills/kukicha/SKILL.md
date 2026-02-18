@@ -84,6 +84,11 @@ result := riskyOp() onerr discard
 # Explain syntax - wrap error with hint message
 data := fetchData() onerr explain "failed to fetch data"  # Standalone: returns wrapped error
 data := fetchData() onerr 0 explain "fetch failed"        # With handler: wraps error, then runs handler
+
+# Block-style onerr (multi-statement error handling)
+users := csvData |> parse.CsvWithHeader() onerr
+    print("Failed to parse: {error}")    # {error} refers to the caught error
+    return
 ```
 
 ### Pipe Operator
@@ -108,6 +113,9 @@ users |> slice.Filter(isActive)
 # Useful when piped value isn't the first argument
 todo |> json.MarshalWrite(writer, _)     # Becomes: json.MarshalWrite(writer, todo)
 data |> encode(options, _, format)       # Becomes: encode(options, data, format)
+
+# Bare identifier as pipe target (no parentheses needed)
+data |> print                            # Becomes: fmt.Println(data)
 ```
 
 ### Arrow Lambdas (`=>`)
@@ -338,6 +346,7 @@ evens := Filter(list of int{1, 2, 3, 4}, isEven)
 | Indentation blocks | `{ }` braces |
 | `a \|> f(b)` | `f(a, b)` |
 | `a \|> f(b, _)` | `f(b, a)` (placeholder) |
+| `a \|> print` | `fmt.Println(a)` (bare identifier) |
 | `x := f() onerr "default"` | `x, err := f(); if err != nil { x = "default" }` |
 | `x := f() onerr discard` | `x, _ := f()` |
 | `x := f() onerr explain "hint"` | `x, err := f(); if err != nil { return ..., fmt.Errorf("hint: %w", err) }` |

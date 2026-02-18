@@ -57,6 +57,7 @@ type Generator struct {
 	tempCounter          int                      // Counter for generating unique temporary variable names
 	exprReturnCounts     map[ast.Expression]int   // Semantic return counts passed from analyzer
 	mcpTarget            bool                     // True if targeting MCP (Model Context Protocol)
+	currentOnErrVar      string                   // Current onerr error variable name (for block-style onerr {error} references)
 }
 
 // New creates a new code generator
@@ -1517,6 +1518,13 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 			}
 		}
 		g.writeLine(fmt.Sprintf("return %s", strings.Join(values, ", ")))
+	case *ast.BlockExpr:
+		// onerr block handler: generate the block body with {error} mapped to errVar
+		prevOnErrVar := g.currentOnErrVar
+		g.currentOnErrVar = errVar
+		g.generateBlock(h.Body)
+		g.currentOnErrVar = prevOnErrVar
+		return
 	case *ast.EmptyExpr:
 		// onerr return empty - generate bare return (for named return values)
 		g.writeLine("return")
@@ -2124,6 +2132,10 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 
 	switch e := expr.(type) {
 	case *ast.Identifier:
+		// Inside block-style onerr, replace "error" with the actual error variable
+		if e.Value == "error" && g.currentOnErrVar != "" {
+			return g.currentOnErrVar
+		}
 		return e.Value
 	case *ast.IntegerLiteral:
 		// Preserve original representation for octal (0...), hex (0x...), binary (0b...)
@@ -2340,6 +2352,11 @@ func (g *Generator) parseStringInterpolation(str string) (string, []string) {
 // transformInterpolatedExpr converts Kukicha expression syntax in string
 // interpolation to valid Go syntax.
 func (g *Generator) transformInterpolatedExpr(expr string) string {
+	// Inside block-style onerr, replace "error" with the actual error variable
+	if strings.TrimSpace(expr) == "error" && g.currentOnErrVar != "" {
+		return g.currentOnErrVar
+	}
+
 	// Handle "X as Type" -> "Type(X)" for type conversions
 	// This is a simple string-based transformation for common cases
 	asRe := regexp.MustCompile(`^(.+)\s+as\s+(\w+)$`)
@@ -2508,6 +2525,17 @@ func (g *Generator) generatePipeExpr(expr *ast.PipeExpr) string {
 		}
 		arguments = method.Arguments
 		isVariadic = method.Variadic
+	} else if id, ok := expr.Right.(*ast.Identifier); ok {
+		// Bare identifier on right side of pipe: treat as function call with piped value
+		// e.g., data |> print  →  fmt.Println(data)
+		funcName := id.Value
+		if funcName == "print" {
+			if g.mcpTarget {
+				return fmt.Sprintf("fmt.Fprintln(os.Stderr, %s)", leftExpr)
+			}
+			return fmt.Sprintf("fmt.Println(%s)", leftExpr)
+		}
+		return fmt.Sprintf("%s(%s)", funcName, leftExpr)
 	} else {
 		// Fallback: If piping into something that isn't a call
 		return leftExpr + " |> " + g.exprToString(expr.Right)

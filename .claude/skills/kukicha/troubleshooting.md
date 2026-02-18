@@ -94,6 +94,14 @@ items list string
 items list of string
 ```
 
+### "assignment mismatch: 1 variable but X returns 2 values"
+
+**Cause:** Using `onerr` or pipe `|>` with a stdlib function that returns `(T, error)`, but the compiler doesn't recognize the function's return count. The semantic analyzer has a registry of known external function return counts.
+
+**Context:** This affects pipe chains with `onerr` where the function is from a stdlib package (e.g., `parse.CsvWithHeader`, `json.MarshalPretty`). The compiler needs to know the function returns 2 values so it can split the assignment into `val, err := f()`.
+
+**Solution:** If you encounter this with a new stdlib function, add it to the `knownExternalReturns` map in `internal/semantic/semantic.go` inside `analyzeMethodCallExpr`.
+
 ### "onerr requires error-returning expression"
 
 **Cause:** Using `onerr` on a function that doesn't return an error.
@@ -270,6 +278,17 @@ if err != empty
 func LoadConfig() Config, error
     data := readFile() onerr return empty Config, error "{error}"  # Explicit empty type
     # ...
+```
+
+### Block-style onerr
+```kukicha
+# Multi-statement error handling with indented block
+data := fetchData() onerr
+    print("Error occurred: {error}")   # {error} references the caught error
+    return
+
+# {error} only works inside the onerr block - it maps to the generated error variable
+# Outside onerr blocks, "error" is the Go type, not a variable
 ```
 
 ### onerr explain (error wrapping with hint)
