@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -31,6 +32,18 @@ func initCommand() {
 	if err := ensureGoMod(projectDir, stdlibPath); err != nil {
 		fmt.Fprintf(os.Stderr, "Error updating go.mod: %v\n", err)
 		os.Exit(1)
+	}
+
+	// Populate go.sum with stdlib transitive dependencies (e.g. gopkg.in/yaml.v3).
+	// 'go mod tidy' requires .go source files to work; 'go mod download all' does not.
+	fmt.Println("Downloading stdlib dependencies to update go.sum...")
+	dl := exec.Command("go", "mod", "download", "all")
+	dl.Dir = projectDir
+	dl.Stdout = os.Stdout
+	dl.Stderr = os.Stderr
+	if err := dl.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: 'go mod download all' failed: %v\n", err)
+		fmt.Fprintln(os.Stderr, "kukicha run will update go.sum automatically on first use.")
 	}
 
 	fmt.Println("Kukicha project initialized.")

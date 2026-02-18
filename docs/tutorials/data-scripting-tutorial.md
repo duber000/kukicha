@@ -20,12 +20,13 @@ This is the "glue" code that makes Kukicha a powerful scripting language.
 
 ## Part 1: Many Items (Variadic Functions)
 
-Sometimes you want a function that can take any number of arguments, like `print()`. In Kukicha, use the `many` keyword. This is perfect for data aggregation tools.
+In the beginner tutorial, every function you wrote took a fixed number of inputs — `Greet(name string)` always takes exactly one string. But sometimes you don't know ahead of time how many values someone will pass in. Think about `print()`: you've been calling it with one argument, two arguments, whatever you need. That's a **variadic** function — one that accepts any number of arguments.
+
+Kukicha uses the `many` keyword to declare a variadic parameter. Let's see how it works by building a `Sum` function that adds up however many numbers you give it.
 
 Create `sum.kuki`:
 
 ```kukicha
-# 'many numbers int' means 'numbers' is a list of int
 function Sum(many numbers int) int
     total := 0
     for n in numbers
@@ -36,16 +37,30 @@ function main()
     print(Sum(1, 2, 3))       # Prints: 6
     print(Sum(10, 20))        # Prints: 30
     print(Sum())              # Prints: 0
+```
 
-    # Spread an existing list with 'many' at the call site
+Walk through what's happening:
+
+1. `many numbers int` in the function signature means "this function takes any number of `int` arguments." The caller can pass one, five, or zero — all valid.
+2. Inside `Sum`, `numbers` behaves exactly like a `list of int`. You loop over it, index into it, check its length — everything you learned about lists in Tutorial 1 works here.
+3. The difference is on the **caller's side**: instead of building a list and passing it in, you just write the values directly: `Sum(1, 2, 3)`.
+
+### Spreading a list into a variadic call
+
+What if you already have a list and want to pass its elements as the variadic arguments? Use `many` at the call site:
+
+```kukicha
     values := list of int{4, 5, 6}
     print(Sum(many values))   # Prints: 15
 ```
 
+Without `many` here, the compiler would think you're passing one argument (a whole list) instead of three individual ints. The `many` keyword "spreads" the list out into separate arguments.
+
 **Key points:**
-- `many` goes before the parameter name in the declaration.
-- Inside the function, the parameter acts like a standard list.
-- To spread an existing list into a variadic call, use `many` at the call site too: `Sum(many values)`.
+- Declare a variadic parameter with `many` before the name: `function F(many items T)`.
+- Inside the function, the parameter is just a `list of T` — nothing special.
+- Callers pass values directly: `F(a, b, c)` — no list construction needed.
+- To pass an existing list, spread it with `many`: `F(many myList)`.
 
 ---
 
@@ -137,15 +152,17 @@ function main()
 
     # Parse into a list of maps
     # Each row becomes a map: {"Name": "Alice", "Role": "Admin", ...}
-    users := csvData |> parse.CsvWithHeader() onerr empty
-
-    if users equals empty
-        print("Failed to parse CSV")
+    users := csvData |> parse.CsvWithHeader() onerr
+        print("Failed to parse CSV: {error}")
         return
 
-    # Print the first user's Role
+    # Print the first user's name and role.
+    # Note: map key lookups use double quotes, which can't be nested inside a "..." string.
+    # Assign to a variable first, then interpolate.
     firstUser := users[0]
-    print("First user: {firstUser["Name"]} is a {firstUser["Role"]}")
+    firstName := firstUser["Name"]
+    firstRole := firstUser["Role"]
+    print("First user: {firstName} is a {firstRole}")
 
     # Print everything as JSON to see the structure
     users |> json.MarshalPretty() |> print
@@ -270,7 +287,9 @@ function main()
     print(csvData)
 
     # Parse
-    rows := csvData |> parse.CsvWithHeader() onerr empty
+    rows := csvData |> parse.CsvWithHeader() onerr
+        print("Failed to parse CSV: {error}")
+        return
 
     print("\n--- Cleaning ---")
     for row in rows

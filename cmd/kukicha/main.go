@@ -222,9 +222,10 @@ func buildCommand(filename string, targetFlag string) {
 		}
 	}
 
-	// Run go build on the generated file
+	// Run go build on the generated file. Use -mod=mod so go.sum is updated
+	// automatically when stdlib transitive dependencies are not yet listed.
 	projectDir := findProjectDir(absFile)
-	cmd := exec.Command("go", "build", outputFile)
+	cmd := exec.Command("go", "build", "-mod=mod", outputFile)
 	cmd.Dir = projectDir
 	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2")
 	cmd.Stdout = os.Stdout
@@ -312,8 +313,9 @@ func runCommand(filename string, targetFlag string) {
 	}
 	defer os.Remove(tmpFile)
 
-	// Run with go run
-	cmd := exec.Command("go", "run", tmpFile)
+	// Run with go run. Use -mod=mod so Go updates go.sum automatically when
+	// stdlib transitive dependencies (e.g. gopkg.in/yaml.v3) are not yet listed.
+	cmd := exec.Command("go", "run", "-mod=mod", tmpFile)
 	cmd.Dir = findProjectDir(absFile)
 	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2")
 	cmd.Stdout = os.Stdout

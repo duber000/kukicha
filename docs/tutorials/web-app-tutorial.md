@@ -126,21 +126,7 @@ Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks 
 {"code": "k7f", "url": "https://go.dev", "clicks": 42}
 ```
 
-> **Note: JSON in Kukicha with Go 1.26+**
->
-> Kukicha uses Go 1.26+ `encoding/json/v2` for faster JSON:
-> ```kukicha
-> import "encoding/json/v2"
-> json.MarshalWrite(response, data)            # Write JSON directly to response
-> json.UnmarshalRead(request.Body, reference of result)  # Read JSON from request
->
-> # With pipe placeholder (_), pipe data into any argument position:
-> data |> json.MarshalWrite(response, _)       # _ marks where piped value goes
-> ```
->
-> **Rule of thumb:** Use `json.DecodeRead()` for reading JSON from request bodies. Use `json.MarshalWrite()` for writing JSON to response bodies. Use `json.Marshal()` / `json.Unmarshal()` for in-memory conversion.
-
-Let's define our `Link` type and send one as JSON:
+Kukicha uses Go's `encoding/json/v2` package for JSON. You'll see how it works as we build each handler — let's start by defining our `Link` type and sending one as JSON:
 
 ```kukicha
 import "encoding/json/v2"
@@ -561,11 +547,12 @@ function handleHome on store reference LinkStore(response http.ResponseWriter, r
 </body>
 </html>
 `
-    # Check this out: Parse, then Execute directly to the response!
-    # 1. Parse the string into a template
-    # 2. Execute it (writing to 'response') with 'empty' data
+    # Parse the HTML string into a template, then write it to the response.
+    # template.Parse() returns (Template, error). Since we're parsing a hardcoded
+    # string that we know is valid, we use _ to discard the error. For templates
+    # loaded from files, you'd want onerr instead.
     tmpl, _ := template.New("home") |> .Parse(html)
-    tmpl |> .Execute(response, empty)
+    tmpl |> .Execute(response, empty) onerr return
 ```
 
 Then register it in `main()`:
