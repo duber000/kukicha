@@ -5,13 +5,13 @@
 package container
 
 import (
-	"context"
 	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	dockerimage "github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
+	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
+	"github.com/duber000/kukicha/stdlib/errors"
+	"github.com/duber000/kukicha/stdlib/json"
 )
 
 //line /home/user/kukicha/stdlib/container/container.kuki:31
@@ -94,169 +94,177 @@ func Close(engine Engine) error {
 //line /home/user/kukicha/stdlib/container/container.kuki:91
 func ListContainers(engine Engine) ([]ContainerInfo, error) {
 //line /home/user/kukicha/stdlib/container/container.kuki:92
-	containers, err := engine.cli.ContainerList(context.Background(), dockercontainer.ListOptions{All: true})
+	bg := ctxpkg.Background()
 //line /home/user/kukicha/stdlib/container/container.kuki:93
-	if err != nil {
+	containers, err := engine.cli.ContainerList(ctxpkg.Value(bg), dockercontainer.ListOptions{All: true})
 //line /home/user/kukicha/stdlib/container/container.kuki:94
-		return nil, fmt.Errorf("container list: %w", err)
-	}
+	if err != nil {
 //line /home/user/kukicha/stdlib/container/container.kuki:95
-	result := make([]ContainerInfo, len(containers))
+		return nil, errors.Wrap(err, "container list")
+	}
 //line /home/user/kukicha/stdlib/container/container.kuki:96
+	result := make([]ContainerInfo, len(containers))
+//line /home/user/kukicha/stdlib/container/container.kuki:97
 	for i, c := range containers {
-//line /home/user/kukicha/stdlib/container/container.kuki:103
+//line /home/user/kukicha/stdlib/container/container.kuki:104
 		result[i] = ContainerInfo{id: c.ID, image: c.Image, status: c.Status, state: c.State, names: c.Names}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:104
+//line /home/user/kukicha/stdlib/container/container.kuki:105
 	return result, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:107
-func ListImages(engine Engine) ([]ImageInfo, error) {
 //line /home/user/kukicha/stdlib/container/container.kuki:108
-	images, err := engine.cli.ImageList(context.Background(), dockerimage.ListOptions{All: true})
+func ListImages(engine Engine) ([]ImageInfo, error) {
 //line /home/user/kukicha/stdlib/container/container.kuki:109
-	if err != nil {
+	bg := ctxpkg.Background()
 //line /home/user/kukicha/stdlib/container/container.kuki:110
-		return nil, fmt.Errorf("container list images: %w", err)
-	}
+	images, err := engine.cli.ImageList(ctxpkg.Value(bg), dockerimage.ListOptions{All: true})
 //line /home/user/kukicha/stdlib/container/container.kuki:111
-	result := make([]ImageInfo, len(images))
+	if err != nil {
 //line /home/user/kukicha/stdlib/container/container.kuki:112
+		return nil, errors.Wrap(err, "container list images")
+	}
+//line /home/user/kukicha/stdlib/container/container.kuki:113
+	result := make([]ImageInfo, len(images))
+//line /home/user/kukicha/stdlib/container/container.kuki:114
 	for i, img := range images {
-//line /home/user/kukicha/stdlib/container/container.kuki:117
+//line /home/user/kukicha/stdlib/container/container.kuki:119
 		result[i] = ImageInfo{id: img.ID, tags: img.RepoTags, size: img.Size}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:118
+//line /home/user/kukicha/stdlib/container/container.kuki:120
 	return result, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:121
-func Stop(engine Engine, containerID string) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:122
-	err := engine.cli.ContainerStop(context.Background(), containerID, dockercontainer.StopOptions{})
 //line /home/user/kukicha/stdlib/container/container.kuki:123
-	if err != nil {
+func Stop(engine Engine, containerID string) error {
 //line /home/user/kukicha/stdlib/container/container.kuki:124
-		return fmt.Errorf("container stop: %w", err)
-	}
+	bg := ctxpkg.Background()
 //line /home/user/kukicha/stdlib/container/container.kuki:125
-	return nil
-}
-
-//line /home/user/kukicha/stdlib/container/container.kuki:128
-func Remove(engine Engine, containerID string) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:129
-	err := engine.cli.ContainerRemove(context.Background(), containerID, dockercontainer.RemoveOptions{})
-//line /home/user/kukicha/stdlib/container/container.kuki:130
+	err := engine.cli.ContainerStop(ctxpkg.Value(bg), containerID, dockercontainer.StopOptions{})
+//line /home/user/kukicha/stdlib/container/container.kuki:126
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:131
-		return fmt.Errorf("container remove: %w", err)
+//line /home/user/kukicha/stdlib/container/container.kuki:127
+		return errors.Wrap(err, "container stop")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:132
+//line /home/user/kukicha/stdlib/container/container.kuki:128
 	return nil
 }
 
+//line /home/user/kukicha/stdlib/container/container.kuki:131
+func Remove(engine Engine, containerID string) error {
+//line /home/user/kukicha/stdlib/container/container.kuki:132
+	bg := ctxpkg.Background()
+//line /home/user/kukicha/stdlib/container/container.kuki:133
+	err := engine.cli.ContainerRemove(ctxpkg.Value(bg), containerID, dockercontainer.RemoveOptions{})
+//line /home/user/kukicha/stdlib/container/container.kuki:134
+	if err != nil {
 //line /home/user/kukicha/stdlib/container/container.kuki:135
-func Login(username string, password string, server string) Auth {
+		return errors.Wrap(err, "container remove")
+	}
 //line /home/user/kukicha/stdlib/container/container.kuki:136
-	return Auth{username: username, password: password, serverAddress: server}
+	return nil
 }
 
 //line /home/user/kukicha/stdlib/container/container.kuki:139
+func Login(username string, password string, server string) Auth {
+//line /home/user/kukicha/stdlib/container/container.kuki:140
+	return Auth{username: username, password: password, serverAddress: server}
+}
+
+//line /home/user/kukicha/stdlib/container/container.kuki:143
 func AuthEncode(auth Auth) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:144
+//line /home/user/kukicha/stdlib/container/container.kuki:148
 	authJSON, _ := json.Marshal(map[string]string{"username": auth.username, "password": auth.password, "serveraddress": auth.serverAddress})
-//line /home/user/kukicha/stdlib/container/container.kuki:145
+//line /home/user/kukicha/stdlib/container/container.kuki:149
 	return base64.URLEncoding.EncodeToString(authJSON)
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:148
+//line /home/user/kukicha/stdlib/container/container.kuki:152
 func ContainerID(c ContainerInfo) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:149
+//line /home/user/kukicha/stdlib/container/container.kuki:153
 	return c.id
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:152
+//line /home/user/kukicha/stdlib/container/container.kuki:156
 func ContainerImage(c ContainerInfo) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:153
+//line /home/user/kukicha/stdlib/container/container.kuki:157
 	return c.image
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:156
+//line /home/user/kukicha/stdlib/container/container.kuki:160
 func ContainerStatus(c ContainerInfo) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:157
+//line /home/user/kukicha/stdlib/container/container.kuki:161
 	return c.status
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:160
+//line /home/user/kukicha/stdlib/container/container.kuki:164
 func ContainerState(c ContainerInfo) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:161
+//line /home/user/kukicha/stdlib/container/container.kuki:165
 	return c.state
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:164
+//line /home/user/kukicha/stdlib/container/container.kuki:168
 func ContainerNames(c ContainerInfo) []string {
-//line /home/user/kukicha/stdlib/container/container.kuki:165
+//line /home/user/kukicha/stdlib/container/container.kuki:169
 	return c.names
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:168
+//line /home/user/kukicha/stdlib/container/container.kuki:172
 func ImageID(img ImageInfo) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:169
+//line /home/user/kukicha/stdlib/container/container.kuki:173
 	return img.id
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:172
+//line /home/user/kukicha/stdlib/container/container.kuki:176
 func ImageTags(img ImageInfo) []string {
-//line /home/user/kukicha/stdlib/container/container.kuki:173
+//line /home/user/kukicha/stdlib/container/container.kuki:177
 	return img.tags
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:176
+//line /home/user/kukicha/stdlib/container/container.kuki:180
 func ImageSize(img ImageInfo) int64 {
-//line /home/user/kukicha/stdlib/container/container.kuki:177
+//line /home/user/kukicha/stdlib/container/container.kuki:181
 	return img.size
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:180
+//line /home/user/kukicha/stdlib/container/container.kuki:184
 func BuildImageID(b BuildOutput) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:181
+//line /home/user/kukicha/stdlib/container/container.kuki:185
 	return b.imageID
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:184
+//line /home/user/kukicha/stdlib/container/container.kuki:188
 func BuildLog(b BuildOutput) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:185
+//line /home/user/kukicha/stdlib/container/container.kuki:189
 	return b.output
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:188
+//line /home/user/kukicha/stdlib/container/container.kuki:192
 func EventID(event ContainerEvent) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:189
+//line /home/user/kukicha/stdlib/container/container.kuki:193
 	return event.id
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:192
+//line /home/user/kukicha/stdlib/container/container.kuki:196
 func EventResource(event ContainerEvent) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:193
+//line /home/user/kukicha/stdlib/container/container.kuki:197
 	return event.resource
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:196
+//line /home/user/kukicha/stdlib/container/container.kuki:200
 func EventAction(event ContainerEvent) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:197
+//line /home/user/kukicha/stdlib/container/container.kuki:201
 	return event.action
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:200
+//line /home/user/kukicha/stdlib/container/container.kuki:204
 func EventActor(event ContainerEvent) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:201
+//line /home/user/kukicha/stdlib/container/container.kuki:205
 	return event.actor
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:204
+//line /home/user/kukicha/stdlib/container/container.kuki:208
 func EventTime(event ContainerEvent) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:205
+//line /home/user/kukicha/stdlib/container/container.kuki:209
 	return event.time
 }

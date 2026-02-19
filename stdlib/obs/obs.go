@@ -5,8 +5,8 @@
 package obs
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/duber000/kukicha/stdlib/json"
 	"github.com/duber000/kukicha/stdlib/random"
 	"maps"
 	"time"

@@ -24,10 +24,10 @@ import "fmt"
 import "io"
 import "os"
 import "path/filepath"
-import "strings"
 import "time"
 import "stdlib/ctx"
 import "stdlib/retry"
+import "stdlib/string"
 import "k8s.io/api/apps/v1" as appsv1
 import "k8s.io/api/core/v1" as corev1
 import "k8s.io/apimachinery/pkg/apis/meta/v1" as metav1
@@ -583,9 +583,11 @@ func NodeReady(n Node) bool
 func NodeRoles(n Node) list of string
     roles := make(list of string, 0)
     for label, _ in node(n).Labels
-        role, found := strings.CutPrefix(label, "node-role.kubernetes.io/")
-        if found and role != ""
-            roles = append(roles, role)
+        prefix := "node-role.kubernetes.io/"
+        if string.HasPrefix(label, prefix)
+            role := string.TrimPrefix(label, prefix)
+            if role != ""
+                roles = append(roles, role)
     if len(roles) == 0
         roles = append(roles, "<none>")
     return roles

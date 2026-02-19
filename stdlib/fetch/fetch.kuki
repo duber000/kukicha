@@ -21,8 +21,8 @@ import "time"
 import "io"
 import "bytes"
 import "fmt"
-import "strings"
 import "stdlib/json"
+import "stdlib/string"
 import "stdlib/retry"
 import "stdlib/sandbox"
 
@@ -257,9 +257,9 @@ func URLTemplate(tmpl string, params map of string to string) (string, error)
     result := tmpl
     for key, value in params
         placeholder := fmt.Sprintf("%c%s%c", 123, key, 125)
-        result = strings.ReplaceAll(result, placeholder, url.PathEscape(value))
+        result = string.ReplaceAll(result, placeholder, url.PathEscape(value))
 
-    if strings.Contains(result, "{") or strings.Contains(result, "}")
+    if string.Contains(result, "{") or string.Contains(result, "}")
         return "", error "unresolved URL template placeholders: {result}"
     return result, empty
 

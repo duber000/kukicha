@@ -5,8 +5,8 @@ petiole parse
 
 import "stdlib/json"
 import "stdlib/string"
+import "bytes"
 import "encoding/csv"
-import "strings"
 import "gopkg.in/yaml.v3"
 
 # Json parses a JSON string into a value
@@ -39,7 +39,7 @@ func JsonPretty(value any) (list of byte, error)
 # Returns the parsed records and any error that occurred
 # Example: csvStr |> parse.Csv()
 func Csv(data string) (list of list of string, error)
-    reader := csv.NewReader(strings.NewReader(data))
+    reader := csv.NewReader(bytes.NewBufferString(data))
     records, err := reader.ReadAll()
     if err != empty
         return empty, err
@@ -51,7 +51,7 @@ func Csv(data string) (list of list of string, error)
 # Returns the parsed records and any error that occurred
 # Example: csvStr |> parse.CsvWithHeader()
 func CsvWithHeader(data string) (list of map of string to string, error)
-    reader := csv.NewReader(strings.NewReader(data))
+    reader := csv.NewReader(bytes.NewBufferString(data))
     records, err := reader.ReadAll()
     if err != empty
         return empty, err

@@ -5,12 +5,12 @@
 package parse
 
 import (
+	"bytes"
 	"encoding/csv"
 	"errors"
 	"github.com/duber000/kukicha/stdlib/json"
 	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"gopkg.in/yaml.v3"
-	"strings"
 )
 
 //line /home/user/kukicha/stdlib/parse/parse.kuki:15
@@ -50,7 +50,7 @@ func JsonPretty(value any) ([]byte, error) {
 //line /home/user/kukicha/stdlib/parse/parse.kuki:41
 func Csv(data string) ([][]string, error) {
 //line /home/user/kukicha/stdlib/parse/parse.kuki:42
-	reader := csv.NewReader(strings.NewReader(data))
+	reader := csv.NewReader(bytes.NewBufferString(data))
 //line /home/user/kukicha/stdlib/parse/parse.kuki:43
 	records, err := reader.ReadAll()
 //line /home/user/kukicha/stdlib/parse/parse.kuki:44
@@ -65,7 +65,7 @@ func Csv(data string) ([][]string, error) {
 //line /home/user/kukicha/stdlib/parse/parse.kuki:53
 func CsvWithHeader(data string) ([]map[string]string, error) {
 //line /home/user/kukicha/stdlib/parse/parse.kuki:54
-	reader := csv.NewReader(strings.NewReader(data))
+	reader := csv.NewReader(bytes.NewBufferString(data))
 //line /home/user/kukicha/stdlib/parse/parse.kuki:55
 	records, err := reader.ReadAll()
 //line /home/user/kukicha/stdlib/parse/parse.kuki:56

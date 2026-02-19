@@ -12,11 +12,11 @@ import (
 	"github.com/duber000/kukicha/stdlib/json"
 	"github.com/duber000/kukicha/stdlib/retry"
 	"github.com/duber000/kukicha/stdlib/sandbox"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -346,10 +346,10 @@ func URLTemplate(tmpl string, params map[string]string) (string, error) {
 //line /home/user/kukicha/stdlib/fetch/fetch.kuki:259
 		placeholder := fmt.Sprintf("%c%s%c", 123, key, 125)
 //line /home/user/kukicha/stdlib/fetch/fetch.kuki:260
-		result = strings.ReplaceAll(result, placeholder, url.PathEscape(value))
+		result = kukistring.ReplaceAll(result, placeholder, url.PathEscape(value))
 	}
 //line /home/user/kukicha/stdlib/fetch/fetch.kuki:262
-	if strings.Contains(result, "{") || strings.Contains(result, "}") {
+	if kukistring.Contains(result, "{") || kukistring.Contains(result, "}") {
 //line /home/user/kukicha/stdlib/fetch/fetch.kuki:263
 		return "", errors.New(fmt.Sprintf("unresolved URL template placeholders: %v", result))
 	}

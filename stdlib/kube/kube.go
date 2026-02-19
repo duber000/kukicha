@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/duber000/kukicha/stdlib/ctx"
 	"github.com/duber000/kukicha/stdlib/retry"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"io"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,7 +20,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -959,85 +959,90 @@ func NodeRoles(n Node) []string {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:585
 	for label, _ := range node(n).Labels {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:586
-		role, found := strings.CutPrefix(label, "node-role.kubernetes.io/")
+		prefix := "node-role.kubernetes.io/"
 //line /home/user/kukicha/stdlib/kube/kube.kuki:587
-		if found && (role != "") {
+		if kukistring.HasPrefix(label, prefix) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:588
-			roles = append(roles, role)
+			role := kukistring.TrimPrefix(label, prefix)
+//line /home/user/kukicha/stdlib/kube/kube.kuki:589
+			if role != "" {
+//line /home/user/kukicha/stdlib/kube/kube.kuki:590
+				roles = append(roles, role)
+			}
 		}
 	}
-//line /home/user/kukicha/stdlib/kube/kube.kuki:589
+//line /home/user/kukicha/stdlib/kube/kube.kuki:591
 	if len(roles) == 0 {
-//line /home/user/kukicha/stdlib/kube/kube.kuki:590
+//line /home/user/kukicha/stdlib/kube/kube.kuki:592
 		roles = append(roles, "<none>")
 	}
-//line /home/user/kukicha/stdlib/kube/kube.kuki:591
+//line /home/user/kukicha/stdlib/kube/kube.kuki:593
 	return roles
 }
 
-//line /home/user/kukicha/stdlib/kube/kube.kuki:594
+//line /home/user/kukicha/stdlib/kube/kube.kuki:596
 func NodeVersion(n Node) string {
-//line /home/user/kukicha/stdlib/kube/kube.kuki:595
+//line /home/user/kukicha/stdlib/kube/kube.kuki:597
 	return node(n).Status.NodeInfo.KubeletVersion
 }
 
-//line /home/user/kukicha/stdlib/kube/kube.kuki:600
+//line /home/user/kukicha/stdlib/kube/kube.kuki:602
 func NamespaceName(n NamespaceItem) string {
-//line /home/user/kukicha/stdlib/kube/kube.kuki:601
+//line /home/user/kukicha/stdlib/kube/kube.kuki:603
 	return nsItem(n).Name
 }
 
-//line /home/user/kukicha/stdlib/kube/kube.kuki:607
-func PodLogs(c Cluster, name string, handles ...ctx.Handle) (string, error) {
-//line /home/user/kukicha/stdlib/kube/kube.kuki:608
-	goCtx := context.Background()
 //line /home/user/kukicha/stdlib/kube/kube.kuki:609
-	if len(handles) > 0 {
+func PodLogs(c Cluster, name string, handles ...ctx.Handle) (string, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:610
+	goCtx := context.Background()
+//line /home/user/kukicha/stdlib/kube/kube.kuki:611
+	if len(handles) > 0 {
+//line /home/user/kukicha/stdlib/kube/kube.kuki:612
 		goCtx = ctx.Value(handles[0])
 	}
-//line /home/user/kukicha/stdlib/kube/kube.kuki:611
-	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{})
-//line /home/user/kukicha/stdlib/kube/kube.kuki:612
-	stream, err := req.Stream(goCtx)
 //line /home/user/kukicha/stdlib/kube/kube.kuki:613
-	if err != nil {
+	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:614
+	stream, err := req.Stream(goCtx)
+//line /home/user/kukicha/stdlib/kube/kube.kuki:615
+	if err != nil {
+//line /home/user/kukicha/stdlib/kube/kube.kuki:616
 		return "", fmt.Errorf("kube pod logs: %w", err)
 	}
-//line /home/user/kukicha/stdlib/kube/kube.kuki:615
-	defer stream.Close()
-//line /home/user/kukicha/stdlib/kube/kube.kuki:616
-	data, readErr := io.ReadAll(stream)
 //line /home/user/kukicha/stdlib/kube/kube.kuki:617
-	if readErr != nil {
+	defer stream.Close()
 //line /home/user/kukicha/stdlib/kube/kube.kuki:618
+	data, readErr := io.ReadAll(stream)
+//line /home/user/kukicha/stdlib/kube/kube.kuki:619
+	if readErr != nil {
+//line /home/user/kukicha/stdlib/kube/kube.kuki:620
 		return "", fmt.Errorf("kube pod logs read: %w", readErr)
 	}
-//line /home/user/kukicha/stdlib/kube/kube.kuki:619
+//line /home/user/kukicha/stdlib/kube/kube.kuki:621
 	return string(data), nil
 }
 
-//line /home/user/kukicha/stdlib/kube/kube.kuki:622
-func PodLogsTail(c Cluster, name string, lines int64) (string, error) {
-//line /home/user/kukicha/stdlib/kube/kube.kuki:623
-	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{TailLines: &lines})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:624
-	stream, err := req.Stream(context.Background())
+func PodLogsTail(c Cluster, name string, lines int64) (string, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:625
-	if err != nil {
+	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{TailLines: &lines})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:626
+	stream, err := req.Stream(context.Background())
+//line /home/user/kukicha/stdlib/kube/kube.kuki:627
+	if err != nil {
+//line /home/user/kukicha/stdlib/kube/kube.kuki:628
 		return "", fmt.Errorf("kube pod logs tail: %w", err)
 	}
-//line /home/user/kukicha/stdlib/kube/kube.kuki:627
-	defer stream.Close()
-//line /home/user/kukicha/stdlib/kube/kube.kuki:628
-	data, readErr := io.ReadAll(stream)
 //line /home/user/kukicha/stdlib/kube/kube.kuki:629
-	if readErr != nil {
+	defer stream.Close()
 //line /home/user/kukicha/stdlib/kube/kube.kuki:630
+	data, readErr := io.ReadAll(stream)
+//line /home/user/kukicha/stdlib/kube/kube.kuki:631
+	if readErr != nil {
+//line /home/user/kukicha/stdlib/kube/kube.kuki:632
 		return "", fmt.Errorf("kube pod logs tail read: %w", readErr)
 	}
-//line /home/user/kukicha/stdlib/kube/kube.kuki:631
+//line /home/user/kukicha/stdlib/kube/kube.kuki:633
 	return string(data), nil
 }

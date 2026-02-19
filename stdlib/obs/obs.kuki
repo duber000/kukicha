@@ -3,10 +3,10 @@
 
 petiole obs
 
-import "encoding/json"
 import "fmt"
 import "maps"
 import "time"
+import "stdlib/json"
 import "stdlib/random"
 
 # Logger holds default fields for structured log events.

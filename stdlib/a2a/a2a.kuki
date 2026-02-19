@@ -2,9 +2,10 @@
 
 petiole a2a
 
-import "context"
 import "net/http"
-import "strings"
+import "stdlib/ctx" as ctxpkg
+import "stdlib/retry"
+import "stdlib/string"
 import "github.com/a2aproject/a2a-go/a2a"
 import "github.com/a2aproject/a2a-go/a2aclient"
 import "github.com/a2aproject/a2a-go/a2aclient/agentcard"
@@ -27,6 +28,8 @@ type Request
     contextID string
     onText TextHandler
     onStatus StatusHandler
+    retryMaxAttempts int
+    retryDelayMs int
 
 # Task represents a simplified A2A task result
 type Task
@@ -56,17 +59,17 @@ type Skill
 
 # Discover resolves an agent card from a URL and creates a client.
 func Discover(url string) (Agent, error)
-    ctx := context.Background()
-    card := agentcard.DefaultResolver.Resolve(ctx, url) onerr explain "a2a discover"
-    client := a2aclient.NewFromCard(ctx, card) onerr explain "a2a client"
+    bg := ctxpkg.Background()
+    card := agentcard.DefaultResolver.Resolve(ctxpkg.Value(bg), url) onerr explain "a2a discover"
+    client := a2aclient.NewFromCard(ctxpkg.Value(bg), card) onerr explain "a2a client"
     return Agent{Card: card, Client: client}, empty
 
 # DiscoverGuarded resolves an agent card and creates a client using a custom HTTP client.
 func DiscoverGuarded(url string, httpClient reference http.Client) (Agent, error)
-    ctx := context.Background()
+    bg := ctxpkg.Background()
     resolver := agentcard.NewResolver(httpClient)
-    card := resolver.Resolve(ctx, url) onerr explain "a2a discover"
-    client := a2aclient.NewFromCard(ctx, card, a2aclient.WithJSONRPCTransport(httpClient)) onerr explain "a2a client"
+    card := resolver.Resolve(ctxpkg.Value(bg), url) onerr explain "a2a discover"
+    client := a2aclient.NewFromCard(ctxpkg.Value(bg), card, a2aclient.WithJSONRPCTransport(httpClient)) onerr explain "a2a client"
     return Agent{Card: card, Client: client}, empty
 
 # New starts a new request builder for the given agent.
@@ -93,6 +96,14 @@ func OnStatus(req Request, handler StatusHandler) Request
     req.onStatus = handler
     return req
 
+# Retry configures automatic retry on transient A2A errors.
+# maxAttempts is total attempts; delayMs is the initial backoff in milliseconds.
+# Example: a2a.New(agent) |> a2a.Text("hello") |> a2a.Retry(3, 500) |> a2a.Send()
+func Retry(req Request, maxAttempts int, delayMs int) Request
+    req.retryMaxAttempts = maxAttempts
+    req.retryDelayMs = delayMs
+    return req
+
 # Close destroys the client resources for the agent.
 func Close(agent Agent) error
     return agent.Client.Destroy()
@@ -105,8 +116,25 @@ func Skills(agent Agent) list of Skill
     return skills
 
 # Send executes a blocking request and returns the task result.
+# If Retry() was configured, automatically retries on transient errors.
 func Send(req Request) (Task, error)
-    return sendRequest(req.agent, req.text, req.contextID)
+    if req.retryMaxAttempts <= 1
+        return sendRequest(req.agent, req.text, req.contextID)
+
+    delayMs := req.retryDelayMs
+    if delayMs <= 0
+        delayMs = 1000
+    cfg := retry.Config{MaxAttempts: req.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
+    attempt := 0
+    lastErr := error "no attempts made"
+    for attempt < cfg.MaxAttempts
+        task, err := sendRequest(req.agent, req.text, req.contextID)
+        if err == empty
+            return task, empty
+        lastErr = err
+        retry.Sleep(cfg, attempt)
+        attempt = attempt + 1
+    return empty Task, lastErr
 
 # Stream executes a streaming request with callbacks.
 func Stream(req Request) (Task, error)
@@ -119,34 +147,38 @@ func Ask(agent Agent, text string) (string, error)
 
 # GetTask queries a task by ID from the agent.
 func GetTask(agent Agent, taskID string) (Task, error)
+    bg := ctxpkg.Background()
     params := a2a.TaskQueryParams{ID: a2a.TaskID(taskID)}
-    t := agent.Client.GetTask(context.Background(), reference of params) onerr explain "a2a get task"
+    t := agent.Client.GetTask(ctxpkg.Value(bg), reference of params) onerr explain "a2a get task"
     return taskFromA2A(t), empty
 
 # Cancel cancels a task by ID.
 func Cancel(agent Agent, taskID string) (Task, error)
+    bg := ctxpkg.Background()
     params := a2a.TaskIDParams{ID: a2a.TaskID(taskID)}
-    t := agent.Client.CancelTask(context.Background(), reference of params) onerr explain "a2a cancel"
+    t := agent.Client.CancelTask(ctxpkg.Value(bg), reference of params) onerr explain "a2a cancel"
     return taskFromA2A(t), empty
 
 # sendRequest sends a blocking message to an agent and returns a simplified Task.
 func sendRequest(agent Agent, text string, contextID string) (Task, error)
+    bg := ctxpkg.Background()
     msg := a2a.NewMessage(a2a.MessageRoleUser, a2a.TextPart{Text: text})
     if contextID != ""
         msg.ContextID = contextID
     params := a2a.MessageSendParams{Message: msg}
-    resp := agent.Client.SendMessage(context.Background(), reference of params) onerr explain "a2a send"
+    resp := agent.Client.SendMessage(ctxpkg.Value(bg), reference of params) onerr explain "a2a send"
     return resultToTask(resp), empty
 
 # streamRequest sends a streaming message to an agent, dispatching to callbacks.
 func streamRequest(agent Agent, text string, contextID string, onText TextHandler, onStatus StatusHandler) (Task, error)
+    bg := ctxpkg.Background()
     msg := a2a.NewMessage(a2a.MessageRoleUser, a2a.TextPart{Text: text})
     if contextID != ""
         msg.ContextID = contextID
 
     result := empty Task
     params := a2a.MessageSendParams{Message: msg}
-    for event, err in agent.Client.SendStreamingMessage(context.Background(), reference of params)
+    for event, err in agent.Client.SendStreamingMessage(ctxpkg.Value(bg), reference of params)
         if err != empty
             return result, error("a2a stream: {err}")
         switch event as e
@@ -202,7 +234,7 @@ func taskFromA2A(t reference a2a.Task) Task
     for _, art in result.Artifacts
         if art.Text != ""
             texts = append(texts, art.Text)
-    result.Text = strings.Join(texts, "\n")
+    result.Text = string.Join(texts, "\n")
 
     return result
 
@@ -213,4 +245,4 @@ func extractPartsText(parts list of a2a.Part) string
         switch p as tp
             when a2a.TextPart
                 texts = append(texts, tp.Text)
-    return strings.Join(texts, "")
+    return string.Join(texts, "")

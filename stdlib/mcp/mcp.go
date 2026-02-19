@@ -5,7 +5,7 @@
 package mcp
 
 import (
-	"context"
+	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -28,51 +28,53 @@ func New(name string, version string) *mcp.Server {
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:25
 func Serve(server *mcp.Server) error {
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:26
-	return server.Run(context.Background(), &mcp.StdioTransport{})
+	bg := ctxpkg.Background()
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:27
+	return server.Run(ctxpkg.Value(bg), &mcp.StdioTransport{})
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:29
-func Prop(name string, typ string, description string) SchemaProperty {
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:30
+func Prop(name string, typ string, description string) SchemaProperty {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:31
 	return SchemaProperty{Name: name, Type: typ, Description: description}
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:33
-func Schema(props []SchemaProperty) map[string]any {
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:34
-	properties := make(map[string]any)
+func Schema(props []SchemaProperty) map[string]any {
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:35
+	properties := make(map[string]any)
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:36
 	for _, prop := range props {
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:39
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:40
 		properties[prop.Name] = map[string]any{"type": prop.Type, "description": prop.Description}
 	}
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:41
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:42
 	return map[string]any{"type": "object", "properties": properties}
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:47
-func Required(schema any, names []string) any {
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:48
+func Required(schema any, names []string) any {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:49
 	switch s := schema.(type) {
 	case map[string]any:
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:50
-		s["required"] = names
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:51
+		s["required"] = names
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:52
 		return s
 	default:
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:53
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:54
 		return schema
 	}
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:56
-func TextResult(text string) any {
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:57
+func TextResult(text string) any {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:58
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: text}}}
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:62
-func ErrorResult(msg string) any {
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:63
+func ErrorResult(msg string) any {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:64
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: msg}}, IsError: true}
 }
