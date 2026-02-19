@@ -70,13 +70,11 @@ declarations inline in function bodies.
 
 ---
 
-## 4. `onerr` + Multi-Value `return` Inside Inline Callback Bodies
+## 4. `onerr` + Multi-Value `return` Inside Inline Callback Bodies (fixed)
 
-In some inline callback/lambda contexts (for example, handler functions passed directly to
-APIs like `mcp.Tool`), parser/codegen handling is still limited when `onerr` is followed by
-a multi-value `return` in the same inline function body.
-
-Example pattern that may fail in inline callback bodies:
+The codegen now correctly handles `error "{error}"` inside multi-value `return` expressions
+in `onerr` handlers, including inside inline callback/lambda bodies. The `{error}` placeholder
+is properly substituted with the caught error variable (e.g., `err_1`).
 
 ```kukicha
 func(args map of string to any) (any, error)
@@ -84,10 +82,7 @@ func(args map of string to any) (any, error)
     return data as any, empty
 ```
 
-Current workaround: use explicit error variables in the inline callback body, or move logic
-to a named helper function and return from there.
-
-**Affects:** Inline tool/handler callbacks that need `(value, error)` fallback returns.
+This pattern now works correctly without needing a named helper function.
 
 ---
 
@@ -129,24 +124,19 @@ remain valuable for dashboards, health checks, and CI verification scripts that 
 
 ## 6. Compiler Code-Generation Quirks
 
-### `error "..."` interpolation requires `import "fmt"`
+### `error "..."` interpolation auto-imports `fmt` (fixed)
 
-The compiler generates `errors.New(fmt.Sprintf(...))` for interpolated `error ""` strings:
+The compiler generates `errors.New(fmt.Sprintf(...))` for interpolated `error ""` strings
+and now **automatically imports both `"errors"` and `"fmt"`** when needed. No manual
+`import "fmt"` is required.
 
 ```go
 // Kukicha source
 return 0, error "environment variable {key} not set"
 
-// Generated Go
+// Generated Go (fmt and errors auto-imported)
 return 0, errors.New(fmt.Sprintf("environment variable %v not set", key))
 ```
-
-The compiler auto-imports `"errors"` for this pattern but does **not** auto-import `"fmt"`.
-Any `.kuki` file that uses `error "... {var} ..."` syntax **must** explicitly add `import "fmt"`,
-or the generated Go will fail to build with `undefined: fmt`.
-
-**Workaround:** Add `import "fmt"` to any package that uses string interpolation in `error ""`
-expressions. This applies even if `fmt` is not used anywhere else in the file.
 
 ### `stdlib/string` does not wrap all of Go's `strings` package
 

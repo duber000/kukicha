@@ -401,6 +401,81 @@ func Foo() (int, error)
 	if !strings.Contains(output, "errors.New") || !strings.Contains(output, "bad: %v") {
 		t.Errorf("expected errors.New with interpolated message, got: %s", output)
 	}
+
+	if !strings.Contains(output, `"fmt"`) {
+		t.Errorf("expected auto-import of fmt for interpolated error string, got: %s", output)
+	}
+}
+
+func TestErrorInterpolationAutoImportsFmt(t *testing.T) {
+	// Standalone error "..." with interpolation in a return statement
+	// should auto-import fmt without the user needing to add import "fmt"
+	input := `func GetEnv(key string) (string, error)
+    return "", error "environment variable {key} not set"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	t.Logf("Generated output:\n%s", output)
+
+	if !strings.Contains(output, `"fmt"`) {
+		t.Errorf("expected auto-import of fmt for interpolated error in return, got: %s", output)
+	}
+
+	if !strings.Contains(output, "fmt.Sprintf") {
+		t.Errorf("expected fmt.Sprintf for interpolated error message, got: %s", output)
+	}
+
+	if !strings.Contains(output, `"errors"`) {
+		t.Errorf("expected auto-import of errors, got: %s", output)
+	}
+}
+
+func TestErrorNoInterpolationNoFmtImport(t *testing.T) {
+	// error "..." WITHOUT interpolation should NOT auto-import fmt
+	input := `func Fail() error
+    return error "something went wrong"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	t.Logf("Generated output:\n%s", output)
+
+	if strings.Contains(output, `"fmt"`) {
+		t.Errorf("should NOT import fmt when error message has no interpolation, got: %s", output)
+	}
+
+	if !strings.Contains(output, `"errors"`) {
+		t.Errorf("expected auto-import of errors, got: %s", output)
+	}
 }
 
 func TestOnErrDiscardStatementUsesReturnCount(t *testing.T) {
