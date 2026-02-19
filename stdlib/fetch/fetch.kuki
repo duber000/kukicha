@@ -23,6 +23,7 @@ import "bytes"
 import "fmt"
 import "strings"
 import "stdlib/json"
+import "stdlib/retry"
 import "stdlib/sandbox"
 
 # Request represents an HTTP request with builder pattern support
@@ -33,6 +34,8 @@ type Request
     method string
     body any
     transport reference http.Transport
+    retryMaxAttempts int
+    retryDelayMs int
 
 # New creates a new HTTP request builder for the given URL
 # Returns a Request that can be configured with Header(), Timeout(), etc.
@@ -44,6 +47,8 @@ func New(url string) Request
     req.timeoutNs = 30000000000
     req.method = "GET"
     req.body = empty
+    req.retryMaxAttempts = 0
+    req.retryDelayMs = 0
     return req
 
 # Header adds an HTTP header to the request and returns the modified request for chaining
@@ -79,17 +84,25 @@ func Transport(req Request, t reference http.Transport) Request
     req.transport = t
     return req
 
-# Do executes the configured HTTP request
-# Returns the HTTP response and any error that occurred
-# Example: resp, err := fetch.New(url) |> fetch.Header(...) |> fetch.Do()
-func Do(req Request) (reference http.Response, error)
+# Retry configures automatic retry on transient failures (429, 503, network errors).
+# maxAttempts is the total number of attempts (1 = no retry). Uses exponential backoff.
+# Example: req |> fetch.Retry(3, 500)
+func Retry(req Request, maxAttempts int, delayMs int) Request
+    req.retryMaxAttempts = maxAttempts
+    if delayMs <= 0
+        req.retryDelayMs = 1000
+    else
+        req.retryDelayMs = delayMs
+    return req
+
+# doOnce performs a single HTTP attempt with no retry logic
+func doOnce(req Request) (reference http.Response, error)
     client := http.Client{}
     if req.transport != empty
         client.Transport = req.transport
     client.Timeout = time.Duration(req.timeoutNs)
 
     # Create HTTP request with optional body
-    # Use a conditional approach to handle nil vs non-nil io.Reader
     bodyData := empty
     if req.body != empty
         # Check if body is already a string (form data) or needs JSON marshaling
@@ -119,6 +132,37 @@ func Do(req Request) (reference http.Response, error)
 
     resp, doErr := client.Do(httpReq)
     return resp, doErr
+
+# Do executes the configured HTTP request.
+# If Retry() was configured, automatically retries on network errors, 429, and 503.
+# Example: resp, err := fetch.New(url) |> fetch.Header(...) |> fetch.Do()
+func Do(req Request) (reference http.Response, error)
+    if req.retryMaxAttempts <= 1
+        return doOnce(req)
+
+    delayMs := req.retryDelayMs
+    if delayMs <= 0
+        delayMs = 1000
+    cfg := retry.Config{MaxAttempts: req.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
+
+    attempt := 0
+    lastErr := error "no attempts made"
+    for attempt < cfg.MaxAttempts
+        resp, err := doOnce(req)
+        if err == empty
+            # Success or non-retryable status: return immediately
+            if resp.StatusCode != 429 and resp.StatusCode != 503
+                return resp, empty
+            # Retryable status (429/503): close body, record error, sleep and retry
+            resp.Body.Close()
+            lastErr = error "request failed: status {resp.StatusCode}"
+        else
+            # Network/transport error: record and retry
+            lastErr = err
+        retry.Sleep(cfg, attempt)
+        attempt = attempt + 1
+
+    return empty, lastErr
 
 # createHTTPRequest wraps http.NewRequest with conditional body reader
 func createHTTPRequest(method string, url string, bodyData any) (reference http.Request, error)

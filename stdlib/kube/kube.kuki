@@ -27,6 +27,7 @@ import "path/filepath"
 import "strings"
 import "time"
 import "stdlib/ctx"
+import "stdlib/retry"
 import "k8s.io/api/apps/v1" as appsv1
 import "k8s.io/api/core/v1" as corev1
 import "k8s.io/apimachinery/pkg/apis/meta/v1" as metav1
@@ -44,6 +45,8 @@ type Config
     kubeconfig string
     context string
     inCluster bool
+    retryMaxAttempts int
+    retryDelayMs int
 
 # PodList wraps a list of pods
 type PodList
@@ -114,6 +117,14 @@ func InCluster(cfg Config) Config
     cfg.inCluster = true
     return cfg
 
+# Retry configures automatic retry when connecting to the cluster fails.
+# Useful when the API server may not be immediately available.
+# Example: kube.New() |> kube.Retry(5, 1000) |> kube.Open()
+func Retry(cfg Config, maxAttempts int, delayMs int) Config
+    cfg.retryMaxAttempts = maxAttempts
+    cfg.retryDelayMs = delayMs
+    return cfg
+
 # Namespace returns a copy of the Cluster scoped to the given namespace.
 func Namespace(c Cluster, ns string) Cluster
     c.namespace = ns
@@ -177,8 +188,8 @@ func Connect() (Cluster, error)
         return Cluster{}, fmt.Errorf("kube connect: %w", csErr)
     return Cluster{client: cs, namespace: "default"}, empty
 
-# Open creates a Cluster from the builder configuration.
-func Open(cfg Config) (Cluster, error)
+# openOnce performs a single connection attempt from the builder configuration.
+func openOnce(cfg Config) (Cluster, error)
     if cfg.inCluster
         restConfig, err := rest.InClusterConfig()
         if err != empty
@@ -204,6 +215,27 @@ func Open(cfg Config) (Cluster, error)
     if csErr != empty
         return Cluster{}, fmt.Errorf("kube open: %w", csErr)
     return Cluster{client: cs, namespace: "default"}, empty
+
+# Open creates a Cluster from the builder configuration.
+# If Retry() was configured, automatically retries on connection failure.
+func Open(cfg Config) (Cluster, error)
+    if cfg.retryMaxAttempts <= 1
+        return openOnce(cfg)
+
+    delayMs := cfg.retryDelayMs
+    if delayMs <= 0
+        delayMs = 1000
+    retryCfg := retry.Config{MaxAttempts: cfg.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
+    attempt := 0
+    lastErr := error "no attempts made"
+    for attempt < retryCfg.MaxAttempts
+        cluster, err := openOnce(cfg)
+        if err == empty
+            return cluster, empty
+        lastErr = err
+        retry.Sleep(retryCfg, attempt)
+        attempt = attempt + 1
+    return Cluster{}, lastErr
 
 # --- Pods ---
 

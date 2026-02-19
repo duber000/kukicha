@@ -24,6 +24,7 @@ petiole pg
 import "context"
 import "fmt"
 import "time"
+import "stdlib/retry"
 import "github.com/jackc/pgx/v5" as pgx
 import "github.com/jackc/pgx/v5/pgxpool"
 import "github.com/jackc/pgx/v5/pgconn"
@@ -55,6 +56,8 @@ type Config
     minConns int32
     maxConnLifetimeNs int64
     maxConnIdleTimeNs int64
+    retryMaxAttempts int
+    retryDelayMs int
 
 # Connect creates a new connection pool from a URL string.
 func Connect(url string) (Pool, error)
@@ -87,6 +90,14 @@ func MaxConnIdleTime(cfg Config, d int64) Config
     cfg.maxConnIdleTimeNs = d
     return cfg
 
+# Retry configures automatic retry when opening the connection pool fails.
+# Useful for startup race conditions where the database isn't ready yet.
+# Example: pg.New(url) |> pg.Retry(5, 500) |> pg.Open()
+func Retry(cfg Config, maxAttempts int, delayMs int) Config
+    cfg.retryMaxAttempts = maxAttempts
+    cfg.retryDelayMs = delayMs
+    return cfg
+
 # Open creates a connection pool from the builder configuration.
 func Open(cfg Config) (Pool, error)
     poolCfg, err := pgxpool.ParseConfig(cfg.url)
@@ -100,10 +111,27 @@ func Open(cfg Config) (Pool, error)
         poolCfg.MaxConnLifetime = time.Duration(cfg.maxConnLifetimeNs)
     if cfg.maxConnIdleTimeNs > 0
         poolCfg.MaxConnIdleTime = time.Duration(cfg.maxConnIdleTimeNs)
-    pool, openErr := pgxpool.NewWithConfig(context.Background(), poolCfg)
-    if openErr != empty
-        return Pool{}, fmt.Errorf("pg open: %w", openErr)
-    return Pool{pool: pool}, empty
+
+    if cfg.retryMaxAttempts <= 1
+        pool, openErr := pgxpool.NewWithConfig(context.Background(), poolCfg)
+        if openErr != empty
+            return Pool{}, fmt.Errorf("pg open: %w", openErr)
+        return Pool{pool: pool}, empty
+
+    delayMs := cfg.retryDelayMs
+    if delayMs <= 0
+        delayMs = 500
+    retryCfg := retry.Config{MaxAttempts: cfg.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
+    attempt := 0
+    lastErr := error "no attempts made"
+    for attempt < retryCfg.MaxAttempts
+        pool, openErr := pgxpool.NewWithConfig(context.Background(), poolCfg)
+        if openErr == empty
+            return Pool{pool: pool}, empty
+        lastErr = fmt.Errorf("pg open: %w", openErr)
+        retry.Sleep(retryCfg, attempt)
+        attempt = attempt + 1
+    return Pool{}, lastErr
 
 # Query executes a query that returns multiple rows.
 func Query(p Pool, sql string, many args any) (Rows, error)
