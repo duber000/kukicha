@@ -126,10 +126,10 @@ Web APIs typically send data as **JSON** (JavaScript Object Notation). It looks 
 {"code": "k7f", "url": "https://go.dev", "clicks": 42}
 ```
 
-Kukicha uses Go's `encoding/json/v2` package for JSON. You'll see how it works as we build each handler — let's start by defining our `Link` type and sending one as JSON:
+Kukicha's `stdlib/json` wraps Go's JSON encoder with pipe-friendly helpers. Let's define our `Link` type and send one as JSON:
 
 ```kukicha
-import "encoding/json/v2"
+import "stdlib/json"
 
 type Link
     code string
@@ -145,8 +145,8 @@ function sendLink(response http.ResponseWriter, request reference http.Request)
     # Tell the browser we're sending JSON using pipe chaining
     response |> .Header() |> .Set("Content-Type", "application/json")
 
-    # Convert the link to JSON and send it using pipe
-    response |> json.NewEncoder() |> .Encode(link) onerr return
+    # Convert the link to JSON and write it to the response
+    json.MarshalWrite(response, link) onerr return
 ```
 
 **💡 Tip:** When piping into a method that belongs to the value itself, use the dot shorthand:
@@ -175,9 +175,9 @@ type ShortenRequest
     url string
 
 function handleShorten(response http.ResponseWriter, request reference http.Request)
-    # Parse the incoming JSON — DecodeRead uses the sample pattern
-    # so we don't need a pre-declared variable
-    input := request.Body |> json.DecodeRead(empty ShortenRequest) onerr
+    # Parse the incoming JSON — UnmarshalRead reads from any io.Reader
+    input := ShortenRequest{}
+    json.UnmarshalRead(request.Body, reference of input) onerr
         response |> .WriteHeader(400)
         response |> fmt.Fprintln("Invalid JSON")
         return
@@ -188,7 +188,7 @@ function handleShorten(response http.ResponseWriter, request reference http.Requ
     # We'll generate a short code and send it back (next step)
 ```
 
-`json.DecodeRead` reads JSON from any `io.Reader` (like a request body) and returns a typed value. You pass `empty ShortenRequest` as a sample so it knows the target type. The `onerr` block handles invalid JSON gracefully.
+`json.UnmarshalRead` reads JSON from any `io.Reader` (like a request body) and decodes it into the target. The `onerr` block handles invalid JSON gracefully.
 
 ---
 
@@ -223,12 +223,12 @@ This gives codes like `"1"`, `"2"`, ..., `"a"`, `"b"`, ..., `"10"`, `"11"`. Shor
 Now let's put it all together! Create `main.kuki`:
 
 ```kukicha
-import "fmt"
 import "net/http"
-import "encoding/json/v2"
 import "strconv"
+import "stdlib/json"
 import "stdlib/string"
 import "stdlib/maps"
+import "stdlib/http" as httphelper
 
 # --- Data Types ---
 
@@ -245,9 +245,6 @@ type ShortenResponse
     url string
     shortUrl string as "short_url"
 
-type ErrorResponse
-    err string as "error"
-
 # --- Store ---
 # (In the Production tutorial, we'll replace this with a database)
 
@@ -260,25 +257,9 @@ type LinkStore
 function generateCode on store reference LinkStore() string
     store.nextId = store.nextId + 1
     return strconv.FormatInt(int64(store.nextId), 36)
-
-function sendJSON on store reference LinkStore(response http.ResponseWriter, data any)
-    response |> .Header() |> .Set("Content-Type", "application/json")
-    response |> json.NewEncoder() |> .Encode(data) onerr return
-
-function sendError on store reference LinkStore(response http.ResponseWriter, status int, message string)
-    response |> .Header() |> .Set("Content-Type", "application/json")
-    response |> .WriteHeader(status)
-    response |> json.NewEncoder() |> .Encode(ErrorResponse{err: message}) onerr return
 ```
 
-> **💡 Pro Tip:** In production code, use `stdlib/http` helpers instead of writing these manually:
-> ```kukicha
-> import "stdlib/http" as httphelper
-> httphelper.JSON(response, link)              # Send JSON with correct headers
-> httphelper.JSONError(response, 400, "...")   # Send error as JSON
-> httphelper.ReadJSON(request, reference of link) # Parse request body
-> ```
-> See the [Production Patterns Tutorial](production-patterns-tutorial.md) for more.
+> **💡 Notice:** We don't need manual `sendJSON` or `sendError` helpers anymore. `stdlib/http` (imported as `httphelper`) provides `JSON()`, `JSONError()`, `ReadJSON()`, and more — with correct headers, status codes, and content types built in.
 
 ```kukicha
 # --- API Handlers ---
@@ -286,21 +267,22 @@ function sendError on store reference LinkStore(response http.ResponseWriter, st
 # POST /shorten — Create a shortened link
 function handleShorten on store reference LinkStore(response http.ResponseWriter, request reference http.Request)
     if request.Method not equals "POST"
-        store.sendError(response, 405, "Method not allowed")
+        httphelper.MethodNotAllowed(response)
         return
 
-    # Parse the incoming JSON
-    input := request.Body |> json.DecodeRead(empty ShortenRequest) onerr
-        store.sendError(response, 400, "Invalid JSON")
+    # Parse the incoming JSON — one line replaces manual decoding
+    input := ShortenRequest{}
+    httphelper.ReadJSON(request, reference of input) onerr
+        httphelper.JSONBadRequest(response, "Invalid JSON")
         return
 
     # Validate the URL
     if input.url equals ""
-        store.sendError(response, 400, "URL is required")
+        httphelper.JSONBadRequest(response, "URL is required")
         return
 
     if not (input.url |> string.HasPrefix("http://")) and not (input.url |> string.HasPrefix("https://"))
-        store.sendError(response, 400, "URL must start with http:// or https://")
+        httphelper.JSONBadRequest(response, "URL must start with http:// or https://")
         return
 
     # Generate a short code and store the link
@@ -314,8 +296,7 @@ function handleShorten on store reference LinkStore(response http.ResponseWriter
         url: input.url
         shortUrl: "http://localhost:8080/r/{code}"
 
-    response |> .WriteHeader(201)
-    store.sendJSON(response, result)
+    httphelper.JSONCreated(response, result)
 
 # GET /r/{code} — Redirect to the original URL
 # This is the core of a link shortener!
@@ -323,13 +304,13 @@ function handleRedirect on store reference LinkStore(response http.ResponseWrite
     # Extract the code from the URL path: "/r/abc" → "abc"
     code := request.URL.Path |> string.TrimPrefix("/r/")
     if code equals "" or code equals request.URL.Path
-        store.sendError(response, 400, "Missing link code")
+        httphelper.JSONBadRequest(response, "Missing link code")
         return
 
     # Look up the link
     link, exists := store.links[code]
     if not exists
-        store.sendError(response, 404, "Link not found")
+        httphelper.JSONNotFound(response, "Link not found")
         return
 
     # Increment the click counter
@@ -337,12 +318,12 @@ function handleRedirect on store reference LinkStore(response http.ResponseWrite
     store.links[code] = link
 
     # Redirect! The browser will automatically follow this to the original URL
-    http.Redirect(response, request, link.url, 301)
+    httphelper.RedirectPermanent(response, request, link.url)
 
 # GET /links — List all links
 function handleListLinks on store reference LinkStore(response http.ResponseWriter, request reference http.Request)
     if request.Method not equals "GET"
-        store.sendError(response, 405, "Method not allowed")
+        httphelper.MethodNotAllowed(response)
         return
 
     # Convert map values to a list for JSON output
@@ -350,33 +331,33 @@ function handleListLinks on store reference LinkStore(response http.ResponseWrit
     for _, link in store.links
         result = append(result, link)
 
-    store.sendJSON(response, result)
+    httphelper.JSON(response, result)
 
 # /links/{code} — Get info or delete a specific link
 function handleLinkDetail on store reference LinkStore(response http.ResponseWriter, request reference http.Request)
     # Extract the code from the URL path
     code := request.URL.Path |> string.TrimPrefix("/links/")
     if code equals "" or code equals request.URL.Path
-        store.sendError(response, 400, "Missing link code")
+        httphelper.JSONBadRequest(response, "Missing link code")
         return
 
     switch request.Method
         when "GET"
             link, exists := store.links[code]
             if not exists
-                store.sendError(response, 404, "Link not found")
+                httphelper.JSONNotFound(response, "Link not found")
                 return
-            store.sendJSON(response, link)
+            httphelper.JSON(response, link)
 
         when "DELETE"
             if not maps.Contains(store.links, code)
-                store.sendError(response, 404, "Link not found")
+                httphelper.JSONNotFound(response, "Link not found")
                 return
             delete(store.links, code)
-            response |> .WriteHeader(204)
+            httphelper.NoContent(response)
 
         otherwise
-            store.sendError(response, 405, "Method not allowed")
+            httphelper.MethodNotAllowed(response)
 
 # --- Main Entry Point ---
 
@@ -493,10 +474,11 @@ Congratulations! You've built a real web service. Let's review:
 | **HTTP Server** | `http.ListenAndServe()` starts a web server |
 | **Method Values** | Pass `store.handleShorten` directly as an HTTP handler |
 | **Handlers** | Functions that respond to web requests |
-| **JSON** | Data format for web APIs (`encoding/json/v2`) |
+| **`stdlib/json`** | Encode and decode JSON with `MarshalWrite`, `UnmarshalRead`, `ReadJSON` |
+| **`stdlib/http`** | Response helpers: `JSON()`, `JSONBadRequest()`, `ReadJSON()`, `NoContent()` |
 | **Status Codes** | Numbers that indicate success, failure, or redirect |
 | **Map-backed Store** | Use `map of string to Link` for fast code lookup |
-| **HTTP Redirects** | `http.Redirect()` sends browsers to another URL |
+| **HTTP Redirects** | `httphelper.RedirectPermanent()` sends browsers to another URL |
 
 ---
 

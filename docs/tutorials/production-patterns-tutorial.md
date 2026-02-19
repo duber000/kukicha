@@ -378,7 +378,7 @@ function handleShorten on s reference Server(w http.ResponseWriter, r reference 
         shortUrl: "{s.baseURL}/r/{link.code}"
         clicks: 0
 
-    httphelper.JSONStatus(w, 201, result)
+    httphelper.JSONCreated(w, result)
 
 # GET /r/{code} — Redirect to original URL
 function handleRedirect on s reference Server(w http.ResponseWriter, r reference http.Request)
@@ -600,7 +600,7 @@ function HandleRequest(w http.ResponseWriter, r reference http.Request)
 
     # Send JSON responses
     httphelper.JSON(w, link)                        # 200 OK
-    httphelper.JSONStatus(w, 201, link)             # 201 Created
+    httphelper.JSONCreated(w, link)                  # 201 Created
     httphelper.JSONNotFound(w, "Link not found")    # 404
     httphelper.JSONError(w, 500, "Server error")    # Any status
 
