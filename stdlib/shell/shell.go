@@ -6,12 +6,11 @@ package shell
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
+	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
 	"os"
 	"os/exec"
-	"time"
 )
 
 //line /home/user/kukicha/stdlib/shell/shell.kuki:12
@@ -115,18 +114,18 @@ func Execute(cmd Command) Result {
 	return Result{stdout: stdoutBuf.Bytes(), stderr: stderrBuf.Bytes(), exitCode: exitCode, err: err}
 }
 
-//line /home/user/kukicha/stdlib/shell/shell.kuki:94
+//line /home/user/kukicha/stdlib/shell/shell.kuki:93
 func buildExecCmd(cmd Command) *exec.Cmd {
-//line /home/user/kukicha/stdlib/shell/shell.kuki:95
+//line /home/user/kukicha/stdlib/shell/shell.kuki:94
 	if cmd.timeout > 0 {
+//line /home/user/kukicha/stdlib/shell/shell.kuki:95
+		h := ctxpkg.WithTimeout(ctxpkg.Background(), int64(cmd.timeout))
 //line /home/user/kukicha/stdlib/shell/shell.kuki:96
-		ctx, cancel := context.WithTimeout(context.Background(), (time.Duration(cmd.timeout) * time.Second))
+		defer ctxpkg.Cancel(h)
 //line /home/user/kukicha/stdlib/shell/shell.kuki:97
-		defer cancel()
-//line /home/user/kukicha/stdlib/shell/shell.kuki:98
-		return exec.CommandContext(ctx, cmd.name, cmd.args...)
+		return exec.CommandContext(ctxpkg.Value(h), cmd.name, cmd.args...)
 	}
-//line /home/user/kukicha/stdlib/shell/shell.kuki:100
+//line /home/user/kukicha/stdlib/shell/shell.kuki:99
 	return exec.Command(cmd.name, cmd.args...)
 }
 

@@ -127,14 +127,19 @@ func main()
 Run thousands of tasks in parallel using Goroutines and Channels. High performance, zero complexity.
 
 ```kukicha
-import "time"
+import "stdlib/fetch"
 
 func check(url string, results channel of string)
-    # Background work...
+    resp := fetch.Get(url) onerr
+        send "{url} is DOWN ({error})" to results
+        return
+    resp |> fetch.CheckStatus() onerr
+        send "{url} returned {resp.StatusCode}" to results
+        return
     send "{url} is UP" to results
 
 func main()
-    urls := list of string{"google.com", "github.com", "go.dev"}
+    urls := list of string{"https://google.com", "https://github.com", "https://go.dev"}
     results := make channel of string
 
     for url in urls
@@ -161,6 +166,60 @@ func main()
 
     print("Suggested: {message}")
 ```
+
+---
+
+## Standard Library
+
+35+ packages built pipe-first. Chain operations left-to-right, handle errors inline with `onerr`.
+
+```kukicha
+import "stdlib/fetch"
+import "stdlib/slice"
+import "stdlib/string"
+
+# Fetch → check → decode → filter → map — one pipeline
+repos := fetch.Get("https://api.github.com/users/golang/repos")
+    |> fetch.CheckStatus()
+    |> fetch.Json(list of Repo) onerr panic "{error}"
+
+names := repos
+    |> slice.Filter((r Repo) => r.Stars > 1000)
+    |> slice.Map((r Repo) => r.Name |> string.ToUpper())
+```
+
+```kukicha
+import "stdlib/pg"
+import "stdlib/kube"
+import "stdlib/must"
+import "stdlib/env"
+
+# Startup config — panic if required vars are missing
+apiKey := must.Env("API_KEY")
+port := env.GetOr("PORT", ":8080")
+
+# Databases and clusters with built-in retry
+pool := pg.New(dbURL) |> pg.Retry(5, 500) |> pg.Open() onerr panic "{error}"
+cluster := kube.New() |> kube.Retry(3, 1000) |> kube.Open() onerr panic "{error}"
+```
+
+```kukicha
+import "stdlib/validate"
+import "stdlib/cli"
+import "stdlib/concurrent"
+
+# Validate inputs — each returns an error for onerr
+email |> validate.Email() onerr return error "{error}"
+age |> validate.InRange(18, 120) onerr return error "{error}"
+
+# Run tasks in parallel with one line
+results := concurrent.Map(urls, (u string) => fetch.Get(u))
+
+# Parse CLI args with a builder
+app := cli.New("myapp") |> cli.Arg("name", "User name") |> cli.Action(run)
+```
+
+See the full [Stdlib Reference](docs/kukicha-stdlib-reference.md) for all packages.
 
 ---
 
@@ -197,10 +256,13 @@ See [Contributing Guide](docs/contributing.md) for development setup, tests, and
 ## Documentation
 
 **Tutorials:**
-- [Beginner Tutorial](docs/tutorials/beginner-tutorial.md) - for shell scripters moving to Kukicha
+- [Absolute Beginner](docs/tutorials/absolute-beginner-tutorial.md) - first program, variables, functions, lists, loops
+- [Shell Scripters Guide](docs/tutorials/beginner-tutorial.md) - for bash users moving to Kukicha
 - [Data & AI Scripting](docs/tutorials/data-scripting-tutorial.md) - maps, CSV parsing, shell commands, LLM integration
 - [CLI Repo Explorer](docs/tutorials/cli-explorer-tutorial.md) - custom types, methods, API data
+- [Link Shortener](docs/tutorials/web-app-tutorial.md) - HTTP servers, JSON, REST APIs, redirects
 - [Concurrent Health Checker](docs/tutorials/concurrent-url-health-checker.md) - goroutines and channels
+- [Production Patterns](docs/tutorials/production-patterns-tutorial.md) - databases, validation, retry, auth
 
 **Reference:**
 - [FAQ](docs/faq.md) - coming from bash, Python, or Go

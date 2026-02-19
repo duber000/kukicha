@@ -325,6 +325,18 @@ Here's what you learned in this tutorial:
 | **Buffered channel** | `make(channel of T, 10)` | Channel that can hold values before blocking |
 | **Error wrapping** | `errors.Wrap(error, "msg")` | Adds context to an error |
 
+### stdlib Shortcut: `concurrent.Map`
+
+Now that you understand how goroutines and channels work, here's the secret: `stdlib/concurrent` wraps these patterns for you. The entire fan-out example from Step 5 can be written as:
+
+```kukicha
+import "stdlib/concurrent"
+
+results := concurrent.Map(urls, (url string) => check(url))
+```
+
+One line. Same parallel execution, same result ordering. Use the manual approach when you need custom control flow; use `concurrent.Map` when you just want parallel map.
+
 ### What's Next?
 
 You've built something that runs real work in parallel — one of the things that makes compiled languages worth the switch from scripting. Next, learn how to build production-grade applications:

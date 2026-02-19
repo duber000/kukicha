@@ -5,7 +5,7 @@ petiole input
 
 import "bufio"
 import "os"
-import "strings"
+import "stdlib/string"
 import "fmt"
 
 # ReadLine reads a line from standard input
@@ -20,7 +20,7 @@ func ReadLine(prompt string) (string, error)
     if err != empty
         return "", err
 
-    return strings.TrimSpace(text), empty
+    return string.TrimSpace(text), empty
 
 # Prompt is a helper that prints a prompt and reads a line
 # Panics if reading fails - useful for simple scripts
