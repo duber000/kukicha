@@ -224,6 +224,8 @@ type Client
     toolChoice any
     responseFormat any
     streamHandler func(string)
+    retryMaxAttempts int
+    retryDelayMs int
 
 # New creates a new LLM client builder for the given model
 # The model can include a provider prefix like "openai:gpt-4o-mini"
@@ -257,6 +259,8 @@ func New(model string) Client
     c.streamHandler = empty
     c.toolChoice = empty
     c.responseFormat = empty
+    c.retryMaxAttempts = 0
+    c.retryDelayMs = 0
     return c
 
 # Provider sets the LLM provider (e.g., "openai", "anthropic", "mistral", "ollama")
@@ -416,6 +420,14 @@ func JSONMode(c Client) Client
 # Example: client |> llm.Stream(func(chunk string) { print(chunk) })
 func Stream(c Client, handler func(string)) Client
     c.streamHandler = handler
+    return c
+
+# Retry configures automatic retry on rate limits (429) and server errors (503).
+# maxAttempts is total attempts; delayMs is the initial backoff in milliseconds.
+# Example: client |> llm.Retry(3, 1000)
+func Retry(c Client, maxAttempts int, delayMs int) Client
+    c.retryMaxAttempts = maxAttempts
+    c.retryDelayMs = delayMs
     return c
 
 # Ask sends a user message and executes the completion request
@@ -613,6 +625,9 @@ func executeRaw(c Client) (Completion, error)
 
     if apiKey != ""
         req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
+
+    if c.retryMaxAttempts > 1
+        req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 
     resp, err := fetch.Do(req)
     if err != empty
@@ -835,6 +850,8 @@ type ResponseClient
     textFormat any
     streamHandler func(string)
     eventHandler func(StreamEvent)
+    retryMaxAttempts int
+    retryDelayMs int
 
 # NewResponse creates a new OpenResponses client builder for the given model
 # The model can include a provider prefix like "openai:gpt-4o"
@@ -870,6 +887,8 @@ func NewResponse(model string) ResponseClient
     c.toolChoice = empty
     c.textFormat = empty
     c.metadata = empty map of string to string
+    c.retryMaxAttempts = 0
+    c.retryDelayMs = 0
     return c
 
 # RProvider sets the LLM provider for an OpenResponses client
@@ -1062,6 +1081,13 @@ func RStream(c ResponseClient, handler func(string)) ResponseClient
 # Example: client |> llm.RStreamEvents(func(evt llm.StreamEvent) { ... })
 func RStreamEvents(c ResponseClient, handler func(StreamEvent)) ResponseClient
     c.eventHandler = handler
+    return c
+
+# RRetry configures automatic retry on rate limits (429) and server errors (503).
+# Example: client |> llm.RRetry(3, 1000)
+func RRetry(c ResponseClient, maxAttempts int, delayMs int) ResponseClient
+    c.retryMaxAttempts = maxAttempts
+    c.retryDelayMs = delayMs
     return c
 
 # RAsk sends a user message and executes the OpenResponses request
@@ -1271,6 +1297,9 @@ func rExecuteRaw(c ResponseClient) (Response, error)
 
     if apiKey != ""
         req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
+
+    if c.retryMaxAttempts > 1
+        req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 
     resp, err := fetch.Do(req)
     if err != empty
@@ -1498,6 +1527,8 @@ type MessagesClient
     inferenceGeo string
     streamHandler func(string)
     eventHandler func(AnthropicStreamEvent)
+    retryMaxAttempts int
+    retryDelayMs int
 
 # NewMessages creates a new Anthropic Messages client builder
 # Example: client := llm.NewMessages("claude-opus-4-6")
@@ -1524,6 +1555,8 @@ func NewMessages(model string) MessagesClient
     c.inferenceGeo = ""
     c.streamHandler = empty
     c.eventHandler = empty
+    c.retryMaxAttempts = 0
+    c.retryDelayMs = 0
     return c
 
 # MBaseURL sets a custom API base URL for the Messages client
@@ -1701,6 +1734,13 @@ func MStreamEvents(c MessagesClient, handler func(AnthropicStreamEvent)) Message
     c.eventHandler = handler
     return c
 
+# MRetry configures automatic retry on rate limits (429) and server errors (503).
+# Example: client |> llm.MRetry(3, 1000)
+func MRetry(c MessagesClient, maxAttempts int, delayMs int) MessagesClient
+    c.retryMaxAttempts = maxAttempts
+    c.retryDelayMs = delayMs
+    return c
+
 # MAsk sends a user message and executes the Anthropic Messages request
 # Returns the text content and any error
 #
@@ -1870,6 +1910,9 @@ func mExecuteRaw(c MessagesClient) (AnthropicResponse, error)
         req = fetch.Header(req, "x-api-key", apiKey)
 
     req = fetch.Body(req, body)
+
+    if c.retryMaxAttempts > 1
+        req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 
     resp, err := fetch.Do(req)
     if err != empty

@@ -9,50 +9,50 @@ import (
 	"encoding/hex"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:22
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:22
 func Base64Encode(data []byte) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:23
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:23
 	return base64.StdEncoding.EncodeToString(data)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:27
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:27
 func Base64Decode(s string) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:28
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:28
 	return base64.StdEncoding.DecodeString(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:32
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:32
 func Base64URLEncode(data []byte) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:33
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:33
 	return base64.URLEncoding.EncodeToString(data)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:37
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:37
 func Base64URLDecode(s string) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:38
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:38
 	return base64.URLEncoding.DecodeString(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:41
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:41
 func Base64RawEncode(data []byte) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:42
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:42
 	return base64.RawStdEncoding.EncodeToString(data)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:45
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:45
 func Base64RawURLEncode(data []byte) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:46
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:46
 	return base64.RawURLEncoding.EncodeToString(data)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:50
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:50
 func HexEncode(data []byte) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:51
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:51
 	return hex.EncodeToString(data)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:55
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:55
 func HexDecode(s string) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/encoding/encoding.kuki:56
+//line /home/user/kukicha/stdlib/encoding/encoding.kuki:56
 	return hex.DecodeString(s)
 }

@@ -19,13 +19,13 @@
 
 petiole container
 
-import "context"
-import "fmt"
+import "stdlib/ctx" as ctxpkg
+import "stdlib/errors"
+import "stdlib/json"
+import "encoding/base64"
 import "github.com/docker/docker/client"
 import "github.com/docker/docker/api/types/container" as dockercontainer
 import "github.com/docker/docker/api/types/image" as dockerimage
-import "encoding/json"
-import "encoding/base64"
 
 # Engine wraps a Docker/Podman client connection
 type Engine
@@ -89,9 +89,10 @@ func Close(engine Engine) error
 
 # ListContainers lists all containers (including stopped).
 func ListContainers(engine Engine) (list of ContainerInfo, error)
-    containers, err := engine.cli.ContainerList(context.Background(), dockercontainer.ListOptions{All: true})
+    bg := ctxpkg.Background()
+    containers, err := engine.cli.ContainerList(ctxpkg.Value(bg), dockercontainer.ListOptions{All: true})
     if err != empty
-        return empty, fmt.Errorf("container list: %w", err)
+        return empty, errors.Wrap(err, "container list")
     result := make(list of ContainerInfo, len(containers))
     for i, c in containers
         result[i] = ContainerInfo{
@@ -105,9 +106,10 @@ func ListContainers(engine Engine) (list of ContainerInfo, error)
 
 # ListImages lists all images on the host.
 func ListImages(engine Engine) (list of ImageInfo, error)
-    images, err := engine.cli.ImageList(context.Background(), dockerimage.ListOptions{All: true})
+    bg := ctxpkg.Background()
+    images, err := engine.cli.ImageList(ctxpkg.Value(bg), dockerimage.ListOptions{All: true})
     if err != empty
-        return empty, fmt.Errorf("container list images: %w", err)
+        return empty, errors.Wrap(err, "container list images")
     result := make(list of ImageInfo, len(images))
     for i, img in images
         result[i] = ImageInfo{
@@ -119,16 +121,18 @@ func ListImages(engine Engine) (list of ImageInfo, error)
 
 # Stop stops a running container.
 func Stop(engine Engine, containerID string) error
-    err := engine.cli.ContainerStop(context.Background(), containerID, dockercontainer.StopOptions{})
+    bg := ctxpkg.Background()
+    err := engine.cli.ContainerStop(ctxpkg.Value(bg), containerID, dockercontainer.StopOptions{})
     if err != empty
-        return fmt.Errorf("container stop: %w", err)
+        return errors.Wrap(err, "container stop")
     return empty
 
 # Remove removes a container.
 func Remove(engine Engine, containerID string) error
-    err := engine.cli.ContainerRemove(context.Background(), containerID, dockercontainer.RemoveOptions{})
+    bg := ctxpkg.Background()
+    err := engine.cli.ContainerRemove(ctxpkg.Value(bg), containerID, dockercontainer.RemoveOptions{})
     if err != empty
-        return fmt.Errorf("container remove: %w", err)
+        return errors.Wrap(err, "container remove")
     return empty
 
 # Login creates an Auth with the given credentials.

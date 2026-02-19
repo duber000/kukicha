@@ -1,0 +1,92 @@
+# Kukicha Standard Library - Cast (Type Conversion Utilities)
+# Converts any/interface{} values to typed Go values.
+# Used internally by the Kukicha runtime and user code for type coercion.
+#
+# Examples:
+#   n := cast.SmartInt(someAny) onerr panic "not a number: {error}"
+#   s := cast.SmartString(42)   # returns "42", never errors
+
+petiole cast
+
+import "encoding/json" as jsonpkg
+import "fmt"
+import "strconv"
+
+# SmartInt converts an untyped value to int.
+# Accepts int, int64, float64, string, json.Number, and bool.
+func SmartInt(value any) (int, error)
+    switch value as v
+        when int
+            return v, empty
+        when int64
+            return v as int, empty
+        when float64
+            return v as int, empty
+        when string
+            n, err := strconv.Atoi(v)
+            return n, err
+        when jsonpkg.Number
+            i, err := v.Int64()
+            return i as int, err
+        when bool
+            if v
+                return 1, empty
+            return 0, empty
+    return 0, error "cannot convert to int"
+
+# SmartFloat64 converts an untyped value to float64.
+# Accepts float64, float32, int, int64, string, json.Number, and bool.
+func SmartFloat64(value any) (float64, error)
+    switch value as v
+        when float64
+            return v, empty
+        when float32
+            return v as float64, empty
+        when int
+            return v as float64, empty
+        when int64
+            return v as float64, empty
+        when string
+            f, err := strconv.ParseFloat(v, 64)
+            return f, err
+        when jsonpkg.Number
+            f, err := v.Float64()
+            return f, err
+        when bool
+            if v
+                return 1.0, empty
+            return 0.0, empty
+    return 0.0, error "cannot convert to float64"
+
+# SmartBool converts an untyped value to bool.
+# Accepts bool, int, float64, and string.
+func SmartBool(value any) (bool, error)
+    switch value as v
+        when bool
+            return v, empty
+        when int
+            return v != 0, empty
+        when float64
+            return v != 0.0, empty
+        when string
+            b, err := strconv.ParseBool(v)
+            return b, err
+    return false, error "cannot convert to bool"
+
+# SmartString converts an untyped value to string.
+# Never returns an error; uses fmt.Sprintf("%v") as a fallback.
+func SmartString(value any) (string, error)
+    switch value as v
+        when string
+            return v, empty
+        when int
+            return strconv.Itoa(v), empty
+        when int64
+            return strconv.FormatInt(v, 10), empty
+        when float64
+            return fmt.Sprintf("%g", v), empty
+        when bool
+            return strconv.FormatBool(v), empty
+        when list of byte
+            return v as string, empty
+    return fmt.Sprintf("%v", value), empty

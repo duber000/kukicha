@@ -5,74 +5,76 @@
 package mcp
 
 import (
-	"context"
+	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:9
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:9
 type ToolHandler func(map[string]any) (any, error)
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:12
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:12
 type SchemaProperty struct {
 	Name        string
 	Type        string
 	Description string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:18
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:18
 func New(name string, version string) *mcp.Server {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:19
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:19
 	return mcp.NewServer(&mcp.Implementation{Name: name, Version: version}, nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:25
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:25
 func Serve(server *mcp.Server) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:26
-	return server.Run(context.Background(), &mcp.StdioTransport{})
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:26
+	bg := ctxpkg.Background()
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:27
+	return server.Run(ctxpkg.Value(bg), &mcp.StdioTransport{})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:29
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:30
 func Prop(name string, typ string, description string) SchemaProperty {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:30
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:31
 	return SchemaProperty{Name: name, Type: typ, Description: description}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:33
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:34
 func Schema(props []SchemaProperty) map[string]any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:34
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:35
 	properties := make(map[string]any)
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:35
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:36
 	for _, prop := range props {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:39
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:40
 		properties[prop.Name] = map[string]any{"type": prop.Type, "description": prop.Description}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:41
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:42
 	return map[string]any{"type": "object", "properties": properties}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:47
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:48
 func Required(schema any, names []string) any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:48
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:49
 	switch s := schema.(type) {
 	case map[string]any:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:50
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:51
 		s["required"] = names
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:51
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:52
 		return s
 	default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:53
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:54
 		return schema
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:56
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:57
 func TextResult(text string) any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:57
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:58
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: text}}}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:62
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:63
 func ErrorResult(msg string) any {
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:63
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:64
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: msg}}, IsError: true}
 }

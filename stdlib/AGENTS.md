@@ -12,7 +12,7 @@ Import with: `import "stdlib/slice"`
 | Package | Purpose | Key Functions |
 |---------|---------|---------------|
 | `stdlib/a2a` | Agent-to-Agent protocol client | Discover, Ask, Send, Stream, New/Text/Context |
-| `stdlib/cast` | Type casting utilities | ToString, ToInt, ToFloat, ToBool |
+| `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString |
 | `stdlib/cli` | CLI argument parsing | New, String, Int, Bool, Parse |
 | `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
 | `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
@@ -21,14 +21,14 @@ Import with: `import "stdlib/slice"`
 | `stdlib/encoding` | Base64 and hex encoding/decoding | Base64Encode, Base64Decode, Base64URLEncode, HexEncode, HexDecode |
 | `stdlib/env` | Typed env vars with onerr | Get, GetInt, GetBool, GetFloat, GetOr, Set |
 | `stdlib/errors` | Error wrapping and inspection | Wrap, Is, Unwrap, New, Join |
-| `stdlib/fetch` | HTTP client (Builder, Auth, Sessions, Safe URL helpers) | Get, Post, Json, Decode, URLTemplate, URLWithQuery, PathEscape, QueryEscape, New/Header/Timeout/Do, BearerAuth, BasicAuth, FormData, NewSession |
+| `stdlib/fetch` | HTTP client (Builder, Auth, Sessions, Safe URL helpers, Retry) | Get, Post, Json, Decode, URLTemplate, URLWithQuery, PathEscape, QueryEscape, New/Header/Timeout/Retry/Do, BearerAuth, BasicAuth, FormData, NewSession |
 | `stdlib/files` | File I/O operations | Read, Write, Append, Exists, Copy, Move, Delete, Watch |
 | `stdlib/http` | HTTP response helpers | JSON, JSONError, JSONNotFound, ReadJSON, SafeURL |
 | `stdlib/input` | User input utilities | Line, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration | Map, Filter, Reduce |
 | `stdlib/json` | jsonv2 wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
-| `stdlib/kube` | Kubernetes client via client-go | Connect, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs |
-| `stdlib/llm` | Large language model client | Chat, Stream, System, User |
+| `stdlib/kube` | Kubernetes client via client-go | Connect, New/Kubeconfig/Context/InCluster/Retry/Open, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs |
+| `stdlib/llm` | Large language model client (Chat Completions, OpenResponses, Anthropic; Retry) | Ask/Send/Complete, RAsk/RSend/Respond, MAsk/MSend/AnthropicComplete, Retry/RRetry/MRetry |
 | `stdlib/maps` | Map utilities | Keys, Values, Has, Merge |
 | `stdlib/mcp` | Model Context Protocol support | NewServer, Tool, Resource, Prompt |
 | `stdlib/must` | Panic-on-error startup helpers | Env, EnvInt, EnvIntOr, Do, OkMsg |
@@ -36,10 +36,9 @@ Import with: `import "stdlib/slice"`
 | `stdlib/netguard` | Network restriction & SSRF protection | NewSSRFGuard, NewAllow, NewBlock, Check, HTTPTransport |
 | `stdlib/obs` | Structured observability helpers | New, Component, WithCorrelation, NewCorrelationID, Info, Warn, Error, Start, Stop, Fail |
 | `stdlib/parse` | CSV and YAML parsing | CSV, YAML |
-| `stdlib/pg` | PostgreSQL client via pgx | Connect, Query, QueryRow, Exec, Begin, Commit, Rollback, ScanRow, CollectRows |
+| `stdlib/pg` | PostgreSQL client via pgx | Connect, New/MaxConns/MinConns/Retry/Open, Query, QueryRow, Exec, Begin, Commit, Rollback, ScanRow, CollectRows |
 | `stdlib/random` | Random number generation | Int, IntRange, Float, String, Choice |
-| `stdlib/result` | Result and Optional types | Ok, Err, Unwrap, UnwrapOr |
-| `stdlib/retry` | Retry patterns | Do, WithBackoff |
+| `stdlib/retry` | Retry with backoff | New, Attempts, Delay, Sleep |
 | `stdlib/sandbox` | os.Root filesystem sandboxing | New, Read, Write, List, Exists, Delete |
 | `stdlib/shell` | Safe command execution | New/Dir/Env/Execute, Output, Which, Getenv |
 | `stdlib/slice` | Slice operations | Filter, Map, GroupBy, GetOr, FirstOr, Find, Pop |
@@ -112,8 +111,37 @@ for event in events
 # For apply/patch workflows, prefer GitOps tools (e.g., Argo CD) and use kube stdlib
 # for operational reads, rollout actions, and watches.
 
-# HTTP fetch with builder
+# Retry on transient failures (fetch: 429/503 + network errors)
 import "stdlib/fetch"
+resp := fetch.New(url) |> fetch.BearerAuth(token) |> fetch.Retry(3, 500) |> fetch.Do() onerr panic "{error}"
+text := fetch.Text(resp) onerr panic "{error}"
+
+# LLM with retry on rate limits
+import "stdlib/llm"
+reply := llm.New("openai:gpt-4o-mini") |> llm.Retry(3, 2000) |> llm.Ask("Hello!") onerr panic "{error}"
+# Anthropic with retry
+reply := llm.NewMessages("claude-opus-4-6") |> llm.MRetry(3, 2000) |> llm.MAsk("Hello!") onerr panic "{error}"
+
+# PostgreSQL with startup retry (database may not be ready yet)
+import "stdlib/pg"
+pool := pg.New(url) |> pg.Retry(5, 500) |> pg.Open() onerr panic "db: {error}"
+
+# Kubernetes with startup retry
+import "stdlib/kube"
+cluster := kube.New() |> kube.Retry(5, 1000) |> kube.Open() onerr panic "k8s: {error}"
+
+# Manual retry loop (for custom retry conditions)
+import "stdlib/retry"
+cfg := retry.New() |> retry.Attempts(5) |> retry.Delay(200)
+attempt := 0
+for attempt < cfg.MaxAttempts
+    result, err := doSomething()
+    if err == empty
+        break
+    retry.Sleep(cfg, attempt)
+    attempt = attempt + 1
+
+# HTTP fetch with builder
 resp := fetch.New(url) |> fetch.BearerAuth(token) |> fetch.Timeout(30000000000) |> fetch.Do() onerr panic "{error}"
 text := fetch.Text(resp) onerr panic "{error}"
 
@@ -180,8 +208,10 @@ hexStr := encoding.HexEncode(hashBytes)
 Each stdlib module follows one of two patterns:
 
 ### Pure Kukicha (types + logic in .kuki)
-Used when the implementation is straightforward Kukicha code.
-Examples: `a2a`, `slice`, `string`, `validate`, `env`, `must`, `fetch`, `net`, `errors`, `encoding`
+Used when the implementation is straightforward Kukicha code. No `_helper.go` or `_tool.go`.
+Examples: `a2a`, `cast`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
+`http`, `input`, `iterator`, `json`, `llm`, `maps`, `must`, `net`, `obs`, `parse`, `pg`,
+`random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `validate`
 
 ### Kukicha types + Go helper (types in .kuki, implementation in _helper.go)
 Used when wrapping complex Go libraries. The `.kuki` file defines types visible to Kukicha code, and the `_helper.go` provides the implementation in Go.
@@ -191,6 +221,19 @@ Examples: `container`, `kube`
 ### Mixed (most logic in .kuki, thin Go helper for syscall-level ops)
 Used when most logic can be pure Kukicha but some low-level Go operations are needed.
 Examples: `netguard` (IP/CIDR logic in .kuki, DNS+dialer in `_helper.go`), `mcp` (core in `.kuki`, callback bridge in `_tool.go`)
+
+## Import Aliases
+
+When a package's last path segment collides with a local variable name, use `as`:
+
+```kukicha
+import "stdlib/ctx" as ctxpkg          # avoids clash with local 'ctx' variables
+import "stdlib/errors" as errs         # avoids clash with local 'err' / 'errors' variables
+import "encoding/json" as jsonpkg      # avoids clash with 'stdlib/json'
+import "github.com/jackc/pgx/v5" as pgx
+```
+
+Common cases that need aliases: `ctx`, `errors`, `json`, `container`, `string`.
 
 ## Critical Rules
 

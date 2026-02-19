@@ -1,23 +1,27 @@
 # Kukicha Standard Library - Retry Operations
+# Provides configurable retry with linear or exponential backoff.
+#
+# Usage:
+#   cfg := retry.New() |> retry.Attempts(5) |> retry.Delay(500)
+#   attempt := 0
+#   for attempt < cfg.MaxAttempts
+#       result, err := doSomething()
+#       if err == empty
+#           break
+#       retry.Sleep(cfg, attempt)
+#       attempt = attempt + 1
 
 petiole retry
 
 import "time"
 
-# Note: This package has limited functionality due to current Kukicha limitations:
-# - No constants or type aliases
-# - Functions passed to retry need to return (any, error) but Kukicha uses onerr
-# - Type conversions (float64, int) not supported
-#
-# This is a simplified stub implementation for now.
-
 # Config holds retry configuration
 type Config
     MaxAttempts int
     InitialDelay int  # milliseconds
-    Strategy int  # 0 = Linear, 1 = Exponential
+    Strategy int      # 0 = Linear, 1 = Exponential
 
-# New creates a default retry configuration
+# New creates a default retry configuration: 3 attempts, 1s initial delay, exponential backoff
 func New() Config
     return Config{MaxAttempts: 3, InitialDelay: 1000, Strategy: 1}
 
@@ -31,23 +35,23 @@ func Delay(cfg Config, delayMs int) Config
     cfg.InitialDelay = delayMs
     return cfg
 
-# Backoff sets the backoff strategy (0 = Linear, 1 = Exponential)
-func Backoff(cfg Config, strategy int) Config
-    cfg.Strategy = strategy
+# Linear switches to a fixed-delay (non-exponential) backoff strategy
+func Linear(cfg Config) Config
+    cfg.Strategy = 0
     return cfg
 
-# Sleep pauses execution for the configured delay
-# This is a helper for manual retry logic
+# Sleep pauses execution for the delay appropriate to the given attempt number.
+# Call this between retry attempts; attempt is zero-indexed.
 func Sleep(cfg Config, attempt int)
     delay := calculateDelay(cfg, attempt)
     time.Sleep(time.Duration(delay) * time.Millisecond)
 
-# calculateDelay calculates the delay for a given attempt
+# calculateDelay returns the delay in milliseconds for a given attempt
 func calculateDelay(cfg Config, attempt int) int
     if cfg.Strategy == 0
         return cfg.InitialDelay
 
-    # Exponential backoff: calculate 2^attempt using a loop
+    # Exponential backoff: InitialDelay * 2^attempt
     multiplier := 1
     i := 0
     for i < attempt
@@ -55,14 +59,3 @@ func calculateDelay(cfg Config, attempt int) int
         i = i + 1
 
     return cfg.InitialDelay * multiplier
-
-# Example manual retry pattern:
-# cfg := retry.New() |> retry.Attempts(5) |> retry.Delay(500)
-# attempt := 0
-# for attempt < cfg.MaxAttempts
-#     result := doSomething() onerr discard
-#     if result != empty
-#         # Success!
-#         break
-#     retry.Sleep(cfg, attempt)
-#     attempt = attempt + 1

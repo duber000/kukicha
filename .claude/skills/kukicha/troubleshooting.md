@@ -464,6 +464,68 @@ Process(func(s string) int
 )
 ```
 
+## Import and Package Issues
+
+### "undefined: fmt" in generated Go (interpolated errors)
+
+**Cause:** The compiler generates `errors.New(fmt.Sprintf(...))` for `error "... {var} ..."` literals but does NOT auto-import `fmt`. You must add the import yourself.
+
+```kukicha
+# Wrong — causes "undefined: fmt" in generated Go
+func Load(path string) Config, error
+    data := os.ReadFile(path) onerr return empty Config, error "cannot read {path}"
+
+# Correct — add import "fmt"
+import "fmt"
+import "os"
+
+func Load(path string) Config, error
+    data := os.ReadFile(path) onerr return empty Config, error "cannot read {path}"
+```
+
+### Package name conflicts (e.g., "ctx redeclared in this block")
+
+**Cause:** Local variable name matches the imported package name.
+
+```kukicha
+# Wrong — local 'ctx' variable shadows the package
+import "stdlib/ctx"
+func Handle(ctx context.Context)
+    c := ctx.Background()   # Error: ctx is the parameter, not the package
+
+# Correct — alias the package
+import "stdlib/ctx" as ctxpkg
+func Handle(ctx context.Context)
+    c := ctxpkg.Background() |> ctxpkg.WithTimeout(30)
+    defer ctxpkg.Cancel(c)
+```
+
+**Common conflict cases and recommended aliases:**
+
+| Import | Alias |
+|--------|-------|
+| `stdlib/ctx` | `ctxpkg` |
+| `stdlib/errors` | `errs` |
+| `stdlib/json` | `jsonpkg` |
+| `stdlib/container` | `ctr` |
+| `stdlib/string` | `strutil` |
+
+### "variadic argument mismatch" or spreading a slice
+
+**Cause:** Forgetting to use `many` when spreading a slice into a variadic function.
+
+```kukicha
+# Wrong — passing slice directly to variadic func
+func Sum(many numbers int) int
+    # ...
+
+nums := list of int{1, 2, 3}
+result := Sum(nums)      # Type error — expects int, not list of int
+
+# Correct — spread with "many" keyword
+result := Sum(many nums)
+```
+
 ## Performance Considerations
 
 ### Negative Indexing

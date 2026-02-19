@@ -21,9 +21,10 @@
 
 petiole pg
 
-import "context"
-import "fmt"
 import "time"
+import "stdlib/ctx" as ctxpkg
+import "stdlib/errors"
+import "stdlib/retry"
 import "github.com/jackc/pgx/v5" as pgx
 import "github.com/jackc/pgx/v5/pgxpool"
 import "github.com/jackc/pgx/v5/pgconn"
@@ -55,12 +56,15 @@ type Config
     minConns int32
     maxConnLifetimeNs int64
     maxConnIdleTimeNs int64
+    retryMaxAttempts int
+    retryDelayMs int
 
 # Connect creates a new connection pool from a URL string.
 func Connect(url string) (Pool, error)
-    pool, err := pgxpool.New(context.Background(), url)
+    bg := ctxpkg.Background()
+    pool, err := pgxpool.New(ctxpkg.Value(bg), url)
     if err != empty
-        return Pool{}, fmt.Errorf("pg connect: %w", err)
+        return Pool{}, errors.Wrap(err, "pg connect")
     return Pool{pool: pool}, empty
 
 # New starts a configuration builder with the given connection URL.
@@ -87,11 +91,19 @@ func MaxConnIdleTime(cfg Config, d int64) Config
     cfg.maxConnIdleTimeNs = d
     return cfg
 
+# Retry configures automatic retry when opening the connection pool fails.
+# Useful for startup race conditions where the database isn't ready yet.
+# Example: pg.New(url) |> pg.Retry(5, 500) |> pg.Open()
+func Retry(cfg Config, maxAttempts int, delayMs int) Config
+    cfg.retryMaxAttempts = maxAttempts
+    cfg.retryDelayMs = delayMs
+    return cfg
+
 # Open creates a connection pool from the builder configuration.
 func Open(cfg Config) (Pool, error)
     poolCfg, err := pgxpool.ParseConfig(cfg.url)
     if err != empty
-        return Pool{}, fmt.Errorf("pg config: %w", err)
+        return Pool{}, errors.Wrap(err, "pg config")
     if cfg.maxConns > 0
         poolCfg.MaxConns = cfg.maxConns
     if cfg.minConns > 0
@@ -100,28 +112,49 @@ func Open(cfg Config) (Pool, error)
         poolCfg.MaxConnLifetime = time.Duration(cfg.maxConnLifetimeNs)
     if cfg.maxConnIdleTimeNs > 0
         poolCfg.MaxConnIdleTime = time.Duration(cfg.maxConnIdleTimeNs)
-    pool, openErr := pgxpool.NewWithConfig(context.Background(), poolCfg)
-    if openErr != empty
-        return Pool{}, fmt.Errorf("pg open: %w", openErr)
-    return Pool{pool: pool}, empty
+
+    bg := ctxpkg.Background()
+    if cfg.retryMaxAttempts <= 1
+        pool, openErr := pgxpool.NewWithConfig(ctxpkg.Value(bg), poolCfg)
+        if openErr != empty
+            return Pool{}, errors.Wrap(openErr, "pg open")
+        return Pool{pool: pool}, empty
+
+    delayMs := cfg.retryDelayMs
+    if delayMs <= 0
+        delayMs = 500
+    retryCfg := retry.Config{MaxAttempts: cfg.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
+    attempt := 0
+    lastErr := error "no attempts made"
+    for attempt < retryCfg.MaxAttempts
+        pool, openErr := pgxpool.NewWithConfig(ctxpkg.Value(bg), poolCfg)
+        if openErr == empty
+            return Pool{pool: pool}, empty
+        lastErr = errors.Wrap(openErr, "pg open")
+        retry.Sleep(retryCfg, attempt)
+        attempt = attempt + 1
+    return Pool{}, lastErr
 
 # Query executes a query that returns multiple rows.
 func Query(p Pool, sql string, many args any) (Rows, error)
-    rows, err := p.pool.Query(context.Background(), sql, many args)
+    bg := ctxpkg.Background()
+    rows, err := p.pool.Query(ctxpkg.Value(bg), sql, many args)
     if err != empty
-        return Rows{}, fmt.Errorf("pg query: %w", err)
+        return Rows{}, errors.Wrap(err, "pg query")
     return Rows{rows: rows}, empty
 
 # QueryRow executes a query that returns at most one row.
 func QueryRow(p Pool, sql string, many args any) (Row, error)
-    row := p.pool.QueryRow(context.Background(), sql, many args)
+    bg := ctxpkg.Background()
+    row := p.pool.QueryRow(ctxpkg.Value(bg), sql, many args)
     return Row{scanFn: row}, empty
 
 # Exec executes a query that doesn't return rows (INSERT, UPDATE, DELETE).
 func Exec(p Pool, sql string, many args any) (Result, error)
-    tag, err := p.pool.Exec(context.Background(), sql, many args)
+    bg := ctxpkg.Background()
+    tag, err := p.pool.Exec(ctxpkg.Value(bg), sql, many args)
     if err != empty
-        return Result{}, fmt.Errorf("pg exec: %w", err)
+        return Result{}, errors.Wrap(err, "pg exec")
     return Result{tag: tag}, empty
 
 # Scan scans values from a Row into destination pointers.
@@ -129,7 +162,7 @@ func Scan(r Row, many dest any) error
     row := r.scanFn.(pgx.Row)
     err := row.Scan(many dest)
     if err != empty
-        return fmt.Errorf("pg scan: %w", err)
+        return errors.Wrap(err, "pg scan")
     return empty
 
 # ScanString scans a single string value from a Row.
@@ -138,7 +171,7 @@ func ScanString(r Row) (string, error)
     v := ""
     err := row.Scan(reference of v)
     if err != empty
-        return "", fmt.Errorf("pg scan string: %w", err)
+        return "", errors.Wrap(err, "pg scan string")
     return v, empty
 
 # ScanInt scans a single int value from a Row.
@@ -147,7 +180,7 @@ func ScanInt(r Row) (int, error)
     v := 0
     err := row.Scan(reference of v)
     if err != empty
-        return 0, fmt.Errorf("pg scan int: %w", err)
+        return 0, errors.Wrap(err, "pg scan int")
     return v, empty
 
 # ScanInt64 scans a single int64 value from a Row.
@@ -156,7 +189,7 @@ func ScanInt64(r Row) (int64, error)
     v := 0 as int64
     err := row.Scan(reference of v)
     if err != empty
-        return 0, fmt.Errorf("pg scan int64: %w", err)
+        return 0, errors.Wrap(err, "pg scan int64")
     return v, empty
 
 # ScanBool scans a single bool value from a Row.
@@ -165,7 +198,7 @@ func ScanBool(r Row) (bool, error)
     v := false
     err := row.Scan(reference of v)
     if err != empty
-        return false, fmt.Errorf("pg scan bool: %w", err)
+        return false, errors.Wrap(err, "pg scan bool")
     return v, empty
 
 # ScanFloat64 scans a single float64 value from a Row.
@@ -174,7 +207,7 @@ func ScanFloat64(r Row) (float64, error)
     v := 0.0
     err := row.Scan(reference of v)
     if err != empty
-        return 0.0, fmt.Errorf("pg scan float64: %w", err)
+        return 0.0, errors.Wrap(err, "pg scan float64")
     return v, empty
 
 # Next advances the Rows cursor to the next row.
@@ -187,7 +220,7 @@ func ScanRow(r Rows, many dest any) error
     rows := r.rows.(pgx.Rows)
     err := rows.Scan(many dest)
     if err != empty
-        return fmt.Errorf("pg scan row: %w", err)
+        return errors.Wrap(err, "pg scan row")
     return empty
 
 # Close closes the Rows cursor, releasing resources.
@@ -204,59 +237,65 @@ func CollectRows(r Rows) (list of map of string to any, error)
     for rows.Next()
         values, err := rows.Values()
         if err != empty
-            return empty, fmt.Errorf("pg collect rows: %w", err)
+            return empty, errors.Wrap(err, "pg collect rows")
         row := make(map of string to any, len(descs))
         for i, desc in descs
             row[desc.Name] = values[i]
         results = append(results, row)
     rowsErr := rows.Err()
     if rowsErr != empty
-        return empty, fmt.Errorf("pg collect rows: %w", rowsErr)
+        return empty, errors.Wrap(rowsErr, "pg collect rows")
     return results, empty
 
 # Begin starts a new transaction.
 func Begin(p Pool) (Tx, error)
-    tx, err := p.pool.Begin(context.Background())
+    bg := ctxpkg.Background()
+    tx, err := p.pool.Begin(ctxpkg.Value(bg))
     if err != empty
-        return Tx{}, fmt.Errorf("pg begin: %w", err)
+        return Tx{}, errors.Wrap(err, "pg begin")
     return Tx{tx: tx}, empty
 
 # TxQuery executes a query within a transaction that returns multiple rows.
 func TxQuery(t Tx, sql string, many args any) (Rows, error)
+    bg := ctxpkg.Background()
     tx := t.tx.(pgx.Tx)
-    rows, err := tx.Query(context.Background(), sql, many args)
+    rows, err := tx.Query(ctxpkg.Value(bg), sql, many args)
     if err != empty
-        return Rows{}, fmt.Errorf("pg tx query: %w", err)
+        return Rows{}, errors.Wrap(err, "pg tx query")
     return Rows{rows: rows}, empty
 
 # TxQueryRow executes a query within a transaction that returns at most one row.
 func TxQueryRow(t Tx, sql string, many args any) (Row, error)
+    bg := ctxpkg.Background()
     tx := t.tx.(pgx.Tx)
-    row := tx.QueryRow(context.Background(), sql, many args)
+    row := tx.QueryRow(ctxpkg.Value(bg), sql, many args)
     return Row{scanFn: row}, empty
 
 # TxExec executes a query within a transaction that doesn't return rows.
 func TxExec(t Tx, sql string, many args any) (Result, error)
+    bg := ctxpkg.Background()
     tx := t.tx.(pgx.Tx)
-    tag, err := tx.Exec(context.Background(), sql, many args)
+    tag, err := tx.Exec(ctxpkg.Value(bg), sql, many args)
     if err != empty
-        return Result{}, fmt.Errorf("pg tx exec: %w", err)
+        return Result{}, errors.Wrap(err, "pg tx exec")
     return Result{tag: tag}, empty
 
 # Commit commits the transaction.
 func Commit(t Tx) error
+    bg := ctxpkg.Background()
     tx := t.tx.(pgx.Tx)
-    err := tx.Commit(context.Background())
+    err := tx.Commit(ctxpkg.Value(bg))
     if err != empty
-        return fmt.Errorf("pg commit: %w", err)
+        return errors.Wrap(err, "pg commit")
     return empty
 
 # Rollback aborts the transaction.
 func Rollback(t Tx) error
+    bg := ctxpkg.Background()
     tx := t.tx.(pgx.Tx)
-    err := tx.Rollback(context.Background())
+    err := tx.Rollback(ctxpkg.Value(bg))
     if err != empty
-        return fmt.Errorf("pg rollback: %w", err)
+        return errors.Wrap(err, "pg rollback")
     return empty
 
 # RowsAffected returns the number of rows affected by an INSERT, UPDATE, or DELETE.

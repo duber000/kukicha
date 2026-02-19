@@ -217,6 +217,17 @@ type User
 # Struct tags support any Go format: json, xml, db, validate, etc.
 # Multiple tags: json:"name" db:"user_name"
 
+# JSON alias sugar (shorthand for json:"alias")
+type Article
+    id int64
+    title string as "title"       # Generates json:"title" struct tag
+    publishedAt string as "published_at"
+
+# Function type aliases
+type Handler func(string)
+type Transform func(int) (string, error)
+type Predicate func(reference User) bool
+
 # Interface
 interface Storage
     Save(item Todo) error
@@ -229,7 +240,10 @@ interface Storage
 items := list of string{"a", "b", "c"}
 last := items[-1]                    # Negative indexing supported
 
-# Maps (use make + assignment — map literals don't parse)
+# Maps — literal syntax works
+config := map of string to int{"port": 8080}
+
+# Or use make for empty maps
 config := make(map of string to int)
 config["port"] = 8080
 
@@ -295,6 +309,34 @@ if x != y          # Not equals still uses !=
 # Complex Logic (Improved Parser)
 if err != empty or failed
     handleError()
+```
+
+### Variadic Arguments (`many`)
+```kukicha
+# Declare variadic param with "many" before param name
+func Sum(many numbers int) int
+    total := 0
+    for n in numbers
+        total = total + n
+    return total
+
+# Call with individual args
+result := Sum(1, 2, 3)
+
+# Spread a slice with "many" at call site
+args := list of int{1, 2, 3}
+result := Sum(many args)
+```
+
+### Type Assertions
+```kukicha
+# Two-value form (safe — check ok before using result)
+result, ok := value.(string)
+if ok
+    print("string: {result}")
+
+# Direct assertion (panics if wrong type)
+s := value.(string)
 ```
 
 ### Output (print Builtin)
@@ -373,24 +415,40 @@ Located in `stdlib/`:
 
 | Package | Purpose |
 |---------|---------|
+| `a2a` | Agent-to-Agent protocol client (Discover, Ask, Send, Stream) |
+| `cast` | Smart type coercion: any → scalar (SmartInt, SmartFloat64, SmartBool, SmartString) |
+| `cli` | CLI argument parsing builder (New, String, Int, Bool, Parse) |
+| `concurrent` | Concurrency helpers (Parallel, ParallelWithLimit) |
+| `container` | Docker/Podman client (Connect, Run, Stop, Logs, Wait, Events, Exec, CopyFrom/To) |
+| `ctx` | Context timeout/cancellation helpers (Background, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err) |
+| `datetime` | Named formats and durations (Format, Seconds, Minutes, Hours) |
+| `encoding` | Base64 and hex encoding/decoding (Base64Encode, Base64Decode, HexEncode, HexDecode) |
+| `env` | Typed environment variable access (Get, GetInt, GetBool, GetOr, Set) |
+| `errors` | Error wrapping and inspection (Wrap, Is, Unwrap, New, Join) |
+| `fetch` | HTTP client with builder, auth, retry, safe URL helpers (Get, Post, Json, New/Header/Timeout/Retry/Do, BearerAuth, URLTemplate, URLWithQuery) |
+| `files` | File I/O operations (Read, Write, Append, Exists, Copy, Move, Delete, Watch) |
+| `http` | HTTP response helpers (JSON, JSONError, JSONNotFound, ReadJSON, SafeURL) |
+| `input` | User input utilities (Line, Confirm, Choose) |
 | `iterator` | Functional iterators with Go 1.26+ generics (Filter, Map, Take, Skip, Reduce) |
-| `slice` | Slice operations with Go 1.26+ generics (First, Last, Reverse, Unique, **GroupBy**) |
-| `string` | String utilities (ToUpper, Split, Contains, Join) |
-| `json` | Pipe-friendly jsonv2 wrapper (Marshal, Unmarshal, Encoder/Decoder) |
-| `fetch` | HTTP client (Builder, Auth, Forms, Sessions) |
-| `files` | File operations (Read, Write, List, Watch) |
-| `parse` | Data format parsing (CSV, YAML) |
-| `concurrent` | Concurrency helpers (Parallel, ParallelWithLimit, Go) |
-| `http` | HTTP server helpers (WithCSRF, Serve, JSON) |
-| `shell` | Command execution builder (New, Dir, SetTimeout, Env, Execute) |
-| `cli` | CLI argument parsing builder (New, Arg, AddFlag, Action, RunApp) |
-| `must` | Panic-on-error initialization helpers (Env, Do, OkMsg) |
-| `env` | Typed environment variable access (GetInt, GetBool, GetOr, ParseBool, SplitAndTrim) |
-| `validate` | Input validation (Email, URL, InRange, NotEmpty) |
-| `datetime` | Named formats and durations (Format, Seconds, Days) |
-| `result` | Optional and Result types for explicit error handling |
-| `retry` | Manual retry helpers (Attempts, Delay, Backoff) |
-| `template` | Text templating for code gen or reports |
+| `json` | Pipe-friendly jsonv2 wrapper (Marshal, Unmarshal, MarshalWrite, UnmarshalRead) |
+| `kube` | Kubernetes client via client-go (Connect, ListPods, ScaleDeployment, WatchPods, PodLogs) |
+| `llm` | LLM chat client with retry (Ask/Send for OpenAI, MAsk/MSend for Anthropic, Retry) |
+| `maps` | Map utilities (Keys, Values, Has, Merge) |
+| `mcp` | Model Context Protocol server support (NewServer, Tool, Resource, Prompt) |
+| `must` | Panic-on-error startup helpers (Env, EnvInt, EnvIntOr, Do, OkMsg) |
+| `net` | IP address and CIDR utilities (ParseIP, ParseCIDR, Contains, IsPrivate, SplitHostPort) |
+| `netguard` | Network restriction & SSRF protection (NewSSRFGuard, NewAllow, NewBlock, HTTPTransport) |
+| `obs` | Structured observability helpers (New, Component, WithCorrelation, Info, Warn, Error, Start/Stop) |
+| `parse` | Data format parsing (CSV, YAML, JsonLines, JsonPretty) |
+| `pg` | PostgreSQL client via pgx (Connect, New/MaxConns/Retry/Open, Query, QueryRow, Exec, ScanRow, CollectRows) |
+| `random` | Random number generation (Int, IntRange, Float, String, Choice) |
+| `retry` | Manual retry helpers (New, Attempts, Delay, Sleep) |
+| `sandbox` | os.Root filesystem sandboxing (New, Read, Write, List, Exists, Delete) |
+| `shell` | Safe command execution builder (New, Dir, Env, Execute, Which, Output) |
+| `slice` | Slice operations with generics (Filter, Map, GroupBy, FirstOr, LastOr, Find, Pop, GetOr) |
+| `string` | String utilities (Split, Join, Trim, Contains, Replace, ToUpper, ToLower) |
+| `template` | Text templating for code gen or reports (Execute, New) |
+| `validate` | Input validation (Email, URL, InRange, NotEmpty, MinLen, MaxLen) |
 
 Example with stdlib:
 ```kukicha
@@ -516,6 +574,123 @@ func handleCommand(args cli.Args)
             print("Unknown command: {command}")
 ```
 
+### Fetch Package (Builder Pattern)
+```kukicha
+import "stdlib/fetch"
+
+# Simple GET with typed JSON decode
+repos := fetch.Get("https://api.github.com/users/golang/repos")
+    |> fetch.CheckStatus()
+    |> fetch.Json(list of Repo) onerr panic "{error}"
+
+# Builder pattern with auth and retry
+resp := fetch.New(url)
+    |> fetch.BearerAuth(token)
+    |> fetch.Timeout(30000000000)
+    |> fetch.Retry(3, 500)
+    |> fetch.Do() onerr panic "{error}"
+text := fetch.Text(resp) onerr panic "{error}"
+
+# Safe URL construction (avoids injection)
+safeURL := fetch.URLTemplate("https://api.github.com/users/{username}/repos",
+    map of string to string{"username": username}) onerr panic "{error}"
+safeURL = fetch.URLWithQuery(safeURL, map of string to string{"per_page": "30"}) onerr panic "{error}"
+```
+
+### Obs Package (Structured Observability)
+```kukicha
+import "stdlib/obs"
+
+logger := obs.New("myapp", "prod")
+    |> obs.Component("api")
+    |> obs.WithCorrelation(obs.NewCorrelationID())
+
+logger |> obs.Info("request received", map of string to any{"path": "/users"})
+logger |> obs.Warn("slow query", map of string to any{"ms": 450})
+logger |> obs.Error("db failed", map of string to any{"err": "{dbErr}"})
+
+# Span-style timing
+logger |> obs.Start("deploy")
+# ... work ...
+logger |> obs.Stop("deploy")
+```
+
+### Ctx Package (Context Helpers)
+```kukicha
+import "stdlib/ctx"
+
+c := ctx.Background() |> ctx.WithTimeout(30)
+defer ctx.Cancel(c)
+
+if ctx.Done(c)
+    print("canceled: {ctx.Err(c)}")
+
+# Use ctx-enabled stdlib ops for cancellable waits
+kube.WaitDeploymentReadyCtx(cluster, c, "api") onerr panic "{error}"
+```
+
+### LLM Package
+```kukicha
+import "stdlib/llm"
+
+# OpenAI-compatible (gpt-4o, etc.)
+reply := llm.New("openai:gpt-4o-mini")
+    |> llm.Retry(3, 2000)
+    |> llm.Ask("Summarize this in one sentence.") onerr panic "{error}"
+
+# Anthropic
+reply := llm.NewMessages("claude-opus-4-6")
+    |> llm.MRetry(3, 2000)
+    |> llm.MAsk("Hello!") onerr panic "{error}"
+```
+
+### Pg Package (PostgreSQL)
+```kukicha
+import "stdlib/pg"
+
+# Connect (with optional startup retry)
+pool := pg.New(url) |> pg.Retry(5, 500) |> pg.Open() onerr panic "db: {error}"
+defer pg.ClosePool(pool)
+
+# Query rows
+rows := pg.Query(pool, "SELECT name FROM users WHERE active = $1", true) onerr panic "{error}"
+defer pg.Close(rows)
+for pg.Next(rows)
+    name := pg.ScanString(rows) onerr continue
+    print(name)
+
+# Single row
+user := pg.QueryRow(pool, "SELECT id, name FROM users WHERE id = $1", id) onerr panic "{error}"
+```
+
+### Kube Package (Kubernetes)
+```kukicha
+import "stdlib/kube"
+
+cluster := kube.New() |> kube.Retry(5, 1000) |> kube.Open() onerr panic "k8s: {error}"
+pods := kube.Namespace(cluster, "default") |> kube.ListPods() onerr panic "{error}"
+for pod in kube.Pods(pods)
+    print("{kube.PodName(pod)}: {kube.PodStatus(pod)}")
+
+kube.ScaleDeployment(cluster, "default", "api", 3) onerr panic "{error}"
+kube.WaitDeploymentReady(cluster, "default", "api") onerr panic "{error}"
+```
+
+### Container Package (Docker/Podman)
+```kukicha
+import "stdlib/container"
+
+engine := container.Connect() onerr panic "not running: {error}"
+defer container.Close(engine)
+
+container.Pull(engine, "alpine:latest") onerr panic "{error}"
+id := container.Run(engine, "alpine:latest", list of string{"echo", "hello"}) onerr panic "{error}"
+logs := container.Logs(engine, id) onerr panic "{error}"
+print(logs)
+code := container.Wait(engine, id, 60) onerr panic "{error}"
+container.Remove(engine, id) onerr discard
+```
+
 ### Slice Package with Generics
 ```kukicha
 import "stdlib/slice"
@@ -588,7 +763,13 @@ petiole mypackage    # Optional - usually inferred from directory
 import "fmt"
 import "encoding/json"
 import "stdlib/slice"
+import "stdlib/ctx" as ctxpkg          # alias — use when name conflicts with local variable
+import "stdlib/errors" as errs         # avoids clash with 'err' / 'errors' variables
+import "stdlib/http" as httphelper     # avoids clash with 'net/http'
+import "github.com/jackc/pgx/v5" as pgx  # external package with alias
 ```
+
+**Common cases needing aliases:** `ctx`, `errors`, `json`, `container`, `string`.
 
 ## Common Patterns
 
@@ -643,3 +824,6 @@ go test ./... -cover                 # With coverage
 4. Use English keywords (`and`, `or`, `not`, `equals`, `empty`)
 5. Use 4-space indentation (tabs not allowed)
 6. Use `reference of` and `dereference` instead of `&` and `*`
+7. **Add `import "fmt"`** to any file using string interpolation inside `error ""` literals — the compiler generates `errors.New(fmt.Sprintf(...))` but does NOT auto-import `fmt`
+8. Use `import "stdlib/pkg" as alias` when a package name conflicts with a local variable (common: `ctx`, `errors`, `json`, `container`, `string`)
+9. Never edit `stdlib/*/*.go` directly — edit `.kuki` source files and run `make generate`

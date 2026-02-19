@@ -11,35 +11,35 @@ import (
 	"strings"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:14
+//line /home/user/kukicha/stdlib/input/input.kuki:14
 func ReadLine(prompt string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:15
+//line /home/user/kukicha/stdlib/input/input.kuki:15
 	if prompt != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:16
+//line /home/user/kukicha/stdlib/input/input.kuki:16
 		fmt.Print(prompt)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:18
+//line /home/user/kukicha/stdlib/input/input.kuki:18
 	reader := bufio.NewReader(os.Stdin)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:19
+//line /home/user/kukicha/stdlib/input/input.kuki:19
 	text, err := reader.ReadString('\n')
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:20
+//line /home/user/kukicha/stdlib/input/input.kuki:20
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:21
+//line /home/user/kukicha/stdlib/input/input.kuki:21
 		return "", err
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:23
+//line /home/user/kukicha/stdlib/input/input.kuki:23
 	return strings.TrimSpace(text), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:27
+//line /home/user/kukicha/stdlib/input/input.kuki:27
 func Prompt(prompt string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:28
+//line /home/user/kukicha/stdlib/input/input.kuki:28
 	result, err := ReadLine(prompt)
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:29
+//line /home/user/kukicha/stdlib/input/input.kuki:29
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:30
+//line /home/user/kukicha/stdlib/input/input.kuki:30
 		panic(err)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:31
+//line /home/user/kukicha/stdlib/input/input.kuki:31
 	return result
 }

@@ -2,7 +2,7 @@
 
 petiole mcp
 
-import "context"
+import "stdlib/ctx" as ctxpkg
 import "github.com/modelcontextprotocol/go-sdk/mcp"
 
 # ToolHandler is a callback for handling MCP tool invocations.
@@ -23,7 +23,8 @@ func New(name string, version string) reference mcp.Server
 
 # Serve runs the server on the stdio transport (blocking)
 func Serve(server reference mcp.Server) error
-    return server.Run(context.Background(), reference of mcp.StdioTransport{})
+    bg := ctxpkg.Background()
+    return server.Run(ctxpkg.Value(bg), reference of mcp.StdioTransport{})
 
 # Prop creates a new SchemaProperty
 func Prop(name string, typ string, description string) SchemaProperty
