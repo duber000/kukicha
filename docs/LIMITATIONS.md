@@ -127,6 +127,41 @@ remain valuable for dashboards, health checks, and CI verification scripts that 
 
 ---
 
+## 6. Compiler Code-Generation Quirks
+
+### `error "..."` interpolation requires `import "fmt"`
+
+The compiler generates `errors.New(fmt.Sprintf(...))` for interpolated `error ""` strings:
+
+```go
+// Kukicha source
+return 0, error "environment variable {key} not set"
+
+// Generated Go
+return 0, errors.New(fmt.Sprintf("environment variable %v not set", key))
+```
+
+The compiler auto-imports `"errors"` for this pattern but does **not** auto-import `"fmt"`.
+Any `.kuki` file that uses `error "... {var} ..."` syntax **must** explicitly add `import "fmt"`,
+or the generated Go will fail to build with `undefined: fmt`.
+
+**Workaround:** Add `import "fmt"` to any package that uses string interpolation in `error ""`
+expressions. This applies even if `fmt` is not used anywhere else in the file.
+
+### `stdlib/string` does not wrap all of Go's `strings` package
+
+A few `strings` functions have no equivalent in `stdlib/string`:
+
+| Go `strings` function | Replacement |
+|---|---|
+| `strings.CutPrefix(s, prefix)` → `(after, found)` | `string.HasPrefix(s, prefix)` + `string.TrimPrefix(s, prefix)` |
+| `strings.NewReader(s)` → `io.Reader` | `bytes.NewBufferString(s)` (import `"bytes"`) |
+
+When migrating `.kuki` files from raw `import "strings"` to `import "stdlib/string"`, check for
+these two functions. Both replacements are slightly more verbose but fully equivalent.
+
+---
+
 ## What It Would Actually Take to Eliminate the Go Helpers
 
 Many kube helper functions already use only patterns that Kukicha supports (type

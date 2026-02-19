@@ -241,6 +241,17 @@ examples/             # Example programs
 docs/                 # Documentation
 ```
 
+## Imports
+
+```kukicha
+import "stdlib/slice"                   # standard package
+import "stdlib/ctx" as ctxpkg          # alias — use when the package name conflicts with a local variable
+import "github.com/jackc/pgx/v5" as pgx  # external package with alias
+```
+
+Use `as alias` whenever the package's last path segment clashes with a local variable name
+(common cases: `ctx`, `errors`, `json`, `container`, `string`).
+
 ## Critical Rules
 
 1. **Never edit `stdlib/*/*.go` directly** - Edit the `.kuki` files, then run `make generate`
@@ -248,6 +259,7 @@ docs/                 # Documentation
 3. **4-space indentation only** - Tabs are not allowed in Kukicha
 4. **Explicit function signatures** - Parameters and return types must be declared
 5. **Test with `make test`** - Sets required `GOEXPERIMENT=jsonv2`
+6. **`import "fmt"` required for interpolated errors** - The compiler generates `errors.New(fmt.Sprintf(...))` for `error "... {var} ..."` literals but does **not** auto-import `fmt`. Add `import "fmt"` to any `.kuki` file that uses string interpolation inside `error ""` expressions, or the generated Go will fail to build.
 
 ## Adding Features to the Compiler
 

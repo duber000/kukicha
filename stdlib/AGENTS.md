@@ -12,7 +12,7 @@ Import with: `import "stdlib/slice"`
 | Package | Purpose | Key Functions |
 |---------|---------|---------------|
 | `stdlib/a2a` | Agent-to-Agent protocol client | Discover, Ask, Send, Stream, New/Text/Context |
-| `stdlib/cast` | Type casting utilities | ToString, ToInt, ToFloat, ToBool |
+| `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString |
 | `stdlib/cli` | CLI argument parsing | New, String, Int, Bool, Parse |
 | `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
 | `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
@@ -208,8 +208,10 @@ hexStr := encoding.HexEncode(hashBytes)
 Each stdlib module follows one of two patterns:
 
 ### Pure Kukicha (types + logic in .kuki)
-Used when the implementation is straightforward Kukicha code.
-Examples: `a2a`, `slice`, `string`, `validate`, `env`, `must`, `fetch`, `net`, `errors`, `encoding`
+Used when the implementation is straightforward Kukicha code. No `_helper.go` or `_tool.go`.
+Examples: `a2a`, `cast`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
+`http`, `input`, `iterator`, `json`, `llm`, `maps`, `must`, `net`, `obs`, `parse`, `pg`,
+`random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `validate`
 
 ### Kukicha types + Go helper (types in .kuki, implementation in _helper.go)
 Used when wrapping complex Go libraries. The `.kuki` file defines types visible to Kukicha code, and the `_helper.go` provides the implementation in Go.
@@ -219,6 +221,19 @@ Examples: `container`, `kube`
 ### Mixed (most logic in .kuki, thin Go helper for syscall-level ops)
 Used when most logic can be pure Kukicha but some low-level Go operations are needed.
 Examples: `netguard` (IP/CIDR logic in .kuki, DNS+dialer in `_helper.go`), `mcp` (core in `.kuki`, callback bridge in `_tool.go`)
+
+## Import Aliases
+
+When a package's last path segment collides with a local variable name, use `as`:
+
+```kukicha
+import "stdlib/ctx" as ctxpkg          # avoids clash with local 'ctx' variables
+import "stdlib/errors" as errs         # avoids clash with local 'err' / 'errors' variables
+import "encoding/json" as jsonpkg      # avoids clash with 'stdlib/json'
+import "github.com/jackc/pgx/v5" as pgx
+```
+
+Common cases that need aliases: `ctx`, `errors`, `json`, `container`, `string`.
 
 ## Critical Rules
 
