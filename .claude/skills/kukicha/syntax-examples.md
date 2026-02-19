@@ -709,6 +709,32 @@ func isEvenNum(n int) bool
 evens := Filter(numbers, isEvenNum)
 ```
 
+### Variadic Arguments (`many`)
+
+```kukicha
+# Declare variadic param with "many" before the parameter name
+func Sum(many numbers int) int
+    total := 0
+    for n in numbers
+        total = total + n
+    return total
+
+func JoinStrings(sep string, many parts string) string
+    return strings.Join(parts, sep)
+
+func main()
+    # Pass individual values
+    result := Sum(1, 2, 3, 4, 5)
+    print(result)   # 15
+
+    # Spread a slice with "many" at the call site
+    nums := list of int{10, 20, 30}
+    result = Sum(many nums)
+    print(result)   # 60
+```
+
+---
+
 ### ForEach Pattern
 
 ```kukicha
@@ -784,4 +810,129 @@ func doWork() string
     return "Success!"
 
 DoAsync(doWork, onSuccess, onError)
+```
+
+---
+
+## Map Literals
+
+```kukicha
+# Map literals now work (use curly braces, like slice literals)
+config := map of string to int{"port": 8080, "timeout": 30}
+headers := map of string to string{"Content-Type": "application/json", "Accept": "*/*"}
+
+# Nested types
+labels := map of string to list of string{
+    "apps": list of string{"api", "worker"},
+}
+
+# Empty map literal
+counts := map of string to int{}
+
+# Or use make for clarity
+counts := make(map of string to int)
+```
+
+---
+
+## Function Type Aliases
+
+```kukicha
+# Define reusable callback types
+type Predicate func(reference User) bool
+type Handler func(string)
+type Transform func(int) (string, error)
+
+# Use as parameter types
+func FilterUsers(users list of User, check Predicate) list of User
+    result := list of User{}
+    for user in users
+        if check(reference of user)
+            result = append(result, user)
+    return result
+
+func main()
+    # Arrow lambda satisfies Predicate
+    admins := FilterUsers(users, (u reference User) => u.role equals "admin")
+```
+
+---
+
+## Observability Pattern (stdlib/obs)
+
+```kukicha
+import "stdlib/obs"
+import "stdlib/must"
+
+func main()
+    # Create logger with component and correlation ID
+    logger := obs.New("deployctl", "prod")
+        |> obs.Component("rollout")
+        |> obs.WithCorrelation(obs.NewCorrelationID())
+
+    # Structured logging with metadata
+    logger |> obs.Info("starting deployment", map of string to any{
+        "app": "billing",
+        "replicas": 3,
+    })
+
+    # Span timing
+    logger |> obs.Start("rollout")
+    # ... do work ...
+    logger |> obs.Stop("rollout")
+
+    # Error with context
+    logger |> obs.Error("deployment failed", map of string to any{"reason": "timeout"})
+```
+
+---
+
+## LLM Integration Pattern (stdlib/llm)
+
+```kukicha
+import "stdlib/llm"
+import "stdlib/must"
+
+func summarize(text string) string, error
+    # OpenAI-compatible (any model supporting chat completions)
+    reply := llm.New("openai:gpt-4o-mini")
+        |> llm.Retry(3, 2000)
+        |> llm.Ask("Summarize in one sentence: {text}") onerr return "", error "{error}"
+    return reply, empty
+
+func analyzeWithAnthropic(text string) string, error
+    # Anthropic API
+    reply := llm.NewMessages("claude-opus-4-6")
+        |> llm.MRetry(3, 2000)
+        |> llm.MAsk("Analyze the following: {text}") onerr return "", error "{error}"
+    return reply, empty
+```
+
+---
+
+## Database Pattern (stdlib/pg)
+
+```kukicha
+import "stdlib/pg"
+
+type User
+    id int64 json:"id"
+    name string json:"name"
+    email string json:"email"
+
+func getActiveUsers(dbUrl string) list of User, error
+    pool := pg.New(dbUrl) |> pg.Retry(5, 500) |> pg.Open() onerr return empty list of User, error "db: {error}"
+    defer pg.ClosePool(pool)
+
+    rows := pg.Query(pool, "SELECT id, name, email FROM users WHERE active = $1", true) onerr return empty list of User, error "{error}"
+    defer pg.Close(rows)
+
+    users := list of User{}
+    for pg.Next(rows)
+        id := pg.ScanInt64(rows) onerr continue
+        name := pg.ScanString(rows) onerr continue
+        email := pg.ScanString(rows) onerr continue
+        users = append(users, User{id: id, name: name, email: email})
+
+    return users, empty
 ```
