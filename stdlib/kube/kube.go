@@ -5,7 +5,6 @@
 package kube
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"github.com/duber000/kukicha/stdlib/ctx"
@@ -345,7 +344,7 @@ func Open(cfg Config) (Cluster, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:243
 func ListPods(c Cluster) (PodList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:244
-	pods, err := clientset(c).CoreV1().Pods(c.namespace).List(context.Background(), metav1.ListOptions{})
+	pods, err := clientset(c).CoreV1().Pods(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:245
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:246
@@ -358,7 +357,7 @@ func ListPods(c Cluster) (PodList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:250
 func ListPodsLabeled(c Cluster, selector string) (PodList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:251
-	pods, err := clientset(c).CoreV1().Pods(c.namespace).List(context.Background(), metav1.ListOptions{LabelSelector: selector})
+	pods, err := clientset(c).CoreV1().Pods(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{LabelSelector: selector})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:252
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:253
@@ -371,7 +370,7 @@ func ListPodsLabeled(c Cluster, selector string) (PodList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:257
 func GetPod(c Cluster, name string) (Pod, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:258
-	p, err := clientset(c).CoreV1().Pods(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+	p, err := clientset(c).CoreV1().Pods(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:259
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:260
@@ -384,7 +383,7 @@ func GetPod(c Cluster, name string) (Pod, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:264
 func DeletePod(c Cluster, name string) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:265
-	err := clientset(c).CoreV1().Pods(c.namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	err := clientset(c).CoreV1().Pods(c.namespace).Delete(ctx.Value(ctx.Background()), name, metav1.DeleteOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:266
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:267
@@ -397,7 +396,7 @@ func DeletePod(c Cluster, name string) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:273
 func ListDeployments(c Cluster) (DeploymentList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:274
-	deps, err := clientset(c).AppsV1().Deployments(c.namespace).List(context.Background(), metav1.ListOptions{})
+	deps, err := clientset(c).AppsV1().Deployments(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:275
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:276
@@ -410,7 +409,7 @@ func ListDeployments(c Cluster) (DeploymentList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:280
 func GetDeployment(c Cluster, name string) (Deployment, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:281
-	dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+	dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:282
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:283
@@ -423,7 +422,7 @@ func GetDeployment(c Cluster, name string) (Deployment, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:287
 func ScaleDeployment(c Cluster, name string, replicas int32) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:288
-	scale, err := clientset(c).AppsV1().Deployments(c.namespace).GetScale(context.Background(), name, metav1.GetOptions{})
+	scale, err := clientset(c).AppsV1().Deployments(c.namespace).GetScale(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:289
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:290
@@ -432,7 +431,7 @@ func ScaleDeployment(c Cluster, name string, replicas int32) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:291
 	scale.Spec.Replicas = replicas
 //line /home/user/kukicha/stdlib/kube/kube.kuki:292
-	_, updateErr := clientset(c).AppsV1().Deployments(c.namespace).UpdateScale(context.Background(), name, scale, metav1.UpdateOptions{})
+	_, updateErr := clientset(c).AppsV1().Deployments(c.namespace).UpdateScale(ctx.Value(ctx.Background()), name, scale, metav1.UpdateOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:293
 	if updateErr != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:294
@@ -445,7 +444,7 @@ func ScaleDeployment(c Cluster, name string, replicas int32) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:298
 func DeleteDeployment(c Cluster, name string) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:299
-	err := clientset(c).AppsV1().Deployments(c.namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	err := clientset(c).AppsV1().Deployments(c.namespace).Delete(ctx.Value(ctx.Background()), name, metav1.DeleteOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:300
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:301
@@ -458,7 +457,7 @@ func DeleteDeployment(c Cluster, name string) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:305
 func RolloutRestart(c Cluster, name string) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:306
-	dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+	dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:307
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:308
@@ -472,7 +471,7 @@ func RolloutRestart(c Cluster, name string) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:311
 	dep.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().UTC().Format(time.RFC3339)
 //line /home/user/kukicha/stdlib/kube/kube.kuki:312
-	_, updateErr := clientset(c).AppsV1().Deployments(c.namespace).Update(context.Background(), dep, metav1.UpdateOptions{})
+	_, updateErr := clientset(c).AppsV1().Deployments(c.namespace).Update(ctx.Value(ctx.Background()), dep, metav1.UpdateOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:313
 	if updateErr != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:314
@@ -494,7 +493,7 @@ func WaitDeploymentReady(c Cluster, name string, timeoutSeconds int64) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:325
 	for {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:326
-		dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+		dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:327
 		if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:328
@@ -534,7 +533,7 @@ func WaitPodReady(c Cluster, name string, timeoutSeconds int64) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:344
 	for {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:345
-		p, err := clientset(c).CoreV1().Pods(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+		p, err := clientset(c).CoreV1().Pods(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:346
 		if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:347
@@ -649,7 +648,7 @@ func WaitPodReadyCtx(c Cluster, h ctx.Handle, name string) error {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:398
 func ListServices(c Cluster) (ServiceList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:399
-	svcs, err := clientset(c).CoreV1().Services(c.namespace).List(context.Background(), metav1.ListOptions{})
+	svcs, err := clientset(c).CoreV1().Services(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:400
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:401
@@ -662,7 +661,7 @@ func ListServices(c Cluster) (ServiceList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:405
 func GetService(c Cluster, name string) (Service, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:406
-	svc, err := clientset(c).CoreV1().Services(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+	svc, err := clientset(c).CoreV1().Services(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:407
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:408
@@ -675,7 +674,7 @@ func GetService(c Cluster, name string) (Service, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:414
 func ListNodes(c Cluster) (NodeList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:415
-	nodes, err := clientset(c).CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	nodes, err := clientset(c).CoreV1().Nodes().List(ctx.Value(ctx.Background()), metav1.ListOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:416
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:417
@@ -688,7 +687,7 @@ func ListNodes(c Cluster) (NodeList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:421
 func GetNode(c Cluster, name string) (Node, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:422
-	n, err := clientset(c).CoreV1().Nodes().Get(context.Background(), name, metav1.GetOptions{})
+	n, err := clientset(c).CoreV1().Nodes().Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:423
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:424
@@ -701,7 +700,7 @@ func GetNode(c Cluster, name string) (Node, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:430
 func ListNamespaces(c Cluster) (NamespaceList, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:431
-	nsList, err := clientset(c).CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
+	nsList, err := clientset(c).CoreV1().Namespaces().List(ctx.Value(ctx.Background()), metav1.ListOptions{})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:432
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:433
@@ -995,7 +994,7 @@ func NamespaceName(n NamespaceItem) string {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:609
 func PodLogs(c Cluster, name string, handles ...ctx.Handle) (string, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:610
-	goCtx := context.Background()
+	goCtx := ctx.Value(ctx.Background())
 //line /home/user/kukicha/stdlib/kube/kube.kuki:611
 	if len(handles) > 0 {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:612
@@ -1028,7 +1027,7 @@ func PodLogsTail(c Cluster, name string, lines int64) (string, error) {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:625
 	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{TailLines: &lines})
 //line /home/user/kukicha/stdlib/kube/kube.kuki:626
-	stream, err := req.Stream(context.Background())
+	stream, err := req.Stream(ctx.Value(ctx.Background()))
 //line /home/user/kukicha/stdlib/kube/kube.kuki:627
 	if err != nil {
 //line /home/user/kukicha/stdlib/kube/kube.kuki:628

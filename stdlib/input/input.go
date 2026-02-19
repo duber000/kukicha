@@ -7,8 +7,8 @@ package input
 import (
 	"bufio"
 	"fmt"
+	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"os"
-	"strings"
 )
 
 //line /home/user/kukicha/stdlib/input/input.kuki:14
@@ -28,7 +28,7 @@ func ReadLine(prompt string) (string, error) {
 		return "", err
 	}
 //line /home/user/kukicha/stdlib/input/input.kuki:23
-	return strings.TrimSpace(text), nil
+	return kukistring.TrimSpace(text), nil
 }
 
 //line /home/user/kukicha/stdlib/input/input.kuki:27

@@ -19,7 +19,6 @@
 
 petiole kube
 
-import "context"
 import "fmt"
 import "io"
 import "os"
@@ -241,28 +240,28 @@ func Open(cfg Config) (Cluster, error)
 
 # ListPods lists all pods in the cluster's current namespace.
 func ListPods(c Cluster) (PodList, error)
-    pods, err := clientset(c).CoreV1().Pods(c.namespace).List(context.Background(), metav1.ListOptions{})
+    pods, err := clientset(c).CoreV1().Pods(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
     if err != empty
         return PodList{}, fmt.Errorf("kube list pods: %w", err)
     return PodList{items: pods}, empty
 
 # ListPodsLabeled lists pods matching a label selector.
 func ListPodsLabeled(c Cluster, selector string) (PodList, error)
-    pods, err := clientset(c).CoreV1().Pods(c.namespace).List(context.Background(), metav1.ListOptions{LabelSelector: selector})
+    pods, err := clientset(c).CoreV1().Pods(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{LabelSelector: selector})
     if err != empty
         return PodList{}, fmt.Errorf("kube list pods labeled: %w", err)
     return PodList{items: pods}, empty
 
 # GetPod retrieves a single pod by name.
 func GetPod(c Cluster, name string) (Pod, error)
-    p, err := clientset(c).CoreV1().Pods(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+    p, err := clientset(c).CoreV1().Pods(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
     if err != empty
         return Pod{}, fmt.Errorf("kube get pod: %w", err)
     return Pod{pod: p}, empty
 
 # DeletePod deletes a pod by name.
 func DeletePod(c Cluster, name string) error
-    err := clientset(c).CoreV1().Pods(c.namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+    err := clientset(c).CoreV1().Pods(c.namespace).Delete(ctx.Value(ctx.Background()), name, metav1.DeleteOptions{})
     if err != empty
         return fmt.Errorf("kube delete pod: %w", err)
     return empty
@@ -271,45 +270,45 @@ func DeletePod(c Cluster, name string) error
 
 # ListDeployments lists all deployments in the cluster's current namespace.
 func ListDeployments(c Cluster) (DeploymentList, error)
-    deps, err := clientset(c).AppsV1().Deployments(c.namespace).List(context.Background(), metav1.ListOptions{})
+    deps, err := clientset(c).AppsV1().Deployments(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
     if err != empty
         return DeploymentList{}, fmt.Errorf("kube list deployments: %w", err)
     return DeploymentList{items: deps}, empty
 
 # GetDeployment retrieves a single deployment by name.
 func GetDeployment(c Cluster, name string) (Deployment, error)
-    dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+    dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
     if err != empty
         return Deployment{}, fmt.Errorf("kube get deployment: %w", err)
     return Deployment{dep: dep}, empty
 
 # ScaleDeployment updates the replica count of a deployment.
 func ScaleDeployment(c Cluster, name string, replicas int32) error
-    scale, err := clientset(c).AppsV1().Deployments(c.namespace).GetScale(context.Background(), name, metav1.GetOptions{})
+    scale, err := clientset(c).AppsV1().Deployments(c.namespace).GetScale(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
     if err != empty
         return fmt.Errorf("kube scale get: %w", err)
     scale.Spec.Replicas = replicas
-    _, updateErr := clientset(c).AppsV1().Deployments(c.namespace).UpdateScale(context.Background(), name, scale, metav1.UpdateOptions{})
+    _, updateErr := clientset(c).AppsV1().Deployments(c.namespace).UpdateScale(ctx.Value(ctx.Background()), name, scale, metav1.UpdateOptions{})
     if updateErr != empty
         return fmt.Errorf("kube scale update: %w", updateErr)
     return empty
 
 # DeleteDeployment deletes a deployment by name.
 func DeleteDeployment(c Cluster, name string) error
-    err := clientset(c).AppsV1().Deployments(c.namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+    err := clientset(c).AppsV1().Deployments(c.namespace).Delete(ctx.Value(ctx.Background()), name, metav1.DeleteOptions{})
     if err != empty
         return fmt.Errorf("kube delete deployment: %w", err)
     return empty
 
 # RolloutRestart triggers a rollout restart by patching the pod template annotation.
 func RolloutRestart(c Cluster, name string) error
-    dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+    dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
     if err != empty
         return fmt.Errorf("kube rollout restart get: %w", err)
     if dep.Spec.Template.ObjectMeta.Annotations == empty
         dep.Spec.Template.ObjectMeta.Annotations = map of string to string{}
     dep.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().UTC().Format(time.RFC3339)
-    _, updateErr := clientset(c).AppsV1().Deployments(c.namespace).Update(context.Background(), dep, metav1.UpdateOptions{})
+    _, updateErr := clientset(c).AppsV1().Deployments(c.namespace).Update(ctx.Value(ctx.Background()), dep, metav1.UpdateOptions{})
     if updateErr != empty
         return fmt.Errorf("kube rollout restart update: %w", updateErr)
     return empty
@@ -323,7 +322,7 @@ func WaitDeploymentReady(c Cluster, name string, timeoutSeconds int64) error
         timeoutSeconds = 300
     deadline := time.Now().Add(time.Duration(timeoutSeconds) * time.Second)
     for
-        dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+        dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
         if err != empty
             return fmt.Errorf("kube wait deployment get: %w", err)
         desired := 1 as int32
@@ -342,7 +341,7 @@ func WaitPodReady(c Cluster, name string, timeoutSeconds int64) error
         timeoutSeconds = 180
     deadline := time.Now().Add(time.Duration(timeoutSeconds) * time.Second)
     for
-        p, err := clientset(c).CoreV1().Pods(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+        p, err := clientset(c).CoreV1().Pods(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
         if err != empty
             return fmt.Errorf("kube wait pod get: %w", err)
         ready := false
@@ -396,14 +395,14 @@ func WaitPodReadyCtx(c Cluster, h ctx.Handle, name string) error
 
 # ListServices lists all services in the cluster's current namespace.
 func ListServices(c Cluster) (ServiceList, error)
-    svcs, err := clientset(c).CoreV1().Services(c.namespace).List(context.Background(), metav1.ListOptions{})
+    svcs, err := clientset(c).CoreV1().Services(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
     if err != empty
         return ServiceList{}, fmt.Errorf("kube list services: %w", err)
     return ServiceList{items: svcs}, empty
 
 # GetService retrieves a single service by name.
 func GetService(c Cluster, name string) (Service, error)
-    svc, err := clientset(c).CoreV1().Services(c.namespace).Get(context.Background(), name, metav1.GetOptions{})
+    svc, err := clientset(c).CoreV1().Services(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
     if err != empty
         return Service{}, fmt.Errorf("kube get service: %w", err)
     return Service{svc: svc}, empty
@@ -412,14 +411,14 @@ func GetService(c Cluster, name string) (Service, error)
 
 # ListNodes lists all nodes in the cluster.
 func ListNodes(c Cluster) (NodeList, error)
-    nodes, err := clientset(c).CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+    nodes, err := clientset(c).CoreV1().Nodes().List(ctx.Value(ctx.Background()), metav1.ListOptions{})
     if err != empty
         return NodeList{}, fmt.Errorf("kube list nodes: %w", err)
     return NodeList{items: nodes}, empty
 
 # GetNode retrieves a single node by name.
 func GetNode(c Cluster, name string) (Node, error)
-    n, err := clientset(c).CoreV1().Nodes().Get(context.Background(), name, metav1.GetOptions{})
+    n, err := clientset(c).CoreV1().Nodes().Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
     if err != empty
         return Node{}, fmt.Errorf("kube get node: %w", err)
     return Node{node: n}, empty
@@ -428,7 +427,7 @@ func GetNode(c Cluster, name string) (Node, error)
 
 # ListNamespaces lists all namespaces in the cluster.
 func ListNamespaces(c Cluster) (NamespaceList, error)
-    nsList, err := clientset(c).CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
+    nsList, err := clientset(c).CoreV1().Namespaces().List(ctx.Value(ctx.Background()), metav1.ListOptions{})
     if err != empty
         return NamespaceList{}, fmt.Errorf("kube list namespaces: %w", err)
     return NamespaceList{items: nsList}, empty
@@ -607,7 +606,7 @@ func NamespaceName(n NamespaceItem) string
 # PodLogs retrieves the full log output from a pod's first container.
 # An optional ctx.Handle can be passed for cancellation support.
 func PodLogs(c Cluster, name string, many handles ctx.Handle) (string, error)
-    goCtx := context.Background()
+    goCtx := ctx.Value(ctx.Background())
     if len(handles) > 0
         goCtx = ctx.Value(handles[0])
     req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, reference of corev1.PodLogOptions{})
@@ -623,7 +622,7 @@ func PodLogs(c Cluster, name string, many handles ctx.Handle) (string, error)
 # PodLogsTail retrieves the last N lines of log output from a pod.
 func PodLogsTail(c Cluster, name string, lines int64) (string, error)
     req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, reference of corev1.PodLogOptions{TailLines: reference of lines})
-    stream, err := req.Stream(context.Background())
+    stream, err := req.Stream(ctx.Value(ctx.Background()))
     if err != empty
         return "", fmt.Errorf("kube pod logs tail: %w", err)
     defer stream.Close()

@@ -4,8 +4,7 @@ petiole shell
 
 import "os/exec"
 import "os"
-import "context"
-import "time"
+import "stdlib/ctx" as ctxpkg
 import "bytes"
 
 # Command represents a command builder for shell execution
@@ -93,9 +92,9 @@ func Execute(cmd Command) Result
 # buildExecCmd creates an exec.Cmd with optional timeout
 func buildExecCmd(cmd Command) reference exec.Cmd
     if cmd.timeout > 0
-        ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cmd.timeout) * time.Second)
-        defer cancel()
-        return exec.CommandContext(ctx, cmd.name, many cmd.args)
+        h := ctxpkg.WithTimeout(ctxpkg.Background(), cmd.timeout as int64)
+        defer ctxpkg.Cancel(h)
+        return exec.CommandContext(ctxpkg.Value(h), cmd.name, many cmd.args)
 
     return exec.Command(cmd.name, many cmd.args)
 
