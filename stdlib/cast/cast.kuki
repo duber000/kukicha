@@ -76,6 +76,8 @@ func SmartBool(value any) (bool, error)
 # SmartString converts an untyped value to string.
 # Never returns an error; uses fmt.Sprintf("%v") as a fallback.
 func SmartString(value any) (string, error)
+    if value == empty
+        return "", empty
     switch value as v
         when string
             return v, empty

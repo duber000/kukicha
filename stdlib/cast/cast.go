@@ -112,26 +112,31 @@ func SmartBool(value any) (bool, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:78
 func SmartString(value any) (string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:79
+	if value == nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:80
+		return "", nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:81
 	switch v := value.(type) {
 	case string:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:83
 		return v, nil
 	case int:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:85
 		return strconv.Itoa(v), nil
 	case int64:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:87
 		return strconv.FormatInt(v, 10), nil
 	case float64:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:89
 		return fmt.Sprintf("%g", v), nil
 	case bool:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:89
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:91
 		return strconv.FormatBool(v), nil
 	case []byte:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:93
 		return string(v), nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:94
 	return fmt.Sprintf("%v", value), nil
 }
