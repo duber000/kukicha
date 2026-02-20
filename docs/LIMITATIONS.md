@@ -9,7 +9,6 @@ and notes areas where the stdlib overlaps with dedicated tooling.
 | Package | File | Lines | Reason |
 |---------|------|-------|--------|
 | `stdlib/container` | `container_helper.go` | ~440 | Functional options, streaming I/O, tar archive handling |
-| `stdlib/netguard` | `netguard_helper.go` | 73 | Closure-as-struct-field pattern in `DialContext` |
 
 ---
 
@@ -177,6 +176,20 @@ a slice of function-typed values.
 
 This blocks 3 functions: `newClient`, `Connect`/`ConnectRemote`, `Open`.
 
+### ~~Blocker 4: Closure-as-struct-field~~ (resolved)
+
+Kukicha's brace-delimited struct literals suppress newlines (preventing multi-line
+function literal bodies inside `{...}`), and the indented struct literal form only
+works for unqualified types. However, this was resolved by using **separate field
+assignment**: create the struct, then assign the closure field separately.
+
+The following functions were migrated from `netguard_helper.go` to `netguard.kuki`:
+
+- `DialContext` — uses `dialer.Control = func(...)` instead of embedding in struct literal
+- `HTTPTransport` — uses `t.DialContext = func(...)` instead of embedding in struct literal
+- `HTTPClient` — simple struct literal with no closure (no workaround needed)
+
+The `netguard_helper.go` file has been deleted.
 
 ### Still in Go — remaining blockers
 
@@ -191,8 +204,6 @@ This blocks 3 functions: `newClient`, `Connect`/`ConnectRemote`, `Open`.
 | `LoginFromConfig` | Calls `loadDockerAuth` | `container_helper.go` |
 | `Pull`, `PullAuth` | Anonymous structs for JSON decode | `container_helper.go` |
 | `CopyFrom`, `CopyTo` + helpers | `filepath.WalkDir` closure, tar archive handling | `container_helper.go` |
-| `DialContext` | Closure-as-struct-field in `net.Dialer` | `netguard_helper.go` |
-
 ### Impact summary
 
 | Blocker | Helpers it would unlock | Effort |
@@ -200,5 +211,5 @@ This blocks 3 functions: `newClient`, `Connect`/`ConnectRemote`, `Open`.
 | ~~`select` statement~~ | ~~7 functions (kube watch + container wait/events)~~ | **Resolved** — migrated to .kuki |
 | Anonymous struct literals | 4 functions (streaming JSON decode + auth in container) | Medium — parser + codegen |
 | Variadic interface spreading | 4 functions (Docker client init) | Low-medium — extend `many` |
-| Closure-as-struct-field | 1 function (netguard `DialContext`) | Low — codegen for struct field func literals |
+| ~~Closure-as-struct-field~~ | ~~3 functions (netguard DialContext, HTTPTransport, HTTPClient)~~ | **Resolved** — migrated to .kuki using separate field assignment |
 | ~~Multi-statement closure callbacks~~ | ~~1 function (MCP tool registration)~~ | **Resolved** — migrated to .kuki |
