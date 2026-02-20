@@ -10,106 +10,106 @@ import (
 	"net"
 )
 
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:25
 type Guard struct {
 	networks     []*net.IPNet
 	blockPrivate bool
 	mode         string
 }
 
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:31
 func parseCIDRs(cidrs []string) ([]*net.IPNet, error) {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:32
 	nets := make([]*net.IPNet, 0)
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:33
 	for _, cidr := range cidrs {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:34
 		network, err := netutil.ParseCIDR(cidr)
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:35
 		if err != nil {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:36
 			return nil, fmt.Errorf("netguard: invalid CIDR %q: %w", cidr, err)
 		}
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:37
 		nets = append(nets, network)
 	}
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:38
 	return nets, nil
 }
 
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:41
 func checkIP(g Guard, ip net.IP) bool {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:42
 	matched := false
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:43
 	for _, n := range g.networks {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:44
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:44
 		if netutil.Contains(n, ip) {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:45
 			matched = true
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:46
 			break
 		}
 	}
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:48
 	switch g.mode {
 	case "allow":
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:50
 		return matched
 	case "block":
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:52
 		return !matched
 	default:
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:54
 		return false
 	}
 }
 
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:57
 func NewAllow(cidrs []string) (Guard, error) {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:58
 	nets, err := parseCIDRs(cidrs)
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:59
 	if err != nil {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:60
 		return Guard{}, err
 	}
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:61
 	return Guard{networks: nets, mode: "allow"}, nil
 }
 
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:64
 func NewBlock(cidrs []string) (Guard, error) {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:65
 	nets, err := parseCIDRs(cidrs)
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:66
 	if err != nil {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:67
 		return Guard{}, err
 	}
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:68
 	return Guard{networks: nets, mode: "block"}, nil
 }
 
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:72
 func NewSSRFGuard() Guard {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:91
 	ssrfCIDRs := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16", "::1/128", "fc00::/7", "fe80::/10", "0.0.0.0/8", "100.64.0.0/10", "192.0.0.0/24", "192.0.2.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "224.0.0.0/4", "240.0.0.0/4"}
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:92
 	nets, _ := parseCIDRs(ssrfCIDRs)
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:93
 	return Guard{networks: nets, blockPrivate: true, mode: "block"}
 }
 
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:97
 func Check(g Guard, ipStr string) bool {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:98
 	ip := netutil.ParseIP(ipStr)
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:99
 	if netutil.IsNil(ip) {
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:100
 		return false
 	}
-//line /home/user/kukicha/stdlib/netguard/netguard.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:101
 	return checkIP(g, ip)
 }

@@ -22,6 +22,7 @@ petiole container
 import "bytes"
 import "fmt"
 import "io"
+import "time"
 import "stdlib/ctx" as ctxpkg
 import "stdlib/errors"
 import "stdlib/json"
@@ -31,6 +32,7 @@ import "github.com/docker/docker/client"
 import "github.com/docker/docker/api/types" as dockertypes
 import "github.com/docker/docker/api/types/container" as dockercontainer
 import "github.com/docker/docker/api/types/image" as dockerimage
+import "github.com/docker/docker/api/types/events" as dockerevents
 import "github.com/docker/docker/pkg/stdcopy"
 
 # Engine wraps a Docker/Podman client connection
@@ -318,3 +320,83 @@ func Exec(engine Engine, containerID string, cmd list of string, many handles ct
     if inspectResult.ExitCode != 0
         return combined, error "container exec exit {inspectResult.ExitCode}"
     return combined, empty
+
+# --- Wait ---
+
+# Wait blocks until a container exits and returns its exit code.
+# timeoutSeconds <= 0 waits indefinitely.
+func Wait(engine Engine, containerID string, timeoutSeconds int64) (int64, error)
+    h := ctxpkg.Background()
+    if timeoutSeconds > 0
+        h = h |> ctxpkg.WithTimeout(timeoutSeconds)
+    defer ctxpkg.Cancel(h)
+    goCtx := ctxpkg.Value(h)
+    waitCh, errCh := engine.cli.ContainerWait(goCtx, containerID, dockercontainer.WaitConditionNotRunning)
+    select
+        when err := receive from errCh
+            if err != empty
+                return -1, fmt.Errorf("container wait: %w", err)
+            return -1, error "container wait: unknown wait error"
+        when res := receive from waitCh
+            return res.StatusCode, empty
+
+# WaitCtx blocks until a container exits or the provided context is canceled.
+func WaitCtx(engine Engine, h ctxpkg.Handle, containerID string) (int64, error)
+    goCtx := ctxpkg.Value(h)
+    waitCh, errCh := engine.cli.ContainerWait(goCtx, containerID, dockercontainer.WaitConditionNotRunning)
+    select
+        when err := receive from errCh
+            if err != empty
+                return -1, fmt.Errorf("container wait: %w", err)
+            return -1, error "container wait: unknown wait error"
+        when res := receive from waitCh
+            return res.StatusCode, empty
+
+# --- Events ---
+
+# convertEvent converts a Docker events.Message to a ContainerEvent.
+func convertEvent(msg dockerevents.Message) ContainerEvent
+    ts := time.Unix(msg.Time, 0).UTC().Format(time.RFC3339)
+    actor := msg.Actor.ID
+    name, ok := msg.Actor.Attributes["name"]
+    if ok and name != ""
+        actor = name
+    return ContainerEvent{
+        id: msg.ID,
+        resource: msg.Type as string,
+        action: msg.Action as string,
+        actor: actor,
+        time: ts,
+    }
+
+# eventsWithContext collects runtime events until the context is canceled.
+func eventsWithContext(engine Engine, h ctxpkg.Handle) (list of ContainerEvent, error)
+    goCtx := ctxpkg.Value(h)
+    msgCh, errCh := engine.cli.Events(goCtx, dockertypes.EventsOptions{})
+    events := make(list of ContainerEvent, 0)
+    for
+        select
+            when receive from goCtx.Done()
+                return events, empty
+            when err := receive from errCh
+                if err == empty or goCtx.Err() != empty
+                    return events, empty
+                return events, fmt.Errorf("container events: %w", err)
+            when msg, ok := receive from msgCh
+                if not ok
+                    return events, empty
+                events = append(events, convertEvent(msg))
+    return events, empty
+
+# Events collects runtime events for a bounded duration.
+# timeoutSeconds <= 0 defaults to 15 seconds.
+func Events(engine Engine, timeoutSeconds int64) (list of ContainerEvent, error)
+    if timeoutSeconds <= 0
+        timeoutSeconds = 15
+    h := ctxpkg.Background() |> ctxpkg.WithTimeout(timeoutSeconds)
+    defer ctxpkg.Cancel(h)
+    return eventsWithContext(engine, h)
+
+# EventsCtx collects runtime events until the provided context is canceled.
+func EventsCtx(engine Engine, h ctxpkg.Handle) (list of ContainerEvent, error)
+    return eventsWithContext(engine, h)

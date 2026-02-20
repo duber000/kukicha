@@ -12,11 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	dockercontainer "github.com/docker/docker/api/types/container"
-	dockerevents "github.com/docker/docker/api/types/events"
-	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
@@ -357,100 +354,6 @@ func LoginFromConfig(server string) (Auth, error) {
 		return Auth{}, err
 	}
 	return Auth{username: username, password: password, serverAddress: addr}, nil
-}
-
-// Wait blocks until a container exits and returns its exit code.
-// timeoutSeconds <= 0 waits indefinitely.
-func Wait(engine Engine, containerID string, timeoutSeconds int64) (int64, error) {
-	ctx := context.Background()
-	cancel := func() {}
-	if timeoutSeconds > 0 {
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
-	}
-	defer cancel()
-
-	waitCh, errCh := engine.cli.ContainerWait(ctx, containerID, dockercontainer.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			return -1, fmt.Errorf("container wait: %w", err)
-		}
-		return -1, fmt.Errorf("container wait: unknown wait error")
-	case res := <-waitCh:
-		return int64(res.StatusCode), nil
-	}
-}
-
-// WaitCtx blocks until container exits or the provided context is canceled.
-func WaitCtx(engine Engine, h ctxpkg.Handle, containerID string) (int64, error) {
-	ctx := ctxpkg.Value(h)
-	waitCh, errCh := engine.cli.ContainerWait(ctx, containerID, dockercontainer.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			return -1, fmt.Errorf("container wait: %w", err)
-		}
-		return -1, fmt.Errorf("container wait: unknown wait error")
-	case res := <-waitCh:
-		return int64(res.StatusCode), nil
-	}
-}
-
-// Events collects runtime events for a bounded duration.
-// timeoutSeconds <= 0 defaults to 15 seconds.
-func Events(engine Engine, timeoutSeconds int64) ([]ContainerEvent, error) {
-	if timeoutSeconds <= 0 {
-		timeoutSeconds = 15
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds)*time.Second)
-	defer cancel()
-	return eventsWithContext(engine, ctx)
-}
-
-// EventsCtx collects runtime events until the provided context is canceled.
-func EventsCtx(engine Engine, h ctxpkg.Handle) ([]ContainerEvent, error) {
-	ctx := ctxpkg.Value(h)
-	return eventsWithContext(engine, ctx)
-}
-
-func eventsWithContext(engine Engine, ctx context.Context) ([]ContainerEvent, error) {
-	eventFilters := filters.NewArgs()
-	msgCh, errCh := engine.cli.Events(ctx, types.EventsOptions{
-		Filters: eventFilters,
-	})
-
-	events := []ContainerEvent{}
-	for {
-		select {
-		case <-ctx.Done():
-			return events, nil
-		case err := <-errCh:
-			if err == nil || ctx.Err() != nil {
-				return events, nil
-			}
-			return events, fmt.Errorf("container events: %w", err)
-		case msg, ok := <-msgCh:
-			if !ok {
-				return events, nil
-			}
-			events = append(events, convertEvent(msg))
-		}
-	}
-}
-
-func convertEvent(msg dockerevents.Message) ContainerEvent {
-	when := time.Unix(msg.Time, 0).UTC().Format(time.RFC3339)
-	actor := msg.Actor.ID
-	if name, ok := msg.Actor.Attributes["name"]; ok && name != "" {
-		actor = name
-	}
-	return ContainerEvent{
-		id:       msg.ID,
-		resource: string(msg.Type),
-		action:   string(msg.Action),
-		actor:    actor,
-		time:     when,
-	}
 }
 
 // CopyFrom copies files from a container path to a local destination path.

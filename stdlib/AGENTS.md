@@ -210,17 +210,21 @@ Each stdlib module follows one of two patterns:
 ### Pure Kukicha (types + logic in .kuki)
 Used when the implementation is straightforward Kukicha code. No `_helper.go` or `_tool.go`.
 Examples: `a2a`, `cast`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
-`http`, `input`, `iterator`, `json`, `llm`, `maps`, `must`, `net`, `obs`, `parse`, `pg`,
+`http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `must`, `net`, `obs`, `parse`, `pg`,
 `random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `validate`
 
 ### Kukicha types + Go helper (types in .kuki, implementation in _helper.go)
-Used when wrapping complex Go libraries. The `.kuki` file defines types visible to Kukicha code, and the `_helper.go` provides the implementation in Go.
-Function type aliases (`type Handler func(string)`) are supported in `.kuki` files, enabling callback types for packages like `mcp`.
-Examples: `container`, `kube`
+Used when wrapping complex Go libraries where the entire implementation lives in Go.
+The `.kuki` file defines types visible to Kukicha code, and the `_helper.go` provides the implementation.
+Function type aliases (`type Handler func(string)`) are supported in `.kuki` files, enabling callback types.
+Examples: *(currently none — `container` and `kube` have both moved to other patterns)*
 
-### Mixed (most logic in .kuki, thin Go helper for syscall-level ops)
-Used when most logic can be pure Kukicha but some low-level Go operations are needed.
-Examples: `netguard` (IP/CIDR logic in .kuki, DNS+dialer in `_helper.go`), `mcp` (core in `.kuki`, callback bridge in `_tool.go`)
+### Mixed (most logic in .kuki, Go helper for ops not yet expressible in Kukicha)
+Used when most logic is pure Kukicha but some operations require hand-written Go.
+Examples:
+- `container` — watch/wait/events in `.kuki`; Docker client init, streaming pull/build, tar I/O in `_helper.go`
+- `netguard` — IP/CIDR logic in `.kuki`, DNS+dialer closure in `_helper.go`
+- `mcp` — core in `.kuki`, callback bridge in `_tool.go`
 
 ## Import Aliases
 

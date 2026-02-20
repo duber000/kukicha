@@ -8,8 +8,7 @@ and notes areas where the stdlib overlaps with dedicated tooling.
 
 | Package | File | Lines | Reason |
 |---------|------|-------|--------|
-| `stdlib/container` | `container_helper.go` | ~643 | Functional options, streaming I/O, tar archive handling, `select` |
-| `stdlib/kube` | `kube_helper.go` | 69 | `select` statement in `watchPodsWithContext` (+ 2 callers) |
+| `stdlib/container` | `container_helper.go` | ~440 | Functional options, streaming I/O, tar archive handling |
 | `stdlib/netguard` | `netguard_helper.go` | 73 | Closure-as-struct-field pattern in `DialContext` |
 
 ---
@@ -146,18 +145,14 @@ Many kube helper functions already use only patterns that Kukicha supports (type
 assertions, pointer dereferencing, struct literals, defer, loops). The actual blockers
 are more specific than "anonymous struct literals."
 
-### Blocker 1: `select` statement support (critical)
+### ~~Blocker 1: `select` statement support~~ (resolved)
 
-Kukicha has no `select` keyword. This blocks 4 functions that wait on channels:
+Kukicha now supports the `select` keyword. The following functions were migrated from Go
+helpers to Kukicha using `select`:
 
-- `container.Wait` / `container.WaitCtx` — select on wait channel vs error channel
-- `container.eventsWithContext` — select on ctx.Done vs error vs message channels
-- `kube.watchPodsWithContext` — select on ctx.Done vs watcher result channel (69 lines remaining in `kube_helper.go`)
-
-Without `select`, any function that multiplexes channels must stay in Go.
-Note: the kube `WatchPods`/`WatchPodsCtx` wrappers also remain in Go because the
-Kukicha semantic checker only resolves identifiers within `.kuki` files, so they
-cannot call the Go-only `watchPodsWithContext`.
+- `kube.WatchPods`, `kube.WatchPodsCtx`, `kube.watchPodsWithContext` — migrated to `kube.kuki`; `kube_helper.go` deleted
+- `container.Wait`, `container.WaitCtx` — migrated to `container.kuki`
+- `container.Events`, `container.EventsCtx`, `container.eventsWithContext`, `container.convertEvent` — migrated to `container.kuki`
 
 ### Blocker 2: Anonymous struct literals
 
@@ -187,12 +182,6 @@ This blocks 3 functions: `newClient`, `Connect`/`ConnectRemote`, `Open`.
 
 | Function | Blocker | File |
 |----------|---------|------|
-| `watchPodsWithContext` | `select` statement | `kube_helper.go` |
-| `WatchPods`, `WatchPodsCtx` | Call `watchPodsWithContext` (semantic checker only sees .kuki) | `kube_helper.go` |
-| `Wait`, `WaitCtx` | `select` statement | `container_helper.go` |
-| `eventsWithContext` | `select` statement | `container_helper.go` |
-| `Events`, `EventsCtx` | Call `eventsWithContext` | `container_helper.go` |
-| `convertEvent` | Called by `eventsWithContext` | `container_helper.go` |
 | `newClient` | Variadic interface spreading (`opts...`) | `container_helper.go` |
 | `Connect`, `ConnectRemote` | Call `newClient` | `container_helper.go` |
 | `Open` | Variadic interface spreading (`opts...`) | `container_helper.go` |
@@ -208,7 +197,7 @@ This blocks 3 functions: `newClient`, `Connect`/`ConnectRemote`, `Open`.
 
 | Blocker | Helpers it would unlock | Effort |
 |---------|------------------------|--------|
-| `select` statement | 7 functions (kube watch + container wait/events) | Medium — new keyword, parser, codegen |
+| ~~`select` statement~~ | ~~7 functions (kube watch + container wait/events)~~ | **Resolved** — migrated to .kuki |
 | Anonymous struct literals | 4 functions (streaming JSON decode + auth in container) | Medium — parser + codegen |
 | Variadic interface spreading | 4 functions (Docker client init) | Low-medium — extend `many` |
 | Closure-as-struct-field | 1 function (netguard `DialContext`) | Low — codegen for struct field func literals |

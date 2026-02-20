@@ -4,42 +4,42 @@
 
 package maps
 
-//line /home/user/kukicha/stdlib/maps/maps.kuki:8
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:8
 func Keys(m map[any]any) []any {
-//line /home/user/kukicha/stdlib/maps/maps.kuki:9
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:9
 	keys := make([]any, 0, len(m))
-//line /home/user/kukicha/stdlib/maps/maps.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:10
 	for _, k := range m {
-//line /home/user/kukicha/stdlib/maps/maps.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:11
 		keys = append(keys, k)
 	}
-//line /home/user/kukicha/stdlib/maps/maps.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:12
 	return keys
 }
 
-//line /home/user/kukicha/stdlib/maps/maps.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:16
 func Values(m map[any]any) []any {
-//line /home/user/kukicha/stdlib/maps/maps.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:17
 	values := make([]any, 0, len(m))
-//line /home/user/kukicha/stdlib/maps/maps.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:18
 	for _, v := range m {
-//line /home/user/kukicha/stdlib/maps/maps.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:19
 		values = append(values, v)
 	}
-//line /home/user/kukicha/stdlib/maps/maps.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:20
 	return values
 }
 
-//line /home/user/kukicha/stdlib/maps/maps.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:23
 func Contains(m map[any]any, key any) bool {
-//line /home/user/kukicha/stdlib/maps/maps.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:24
 	for _, k := range m {
-//line /home/user/kukicha/stdlib/maps/maps.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:25
 		if k == key {
-//line /home/user/kukicha/stdlib/maps/maps.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:26
 			return true
 		}
 	}
-//line /home/user/kukicha/stdlib/maps/maps.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:27
 	return false
 }

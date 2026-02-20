@@ -601,6 +601,53 @@ func NodeVersion(n Node) string
 func NamespaceName(n NamespaceItem) string
     return nsItem(n).Name
 
+# --- Watch ---
+
+# watchPodsWithContext streams pod events until the context is canceled.
+func watchPodsWithContext(h ctx.Handle, c Cluster) (list of PodEvent, error)
+    goCtx := ctx.Value(h)
+    watcher, err := clientset(c).CoreV1().Pods(c.namespace).Watch(goCtx, metav1.ListOptions{})
+    if err != empty
+        return empty, fmt.Errorf("kube watch pods: %w", err)
+    defer watcher.Stop()
+    events := make(list of PodEvent, 0)
+    for
+        select
+            when receive from goCtx.Done()
+                return events, empty
+            when event, ok := receive from watcher.ResultChan()
+                if not ok
+                    return events, empty
+                p, podOk := event.Object.(reference corev1.Pod)
+                if not podOk
+                    continue
+                ready := false
+                for _, cond in p.Status.Conditions
+                    if cond.Type == corev1.PodReady
+                        ready = cond.Status == corev1.ConditionTrue
+                        break
+                events = append(events, PodEvent{
+                    eventType: event.Type as string,
+                    name: p.Name,
+                    namespace: p.Namespace,
+                    phase: p.Status.Phase as string,
+                    ready: ready,
+                })
+    return events, empty
+
+# WatchPods streams pod events for the namespace and returns collected events until timeout.
+# timeoutSeconds <= 0 defaults to 30 seconds.
+func WatchPods(c Cluster, timeoutSeconds int64) (list of PodEvent, error)
+    if timeoutSeconds <= 0
+        timeoutSeconds = 30
+    h := ctx.Background() |> ctx.WithTimeout(timeoutSeconds)
+    defer ctx.Cancel(h)
+    return watchPodsWithContext(h, c)
+
+# WatchPodsCtx streams pod events until the provided context is canceled.
+func WatchPodsCtx(c Cluster, h ctx.Handle) (list of PodEvent, error)
+    return watchPodsWithContext(h, c)
+
 # --- Logs ---
 
 # PodLogs retrieves the full log output from a pod's first container.
