@@ -8,9 +8,9 @@ and notes areas where the stdlib overlaps with dedicated tooling.
 
 | Package | File | Lines | Reason |
 |---------|------|-------|--------|
-| `stdlib/container` | `container_helper.go` | ~600 | Functional options, streaming I/O, tar archive handling |
+| `stdlib/container` | `container_helper.go` | ~643 | Functional options, streaming I/O, tar archive handling, `select` |
 | `stdlib/kube` | `kube_helper.go` | 69 | `select` statement in `watchPodsWithContext` (+ 2 callers) |
-| `stdlib/mcp` | `mcp_tool.go` | ~50 | Multi-statement SDK callback closure |
+| `stdlib/netguard` | `netguard_helper.go` | 73 | Closure-as-struct-field pattern in `DialContext` |
 
 ---
 
@@ -35,16 +35,16 @@ incrementally and pass it with spread syntax when the element type is a function
 
 ---
 
-## 2. Multi-Statement SDK Callback Closures
+## 2. Multi-Statement SDK Callback Closures (fixed)
 
-Some Go SDK APIs require passing a multi-statement `func(ctx, req) (resp, error)` callback
-at registration time. Kukicha has function literals and block lambdas, but the MCP SDK's
-`server.AddTool` requires a closure that captures variables, unmarshals JSON, dispatches to
-a handler, and wraps the response — a pattern that spans many statements with SDK-specific
-types. The named function type (`ToolHandler`) is now expressible in Kukicha, but the
-multi-statement closure body of the `Tool` function itself remains in Go.
+Kukicha now supports multi-statement function literals as arguments to function calls.
+The `mcp.Tool` function — which passes a multi-statement `func(ctx, req) (resp, error)`
+closure to `server.AddTool` — has been fully migrated from `mcp_tool.go` to `mcp.kuki`.
+The `mcp_tool.go` file has been deleted.
 
-**Affects:** `mcp.Tool` — the MCP SDK's `server.AddTool` requires a context-aware callback.
+Note: bare `error` as a return value in `onerr` handlers is still parsed as the
+`error "message"` keyword, so conventional `if err != empty` is used instead of `onerr`
+for `json.Unmarshal` in the migrated `Tool()` function.
 
 ---
 
@@ -66,17 +66,18 @@ Kukicha requires named types for struct literals and does not support anonymous 
 declarations inline in function bodies.
 
 **Affects:** `container.Pull`, `container.PullAuth`, `container.buildImage`,
-`container.containerLogs`.
+`container.loadDockerAuth`.
+
+Note: `container.containerLogs` was migrated to Kukicha — it uses `stdcopy.StdCopy`
+for demuxing, not anonymous structs.
 
 ---
 
-## 4. `onerr` + Multi-Value `return` Inside Inline Callback Bodies
+## 4. `onerr` + Multi-Value `return` Inside Inline Callback Bodies (fixed)
 
-In some inline callback/lambda contexts (for example, handler functions passed directly to
-APIs like `mcp.Tool`), parser/codegen handling is still limited when `onerr` is followed by
-a multi-value `return` in the same inline function body.
-
-Example pattern that may fail in inline callback bodies:
+The codegen now correctly handles `error "{error}"` inside multi-value `return` expressions
+in `onerr` handlers, including inside inline callback/lambda bodies. The `{error}` placeholder
+is properly substituted with the caught error variable (e.g., `err_1`).
 
 ```kukicha
 func(args map of string to any) (any, error)
@@ -84,10 +85,7 @@ func(args map of string to any) (any, error)
     return data as any, empty
 ```
 
-Current workaround: use explicit error variables in the inline callback body, or move logic
-to a named helper function and return from there.
-
-**Affects:** Inline tool/handler callbacks that need `(value, error)` fallback returns.
+This pattern now works correctly without needing a named helper function.
 
 ---
 
@@ -129,24 +127,19 @@ remain valuable for dashboards, health checks, and CI verification scripts that 
 
 ## 6. Compiler Code-Generation Quirks
 
-### `error "..."` interpolation requires `import "fmt"`
+### `error "..."` interpolation auto-imports `fmt` (fixed)
 
-The compiler generates `errors.New(fmt.Sprintf(...))` for interpolated `error ""` strings:
+The compiler generates `errors.New(fmt.Sprintf(...))` for interpolated `error ""` strings
+and now **automatically imports both `"errors"` and `"fmt"`** when needed. No manual
+`import "fmt"` is required.
 
 ```go
 // Kukicha source
 return 0, error "environment variable {key} not set"
 
-// Generated Go
+// Generated Go (fmt and errors auto-imported)
 return 0, errors.New(fmt.Sprintf("environment variable %v not set", key))
 ```
-
-The compiler auto-imports `"errors"` for this pattern but does **not** auto-import `"fmt"`.
-Any `.kuki` file that uses `error "... {var} ..."` syntax **must** explicitly add `import "fmt"`,
-or the generated Go will fail to build with `undefined: fmt`.
-
-**Workaround:** Add `import "fmt"` to any package that uses string interpolation in `error ""`
-expressions. This applies even if `fmt` is not used anywhere else in the file.
 
 ### `stdlib/string` does not wrap all of Go's `strings` package
 
@@ -193,8 +186,8 @@ var msg struct {
 json.Unmarshal(scanner.Bytes(), &msg)
 ```
 
-This blocks 4 functions in `container_helper.go`: `buildImage`, `containerLogs`,
-`Pull`, `PullAuth`. Also blocks `loadDockerAuth`.
+This blocks 4 functions in `container_helper.go`: `buildImage`, `loadDockerAuth`,
+`Pull`, `PullAuth`.
 
 ### Blocker 3: Variadic interface arg spreading
 
@@ -204,15 +197,15 @@ a slice of function-typed values.
 
 This blocks 3 functions: `newClient`, `Connect`/`ConnectRemote`, `Open`.
 
-### Blocker 4: Multi-statement closure as callback argument
+### Blocker 4: Multi-statement closure as callback argument (resolved)
 
 The MCP SDK's `server.AddTool` requires a `func(ctx, req) (resp, error)` closure
-that captures variables and contains branching logic. Kukicha's block lambdas can
-express simple closures but not the full dispatch pattern needed here.
-
-This blocks 1 function: `mcp.Tool`.
+that captures variables and contains branching logic. This was migrated to Kukicha
+using multi-statement function literals as arguments. `mcp_tool.go` has been deleted.
 
 ### Migrated to .kuki (completed)
+
+#### Kube (41 functions)
 
 41 kube helper functions were migrated from `kube_helper.go` to `kube.kuki`,
 reducing the Go helper from 621 lines to 69 lines. Only `watchPodsWithContext`
@@ -236,9 +229,31 @@ reducing the Go helper from 621 lines to 69 lines. Only `watchPodsWithContext`
 | Namespace accessors | nsItem, NamespaceName | 2 |
 | Logs | PodLogs, PodLogsTail | 2 |
 
-Patterns used: `reference of` (address-of), `dereference` (pointer deref),
-`as` (type assertions), struct literals with external SDK types, bare `for` loops,
-`many` (variadic params), and `k8s.io/...` imports with `as` aliases.
+#### MCP (1 function — `mcp_tool.go` deleted)
+
+`mcp.Tool()` was migrated from `mcp_tool.go` to `mcp.kuki`. The Go helper file was
+deleted entirely. This demonstrated that multi-statement function literals as arguments
+work in Kukicha — the closure passed to `server.AddTool` contains JSON unmarshalling,
+error handling, type switching, and JSON marshalling.
+
+#### Container (6 functions)
+
+6 container functions were migrated from `container_helper.go` to `container.kuki`,
+reducing the Go helper from ~782 lines to ~643 lines.
+
+| Function | Pattern |
+|----------|---------|
+| `containerLogs` | `stdcopy.StdCopy` for demuxing, `io.ReadAll` fallback |
+| `Logs` | Thin wrapper calling `containerLogs` |
+| `LogsTail` | Wrapper with `fmt.Sprintf` for tail param |
+| `Run` | `ContainerCreate` + `ContainerStart` with SDK struct literals |
+| `Inspect` | `ContainerInspect` → `ContainerInfo` mapping |
+| `Exec` | `ContainerExecCreate/Attach/Inspect` with `stdcopy.StdCopy` |
+
+Patterns used across all migrations: `reference of` (address-of), `dereference` (pointer deref),
+`as` (type assertions and conversions), struct literals with external SDK types, bare `for` loops,
+`many` (variadic params), `k8s.io/...` imports with `as` aliases, and multi-statement
+function literals as arguments.
 
 ### Still in Go — remaining blockers
 
@@ -246,12 +261,27 @@ Patterns used: `reference of` (address-of), `dereference` (pointer deref),
 |----------|---------|------|
 | `watchPodsWithContext` | `select` statement | `kube_helper.go` |
 | `WatchPods`, `WatchPodsCtx` | Call `watchPodsWithContext` (semantic checker only sees .kuki) | `kube_helper.go` |
+| `Wait`, `WaitCtx` | `select` statement | `container_helper.go` |
+| `eventsWithContext` | `select` statement | `container_helper.go` |
+| `Events`, `EventsCtx` | Call `eventsWithContext` | `container_helper.go` |
+| `convertEvent` | Called by `eventsWithContext` | `container_helper.go` |
+| `newClient` | Variadic interface spreading (`opts...`) | `container_helper.go` |
+| `Connect`, `ConnectRemote` | Call `newClient` | `container_helper.go` |
+| `Open` | Variadic interface spreading (`opts...`) | `container_helper.go` |
+| `buildImage` | Anonymous structs + `filepath.WalkDir` closure | `container_helper.go` |
+| `Build` | Calls `buildImage` | `container_helper.go` |
+| `loadDockerAuth` | Anonymous structs (nested) | `container_helper.go` |
+| `LoginFromConfig` | Calls `loadDockerAuth` | `container_helper.go` |
+| `Pull`, `PullAuth` | Anonymous structs for JSON decode | `container_helper.go` |
+| `CopyFrom`, `CopyTo` + helpers | `filepath.WalkDir` closure, tar archive handling | `container_helper.go` |
+| `DialContext` | Closure-as-struct-field in `net.Dialer` | `netguard_helper.go` |
 
 ### Impact summary
 
 | Blocker | Helpers it would unlock | Effort |
 |---------|------------------------|--------|
-| `select` statement | 4 functions (kube watch + container wait/events) | Medium — new keyword, parser, codegen |
-| Anonymous struct literals | 5 functions (streaming JSON decode in container) | Medium — parser + codegen |
-| Variadic interface spreading | 3 functions (Docker client init) | Low-medium — extend `many` |
-| Multi-statement closure callbacks | 1 function (MCP tool registration) | Medium — extend block lambdas |
+| `select` statement | 7 functions (kube watch + container wait/events) | Medium — new keyword, parser, codegen |
+| Anonymous struct literals | 4 functions (streaming JSON decode + auth in container) | Medium — parser + codegen |
+| Variadic interface spreading | 4 functions (Docker client init) | Low-medium — extend `many` |
+| Closure-as-struct-field | 1 function (netguard `DialContext`) | Low — codegen for struct field func literals |
+| ~~Multi-statement closure callbacks~~ | ~~1 function (MCP tool registration)~~ | **Resolved** — migrated to .kuki |

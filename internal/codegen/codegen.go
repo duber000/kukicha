@@ -118,7 +118,8 @@ func (g *Generator) Generate() (string, error) {
 
 	// Generate imports (including auto-imports like fmt for string interpolation, print builtin, and onerr explain)
 	needsFmt := g.needsStringInterpolation() || g.needsPrintBuiltin() || g.needsExplain()
-	if len(g.program.Imports) > 0 || needsFmt || len(g.autoImports) > 0 {
+	needsErrors := g.needsErrorsPackage()
+	if len(g.program.Imports) > 0 || needsFmt || needsErrors || len(g.autoImports) > 0 {
 		g.writeLine("")
 		g.generateImports()
 	}
@@ -1507,12 +1508,15 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 			g.writeLine(fmt.Sprintf("return %s", errExpr))
 		}
 	case *ast.ReturnExpr:
-		// onerr return empty, error
+		// onerr return empty, error "{error}"
 		// If any value is identifier "error", replace with errVar
+		// If any value is an ErrorExpr, use errorValueExpr to substitute {error}
 		values := make([]string, len(h.Values))
 		for i, v := range h.Values {
 			if id, ok := v.(*ast.Identifier); ok && id.Value == "error" {
 				values[i] = errVar
+			} else if errExpr, ok := v.(*ast.ErrorExpr); ok {
+				values[i] = g.errorValueExpr(errExpr.Message, errVar)
 			} else {
 				values[i] = g.exprToString(v)
 			}
@@ -2986,6 +2990,8 @@ func (g *Generator) checkExprForInterpolation(expr ast.Expression) bool {
 				return true
 			}
 		}
+	case *ast.ErrorExpr:
+		return g.checkExprForInterpolation(e.Message)
 	}
 
 	return false

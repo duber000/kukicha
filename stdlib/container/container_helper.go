@@ -19,7 +19,6 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
 	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
 
 	types "github.com/docker/docker/api/types"
@@ -150,41 +149,6 @@ func buildImage(cli *client.Client, contextPath string, tag string) (string, str
 	}
 
 	return imageID, output.String(), nil
-}
-
-// containerLogs retrieves logs using stdcopy.StdCopy to demux stdout/stderr.
-// The tail parameter controls how many lines to return ("" for all, or a number string).
-func containerLogs(cli *client.Client, containerID string, tail string) (string, error) {
-	opts := dockercontainer.LogsOptions{
-		ShowStdout: true,
-		ShowStderr: true,
-	}
-	if tail != "" {
-		opts.Tail = tail
-	}
-
-	reader, err := cli.ContainerLogs(context.Background(), containerID, opts)
-	if err != nil {
-		return "", fmt.Errorf("container logs: %w", err)
-	}
-	defer reader.Close()
-
-	var stdout, stderr bytes.Buffer
-	_, err = stdcopy.StdCopy(&stdout, &stderr, reader)
-	if err != nil {
-		// If stdcopy fails (e.g., TTY mode), fall back to raw read
-		raw, readErr := io.ReadAll(reader)
-		if readErr != nil {
-			return "", fmt.Errorf("container logs: %w", err)
-		}
-		return string(raw), nil
-	}
-
-	combined := stdout.String()
-	if stderr.Len() > 0 {
-		combined += stderr.String()
-	}
-	return combined, nil
 }
 
 // loadDockerAuth reads ~/.docker/config.json and resolves credentials
@@ -377,28 +341,6 @@ func PullAuth(engine Engine, ref string, auth Auth) (string, error) {
 	return digest, nil
 }
 
-// Run creates and starts a container. Returns the container ID.
-func Run(engine Engine, img string, cmd []string) (string, error) {
-	resp, err := engine.cli.ContainerCreate(
-		context.Background(),
-		&dockercontainer.Config{
-			Image: img,
-			Cmd:   cmd,
-		},
-		nil, nil, nil, "",
-	)
-	if err != nil {
-		return "", fmt.Errorf("container run create: %w", err)
-	}
-
-	err = engine.cli.ContainerStart(context.Background(), resp.ID, dockercontainer.StartOptions{})
-	if err != nil {
-		return "", fmt.Errorf("container run start: %w", err)
-	}
-
-	return resp.ID, nil
-}
-
 // Build builds a Docker image from a directory. Returns imageID and build output.
 func Build(engine Engine, path string, tag string) (BuildOutput, error) {
 	imageID, output, err := buildImage(engine.cli, path, tag)
@@ -408,16 +350,6 @@ func Build(engine Engine, path string, tag string) (BuildOutput, error) {
 	return BuildOutput{imageID: imageID, output: output}, nil
 }
 
-// Logs retrieves all logs from a container.
-func Logs(engine Engine, containerID string) (string, error) {
-	return containerLogs(engine.cli, containerID, "")
-}
-
-// LogsTail retrieves the last N lines of logs from a container.
-func LogsTail(engine Engine, containerID string, lines int64) (string, error) {
-	return containerLogs(engine.cli, containerID, fmt.Sprintf("%d", lines))
-}
-
 // LoginFromConfig loads registry credentials from ~/.docker/config.json.
 func LoginFromConfig(server string) (Auth, error) {
 	username, password, addr, err := loadDockerAuth(server)
@@ -425,31 +357,6 @@ func LoginFromConfig(server string) (Auth, error) {
 		return Auth{}, err
 	}
 	return Auth{username: username, password: password, serverAddress: addr}, nil
-}
-
-// Inspect returns high-level container metadata.
-func Inspect(engine Engine, containerID string) (ContainerInfo, error) {
-	info, err := engine.cli.ContainerInspect(context.Background(), containerID)
-	if err != nil {
-		return ContainerInfo{}, fmt.Errorf("container inspect: %w", err)
-	}
-	names := []string{}
-	if info.Name != "" {
-		names = append(names, strings.TrimPrefix(info.Name, "/"))
-	}
-	status := ""
-	state := ""
-	if info.State != nil {
-		status = info.State.Status
-		state = info.State.Status
-	}
-	return ContainerInfo{
-		id:     info.ID,
-		image:  info.Config.Image,
-		status: status,
-		state:  state,
-		names:  names,
-	}, nil
 }
 
 // Wait blocks until a container exits and returns its exit code.
@@ -472,52 +379,6 @@ func Wait(engine Engine, containerID string, timeoutSeconds int64) (int64, error
 	case res := <-waitCh:
 		return int64(res.StatusCode), nil
 	}
-}
-
-// Exec runs a command in an existing container and returns combined stdout/stderr.
-// An optional ctx.Handle can be passed for cancellation support.
-func Exec(engine Engine, containerID string, cmd []string, handles ...ctxpkg.Handle) (string, error) {
-	ctx := context.Background()
-	if len(handles) > 0 {
-		ctx = ctxpkg.Value(handles[0])
-	}
-	createResp, err := engine.cli.ContainerExecCreate(ctx, containerID, types.ExecConfig{
-		Cmd:          cmd,
-		AttachStdout: true,
-		AttachStderr: true,
-	})
-	if err != nil {
-		return "", fmt.Errorf("container exec create: %w", err)
-	}
-
-	attachResp, err := engine.cli.ContainerExecAttach(ctx, createResp.ID, types.ExecStartCheck{})
-	if err != nil {
-		return "", fmt.Errorf("container exec attach: %w", err)
-	}
-	defer attachResp.Close()
-
-	var stdout, stderr bytes.Buffer
-	_, err = stdcopy.StdCopy(&stdout, &stderr, attachResp.Reader)
-	if err != nil {
-		raw, readErr := io.ReadAll(attachResp.Reader)
-		if readErr != nil {
-			return "", fmt.Errorf("container exec read: %w", err)
-		}
-		return string(raw), nil
-	}
-
-	inspect, err := engine.cli.ContainerExecInspect(ctx, createResp.ID)
-	if err != nil {
-		return "", fmt.Errorf("container exec inspect: %w", err)
-	}
-	combined := stdout.String()
-	if stderr.Len() > 0 {
-		combined += stderr.String()
-	}
-	if inspect.ExitCode != 0 {
-		return combined, fmt.Errorf("container exec exit %d", inspect.ExitCode)
-	}
-	return combined, nil
 }
 
 // WaitCtx blocks until container exits or the provided context is canceled.

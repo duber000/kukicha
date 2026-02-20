@@ -5,76 +5,117 @@
 package mcp
 
 import (
+	"context"
+	"encoding/json"
 	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:9
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:11
 type ToolHandler func(map[string]any) (any, error)
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:12
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:14
 type SchemaProperty struct {
 	Name        string
 	Type        string
 	Description string
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:18
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:20
 func New(name string, version string) *mcp.Server {
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:19
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:21
 	return mcp.NewServer(&mcp.Implementation{Name: name, Version: version}, nil)
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:25
-func Serve(server *mcp.Server) error {
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:26
-	bg := ctxpkg.Background()
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:27
+func Serve(server *mcp.Server) error {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:28
+	bg := ctxpkg.Background()
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:29
 	return server.Run(ctxpkg.Value(bg), &mcp.StdioTransport{})
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:30
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:32
 func Prop(name string, typ string, description string) SchemaProperty {
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:31
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:33
 	return SchemaProperty{Name: name, Type: typ, Description: description}
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:34
-func Schema(props []SchemaProperty) map[string]any {
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:35
-	properties := make(map[string]any)
 //line /home/user/kukicha/stdlib/mcp/mcp.kuki:36
+func Schema(props []SchemaProperty) map[string]any {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:37
+	properties := make(map[string]any)
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:38
 	for _, prop := range props {
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:40
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:42
 		properties[prop.Name] = map[string]any{"type": prop.Type, "description": prop.Description}
 	}
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:42
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:44
 	return map[string]any{"type": "object", "properties": properties}
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:48
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:50
 func Required(schema any, names []string) any {
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:49
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:51
 	switch s := schema.(type) {
 	case map[string]any:
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:51
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:53
 		s["required"] = names
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:52
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:54
 		return s
 	default:
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:54
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:56
 		return schema
 	}
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:57
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:59
 func TextResult(text string) any {
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:58
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:60
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: text}}}
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:63
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:65
 func ErrorResult(msg string) any {
-//line /home/user/kukicha/stdlib/mcp/mcp.kuki:64
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:66
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: msg}}, IsError: true}
+}
+
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:75
+func Tool(server *mcp.Server, name string, description string, schema any, handler ToolHandler) {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:76
+	server.AddTool(&mcp.Tool{Name: name, Description: description, InputSchema: schema}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:81
+		args := make(map[string]any)
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:82
+		if len(req.Params.Arguments) > 0 {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:83
+			unmarshalErr := json.Unmarshal(req.Params.Arguments, &args)
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:84
+			if unmarshalErr != nil {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:85
+				return nil, unmarshalErr
+			}
+		}
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:86
+		res, handlerErr := handler(args)
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:87
+		if handlerErr != nil {
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:88
+			return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: handlerErr.Error()}}, IsError: true}, nil
+		}
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:92
+		switch r := res.(type) {
+		case *mcp.CallToolResult:
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:94
+			return r, nil
+		case string:
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:96
+			return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: r}}}, nil
+		}
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:99
+		data, _ := json.Marshal(res)
+//line /home/user/kukicha/stdlib/mcp/mcp.kuki:100
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(data)}}}, nil
+	})
 }

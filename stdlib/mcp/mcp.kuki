@@ -2,7 +2,9 @@
 
 petiole mcp
 
+import "context"
 import "stdlib/ctx" as ctxpkg
+import "encoding/json"
 import "github.com/modelcontextprotocol/go-sdk/mcp"
 
 # ToolHandler is a callback for handling MCP tool invocations.
@@ -65,3 +67,37 @@ func ErrorResult(msg string) any
         Content: list of mcp.Content{reference of mcp.TextContent{Text: msg}},
         IsError: true,
     }
+
+# Tool registers an MCP tool with the given handler.
+# The handler receives parsed JSON arguments and returns a result.
+# String and *mcp.CallToolResult results are handled directly;
+# other types are JSON-serialized.
+func Tool(server reference mcp.Server, name string, description string, schema any, handler ToolHandler)
+    server.AddTool(reference of mcp.Tool{
+        Name: name,
+        Description: description,
+        InputSchema: schema,
+    }, func(ctx context.Context, req reference mcp.CallToolRequest) (reference mcp.CallToolResult, error)
+        args := make(map of string to any)
+        if len(req.Params.Arguments) > 0
+            unmarshalErr := json.Unmarshal(req.Params.Arguments, reference of args)
+            if unmarshalErr != empty
+                return empty, unmarshalErr
+        res, handlerErr := handler(args)
+        if handlerErr != empty
+            return reference of mcp.CallToolResult{
+                Content: list of mcp.Content{reference of mcp.TextContent{Text: handlerErr.Error()}},
+                IsError: true,
+            }, empty
+        switch res as r
+            when reference mcp.CallToolResult
+                return r, empty
+            when string
+                return reference of mcp.CallToolResult{
+                    Content: list of mcp.Content{reference of mcp.TextContent{Text: r}},
+                }, empty
+        data, _ := json.Marshal(res)
+        return reference of mcp.CallToolResult{
+            Content: list of mcp.Content{reference of mcp.TextContent{Text: string(data)}},
+        }, empty
+    )

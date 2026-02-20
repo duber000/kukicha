@@ -259,7 +259,6 @@ Use `as alias` whenever the package's last path segment clashes with a local var
 3. **4-space indentation only** - Tabs are not allowed in Kukicha
 4. **Explicit function signatures** - Parameters and return types must be declared
 5. **Test with `make test`** - Sets required `GOEXPERIMENT=jsonv2`
-6. **`import "fmt"` required for interpolated errors** - The compiler generates `errors.New(fmt.Sprintf(...))` for `error "... {var} ..."` literals but does **not** auto-import `fmt`. Add `import "fmt"` to any `.kuki` file that uses string interpolation inside `error ""` expressions, or the generated Go will fail to build.
 
 ## Adding Features to the Compiler
 
