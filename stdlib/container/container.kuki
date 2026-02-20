@@ -19,13 +19,19 @@
 
 petiole container
 
+import "bytes"
+import "fmt"
+import "io"
 import "stdlib/ctx" as ctxpkg
 import "stdlib/errors"
 import "stdlib/json"
+import "stdlib/string"
 import "encoding/base64"
 import "github.com/docker/docker/client"
+import "github.com/docker/docker/api/types" as dockertypes
 import "github.com/docker/docker/api/types/container" as dockercontainer
 import "github.com/docker/docker/api/types/image" as dockerimage
+import "github.com/docker/docker/pkg/stdcopy"
 
 # Engine wraps a Docker/Podman client connection
 type Engine
@@ -207,3 +213,108 @@ func EventActor(event ContainerEvent) string
 # EventTime returns the RFC3339 timestamp for the event.
 func EventTime(event ContainerEvent) string
     return event.time
+
+# --- Functions migrated from container_helper.go ---
+
+# containerLogs retrieves logs using stdcopy.StdCopy to demux stdout/stderr.
+# The tail parameter controls how many lines to return ("" for all, or a number string).
+func containerLogs(cli reference client.Client, containerID string, tail string) (string, error)
+    bg := ctxpkg.Background()
+    opts := dockercontainer.LogsOptions{ShowStdout: true, ShowStderr: true}
+    if tail != ""
+        opts.Tail = tail
+    reader, err := cli.ContainerLogs(ctxpkg.Value(bg), containerID, opts)
+    if err != empty
+        return "", errors.Wrap(err, "container logs")
+    defer reader.Close()
+    stdout := bytes.Buffer{}
+    stderr := bytes.Buffer{}
+    _, copyErr := stdcopy.StdCopy(reference of stdout, reference of stderr, reader)
+    if copyErr != empty
+        raw, readErr := io.ReadAll(reader)
+        if readErr != empty
+            return "", errors.Wrap(copyErr, "container logs")
+        return raw as string, empty
+    combined := stdout.String()
+    if stderr.Len() > 0
+        combined = combined + stderr.String()
+    return combined, empty
+
+# Logs retrieves all logs from a container.
+func Logs(engine Engine, containerID string) (string, error)
+    return containerLogs(engine.cli, containerID, "")
+
+# LogsTail retrieves the last N lines of logs from a container.
+func LogsTail(engine Engine, containerID string, lines int64) (string, error)
+    return containerLogs(engine.cli, containerID, fmt.Sprintf("%d", lines))
+
+# Run creates and starts a container. Returns the container ID.
+func Run(engine Engine, img string, cmd list of string) (string, error)
+    bg := ctxpkg.Background()
+    resp, err := engine.cli.ContainerCreate(ctxpkg.Value(bg), reference of dockercontainer.Config{
+        Image: img,
+        Cmd: cmd,
+    }, empty, empty, empty, "")
+    if err != empty
+        return "", errors.Wrap(err, "container run create")
+    startErr := engine.cli.ContainerStart(ctxpkg.Value(bg), resp.ID, dockercontainer.StartOptions{})
+    if startErr != empty
+        return "", errors.Wrap(startErr, "container run start")
+    return resp.ID, empty
+
+# Inspect returns high-level container metadata.
+func Inspect(engine Engine, containerID string) (ContainerInfo, error)
+    bg := ctxpkg.Background()
+    info, err := engine.cli.ContainerInspect(ctxpkg.Value(bg), containerID)
+    if err != empty
+        return ContainerInfo{}, errors.Wrap(err, "container inspect")
+    names := make(list of string, 0)
+    if info.Name != ""
+        names = append(names, string.TrimPrefix(info.Name, "/"))
+    status := ""
+    state := ""
+    if info.State != empty
+        status = info.State.Status
+        state = info.State.Status
+    return ContainerInfo{
+        id: info.ID,
+        image: info.Config.Image,
+        status: status,
+        state: state,
+        names: names,
+    }, empty
+
+# Exec runs a command in an existing container and returns combined stdout/stderr.
+# An optional ctx.Handle can be passed for cancellation support.
+func Exec(engine Engine, containerID string, cmd list of string, many handles ctxpkg.Handle) (string, error)
+    ctx := ctxpkg.Background()
+    if len(handles) > 0
+        ctx = handles[0]
+    createResp, err := engine.cli.ContainerExecCreate(ctxpkg.Value(ctx), containerID, dockertypes.ExecConfig{
+        Cmd: cmd,
+        AttachStdout: true,
+        AttachStderr: true,
+    })
+    if err != empty
+        return "", errors.Wrap(err, "container exec create")
+    attachResp, attachErr := engine.cli.ContainerExecAttach(ctxpkg.Value(ctx), createResp.ID, dockertypes.ExecStartCheck{})
+    if attachErr != empty
+        return "", errors.Wrap(attachErr, "container exec attach")
+    defer attachResp.Close()
+    stdout := bytes.Buffer{}
+    stderr := bytes.Buffer{}
+    _, copyErr := stdcopy.StdCopy(reference of stdout, reference of stderr, attachResp.Reader)
+    if copyErr != empty
+        raw, readErr := io.ReadAll(attachResp.Reader)
+        if readErr != empty
+            return "", errors.Wrap(copyErr, "container exec read")
+        return raw as string, empty
+    inspectResult, inspectErr := engine.cli.ContainerExecInspect(ctxpkg.Value(ctx), createResp.ID)
+    if inspectErr != empty
+        return "", errors.Wrap(inspectErr, "container exec inspect")
+    combined := stdout.String()
+    if stderr.Len() > 0
+        combined = combined + stderr.String()
+    if inspectResult.ExitCode != 0
+        return combined, error "container exec exit {inspectResult.ExitCode}"
+    return combined, empty
