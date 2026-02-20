@@ -1,0 +1,148 @@
+import "fmt"
+import "stdlib/cli"
+import "stdlib/kube"
+import "stdlib/json"
+import "stdlib/string"
+import "stdlib/cast"
+
+# ku-k8s is the Goose DevOps MVP binary for Kubernetes operations
+# It provides restricted, structured OBSERVABILITY operations that Goose can invoke safely.
+# Note: Mutations like Deployment scaling/patching are handled by GitOps (ArgoCD).
+
+func main()
+    app := cli.New("ku-k8s")
+    
+    app = app |> cli.Arg("command", "Subcommand: get-unready-logs, analyze-crash")
+    app = app |> cli.Arg("deployment", "Name of the deployment")
+    app = app |> cli.AddFlag("namespace", "Kubernetes namespace", "default")
+    app = app |> cli.AddFlag("tail", "Number of log lines to tail per pod", "50")
+    
+    app = app |> cli.Action(runAppAction)
+    
+    err := cli.RunApp(app)
+    if err != empty
+        print("{{\"error\": \"CLI Run failed: {err}\"}}")
+
+func runAppAction(args cli.Args)
+    command := cli.GetString(args, "command")
+    deployment := cli.GetString(args, "deployment")
+    tailStr := cli.GetString(args, "tail")
+    namespace := cli.GetString(args, "namespace")
+    
+    tailLines, err := cast.SmartInt(tailStr)
+    if err != empty
+        tailLines = 50
+    
+    cluster, connectErr := kube.Connect()
+    if connectErr != empty
+        print("{{\"error\": \"Failed to connect to cluster: {connectErr}\"}}")
+        return
+        
+    cluster = kube.Namespace(cluster, namespace)
+
+    if command == "get-unready-logs"
+        handleUnreadyLogs(cluster, deployment, tailLines)
+    else if command == "analyze-crash"
+        handleAnalyze(cluster, deployment)
+    else
+        print("{{\"error\": \"Unknown command or missing arguments. Use get-unready-logs or analyze-crash.\"}}")
+
+func handleUnreadyLogs(cluster kube.Cluster, deployment string, tailLines int)
+    if deployment == ""
+        print("{{\"error\": \"Deployment name is required\"}}")
+        return
+        
+    podsList, listErr := kube.ListPods(cluster)
+    if listErr != empty
+        print("{{\"error\": \"Failed to list pods: {listErr}\"}}")
+        return
+        
+    unreadyPodsData := make(list of map of string to string, 0)
+    
+    for p in kube.Pods(podsList)
+        name := kube.PodName(p)
+        if string.HasPrefix(name, deployment + "-")
+            if not kube.PodReady(p)
+                logs, logErr := kube.PodLogsTail(cluster, name, tailLines as int64)
+                if logErr != empty
+                    logs = "Error fetching logs: {logErr}"
+                    
+                podData := map of string to string{
+                    "name": name,
+                    "status": kube.PodStatus(p),
+                    "restarts": fmt.Sprintf("%d", kube.PodRestarts(p)),
+                    "logs": logs
+                }
+                unreadyPodsData = append(unreadyPodsData, podData)
+                
+    result := map of string to any{
+        "status": "success",
+        "action": "get_unready_logs",
+        "deployment": deployment,
+        "unready_pods_count": len(unreadyPodsData),
+        "pods": unreadyPodsData
+    }
+    
+    if len(unreadyPodsData) == 0
+        result["message"] = "All pods for deployment {deployment} are currently in a Ready state."
+    else
+        result["message"] = "Found {len(unreadyPodsData)} unready pods for deployment {deployment}."
+    
+    out, jsonErr := json.Marshal(result)
+    if jsonErr != empty
+        print("{{\"error\": \"Failed to marshal result\"}}")
+        return
+        
+    s, castErr := cast.SmartString(out)
+    if castErr != empty
+        print("{{\"error\": \"Failed to format output\"}}")
+        return
+        
+    print(s)
+
+func handleAnalyze(cluster kube.Cluster, deployment string)
+    if deployment == ""
+        print("{{\"error\": \"Deployment name is required\"}}")
+        return
+        
+    podsList, listErr := kube.ListPods(cluster)
+    if listErr != empty
+        print("{{\"error\": \"Failed to list pods: {listErr}\"}}")
+        return
+        
+    crashingPods := make(list of map of string to string, 0)
+    
+    for p in kube.Pods(podsList)
+        name := kube.PodName(p)
+        if string.HasPrefix(name, deployment + "-")
+            status := kube.PodStatus(p)
+            if status != "Running" and status != "Succeeded"
+                podData := map of string to string{
+                    "name": name,
+                    "status": status,
+                    "restarts": fmt.Sprintf("%d", kube.PodRestarts(p)),
+                    "node": kube.PodNode(p),
+                    "age": kube.PodAge(p)
+                }
+                crashingPods = append(crashingPods, podData)
+                
+    result := map of string to any{
+        "deployment": deployment,
+        "crashing_pods_count": len(crashingPods),
+        "pods": crashingPods
+    }
+    
+    if len(crashingPods) == 0
+        result["simulation_note"] = "No crashing pods found with that prefix natively matching 'Running'/'Succeeded' conditions. In a live system, Goose would see OOMKilled pods here."
+        
+    out, jsonErr := json.Marshal(result)
+    if jsonErr != empty
+        print("{{\"error\": \"Failed to marshal result\"}}")
+        return
+        
+    s, castErr := cast.SmartString(out)
+    if castErr != empty
+        print("{{\"error\": \"Failed to format output\"}}")
+        return
+        
+    print(s)

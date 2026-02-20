@@ -71,21 +71,6 @@ declarations inline in function bodies.
 Note: `container.containerLogs` was migrated to Kukicha — it uses `stdcopy.StdCopy`
 for demuxing, not anonymous structs.
 
----
-
-## 4. `onerr` + Multi-Value `return` Inside Inline Callback Bodies (fixed)
-
-The codegen now correctly handles `error "{error}"` inside multi-value `return` expressions
-in `onerr` handlers, including inside inline callback/lambda bodies. The `{error}` placeholder
-is properly substituted with the caught error variable (e.g., `err_1`).
-
-```kukicha
-func(args map of string to any) (any, error)
-    data := sandbox.ReadString(box, path) onerr return mcp.ErrorResult(error.Error()), empty
-    return data as any, empty
-```
-
-This pattern now works correctly without needing a named helper function.
 
 ---
 
@@ -197,63 +182,6 @@ a slice of function-typed values.
 
 This blocks 3 functions: `newClient`, `Connect`/`ConnectRemote`, `Open`.
 
-### Blocker 4: Multi-statement closure as callback argument (resolved)
-
-The MCP SDK's `server.AddTool` requires a `func(ctx, req) (resp, error)` closure
-that captures variables and contains branching logic. This was migrated to Kukicha
-using multi-statement function literals as arguments. `mcp_tool.go` has been deleted.
-
-### Migrated to .kuki (completed)
-
-#### Kube (41 functions)
-
-41 kube helper functions were migrated from `kube_helper.go` to `kube.kuki`,
-reducing the Go helper from 621 lines to 69 lines. Only `watchPodsWithContext`
-(which uses `select`) and its two callers remain in Go.
-
-| Category | Functions | Count |
-|----------|-----------|-------|
-| Connection | Connect, Open, clientset | 3 |
-| Pod CRUD | ListPods, ListPodsLabeled, GetPod, DeletePod | 4 |
-| Deployment CRUD | ListDeployments, GetDeployment, ScaleDeployment, DeleteDeployment | 4 |
-| Mutation | RolloutRestart | 1 |
-| Wait/poll | WaitDeploymentReady, WaitPodReady, WaitDeploymentReadyCtx, WaitPodReadyCtx | 4 |
-| Services | ListServices, GetService | 2 |
-| Nodes | ListNodes, GetNode | 2 |
-| Namespaces | ListNamespaces | 1 |
-| List accessors | Pods, Deployments, Services, Nodes, Namespaces | 5 |
-| Pod accessors | pod, PodName, PodStatus, PodIP, PodNode, PodAge, PodReady, PodRestarts, PodLabels | 9 |
-| Deployment accessors | deployment, DeploymentName, DeploymentReplicas, DeploymentReady, DeploymentImage | 5 |
-| Service accessors | service, ServiceName, ServiceType, ServiceClusterIP, ServicePorts | 5 |
-| Node accessors | node, NodeName, NodeReady, NodeRoles, NodeVersion | 5 |
-| Namespace accessors | nsItem, NamespaceName | 2 |
-| Logs | PodLogs, PodLogsTail | 2 |
-
-#### MCP (1 function — `mcp_tool.go` deleted)
-
-`mcp.Tool()` was migrated from `mcp_tool.go` to `mcp.kuki`. The Go helper file was
-deleted entirely. This demonstrated that multi-statement function literals as arguments
-work in Kukicha — the closure passed to `server.AddTool` contains JSON unmarshalling,
-error handling, type switching, and JSON marshalling.
-
-#### Container (6 functions)
-
-6 container functions were migrated from `container_helper.go` to `container.kuki`,
-reducing the Go helper from ~782 lines to ~643 lines.
-
-| Function | Pattern |
-|----------|---------|
-| `containerLogs` | `stdcopy.StdCopy` for demuxing, `io.ReadAll` fallback |
-| `Logs` | Thin wrapper calling `containerLogs` |
-| `LogsTail` | Wrapper with `fmt.Sprintf` for tail param |
-| `Run` | `ContainerCreate` + `ContainerStart` with SDK struct literals |
-| `Inspect` | `ContainerInspect` → `ContainerInfo` mapping |
-| `Exec` | `ContainerExecCreate/Attach/Inspect` with `stdcopy.StdCopy` |
-
-Patterns used across all migrations: `reference of` (address-of), `dereference` (pointer deref),
-`as` (type assertions and conversions), struct literals with external SDK types, bare `for` loops,
-`many` (variadic params), `k8s.io/...` imports with `as` aliases, and multi-statement
-function literals as arguments.
 
 ### Still in Go — remaining blockers
 
