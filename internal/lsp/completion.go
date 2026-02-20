@@ -55,7 +55,7 @@ func (s *Server) getCompletions(doc *Document, pos lsp.Position) []lsp.Completio
 	keywords := []string{
 		"func", "function", "type", "interface", "petiole", "import",
 		"if", "else", "for", "in", "from", "to", "through",
-		"switch", "when", "otherwise", "default",
+		"switch", "select", "when", "otherwise", "default",
 		"return", "break", "continue", "defer", "go",
 		"true", "false", "empty", "nil", "make", "onerr",
 		"and", "or", "not", "equals", "reference", "dereference",

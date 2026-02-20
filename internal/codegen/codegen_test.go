@@ -1887,3 +1887,54 @@ func TestTypeSwitchNoOtherwise(t *testing.T) {
 		t.Errorf("should not have default branch, got: %s", output)
 	}
 }
+
+func TestSelectStatementCodegen(t *testing.T) {
+	input := `func Run(ch channel of string, done channel of string, out channel of string)
+    select
+        when receive from done
+            return
+        when msg := receive from ch
+            return
+        when msg, ok := receive from ch
+            return
+        when send "ping" to out
+            return
+        otherwise
+            return
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "select {") {
+		t.Errorf("expected 'select {', got: %s", output)
+	}
+	if !strings.Contains(output, "case <-done:") {
+		t.Errorf("expected bare receive case 'case <-done:', got: %s", output)
+	}
+	if !strings.Contains(output, "case msg := <-ch:") {
+		t.Errorf("expected 1-var receive case 'case msg := <-ch:', got: %s", output)
+	}
+	if !strings.Contains(output, "case msg, ok := <-ch:") {
+		t.Errorf("expected 2-var receive case 'case msg, ok := <-ch:', got: %s", output)
+	}
+	if !strings.Contains(output, "case out <- \"ping\":") {
+		t.Errorf("expected send case 'case out <- \"ping\":', got: %s", output)
+	}
+	if !strings.Contains(output, "default:") {
+		t.Errorf("expected default branch, got: %s", output)
+	}
+}

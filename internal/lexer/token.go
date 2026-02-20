@@ -54,6 +54,7 @@ const (
 	TOKEN_OF
 	TOKEN_AS
 	TOKEN_SKILL
+	TOKEN_SELECT
 
 	// Variadic keyword
 	TOKEN_MANY
@@ -213,6 +214,8 @@ func (t TokenType) String() string {
 		return "AS"
 	case TOKEN_SKILL:
 		return "SKILL"
+	case TOKEN_SELECT:
+		return "SELECT"
 
 	// Variadic keyword
 	case TOKEN_MANY:
@@ -375,6 +378,7 @@ var keywords = map[string]TokenType{
 	"explain":     TOKEN_EXPLAIN,
 	"not":         TOKEN_NOT,
 	"skill":       TOKEN_SKILL,
+	"select":      TOKEN_SELECT,
 }
 
 // LookupKeyword returns the token type for a keyword, or TOKEN_IDENTIFIER if not a keyword

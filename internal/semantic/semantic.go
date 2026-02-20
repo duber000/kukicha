@@ -478,6 +478,33 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 	case *ast.SendStmt:
 		a.analyzeExpression(s.Value)
 		a.analyzeExpression(s.Channel)
+	case *ast.SelectStmt:
+		a.switchDepth++ // reuse switchDepth so break works inside select
+		defer func() { a.switchDepth-- }()
+		for _, c := range s.Cases {
+			a.symbolTable.EnterScope()
+			if c.Recv != nil {
+				a.analyzeExpression(c.Recv)
+				for _, binding := range c.Bindings {
+					sym := &Symbol{
+						Name:    binding,
+						Kind:    SymbolVariable,
+						Type:    &TypeInfo{Kind: TypeKindUnknown},
+						Defined: ast.Position{Line: c.Token.Line, Column: c.Token.Column, File: c.Token.File},
+					}
+					a.symbolTable.Define(sym)
+				}
+			}
+			if c.Send != nil {
+				a.analyzeExpression(c.Send.Value)
+				a.analyzeExpression(c.Send.Channel)
+			}
+			a.analyzeBlock(c.Body)
+			a.symbolTable.ExitScope()
+		}
+		if s.Otherwise != nil {
+			a.analyzeBlock(s.Otherwise.Body)
+		}
 	case *ast.ExpressionStmt:
 		a.analyzeExpression(s.Expression)
 		a.analyzeOnErrClause(s.OnErr)

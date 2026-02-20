@@ -1710,3 +1710,84 @@ func TestParseTypeSwitchNoOtherwise(t *testing.T) {
 		t.Error("expected no otherwise branch")
 	}
 }
+
+func TestParseSelectStatement(t *testing.T) {
+	input := `func Run(ch channel of string, done channel of string, out channel of string)
+    select
+        when receive from done
+            return
+        when msg := receive from ch
+            return
+        when msg, ok := receive from ch
+            return
+        when send "ping" to out
+            return
+        otherwise
+            return
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn, ok := program.Declarations[0].(*ast.FunctionDecl)
+	if !ok {
+		t.Fatalf("expected FunctionDecl, got %T", program.Declarations[0])
+	}
+
+	selectStmt, ok := fn.Body.Statements[0].(*ast.SelectStmt)
+	if !ok {
+		t.Fatalf("expected SelectStmt, got %T", fn.Body.Statements[0])
+	}
+
+	if len(selectStmt.Cases) != 4 {
+		t.Fatalf("expected 4 when cases, got %d", len(selectStmt.Cases))
+	}
+
+	// Case 0: bare receive
+	c0 := selectStmt.Cases[0]
+	if c0.Recv == nil {
+		t.Fatal("case 0: expected Recv, got nil")
+	}
+	if len(c0.Bindings) != 0 {
+		t.Errorf("case 0: expected 0 bindings, got %d", len(c0.Bindings))
+	}
+
+	// Case 1: 1-var binding receive
+	c1 := selectStmt.Cases[1]
+	if c1.Recv == nil {
+		t.Fatal("case 1: expected Recv, got nil")
+	}
+	if len(c1.Bindings) != 1 || c1.Bindings[0] != "msg" {
+		t.Errorf("case 1: expected bindings [msg], got %v", c1.Bindings)
+	}
+
+	// Case 2: 2-var binding receive
+	c2 := selectStmt.Cases[2]
+	if c2.Recv == nil {
+		t.Fatal("case 2: expected Recv, got nil")
+	}
+	if len(c2.Bindings) != 2 || c2.Bindings[0] != "msg" || c2.Bindings[1] != "ok" {
+		t.Errorf("case 2: expected bindings [msg ok], got %v", c2.Bindings)
+	}
+
+	// Case 3: send case
+	c3 := selectStmt.Cases[3]
+	if c3.Send == nil {
+		t.Fatal("case 3: expected Send, got nil")
+	}
+	if c3.Recv != nil {
+		t.Error("case 3: expected Recv nil")
+	}
+
+	// Otherwise
+	if selectStmt.Otherwise == nil {
+		t.Fatal("expected otherwise branch")
+	}
+}

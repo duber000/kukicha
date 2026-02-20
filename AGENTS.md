@@ -196,7 +196,7 @@ _, ipNet, err := net.ParseCIDR("192.168.0.0/16")
 ### Concurrency
 ```kukicha
 ch := make channel of string
-send ch, "message"
+send "message" to ch
 msg := receive from ch
 go doWork()
 
@@ -205,6 +205,20 @@ go
     mu.Lock()
     doWork()
     mu.Unlock()
+
+# Select (channel multiplexing)
+select
+    when receive from done           # bare receive (no assignment)
+        return
+    when msg := receive from ch      # assign one var
+        print(msg)
+    when msg, ok := receive from ch  # assign two vars (ok check)
+        if ok
+            print(msg)
+    when send "ping" to out          # send case
+        print("sent")
+    otherwise                        # default (non-blocking)
+        print("nothing ready")
 ```
 
 ## Build & Test Commands

@@ -233,6 +233,7 @@ module.exports = grammar({
       $.for_condition_statement,
       $.for_infinite_statement,
       $.switch_statement,
+      $.select_statement,
       $.defer_statement,
       $.go_statement,
       $.send_statement,
@@ -377,6 +378,65 @@ module.exports = grammar({
         $._newline,
         field('body', $.block),
       ),
+      seq(
+        choice('otherwise', 'default'),
+        $._newline,
+        field('body', $.block),
+      ),
+    ),
+
+    // Select statement
+    select_statement: $ => seq(
+      'select',
+      $._newline,
+      field('body', $.select_body),
+    ),
+
+    select_body: $ => seq(
+      $._indent,
+      repeat1($.select_case),
+      $._dedent,
+    ),
+
+    select_case: $ => choice(
+      // Bare receive: when receive from ch
+      seq(
+        'when',
+        field('op', $.receive_expression),
+        $._newline,
+        field('body', $.block),
+      ),
+      // 1-var binding: when v := receive from ch
+      seq(
+        'when',
+        field('binding', $.identifier),
+        ':=',
+        field('op', $.receive_expression),
+        $._newline,
+        field('body', $.block),
+      ),
+      // 2-var binding: when v, ok := receive from ch
+      seq(
+        'when',
+        field('binding1', $.identifier),
+        ',',
+        field('binding2', $.identifier),
+        ':=',
+        field('op', $.receive_expression),
+        $._newline,
+        field('body', $.block),
+      ),
+      // Send case: when send value to ch
+      seq(
+        'when',
+        'send',
+        field('value', $._expression),
+        'to',
+        field('channel', $._expression),
+        $._newline,
+        field('body', $.block),
+      ),
+      // Otherwise/default
       seq(
         choice('otherwise', 'default'),
         $._newline,

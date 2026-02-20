@@ -408,6 +408,26 @@ type OtherwiseCase struct {
 	Body  *BlockStmt
 }
 
+type SelectStmt struct {
+	Token     lexer.Token    // The 'select' token
+	Cases     []*SelectCase
+	Otherwise *OtherwiseCase // Optional default case
+}
+
+func (s *SelectStmt) TokenLiteral() string { return s.Token.Lexeme }
+func (s *SelectStmt) Pos() Position {
+	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *SelectStmt) stmtNode() {}
+
+type SelectCase struct {
+	Token    lexer.Token  // The 'when' token
+	Bindings []string     // [], ["v"], or ["v", "ok"]
+	Recv     *ReceiveExpr // non-nil for receive cases
+	Send     *SendStmt    // non-nil for send cases
+	Body     *BlockStmt
+}
+
 // TypeSwitchStmt: switch expr as binding
 type TypeSwitchStmt struct {
 	Token      lexer.Token    // The 'switch' token

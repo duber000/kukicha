@@ -258,6 +258,8 @@ func (p *PrinterWithComments) printStatementWithComments(stmt ast.Statement) {
 		p.printIfStmtWithComments(s)
 	case *ast.SwitchStmt:
 		p.printSwitchStmtWithComments(s)
+	case *ast.SelectStmt:
+		p.printSelectStmtWithComments(s)
 	case *ast.TypeSwitchStmt:
 		p.printTypeSwitchStmtWithComments(s)
 	case *ast.ForRangeStmt:
@@ -393,6 +395,40 @@ func (p *PrinterWithComments) printSwitchStmtWithComments(stmt *ast.SwitchStmt) 
 		p.indentLevel--
 	}
 
+	if stmt.Otherwise != nil {
+		p.writeLine("otherwise")
+		p.indentLevel++
+		p.printBlockWithComments(stmt.Otherwise.Body)
+		p.indentLevel--
+	}
+	p.indentLevel--
+}
+
+func (p *PrinterWithComments) printSelectStmtWithComments(stmt *ast.SelectStmt) {
+	p.writeLine("select")
+	p.indentLevel++
+	for _, c := range stmt.Cases {
+		var whenLine string
+		if c.Recv != nil {
+			ch := p.exprToString(c.Recv.Channel)
+			switch len(c.Bindings) {
+			case 0:
+				whenLine = fmt.Sprintf("when receive from %s", ch)
+			case 1:
+				whenLine = fmt.Sprintf("when %s := receive from %s", c.Bindings[0], ch)
+			case 2:
+				whenLine = fmt.Sprintf("when %s, %s := receive from %s", c.Bindings[0], c.Bindings[1], ch)
+			}
+		} else if c.Send != nil {
+			val := p.exprToString(c.Send.Value)
+			ch := p.exprToString(c.Send.Channel)
+			whenLine = fmt.Sprintf("when send %s to %s", val, ch)
+		}
+		p.writeLine(whenLine)
+		p.indentLevel++
+		p.printBlockWithComments(c.Body)
+		p.indentLevel--
+	}
 	if stmt.Otherwise != nil {
 		p.writeLine("otherwise")
 		p.indentLevel++

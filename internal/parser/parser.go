@@ -792,6 +792,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseIfStmt()
 	case lexer.TOKEN_SWITCH:
 		return p.parseSwitchOrTypeSwitchStmt()
+	case lexer.TOKEN_SELECT:
+		return p.parseSelectStmt()
 	case lexer.TOKEN_FOR:
 		return p.parseForStmt()
 	case lexer.TOKEN_DEFER:
@@ -1082,6 +1084,96 @@ func (p *Parser) parseTypeSwitchBody(token lexer.Token, expr ast.Expression, bin
 	p.consume(lexer.TOKEN_DEDENT, "expected dedent after type switch block")
 	p.skipNewlines()
 	return stmt
+}
+
+func (p *Parser) parseSelectStmt() *ast.SelectStmt {
+	token := p.advance() // consume 'select'
+
+	stmt := &ast.SelectStmt{
+		Token: token,
+		Cases: []*ast.SelectCase{},
+	}
+
+	p.skipNewlines()
+	if !p.match(lexer.TOKEN_INDENT) {
+		p.error(p.peekToken(), "expected indented block after select")
+		return stmt
+	}
+
+	for !p.check(lexer.TOKEN_DEDENT) && !p.isAtEnd() {
+		p.skipNewlines()
+		if p.check(lexer.TOKEN_DEDENT) {
+			break
+		}
+
+		if p.match(lexer.TOKEN_CASE) { // 'when'
+			caseToken := p.previousToken()
+			if stmt.Otherwise != nil {
+				p.error(caseToken, "'when' branch after 'otherwise' will never execute")
+			}
+			sc := p.parseSelectCase(caseToken)
+			stmt.Cases = append(stmt.Cases, sc)
+			continue
+		}
+
+		if p.match(lexer.TOKEN_DEFAULT) { // 'otherwise'
+			otherwiseToken := p.previousToken()
+			if stmt.Otherwise != nil {
+				p.error(otherwiseToken, "select can only have one otherwise branch")
+			}
+			p.skipNewlines()
+			stmt.Otherwise = &ast.OtherwiseCase{
+				Token: otherwiseToken,
+				Body:  p.parseBlock(),
+			}
+			continue
+		}
+
+		p.error(p.peekToken(), "expected 'when' or 'otherwise' in select block")
+		p.advance()
+	}
+
+	p.consume(lexer.TOKEN_DEDENT, "expected dedent after select block") //nolint:errcheck
+	p.skipNewlines()
+	return stmt
+}
+
+func (p *Parser) parseSelectCase(caseToken lexer.Token) *ast.SelectCase {
+	sc := &ast.SelectCase{Token: caseToken}
+
+	switch {
+	case p.check(lexer.TOKEN_RECEIVE):
+		// Bare receive: "when receive from ch"
+		sc.Recv = p.parseReceiveExpr()
+
+	case p.check(lexer.TOKEN_SEND):
+		// Send case: "when send val to ch"
+		sc.Send = p.parseSendStmt()
+		// parseSendStmt already consumes the newline via skipNewlines
+		// Body will be parsed below; skip the extra newline skip
+		sc.Body = p.parseBlock()
+		return sc
+
+	case p.check(lexer.TOKEN_IDENTIFIER):
+		// Binding case: "when v := receive from ch" or "when v, ok := receive from ch"
+		first := p.advance() // consume first identifier
+		sc.Bindings = []string{first.Lexeme}
+
+		if p.match(lexer.TOKEN_COMMA) {
+			second, _ := p.consume(lexer.TOKEN_IDENTIFIER, "expected identifier after ',' in select binding")
+			sc.Bindings = append(sc.Bindings, second.Lexeme)
+		}
+
+		p.consume(lexer.TOKEN_WALRUS, "expected ':=' after binding in select case") //nolint:errcheck
+		sc.Recv = p.parseReceiveExpr()
+
+	default:
+		p.error(p.peekToken(), "expected 'receive', 'send', or binding in select case")
+	}
+
+	p.skipNewlines()
+	sc.Body = p.parseBlock()
+	return sc
 }
 
 func (p *Parser) parseForStmt() ast.Statement {
