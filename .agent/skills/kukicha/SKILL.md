@@ -419,7 +419,7 @@ Located in `stdlib/`:
 | `cast` | Smart type coercion: any → scalar (SmartInt, SmartFloat64, SmartBool, SmartString) |
 | `cli` | CLI argument parsing builder (New, String, Int, Bool, Parse) |
 | `concurrent` | Concurrency helpers (Parallel, ParallelWithLimit) |
-| `container` | Docker/Podman client (Connect, Run, Stop, Logs, Wait, Events, Exec, CopyFrom/To) |
+| `container` | Docker/Podman client (Connect, Pull, PullAuth, LoginFromConfig, Run, Stop, Logs, Wait, Events, Exec, CopyFrom/To) |
 | `ctx` | Context timeout/cancellation helpers (Background, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err) |
 | `datetime` | Named formats and durations (Format, Seconds, Minutes, Hours) |
 | `encoding` | Base64 and hex encoding/decoding (Base64Encode, Base64Decode, HexEncode, HexDecode) |

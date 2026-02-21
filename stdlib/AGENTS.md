@@ -15,7 +15,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString |
 | `stdlib/cli` | CLI argument parsing | New, String, Int, Bool, Parse |
 | `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
-| `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
+| `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, PullAuth, LoginFromConfig, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
 | `stdlib/ctx` | Context timeout/cancellation helpers | Background, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err |
 | `stdlib/datetime` | Named formats, duration helpers | Format, Seconds, Minutes, Hours |
 | `stdlib/encoding` | Base64 and hex encoding/decoding | Base64Encode, Base64Decode, Base64URLEncode, HexEncode, HexDecode |
@@ -33,7 +33,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/mcp` | Model Context Protocol support | NewServer, Tool, Resource, Prompt |
 | `stdlib/must` | Panic-on-error startup helpers | Env, EnvInt, EnvIntOr, Do, OkMsg |
 | `stdlib/net` | IP address and CIDR utilities | ParseIP, ParseCIDR, Contains, SplitHostPort, LookupHost, IsLoopback, IsPrivate |
-| `stdlib/netguard` | Network restriction & SSRF protection | NewSSRFGuard, NewAllow, NewBlock, Check, HTTPTransport |
+| `stdlib/netguard` | Network restriction & SSRF protection | NewSSRFGuard, NewAllow, NewBlock, Check, DialContext, HTTPTransport, HTTPClient |
 | `stdlib/obs` | Structured observability helpers | New, Component, WithCorrelation, NewCorrelationID, Info, Warn, Error, Start, Stop, Fail |
 | `stdlib/parse` | CSV and YAML parsing | CSV, YAML |
 | `stdlib/pg` | PostgreSQL client via pgx | Connect, New/MaxConns/MinConns/Retry/Open, Query, QueryRow, Exec, Begin, Commit, Rollback, ScanRow, CollectRows |
@@ -210,7 +210,7 @@ Each stdlib module follows one of two patterns:
 ### Pure Kukicha (types + logic in .kuki)
 Used when the implementation is straightforward Kukicha code. No `_helper.go` or `_tool.go`.
 Examples: `a2a`, `cast`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
-`http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `must`, `net`, `obs`, `parse`, `pg`,
+`http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
 `random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `validate`
 
 ### Kukicha types + Go helper (types in .kuki, implementation in _helper.go)
@@ -222,8 +222,7 @@ Examples: *(currently none — `container` and `kube` have both moved to other p
 ### Mixed (most logic in .kuki, Go helper for ops not yet expressible in Kukicha)
 Used when most logic is pure Kukicha but some operations require hand-written Go.
 Examples:
-- `container` — watch/wait/events in `.kuki`; Docker client init, streaming pull/build, tar I/O in `_helper.go`
-- `netguard` — IP/CIDR logic in `.kuki`, DNS+dialer closure in `_helper.go`
+- `container` — most logic in `.kuki` (pull, auth, wait, events, exec, logs); Docker client init (`newClient`/`Connect`/`Open`), `buildImage`, tar archive handling (`CopyFrom`/`CopyTo`) in `_helper.go`
 - `mcp` — core in `.kuki`, callback bridge in `_tool.go`
 
 ## Import Aliases
