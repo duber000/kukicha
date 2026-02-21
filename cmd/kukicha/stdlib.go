@@ -10,10 +10,12 @@ import (
 	"strings"
 
 	kukicha "github.com/duber000/kukicha"
+	"github.com/duber000/kukicha/internal/version"
 	"golang.org/x/mod/modfile"
 )
 
 const stdlibDirName = ".kukicha/stdlib"
+const stdlibVersionFile = "KUKICHA_VERSION"
 
 // stdlibGoMod is the go.mod content for the extracted stdlib module.
 // This declares the stdlib as a standalone Go module so user projects can
@@ -86,14 +88,20 @@ gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 `
 
-// ensureStdlib extracts the embedded stdlib to projectDir/.kukicha/stdlib/ if not present.
+// ensureStdlib extracts the embedded stdlib to projectDir/.kukicha/stdlib/ if not present
+// or if the cached version stamp doesn't match the current binary version.
 // Returns the absolute path to the extracted stdlib directory.
 func ensureStdlib(projectDir string) (string, error) {
 	stdlibPath := filepath.Join(projectDir, stdlibDirName)
 
-	// Check if stdlib already exists by looking for the go.mod marker
-	if _, err := os.Stat(filepath.Join(stdlibPath, "go.mod")); err == nil {
-		return stdlibPath, nil
+	// Check version stamp: only skip extraction if cache exists AND matches current version.
+	stampPath := filepath.Join(stdlibPath, stdlibVersionFile)
+	if stamp, err := os.ReadFile(stampPath); err == nil {
+		if strings.TrimSpace(string(stamp)) == version.Version {
+			return stdlibPath, nil
+		}
+		// Version mismatch — remove stale cache and re-extract.
+		_ = os.RemoveAll(stdlibPath)
 	}
 
 	// Extract from embedded FS
@@ -139,6 +147,11 @@ func extractStdlib(targetDir string) error {
 
 	// Write the go.sum
 	if err := os.WriteFile(filepath.Join(targetDir, "go.sum"), []byte(stdlibGoSum), 0644); err != nil {
+		return err
+	}
+
+	// Write the version stamp so future runs can detect stale caches.
+	if err := os.WriteFile(filepath.Join(targetDir, stdlibVersionFile), []byte(version.Version), 0644); err != nil {
 		return err
 	}
 

@@ -160,7 +160,7 @@ type Choice
 type ResponseMessage
     Role string json:"role"
     Content string json:"content"
-    ToolCalls list of ToolCall json:"tool_calls,omitzero"
+    ToolCalls list of ToolCall json:"tool_calls,omitempty"
 
 # Usage holds token usage information
 type Usage
@@ -179,14 +179,14 @@ type Completion
 
 # ChunkDelta holds incremental content in a streaming chunk
 type ChunkDelta
-    Role string json:"role,omitzero"
-    Content string json:"content,omitzero"
+    Role string json:"role,omitempty"
+    Content string json:"content,omitempty"
 
 # ChunkChoice represents a single choice in a streaming chunk
 type ChunkChoice
     Index int json:"index"
     Delta ChunkDelta json:"delta"
-    FinishReason string json:"finish_reason,omitzero"
+    FinishReason string json:"finish_reason,omitempty"
 
 # Chunk is a single Server-Sent Event chunk during streaming
 type Chunk
@@ -200,19 +200,19 @@ type Chunk
 type CompletionRequest
     Model string json:"model"
     Messages list of Message json:"messages"
-    Temperature float64 json:"temperature,omitzero"
-    MaxTokens int json:"max_tokens,omitzero"
-    TopP float64 json:"top_p,omitzero"
-    N int json:"n,omitzero"
-    Stop list of string json:"stop,omitzero"
-    PresencePenalty float64 json:"presence_penalty,omitzero"
-    FrequencyPenalty float64 json:"frequency_penalty,omitzero"
-    Seed int json:"seed,omitzero"
-    User string json:"user,omitzero"
-    Stream bool json:"stream,omitzero"
-    Tools list of Tool json:"tools,omitzero"
-    ToolChoice any json:"tool_choice,omitzero"
-    ResponseFormat any json:"response_format,omitzero"
+    Temperature float64 json:"temperature,omitempty"
+    MaxTokens int json:"max_tokens,omitempty"
+    TopP float64 json:"top_p,omitempty"
+    N int json:"n,omitempty"
+    Stop list of string json:"stop,omitempty"
+    PresencePenalty float64 json:"presence_penalty,omitempty"
+    FrequencyPenalty float64 json:"frequency_penalty,omitempty"
+    Seed int json:"seed,omitempty"
+    User string json:"user,omitempty"
+    Stream bool json:"stream,omitempty"
+    Tools list of Tool json:"tools,omitempty"
+    ToolChoice any json:"tool_choice,omitempty"
+    ResponseFormat any json:"response_format,omitempty"
 
 # Client holds the configuration for an LLM request (builder pattern)
 type Client
@@ -720,7 +720,7 @@ type InputTextContent
 type OutputTextContent
     Type string json:"type"
     Text string json:"text"
-    Annotations list of any json:"annotations,omitzero"
+    Annotations list of any json:"annotations,omitempty"
 
 # RefusalContent represents a refusal in an output item
 type RefusalContent
@@ -731,27 +731,27 @@ type RefusalContent
 # Discriminated by Type field: "message", "function_call", "function_call_output", "item_reference"
 type InputItem
     Type string json:"type"
-    ID string json:"id,omitzero"
-    Role string json:"role,omitzero"
-    Content any json:"content,omitzero"
-    Status string json:"status,omitzero"
-    CallID string json:"call_id,omitzero"
-    Name string json:"name,omitzero"
-    Arguments string json:"arguments,omitzero"
-    Output string json:"output,omitzero"
+    ID string json:"id,omitempty"
+    Role string json:"role,omitempty"
+    Content any json:"content,omitempty"
+    Status string json:"status,omitempty"
+    CallID string json:"call_id,omitempty"
+    Name string json:"name,omitempty"
+    Arguments string json:"arguments,omitempty"
+    Output string json:"output,omitempty"
 
 # OutputItem represents an item in the output array of a Response
 # Discriminated by Type field: "message", "function_call", "reasoning"
 type OutputItem
     Type string json:"type"
-    ID string json:"id,omitzero"
-    Role string json:"role,omitzero"
-    Content list of any json:"content,omitzero"
-    Status string json:"status,omitzero"
-    CallID string json:"call_id,omitzero"
-    Name string json:"name,omitzero"
-    Arguments string json:"arguments,omitzero"
-    Summary list of any json:"summary,omitzero"
+    ID string json:"id,omitempty"
+    Role string json:"role,omitempty"
+    Content list of any json:"content,omitempty"
+    Status string json:"status,omitempty"
+    CallID string json:"call_id,omitempty"
+    Name string json:"name,omitempty"
+    Arguments string json:"arguments,omitempty"
+    Summary list of any json:"summary,omitempty"
 
 # ResponseUsage holds token usage information for OpenResponses
 type ResponseUsage
@@ -769,58 +769,58 @@ type Response
     ID string json:"id"
     Object string json:"object"
     CreatedAt int json:"created_at"
-    CompletedAt int json:"completed_at,omitzero"
+    CompletedAt int json:"completed_at,omitempty"
     Status string json:"status"
     Model string json:"model"
     Output list of OutputItem json:"output"
-    Error ResponseError json:"error,omitzero"
-    PreviousResponseID string json:"previous_response_id,omitzero"
-    Instructions string json:"instructions,omitzero"
-    Temperature float64 json:"temperature,omitzero"
-    TopP float64 json:"top_p,omitzero"
-    MaxOutputTokens int json:"max_output_tokens,omitzero"
-    Usage ResponseUsage json:"usage,omitzero"
-    Tools list of any json:"tools,omitzero"
-    ToolChoice any json:"tool_choice,omitzero"
-    Truncation string json:"truncation,omitzero"
-    Store bool json:"store,omitzero"
-    Metadata map of string to string json:"metadata,omitzero"
+    Error ResponseError json:"error,omitempty"
+    PreviousResponseID string json:"previous_response_id,omitempty"
+    Instructions string json:"instructions,omitempty"
+    Temperature float64 json:"temperature,omitempty"
+    TopP float64 json:"top_p,omitempty"
+    MaxOutputTokens int json:"max_output_tokens,omitempty"
+    Usage ResponseUsage json:"usage,omitempty"
+    Tools list of any json:"tools,omitempty"
+    ToolChoice any json:"tool_choice,omitempty"
+    Truncation string json:"truncation,omitempty"
+    Store bool json:"store,omitempty"
+    Metadata map of string to string json:"metadata,omitempty"
 
 # ResponseRequest is the JSON body sent to POST /v1/responses
 type ResponseRequest
     Model string json:"model"
     Input any json:"input"
-    Instructions string json:"instructions,omitzero"
-    PreviousResponseID string json:"previous_response_id,omitzero"
-    Temperature float64 json:"temperature,omitzero"
-    TopP float64 json:"top_p,omitzero"
-    MaxOutputTokens int json:"max_output_tokens,omitzero"
-    PresencePenalty float64 json:"presence_penalty,omitzero"
-    FrequencyPenalty float64 json:"frequency_penalty,omitzero"
-    Tools list of Tool json:"tools,omitzero"
-    ToolChoice any json:"tool_choice,omitzero"
-    Stream bool json:"stream,omitzero"
-    Store bool json:"store,omitzero"
-    Truncation string json:"truncation,omitzero"
-    Metadata map of string to string json:"metadata,omitzero"
-    Text any json:"text,omitzero"
+    Instructions string json:"instructions,omitempty"
+    PreviousResponseID string json:"previous_response_id,omitempty"
+    Temperature float64 json:"temperature,omitempty"
+    TopP float64 json:"top_p,omitempty"
+    MaxOutputTokens int json:"max_output_tokens,omitempty"
+    PresencePenalty float64 json:"presence_penalty,omitempty"
+    FrequencyPenalty float64 json:"frequency_penalty,omitempty"
+    Tools list of Tool json:"tools,omitempty"
+    ToolChoice any json:"tool_choice,omitempty"
+    Stream bool json:"stream,omitempty"
+    Store bool json:"store,omitempty"
+    Truncation string json:"truncation,omitempty"
+    Metadata map of string to string json:"metadata,omitempty"
+    Text any json:"text,omitempty"
 
 # StreamEvent represents a parsed SSE event from OpenResponses streaming
 type StreamEvent
     Type string json:"type"
     SequenceNumber int json:"sequence_number"
-    Response Response json:"response,omitzero"
-    OutputIndex int json:"output_index,omitzero"
-    ContentIndex int json:"content_index,omitzero"
-    ItemID string json:"item_id,omitzero"
-    Item OutputItem json:"item,omitzero"
-    Delta string json:"delta,omitzero"
-    Text string json:"text,omitzero"
-    Part any json:"part,omitzero"
-    Name string json:"name,omitzero"
-    Arguments string json:"arguments,omitzero"
-    Code string json:"code,omitzero"
-    Message string json:"message,omitzero"
+    Response Response json:"response,omitempty"
+    OutputIndex int json:"output_index,omitempty"
+    ContentIndex int json:"content_index,omitempty"
+    ItemID string json:"item_id,omitempty"
+    Item OutputItem json:"item,omitempty"
+    Delta string json:"delta,omitempty"
+    Text string json:"text,omitempty"
+    Part any json:"part,omitempty"
+    Name string json:"name,omitempty"
+    Arguments string json:"arguments,omitempty"
+    Code string json:"code,omitempty"
+    Message string json:"message,omitempty"
 
 # ResponseClient holds the configuration for an OpenResponses request (builder pattern)
 type ResponseClient
@@ -1388,26 +1388,26 @@ func rExecuteStream(c ResponseClient) (string, error)
 # Discriminated by Type: "text", "thinking", "tool_use", "tool_result", "image"
 type ContentBlock
     Type string json:"type"
-    Text string json:"text,omitzero"
-    Thinking string json:"thinking,omitzero"
-    ID string json:"id,omitzero"
-    Name string json:"name,omitzero"
-    Input any json:"input,omitzero"
-    ToolUseID string json:"tool_use_id,omitzero"
-    Content any json:"content,omitzero"
-    Source any json:"source,omitzero"
+    Text string json:"text,omitempty"
+    Thinking string json:"thinking,omitempty"
+    ID string json:"id,omitempty"
+    Name string json:"name,omitempty"
+    Input any json:"input,omitempty"
+    ToolUseID string json:"tool_use_id,omitempty"
+    Content any json:"content,omitempty"
+    Source any json:"source,omitempty"
 
 # ThinkingConfig represents the thinking parameter for Claude models
 # Use Type "adaptive" for Claude 4.6+ (recommended)
 # Use Type "enabled" with BudgetTokens for older models (deprecated on 4.6)
 type ThinkingConfig
     Type string json:"type"
-    BudgetTokens int json:"budget_tokens,omitzero"
+    BudgetTokens int json:"budget_tokens,omitempty"
 
 # OutputConfig represents output configuration (Claude 4.6+)
 # Replaces the deprecated output_format parameter
 type OutputConfig
-    Format any json:"format,omitzero"
+    Format any json:"format,omitempty"
 
 # AnthropicMessage represents a message in the Anthropic format
 # Role is "user" or "assistant" (system is a top-level field, not a message)
@@ -1418,20 +1418,20 @@ type AnthropicMessage
 # AnthropicTool represents a tool definition in the Anthropic format
 type AnthropicTool
     Name string json:"name"
-    Description string json:"description,omitzero"
+    Description string json:"description,omitempty"
     InputSchema any json:"input_schema"
 
 # AnthropicToolChoice represents tool selection in the Anthropic format
 type AnthropicToolChoice
     Type string json:"type"
-    Name string json:"name,omitzero"
+    Name string json:"name,omitempty"
 
 # AnthropicUsage holds token usage from the Anthropic API
 type AnthropicUsage
     InputTokens int json:"input_tokens"
     OutputTokens int json:"output_tokens"
-    CacheCreationInputTokens int json:"cache_creation_input_tokens,omitzero"
-    CacheReadInputTokens int json:"cache_read_input_tokens,omitzero"
+    CacheCreationInputTokens int json:"cache_creation_input_tokens,omitempty"
+    CacheReadInputTokens int json:"cache_read_input_tokens,omitempty"
 
 # AnthropicResponse is the response from POST /v1/messages
 type AnthropicResponse
@@ -1441,7 +1441,7 @@ type AnthropicResponse
     Content list of ContentBlock json:"content"
     Model string json:"model"
     StopReason string json:"stop_reason"
-    StopSequence string json:"stop_sequence,omitzero"
+    StopSequence string json:"stop_sequence,omitempty"
     Usage AnthropicUsage json:"usage"
 
 # MessagesRequest is the JSON body sent to POST /v1/messages
@@ -1449,39 +1449,39 @@ type MessagesRequest
     Model string json:"model"
     Messages list of AnthropicMessage json:"messages"
     MaxTokens int json:"max_tokens"
-    System string json:"system,omitzero"
-    Temperature float64 json:"temperature,omitzero"
-    TopP float64 json:"top_p,omitzero"
-    TopK int json:"top_k,omitzero"
-    StopSequences list of string json:"stop_sequences,omitzero"
-    Stream bool json:"stream,omitzero"
-    Tools list of AnthropicTool json:"tools,omitzero"
-    ToolChoice any json:"tool_choice,omitzero"
-    Metadata any json:"metadata,omitzero"
-    Thinking any json:"thinking,omitzero"
-    Effort string json:"effort,omitzero"
-    OutputConfig any json:"output_config,omitzero"
-    InferenceGeo string json:"inference_geo,omitzero"
+    System string json:"system,omitempty"
+    Temperature float64 json:"temperature,omitempty"
+    TopP float64 json:"top_p,omitempty"
+    TopK int json:"top_k,omitempty"
+    StopSequences list of string json:"stop_sequences,omitempty"
+    Stream bool json:"stream,omitempty"
+    Tools list of AnthropicTool json:"tools,omitempty"
+    ToolChoice any json:"tool_choice,omitempty"
+    Metadata any json:"metadata,omitempty"
+    Thinking any json:"thinking,omitempty"
+    Effort string json:"effort,omitempty"
+    OutputConfig any json:"output_config,omitempty"
+    InferenceGeo string json:"inference_geo,omitempty"
 
 # AnthropicStreamEvent represents a parsed SSE event from Anthropic streaming
 # The Anthropic API uses "event:" and "data:" SSE fields
 type AnthropicStreamEvent
     Type string json:"type"
-    Index int json:"index,omitzero"
-    Message AnthropicResponse json:"message,omitzero"
-    ContentBlock ContentBlock json:"content_block,omitzero"
-    Delta AnthropicDelta json:"delta,omitzero"
-    Usage AnthropicUsage json:"usage,omitzero"
+    Index int json:"index,omitempty"
+    Message AnthropicResponse json:"message,omitempty"
+    ContentBlock ContentBlock json:"content_block,omitempty"
+    Delta AnthropicDelta json:"delta,omitempty"
+    Usage AnthropicUsage json:"usage,omitempty"
 
 # AnthropicDelta represents an incremental delta in Anthropic streaming
 # Delta types: "text_delta", "input_json_delta", "thinking_delta"
 type AnthropicDelta
-    Type string json:"type,omitzero"
-    Text string json:"text,omitzero"
-    Thinking string json:"thinking,omitzero"
-    PartialJSON string json:"partial_json,omitzero"
-    StopReason string json:"stop_reason,omitzero"
-    StopSequence string json:"stop_sequence,omitzero"
+    Type string json:"type,omitempty"
+    Text string json:"text,omitempty"
+    Thinking string json:"thinking,omitempty"
+    PartialJSON string json:"partial_json,omitempty"
+    StopReason string json:"stop_reason,omitempty"
+    StopSequence string json:"stop_sequence,omitempty"
 
 # MessagesClient holds the configuration for an Anthropic Messages request (builder pattern)
 type MessagesClient
