@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,7 +13,6 @@ import (
 	"strings"
 
 	dockercontainer "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
 
@@ -148,68 +146,6 @@ func buildImage(cli *client.Client, contextPath string, tag string) (string, str
 	return imageID, output.String(), nil
 }
 
-// loadDockerAuth reads ~/.docker/config.json and resolves credentials
-// for the given registry server address.
-// Returns (username, password, serverAddress, error).
-func loadDockerAuth(serverAddress string) (string, string, string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", "", "", fmt.Errorf("container auth: %w", err)
-	}
-
-	configPath := filepath.Join(home, ".docker", "config.json")
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return "", "", "", fmt.Errorf("container auth: %w", err)
-	}
-
-	var config struct {
-		Auths map[string]struct {
-			Auth string `json:"auth"`
-		} `json:"auths"`
-	}
-	if err := json.Unmarshal(data, &config); err != nil {
-		return "", "", "", fmt.Errorf("container auth parse: %w", err)
-	}
-
-	auth, ok := config.Auths[serverAddress]
-	if !ok {
-		variations := []string{
-			"https://" + serverAddress,
-			"http://" + serverAddress,
-			strings.TrimPrefix(serverAddress, "https://"),
-			strings.TrimPrefix(serverAddress, "http://"),
-		}
-		for _, v := range variations {
-			if a, found := config.Auths[v]; found {
-				auth = a
-				ok = true
-				break
-			}
-		}
-	}
-
-	if !ok {
-		return "", "", "", fmt.Errorf("container auth: no credentials found for %s", serverAddress)
-	}
-
-	if auth.Auth == "" {
-		return "", "", "", fmt.Errorf("container auth: empty credentials for %s", serverAddress)
-	}
-
-	decoded, err := base64.StdEncoding.DecodeString(auth.Auth)
-	if err != nil {
-		return "", "", "", fmt.Errorf("container auth decode: %w", err)
-	}
-
-	parts := strings.SplitN(string(decoded), ":", 2)
-	if len(parts) != 2 {
-		return "", "", "", fmt.Errorf("container auth: invalid credential format for %s", serverAddress)
-	}
-
-	return parts[0], parts[1], serverAddress, nil
-}
-
 // --- Bridge functions called from Kukicha ---
 
 // Connect creates an Engine using auto-detected socket or DOCKER_HOST.
@@ -267,77 +203,6 @@ func Open(cfg Config) (Engine, error) {
 	return Engine{cli: cli}, nil
 }
 
-// Pull pulls an image from a registry. Returns the image digest.
-// An optional ctx.Handle can be passed for cancellation support.
-func Pull(engine Engine, ref string, handles ...ctxpkg.Handle) (string, error) {
-	ctx := context.Background()
-	if len(handles) > 0 {
-		ctx = ctxpkg.Value(handles[0])
-	}
-	reader, err := engine.cli.ImagePull(ctx, ref, image.PullOptions{})
-	if err != nil {
-		return "", fmt.Errorf("container pull: %w", err)
-	}
-	defer reader.Close()
-
-	// Consume the stream to complete the pull; extract digest from status messages
-	var digest string
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		var msg struct {
-			Status string `json:"status"`
-			ID     string `json:"id"`
-		}
-		if err := json.Unmarshal(scanner.Bytes(), &msg); err == nil {
-			if strings.HasPrefix(msg.Status, "Digest:") {
-				digest = strings.TrimPrefix(msg.Status, "Digest: ")
-			}
-		}
-	}
-	if digest == "" {
-		digest = ref
-	}
-	return digest, nil
-}
-
-// PullAuth pulls an image using registry credentials.
-func PullAuth(engine Engine, ref string, auth Auth) (string, error) {
-	authJSON, err := json.Marshal(map[string]string{
-		"username":      auth.username,
-		"password":      auth.password,
-		"serveraddress": auth.serverAddress,
-	})
-	if err != nil {
-		return "", fmt.Errorf("container pull auth: %w", err)
-	}
-	encoded := base64.URLEncoding.EncodeToString(authJSON)
-
-	reader, err := engine.cli.ImagePull(context.Background(), ref, image.PullOptions{
-		RegistryAuth: encoded,
-	})
-	if err != nil {
-		return "", fmt.Errorf("container pull: %w", err)
-	}
-	defer reader.Close()
-
-	var digest string
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		var msg struct {
-			Status string `json:"status"`
-		}
-		if err := json.Unmarshal(scanner.Bytes(), &msg); err == nil {
-			if strings.HasPrefix(msg.Status, "Digest:") {
-				digest = strings.TrimPrefix(msg.Status, "Digest: ")
-			}
-		}
-	}
-	if digest == "" {
-		digest = ref
-	}
-	return digest, nil
-}
-
 // Build builds a Docker image from a directory. Returns imageID and build output.
 func Build(engine Engine, path string, tag string) (BuildOutput, error) {
 	imageID, output, err := buildImage(engine.cli, path, tag)
@@ -345,15 +210,6 @@ func Build(engine Engine, path string, tag string) (BuildOutput, error) {
 		return BuildOutput{}, err
 	}
 	return BuildOutput{imageID: imageID, output: output}, nil
-}
-
-// LoginFromConfig loads registry credentials from ~/.docker/config.json.
-func LoginFromConfig(server string) (Auth, error) {
-	username, password, addr, err := loadDockerAuth(server)
-	if err != nil {
-		return Auth{}, err
-	}
-	return Auth{username: username, password: password, serverAddress: addr}, nil
 }
 
 // CopyFrom copies files from a container path to a local destination path.
