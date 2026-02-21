@@ -15,94 +15,105 @@
 #
 # Chat Completions Examples:
 #   # Quick completion
-#   reply, err := llm.Complete("openai:gpt-4o-mini", "What is Go?")
+#   reply := llm.Complete("openai:gpt-4o-mini", "What is Go?") onerr panic "{error}"
 #
 #   # Builder pattern with provider and options
-#   reply, err := llm.New("gpt-4o-mini")
+#   reply := llm.New("gpt-4o-mini")
 #       |> llm.Provider("openai")
 #       |> llm.System("You are a helpful assistant.")
 #       |> llm.Temperature(0.7)
 #       |> llm.MaxTokens(500)
 #       |> llm.Ask("Explain pipes in Kukicha")
+#       onerr panic "{error}"
 #
 #   # Streaming
 #   llm.New("gpt-4o-mini")
 #       |> llm.Provider("openai")
 #       |> llm.Stream(handleChunk)
 #       |> llm.Ask("Write a poem")
+#       onerr panic "{error}"
 #
 #   # Using the gateway
-#   reply, err := llm.New("gpt-4o-mini")
+#   reply := llm.New("gpt-4o-mini")
 #       |> llm.Gateway("http://localhost:8000")
 #       |> llm.APIKey("my-gateway-key")
 #       |> llm.Ask("Hello!")
+#       onerr panic "{error}"
 #
 #   # Open WebUI or custom endpoints
-#   reply, err := llm.New("anthropic.claude-opus-4-6")
+#   reply := llm.New("anthropic.claude-opus-4-6")
 #       |> llm.BaseURL("https://chat.example.edu")
 #       |> llm.Path("/api/chat/completions")
 #       |> llm.APIKey("your-key")
 #       |> llm.Ask("Hello!")
+#       onerr panic "{error}"
 #
 # OpenResponses Examples:
 #   # Quick response
-#   reply, err := llm.Respond("openai:gpt-4o", "What is Go?")
+#   reply := llm.Respond("openai:gpt-4o", "What is Go?") onerr panic "{error}"
 #
 #   # Builder pattern
-#   resp, err := llm.NewResponse("gpt-4o")
+#   resp := llm.NewResponse("gpt-4o")
 #       |> llm.RProvider("openai")
 #       |> llm.Instructions("You are a helpful assistant.")
 #       |> llm.RTemperature(0.7)
 #       |> llm.RMaxOutputTokens(500)
 #       |> llm.RStream(handleChunk)
 #       |> llm.RAsk("Explain pipes in Kukicha")
+#       onerr panic "{error}"
 #
 #   # Multi-turn with previous response
-#   resp2, err := llm.NewResponse("gpt-4o")
+#   resp2 := llm.NewResponse("gpt-4o")
 #       |> llm.RProvider("openai")
 #       |> llm.PreviousResponse(resp.ID)
 #       |> llm.RAsk("Tell me more")
+#       onerr panic "{error}"
 #
 #   # Full response with tool calls
-#   resp, err := llm.NewResponse("gpt-4o")
+#   resp := llm.NewResponse("gpt-4o")
 #       |> llm.RAddTool("get_weather", "Get current weather", params)
 #       |> llm.RAskRaw("What's the weather in Boston?")
+#       onerr panic "{error}"
 #
 # Anthropic Messages Examples:
 #   # Quick message
-#   reply, err := llm.AnthropicComplete("claude-opus-4-6", "What is Go?")
+#   reply := llm.AnthropicComplete("claude-opus-4-6", "What is Go?") onerr panic "{error}"
 #
 #   # Builder pattern
-#   reply, err := llm.NewMessages("claude-opus-4-6")
+#   reply := llm.NewMessages("claude-opus-4-6")
 #       |> llm.MSystem("You are a helpful assistant.")
 #       |> llm.MTemperature(0.7)
 #       |> llm.MMaxTokens(1024)
 #       |> llm.MStream(handleChunk)
 #       |> llm.MAsk("Explain pipes in Kukicha")
+#       onerr panic "{error}"
 #
 #   # Adaptive thinking (Claude 4.6+)
-#   reply, err := llm.NewMessages("claude-opus-4-6")
+#   reply := llm.NewMessages("claude-opus-4-6")
 #       |> llm.MAdaptiveThinking()
 #       |> llm.MEffort("high")
 #       |> llm.MMaxTokens(16000)
 #       |> llm.MAsk("Solve this complex problem...")
+#       onerr panic "{error}"
 #
 #   # Multi-turn conversation
-#   reply, err := llm.NewMessages("claude-opus-4-6")
+#   reply := llm.NewMessages("claude-opus-4-6")
 #       |> llm.MSystem("You are a tutor.")
 #       |> llm.MMaxTokens(1024)
 #       |> llm.MUser("What is a goroutine?")
 #       |> llm.MAssistant("A goroutine is a lightweight thread.")
 #       |> llm.MUser("How do I create one?")
 #       |> llm.MSend()
+#       onerr panic "{error}"
 #
 #   # Custom endpoint (e.g., Dartmouth Open WebUI Anthropic proxy)
-#   reply, err := llm.NewMessages("claude-opus-4-6")
+#   reply := llm.NewMessages("claude-opus-4-6")
 #       |> llm.MBaseURL("https://chat.dartmouth.edu")
 #       |> llm.MPath("/api/messages")
 #       |> llm.MAPIKey("your-key")
 #       |> llm.MMaxTokens(1024)
 #       |> llm.MAsk("Hello!")
+#       onerr panic "{error}"
 
 petiole llm
 
@@ -434,7 +445,7 @@ func Retry(c Client, maxAttempts int, delayMs int) Client
 # This is the terminal operation that triggers the API call
 # Returns the assistant's response text and any error
 #
-# Example: reply, err := llm.New("openai:gpt-4o-mini") |> llm.Ask("Hello!")
+# Example: reply := llm.New("openai:gpt-4o-mini") |> llm.Ask("Hello!") onerr panic "LLM failed: {error}"
 func Ask(c Client, prompt string) (string, error)
     c = User(c, prompt)
     return execute(c)
@@ -444,7 +455,7 @@ func Ask(c Client, prompt string) (string, error)
 # Returns the assistant's response text and any error
 #
 # Example:
-#   reply, err := llm.New("openai:gpt-4o-mini")
+#   reply := llm.New("openai:gpt-4o-mini") onerr ...
 #       |> llm.System("You are a poet.")
 #       |> llm.User("Write a haiku about Go")
 #       |> llm.Send()
@@ -455,7 +466,7 @@ func Send(c Client) (string, error)
 # Use this when you need access to tool calls, usage stats, or multiple choices
 #
 # Example:
-#   result, err := llm.New("openai:gpt-4o-mini")
+#   result := llm.New("openai:gpt-4o-mini") onerr ...
 #       |> llm.User("Hello")
 #       |> llm.SendRaw()
 #   print(result.Usage.TotalTokens)
@@ -466,14 +477,14 @@ func SendRaw(c Client) (Completion, error)
 # Takes a "provider:model" string and a prompt, returns the response text
 # Uses provider-specific env vars for API keys
 #
-# Example: reply, err := llm.Complete("openai:gpt-4o-mini", "What is Go?")
+# Example: reply := llm.Complete("openai:gpt-4o-mini", "What is Go?") onerr return "", error "{error}"
 func Complete(model string, prompt string) (string, error)
     c := New(model)
     return Ask(c, prompt)
 
 # CompleteWithSystem is a quick completion with a system prompt
 #
-# Example: reply, err := llm.CompleteWithSystem("openai:gpt-4o-mini", "Be brief.", "What is Go?")
+# Example: reply := llm.CompleteWithSystem("openai:gpt-4o-mini", "Be brief.", "What is Go?") onerr return "", error "{error}"
 func CompleteWithSystem(model string, systemPrompt string, prompt string) (string, error)
     c := New(model)
     c = System(c, systemPrompt)
@@ -605,9 +616,7 @@ func execute(c Client) (string, error)
     if c.streamHandler != empty
         return executeStream(c)
 
-    comp, err := executeRaw(c)
-    if err != empty
-        return "", err
+    comp := executeRaw(c) onerr return "", error "{error}"
     return GetContent(comp), empty
 
 # Internal: execute a completion and return the full response
@@ -629,22 +638,16 @@ func executeRaw(c Client) (Completion, error)
     if c.retryMaxAttempts > 1
         req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 
-    resp, err := fetch.Do(req)
-    if err != empty
-        return Completion{}, err
+    resp := fetch.Do(req) onerr return Completion{}, error "{error}"
 
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := fetch.Bytes(resp)
-        if readErr != empty
-            return Completion{}, error("API request failed with status {resp.StatusCode}")
-        return Completion{}, error("API request failed ({resp.StatusCode}): {errBody as string}")
+        errBody := fetch.Bytes(resp) onerr return Completion{}, error "API request failed with status {resp.StatusCode}"
+        return Completion{}, error "API request failed ({resp.StatusCode}): {errBody as string}"
 
     comp := Completion{}
-    jsonErr := json.UnmarshalRead(resp.Body, reference of comp)
-    if jsonErr != empty
-        return Completion{}, jsonErr
+    json.UnmarshalRead(resp.Body, reference of comp) onerr return Completion{}, error "{error}"
 
     return comp, empty
 
@@ -665,16 +668,12 @@ func executeStream(c Client) (string, error)
     if apiKey != ""
         req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
 
-    resp, err := fetch.Do(req)
-    if err != empty
-        return "", err
+    resp := fetch.Do(req) onerr return "", error "{error}"
 
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := fetch.Bytes(resp)
-        if readErr != empty
-            return "", error("API request failed with status {resp.StatusCode}")
+        errBody := fetch.Bytes(resp) onerr return "", error "API request failed with status {resp.StatusCode}"
         return "", error("API request failed ({resp.StatusCode}): {errBody as string}")
 
     # Read SSE stream line by line
@@ -695,8 +694,7 @@ func executeStream(c Client) (string, error)
         if string.HasPrefix(line, "data: ")
             data := string.TrimPrefix(line, "data: ")
             chunk := Chunk{}
-            parseErr := json.Unmarshal(data as list of byte, reference of chunk)
-            if parseErr != empty
+            json.Unmarshal(data as list of byte, reference of chunk) onerr
                 continue
 
             if len(chunk.Choices) > 0
@@ -705,12 +703,9 @@ func executeStream(c Client) (string, error)
                     fullContent = fullContent + content
                     c.streamHandler(content)
 
-    scanErr := scanner.Err()
-    if scanErr != empty
-        return fullContent, scanErr
+    scanner.Err() onerr return fullContent, error "{error}"
 
     return fullContent, empty
-
 # ═══════════════════════════════════════════════════════════════════════
 # OpenResponses API (https://www.openresponses.org/specification)
 # POST /v1/responses - a different API from Chat Completions
@@ -1093,7 +1088,7 @@ func RRetry(c ResponseClient, maxAttempts int, delayMs int) ResponseClient
 # RAsk sends a user message and executes the OpenResponses request
 # Returns the text content of the first output message and any error
 #
-# Example: reply, err := llm.NewResponse("openai:gpt-4o") |> llm.RAsk("Hello!")
+# Example: reply := llm.NewResponse("openai:gpt-4o") |> llm.RAsk("Hello!") onerr return error "{error}"
 func RAsk(c ResponseClient, prompt string) (string, error)
     c = RUserMessage(c, prompt)
     return rExecute(c)
@@ -1102,7 +1097,7 @@ func RAsk(c ResponseClient, prompt string) (string, error)
 # Returns the text content of the first output message and any error
 #
 # Example:
-#   reply, err := llm.NewResponse("openai:gpt-4o")
+#   reply := llm.NewResponse("openai:gpt-4o") onerr ...
 #       |> llm.Instructions("Be concise.")
 #       |> llm.RUserMessage("Hello")
 #       |> llm.RSend()
@@ -1113,7 +1108,7 @@ func RSend(c ResponseClient) (string, error)
 # Use this when you need access to tool calls, usage stats, or multiple output items
 #
 # Example:
-#   resp, err := llm.NewResponse("openai:gpt-4o") |> llm.RAskRaw("Hello!")
+#   resp := llm.NewResponse("openai:gpt-4o") |> llm.RAskRaw("Hello!") onerr ...
 #   print(resp.Usage.TotalTokens)
 func RAskRaw(c ResponseClient, prompt string) (Response, error)
     c = RUserMessage(c, prompt)
@@ -1122,7 +1117,7 @@ func RAskRaw(c ResponseClient, prompt string) (Response, error)
 # RSendRaw executes the request and returns the full Response object
 #
 # Example:
-#   resp, err := llm.NewResponse("openai:gpt-4o")
+#   resp := llm.NewResponse("openai:gpt-4o") onerr ...
 #       |> llm.RUserMessage("Hello")
 #       |> llm.RSendRaw()
 func RSendRaw(c ResponseClient) (Response, error)
@@ -1131,14 +1126,14 @@ func RSendRaw(c ResponseClient) (Response, error)
 # Respond is a quick one-shot OpenResponses completion
 # Takes a "provider:model" string and a prompt, returns the response text
 #
-# Example: reply, err := llm.Respond("openai:gpt-4o", "What is Go?")
+# Example: reply := llm.Respond("openai:gpt-4o", "What is Go?") onerr return error "{error}"
 func Respond(model string, prompt string) (string, error)
     c := NewResponse(model)
     return RAsk(c, prompt)
 
 # RespondWithInstructions is a quick completion with instructions
 #
-# Example: reply, err := llm.RespondWithInstructions("openai:gpt-4o", "Be brief.", "What is Go?")
+# Example: reply := llm.RespondWithInstructions("openai:gpt-4o", "Be brief.", "What is Go?") onerr return error "{error}"
 func RespondWithInstructions(model string, instructions string, prompt string) (string, error)
     c := NewResponse(model)
     c = Instructions(c, instructions)
@@ -1277,9 +1272,7 @@ func rExecute(c ResponseClient) (string, error)
     if c.streamHandler != empty or c.eventHandler != empty
         return rExecuteStream(c)
 
-    resp, err := rExecuteRaw(c)
-    if err != empty
-        return "", err
+    resp := rExecuteRaw(c) onerr return "", error "{error}"
     return GetResponseText(resp), empty
 
 # Internal: execute an OpenResponses request and return the full Response
@@ -1301,22 +1294,16 @@ func rExecuteRaw(c ResponseClient) (Response, error)
     if c.retryMaxAttempts > 1
         req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 
-    resp, err := fetch.Do(req)
-    if err != empty
-        return Response{}, err
+    resp := fetch.Do(req) onerr return Response{}, error "{error}"
 
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := fetch.Bytes(resp)
-        if readErr != empty
-            return Response{}, error("API request failed with status {resp.StatusCode}")
-        return Response{}, error("API request failed ({resp.StatusCode}): {errBody as string}")
+        errBody := fetch.Bytes(resp) onerr return Response{}, error "API request failed with status {resp.StatusCode}"
+        return Response{}, error "API request failed ({resp.StatusCode}): {errBody as string}"
 
     result := Response{}
-    jsonErr := json.UnmarshalRead(resp.Body, reference of result)
-    if jsonErr != empty
-        return Response{}, jsonErr
+    json.UnmarshalRead(resp.Body, reference of result) onerr return Response{}, error "{error}"
 
     return result, empty
 
@@ -1337,17 +1324,13 @@ func rExecuteStream(c ResponseClient) (string, error)
     if apiKey != ""
         req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
 
-    resp, err := fetch.Do(req)
-    if err != empty
-        return "", err
+    resp := fetch.Do(req) onerr return "", error "{error}"
 
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := fetch.Bytes(resp)
-        if readErr != empty
-            return "", error("API request failed with status {resp.StatusCode}")
-        return "", error("API request failed ({resp.StatusCode}): {errBody as string}")
+        errBody := fetch.Bytes(resp) onerr return "", error "API request failed with status {resp.StatusCode}"
+        return "", error "API request failed ({resp.StatusCode}): {errBody as string}"
 
     # Read SSE stream line by line
     # OpenResponses uses semantic event types like:
@@ -1372,8 +1355,7 @@ func rExecuteStream(c ResponseClient) (string, error)
         if string.HasPrefix(line, "data: ")
             data := string.TrimPrefix(line, "data: ")
             evt := StreamEvent{}
-            parseErr := json.Unmarshal(data as list of byte, reference of evt)
-            if parseErr != empty
+            json.Unmarshal(data as list of byte, reference of evt) onerr
                 continue
 
             # Forward event to event handler if set
@@ -1394,12 +1376,9 @@ func rExecuteStream(c ResponseClient) (string, error)
                     errMsg = "streaming error: {evt.Code}"
                 return fullContent, error(errMsg)
 
-    scanErr := scanner.Err()
-    if scanErr != empty
-        return fullContent, scanErr
+    scanner.Err() onerr return fullContent, error "{error}"
 
     return fullContent, empty
-
 # ═══════════════════════════════════════════════════════════════════════
 # Anthropic Messages API (https://docs.anthropic.com/en/api/messages)
 # POST /v1/messages - Anthropic's native API format
@@ -1744,7 +1723,7 @@ func MRetry(c MessagesClient, maxAttempts int, delayMs int) MessagesClient
 # MAsk sends a user message and executes the Anthropic Messages request
 # Returns the text content and any error
 #
-# Example: reply, err := llm.NewMessages("claude-opus-4-6") |> llm.MAsk("Hello!")
+# Example: reply := llm.NewMessages("claude-opus-4-6") |> llm.MAsk("Hello!") onerr return error "{error}"
 func MAsk(c MessagesClient, prompt string) (string, error)
     c = MUser(c, prompt)
     return mExecute(c)
@@ -1753,7 +1732,7 @@ func MAsk(c MessagesClient, prompt string) (string, error)
 # Returns the text content and any error
 #
 # Example:
-#   reply, err := llm.NewMessages("claude-opus-4-6")
+#   reply := llm.NewMessages("claude-opus-4-6") onerr ...
 #       |> llm.MSystem("Be concise.")
 #       |> llm.MUser("Hello")
 #       |> llm.MSend()
@@ -1764,7 +1743,7 @@ func MSend(c MessagesClient) (string, error)
 # Use this when you need access to tool calls, usage stats, or content blocks
 #
 # Example:
-#   resp, err := llm.NewMessages("claude-opus-4-6") |> llm.MAskRaw("Hello!")
+#   resp := llm.NewMessages("claude-opus-4-6") |> llm.MAskRaw("Hello!") onerr ...
 #   print(resp.Usage.OutputTokens)
 func MAskRaw(c MessagesClient, prompt string) (AnthropicResponse, error)
     c = MUser(c, prompt)
@@ -1773,20 +1752,20 @@ func MAskRaw(c MessagesClient, prompt string) (AnthropicResponse, error)
 # MSendRaw executes the request and returns the full AnthropicResponse
 #
 # Example:
-#   resp, err := llm.NewMessages("claude-opus-4-6")
+#   resp := llm.NewMessages("claude-opus-4-6") onerr ...
 #       |> llm.MUser("Hello")
 #       |> llm.MSendRaw()
 func MSendRaw(c MessagesClient) (AnthropicResponse, error)
     return mExecuteRaw(c)
 
 # AnthropicComplete is a quick one-shot completion using the Anthropic Messages API
-# Example: reply, err := llm.AnthropicComplete("claude-opus-4-6", "What is Go?")
+# Example: reply := llm.AnthropicComplete("claude-opus-4-6", "What is Go?") onerr return error "{error}"
 func AnthropicComplete(model string, prompt string) (string, error)
     c := NewMessages(model)
     return MAsk(c, prompt)
 
 # AnthropicCompleteWithSystem is a quick completion with a system prompt
-# Example: reply, err := llm.AnthropicCompleteWithSystem("claude-opus-4-6", "Be brief.", "What is Go?")
+# Example: reply := llm.AnthropicCompleteWithSystem("claude-opus-4-6", "Be brief.", "What is Go?") onerr return error "{error}"
 func AnthropicCompleteWithSystem(model string, system string, prompt string) (string, error)
     c := NewMessages(model)
     c = MSystem(c, system)
@@ -1887,9 +1866,7 @@ func mExecute(c MessagesClient) (string, error)
     if c.streamHandler != empty or c.eventHandler != empty
         return mExecuteStream(c)
 
-    resp, err := mExecuteRaw(c)
-    if err != empty
-        return "", err
+    resp := mExecuteRaw(c) onerr return "", error "{error}"
     return GetAnthropicText(resp), empty
 
 # Internal: execute an Anthropic Messages request and return the full response
@@ -1914,22 +1891,16 @@ func mExecuteRaw(c MessagesClient) (AnthropicResponse, error)
     if c.retryMaxAttempts > 1
         req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 
-    resp, err := fetch.Do(req)
-    if err != empty
-        return AnthropicResponse{}, err
+    resp := fetch.Do(req) onerr return AnthropicResponse{}, error "{error}"
 
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := fetch.Bytes(resp)
-        if readErr != empty
-            return AnthropicResponse{}, error("Anthropic API request failed with status {resp.StatusCode}")
-        return AnthropicResponse{}, error("Anthropic API request failed ({resp.StatusCode}): {errBody as string}")
+        errBody := fetch.Bytes(resp) onerr return AnthropicResponse{}, error "Anthropic API request failed with status {resp.StatusCode}"
+        return AnthropicResponse{}, error "Anthropic API request failed ({resp.StatusCode}): {errBody as string}"
 
     result := AnthropicResponse{}
-    jsonErr := json.UnmarshalRead(resp.Body, reference of result)
-    if jsonErr != empty
-        return AnthropicResponse{}, jsonErr
+    json.UnmarshalRead(resp.Body, reference of result) onerr return AnthropicResponse{}, error "{error}"
 
     return result, empty
 
@@ -1961,17 +1932,13 @@ func mExecuteStream(c MessagesClient) (string, error)
 
     req = fetch.Body(req, body)
 
-    resp, err := fetch.Do(req)
-    if err != empty
-        return "", err
+    resp := fetch.Do(req) onerr return "", error "{error}"
 
     defer resp.Body.Close()
 
     if resp.StatusCode >= 400
-        errBody, readErr := fetch.Bytes(resp)
-        if readErr != empty
-            return "", error("Anthropic API request failed with status {resp.StatusCode}")
-        return "", error("Anthropic API request failed ({resp.StatusCode}): {errBody as string}")
+        errBody := fetch.Bytes(resp) onerr return "", error "Anthropic API request failed with status {resp.StatusCode}"
+        return "", error "Anthropic API request failed ({resp.StatusCode}): {errBody as string}"
 
     # Read Anthropic SSE stream
     # Format: "event: <type>\ndata: <json>\n\n"
@@ -1988,8 +1955,7 @@ func mExecuteStream(c MessagesClient) (string, error)
         if string.HasPrefix(line, "data: ")
             data := string.TrimPrefix(line, "data: ")
             evt := AnthropicStreamEvent{}
-            parseErr := json.Unmarshal(data as list of byte, reference of evt)
-            if parseErr != empty
+            json.Unmarshal(data as list of byte, reference of evt) onerr
                 continue
 
             # Forward event to event handler if set
@@ -2007,8 +1973,5 @@ func mExecuteStream(c MessagesClient) (string, error)
             if evt.Type == "error"
                 return fullContent, error("Anthropic streaming error")
 
-    scanErr := scanner.Err()
-    if scanErr != empty
-        return fullContent, scanErr
-
+    scanner.Err() onerr return fullContent, error "{error}"
     return fullContent, empty
