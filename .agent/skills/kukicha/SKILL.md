@@ -217,4 +217,5 @@ concurrent.Parallel(tasks...)
 7. **Add `import "fmt"`** to any file using `{interpolation}` inside `error ""` literals
 8. Use `import "stdlib/pkg" as alias` for packages that clash with local names — see canonical alias table in `AGENTS.md`
 9. Never edit `stdlib/*/*.go` directly — edit `.kuki` source and run `make generate`
-10. Run `kukicha check file.kuki` to validate syntax before committing
+10. Never edit `internal/semantic/stdlib_registry_gen.go` directly — run `make genstdlibregistry` (auto-run by `make generate`)
+11. Run `kukicha check file.kuki` to validate syntax before committing

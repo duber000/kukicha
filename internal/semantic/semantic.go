@@ -1385,62 +1385,24 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 	if objID, ok := expr.Object.(*ast.Identifier); ok {
 		qualifiedName := objID.Value + "." + methodName
 
-		// Registry of known external function return counts
-		knownExternalReturns := map[string]int{
-			// stdlib/fetch
-			"fetch.Get":         2,
-			"fetch.Post":        2,
-			"fetch.Do":          2,
-			"fetch.CheckStatus": 2,
-			"fetch.Text":        2,
-			"fetch.Bytes":       2,
-			"fetch.Json":        2,
-			"fetch.Decode":      1,
-			// stdlib/json
-			"json.Marshal":       2,
-			"json.MarshalPretty": 2,
-			"json.DecodeRead":    2,
-			// stdlib/parse
-			"parse.Json":          2,
-			"parse.JsonLines":     2,
-			"parse.JsonPretty":    2,
-			"parse.Csv":           2,
-			"parse.CsvWithHeader": 2,
-			"parse.Yaml":          2,
-			"parse.YamlPretty":    2,
-			// stdlib/llm
-			"llm.Ask":                      2,
-			"llm.Send":                     2,
-			"llm.SendRaw":                  2,
-			"llm.Complete":                 2,
-			"llm.CompleteWithSystem":       2,
-			"llm.RAsk":                     2,
-			"llm.RSend":                    2,
-			"llm.RAskRaw":                  2,
-			"llm.RSendRaw":                 2,
-			"llm.Respond":                  2,
-			"llm.RespondWithInstructions":  2,
-			"llm.MAsk":                     2,
-			"llm.MSend":                    2,
-			"llm.MAskRaw":                  2,
-			"llm.MSendRaw":                 2,
-			"llm.AnthropicComplete":           2,
-			"llm.AnthropicCompleteWithSystem": 2,
-			// stdlib/shell
-			"shell.Output": 2,
-			// Go stdlib
-			"os.ReadFile":        2,
-			"os.Create":          2,
-			"os.Open":            2,
-			"os.LookupEnv":       2,
-			"strconv.Atoi":       2,
-			"strconv.ParseInt":   2,
-			"strconv.ParseFloat": 2,
-			"url.Parse":          2,
-			"fmt.Fprintf":        2,
-			"fmt.Sprintf":        1,
-			"net.ParseCIDR":      3,
+		// Build the registry from the auto-generated Kukicha stdlib entries,
+		// then layer in Go stdlib functions (which have no .kuki source).
+		knownExternalReturns := make(map[string]int, len(generatedStdlibRegistry)+20)
+		for k, v := range generatedStdlibRegistry {
+			knownExternalReturns[k] = v
 		}
+		// Go stdlib (not derived from .kuki files)
+		knownExternalReturns["os.ReadFile"] = 2
+		knownExternalReturns["os.Create"] = 2
+		knownExternalReturns["os.Open"] = 2
+		knownExternalReturns["os.LookupEnv"] = 2
+		knownExternalReturns["strconv.Atoi"] = 2
+		knownExternalReturns["strconv.ParseInt"] = 2
+		knownExternalReturns["strconv.ParseFloat"] = 2
+		knownExternalReturns["url.Parse"] = 2
+		knownExternalReturns["fmt.Fprintf"] = 2
+		knownExternalReturns["fmt.Sprintf"] = 1
+		knownExternalReturns["net.ParseCIDR"] = 3
 
 		if count, ok := knownExternalReturns[qualifiedName]; ok {
 			types := make([]*TypeInfo, count)

@@ -96,11 +96,14 @@ items list of string
 
 ### "assignment mismatch: 1 variable but X returns 2 values"
 
-**Cause:** Using `onerr` or pipe `|>` with a stdlib function that returns `(T, error)`, but the compiler doesn't recognize the function's return count. The semantic analyzer has a registry of known external function return counts.
+**Cause:** Using `onerr` or pipe `|>` with a stdlib function that returns `(T, error)`, but the compiler doesn't recognize the function's return count. The semantic analyzer uses a generated registry of known external function return counts.
 
 **Context:** This affects pipe chains with `onerr` where the function is from a stdlib package (e.g., `parse.CsvWithHeader`, `json.MarshalPretty`). The compiler needs to know the function returns 2 values so it can split the assignment into `val, err := f()`.
 
-**Solution:** If you encounter this with a new stdlib function, add it to the `knownExternalReturns` map in `internal/semantic/semantic.go` inside `analyzeMethodCallExpr`.
+**Solution:** The registry is now auto-generated from stdlib `.kuki` sources — do **not** edit `semantic.go` manually.
+
+- If the function is in a Kukicha stdlib package: make sure its return type is declared in the `.kuki` file, then run `make genstdlibregistry` (or `make generate`, which runs it automatically). Commit the updated `internal/semantic/stdlib_registry_gen.go`.
+- If the function is from an external Go package: add it to the Go stdlib block in `analyzeMethodCallExpr` in `internal/semantic/semantic.go` (just below where `generatedStdlibRegistry` is merged).
 
 ### "onerr requires error-returning expression"
 

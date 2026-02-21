@@ -284,35 +284,38 @@ select
 ## Build & Test Commands
 
 ```bash
-make build              # Build the kukicha compiler
-make test               # Run all tests (sets GOEXPERIMENT)
-make generate           # Regenerate stdlib .go from .kuki sources
-kukicha check file.kuki # Validate syntax without compiling
-kukicha build file.kuki # Transpile and compile to binary
-kukicha run file.kuki   # Transpile, compile, and run
-kukicha fmt -w file.kuki # Format in place
+make build                # Build the kukicha compiler
+make test                 # Run all tests (sets GOEXPERIMENT)
+make generate             # Regenerate stdlib_registry_gen.go + all stdlib .go files
+make genstdlibregistry    # Regenerate only internal/semantic/stdlib_registry_gen.go
+kukicha check file.kuki   # Validate syntax without compiling
+kukicha build file.kuki   # Transpile and compile to binary
+kukicha run file.kuki     # Transpile, compile, and run
+kukicha fmt -w file.kuki  # Format in place
 ```
 
 ## File Map
 
 ```
-cmd/kukicha/          # CLI entry point
+cmd/kukicha/              # CLI entry point
+cmd/genstdlibregistry/    # Generator: scans stdlib/*.kuki → stdlib_registry_gen.go
 internal/
-  lexer/              # Tokenization (INDENT/DEDENT handling)
-  parser/             # Recursive descent parser → AST
-  ast/                # AST node definitions
-  semantic/           # Type checking, validation
-  codegen/            # AST → Go code generation
-  formatter/          # Code formatting
-stdlib/               # Standard library (.kuki source files)
-  slice/              # Filter, Map, GroupBy, etc.
-  json/               # jsonv2 wrapper
-  fetch/              # HTTP client (Auth, Sessions)
-  files/              # File I/O
-  shell/              # Command execution
+  lexer/                  # Tokenization (INDENT/DEDENT handling)
+  parser/                 # Recursive descent parser → AST
+  ast/                    # AST node definitions
+  semantic/               # Type checking, validation
+    stdlib_registry_gen.go  # GENERATED — run "make genstdlibregistry" to update
+  codegen/                # AST → Go code generation
+  formatter/              # Code formatting
+stdlib/                   # Standard library (.kuki source files)
+  slice/                  # Filter, Map, GroupBy, etc.
+  json/                   # jsonv2 wrapper
+  fetch/                  # HTTP client (Auth, Sessions)
+  files/                  # File I/O
+  shell/                  # Command execution
   ...
-examples/             # Example programs
-docs/                 # Documentation
+examples/                 # Example programs
+docs/                     # Documentation
 ```
 
 ## Imports
@@ -340,10 +343,11 @@ Use `as alias` whenever the package's last path segment clashes with a local var
 ## Critical Rules
 
 1. **Never edit `stdlib/*/*.go` directly** - Edit the `.kuki` files, then run `make generate`
-2. **Always validate** - Run `kukicha check` before committing `.kuki` changes
-3. **4-space indentation only** - Tabs are not allowed in Kukicha
-4. **Explicit function signatures** - Parameters and return types must be declared
-5. **Test with `make test`** - Sets required `GOEXPERIMENT=jsonv2`
+2. **Never edit `internal/semantic/stdlib_registry_gen.go` directly** - Run `make genstdlibregistry` (called automatically by `make generate`)
+3. **Always validate** - Run `kukicha check` before committing `.kuki` changes
+4. **4-space indentation only** - Tabs are not allowed in Kukicha
+5. **Explicit function signatures** - Parameters and return types must be declared
+6. **Test with `make test`** - Sets required `GOEXPERIMENT=jsonv2`
 
 ## Adding Features to the Compiler
 
