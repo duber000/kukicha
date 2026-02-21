@@ -9,3 +9,10 @@ import "embed"
 //
 //go:embed stdlib/*/*.go
 var StdlibFS embed.FS
+
+// SkillFS contains docs/SKILL.md — the concise Kukicha language reference
+// for AI coding agents. Extracted and upserted into AGENTS.md in user projects
+// by `kukicha init`, tied to the same KUKICHA_VERSION stamp as the stdlib.
+//
+//go:embed docs/SKILL.md
+var SkillFS embed.FS

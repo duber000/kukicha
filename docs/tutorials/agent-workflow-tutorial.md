@@ -42,6 +42,18 @@ Ship it
    - [Cursor](https://www.cursor.com/)
    - [ChatGPT](https://chatgpt.com/) with Code Interpreter
 
+3. **Initialize your project** — this sets up the stdlib and the language reference your agent needs:
+   ```bash
+   go mod init myproject
+   kukicha init
+   ```
+
+   `kukicha init` writes a `## Writing Kukicha` section into `AGENTS.md` (creating it if needed), covering syntax, error handling, pipes, and stdlib packages. Most AI coding agents read `AGENTS.md` automatically.
+
+   If your project has a `CLAUDE.md`, `kukicha init` also appends `@AGENTS.md` to it so Claude Code loads the reference at startup.
+
+   Commit `AGENTS.md`. Add only `.kukicha/` to your `.gitignore`.
+
 No prior programming experience needed.
 
 ---

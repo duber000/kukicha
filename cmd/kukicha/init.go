@@ -49,7 +49,9 @@ func initCommand() {
 	fmt.Println("Kukicha project initialized.")
 	fmt.Printf("  Stdlib extracted to: %s\n", stdlibPath)
 	fmt.Println("  go.mod updated with replace directive.")
+	fmt.Println("  AGENTS.md updated with Kukicha language reference.")
+	fmt.Println("  CLAUDE.md updated with @AGENTS.md reference (if present).")
 	fmt.Println()
-	fmt.Println("Add .kukicha/ to your .gitignore:")
+	fmt.Println("Commit AGENTS.md. Add .kukicha/ to your .gitignore:")
 	fmt.Println("  echo '.kukicha/' >> .gitignore")
 }

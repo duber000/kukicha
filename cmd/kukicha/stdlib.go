@@ -109,6 +109,11 @@ func ensureStdlib(projectDir string) (string, error) {
 		return "", fmt.Errorf("extracting stdlib: %w", err)
 	}
 
+	// Extract agent docs alongside stdlib (tied to the same version stamp).
+	if err := extractAgentDocs(projectDir); err != nil {
+		return "", fmt.Errorf("extracting agent docs: %w", err)
+	}
+
 	return stdlibPath, nil
 }
 
@@ -156,6 +161,80 @@ func extractStdlib(targetDir string) error {
 	}
 
 	return nil
+}
+
+const skillStart = "<!-- kukicha:start -->"
+const skillEnd = "<!-- kukicha:end -->"
+
+// extractAgentDocs upserts the Kukicha skill section into AGENTS.md in the
+// user's project, and appends @AGENTS.md to CLAUDE.md if present.
+// Both operations are idempotent. Called from ensureStdlib; shares the
+// KUKICHA_VERSION stamp so docs stay in sync with the stdlib.
+func extractAgentDocs(projectDir string) error {
+	content, err := kukicha.SkillFS.ReadFile("docs/SKILL.md")
+	if err != nil {
+		return fmt.Errorf("reading embedded docs/SKILL.md: %w", err)
+	}
+
+	if err := upsertSkillSection(filepath.Join(projectDir, "AGENTS.md"), string(content)); err != nil {
+		return fmt.Errorf("updating AGENTS.md: %w", err)
+	}
+
+	claudePath := filepath.Join(projectDir, "CLAUDE.md")
+	if _, err := os.Stat(claudePath); err == nil {
+		if err := appendIfMissing(claudePath, "@AGENTS.md"); err != nil {
+			return fmt.Errorf("updating CLAUDE.md: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// upsertSkillSection inserts or replaces the kukicha skill block in the file
+// at path. The block is delimited by HTML comments so it can be updated in
+// place across `kukicha init` runs without duplicating content.
+func upsertSkillSection(path, content string) error {
+	section := skillStart + "\n" + content + "\n" + skillEnd + "\n"
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return os.WriteFile(path, []byte(section), 0644)
+		}
+		return err
+	}
+
+	s := string(data)
+	startIdx := strings.Index(s, skillStart)
+	endIdx := strings.Index(s, skillEnd)
+
+	if startIdx == -1 || endIdx == -1 || endIdx < startIdx {
+		// Section not present — append it.
+		if !strings.HasSuffix(s, "\n") {
+			s += "\n"
+		}
+		return os.WriteFile(path, []byte(s+"\n"+section), 0644)
+	}
+
+	// Replace existing section in place.
+	after := strings.TrimPrefix(s[endIdx+len(skillEnd):], "\n")
+	return os.WriteFile(path, []byte(s[:startIdx]+section+after), 0644)
+}
+
+// appendIfMissing appends line to the file at path if it is not already present.
+func appendIfMissing(path, line string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if strings.Contains(string(data), line) {
+		return nil
+	}
+	s := string(data)
+	if !strings.HasSuffix(s, "\n") {
+		s += "\n"
+	}
+	return os.WriteFile(path, []byte(s+line+"\n"), 0644)
 }
 
 // ensureGoMod checks the project's go.mod and adds the stdlib require/replace
