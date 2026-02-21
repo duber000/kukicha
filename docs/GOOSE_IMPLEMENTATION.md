@@ -21,7 +21,7 @@ Goose reads contextual data via the read-only MCP servers. When Goose determines
 
 They parse strict arguments, perform input validation, handle exact state transitions natively using Kukicha's `onerr`, and prevent the AI from having arbitrary shell write access.
 
-- **`ku-opts` (Configuration Manager)**: Goose uses Red Hat's Linux MCP to read a broken `/etc/nginx/nginx.conf`. To fix it, Goose executes `ku-opts set nginx worker_processes auto`. 
+- **`ku-diag` (Remote Diagnostics)**: Goose uses Red Hat's Linux MCP to read a broken `/etc/nginx/nginx.conf`. To troubleshoot, Goose executes `ku-diag service-status --name nginx` or `ku-diag journal --priority err` to get structured diagnostic data.
 - **`ku-k8s`**: Goose identifies a CrashLoopBackOff via MCP, and executes `ku-k8s get-unready-logs deployment_name` to safely extract log streams for analysis, without needing ArgoCD admin access.
 - **`ku-slurm`**: Goose analyzes a `FAILED` job via read-only `sacct`, and executes `ku-slurm resubmit $JOB_ID --add-flags "--requeue --mem=32G"`.
 - **`ku-pg`**: Goose spots a massive sequential scan via the Database Toolbox, and executes `ku-pg apply-index --table users --column email` (which Kukicha runs `CONCURRENTLY` and handles locking timeout errors).

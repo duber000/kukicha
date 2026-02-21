@@ -1,0 +1,224 @@
+import "stdlib/cli"
+import "stdlib/json"
+import "stdlib/cast"
+import "stdlib/shell"
+
+# ku-diag is the Goose companion tool for read-only Linux diagnostics.
+# It provides structured JSON output for safe remote troubleshooting.
+
+func main()
+    app := cli.New("ku-diag")
+    
+    app = app |> cli.Arg("command", "Subcommand: sysinfo, cpu, memory, disk, services, service-status, service-logs, processes, journal, network, ports, connections")
+    app = app |> cli.AddFlag("name", "Name of the service", "")
+    app = app |> cli.AddFlag("priority", "Journal priority (emerg|alert|crit|err|warning|notice|info|debug)", "err")
+    app = app |> cli.AddFlag("lines", "Number of log lines to show", "50")
+    
+    app = app |> cli.Action(runAppAction)
+    
+    err := cli.RunApp(app)
+    if err != empty
+        print("{{\"error\": \"CLI Run failed: {err}\"}}")
+
+func runAppAction(args cli.Args)
+    command := cli.GetString(args, "command")
+    name := ""
+    lines := ""
+    priority := ""
+    
+    switch command
+        when "sysinfo"
+            handleSysInfo()
+        when "cpu"
+            handleCpu()
+        when "memory"
+            handleMemory()
+        when "disk"
+            handleDisk()
+        when "services"
+            handleServices()
+        when "service-status"
+            name = cli.GetString(args, "name")
+            if name == ""
+                print("{{\"error\": \"--name is required for service-status\"}}")
+                return
+            handleServiceStatus(name)
+        when "service-logs"
+            name = cli.GetString(args, "name")
+            lines = cli.GetString(args, "lines")
+            if name == ""
+                print("{{\"error\": \"--name is required for service-logs\"}}")
+                return
+            handleServiceLogs(name, lines)
+        when "processes"
+            handleProcesses()
+        when "journal"
+            priority = cli.GetString(args, "priority")
+            lines = cli.GetString(args, "lines")
+            handleJournal(priority, lines)
+        when "network"
+            handleNetwork()
+        when "ports"
+            handlePorts()
+        when "connections"
+            handleConnections()
+        otherwise
+            print("{{\"error\": \"Unknown command. Use --help for available commands.\"}}")
+
+func handleSysInfo()
+    cmd1 := shell.New("hostnamectl")
+    res1 := shell.Execute(cmd1)
+    
+    cmd2 := shell.New("uptime")
+    res2 := shell.Execute(cmd2)
+    
+    out := map of string to any{
+        "action": "sysinfo",
+        "hostnamectl": safeSmartString(shell.GetOutput(res1)),
+        "uptime": safeSmartString(shell.GetOutput(res2))
+    }
+    printJsonResult(out)
+
+func handleCpu()
+    cmd1 := shell.New("lscpu")
+    res1 := shell.Execute(cmd1)
+    
+    cmd2 := shell.New("cat", "/proc/loadavg")
+    res2 := shell.Execute(cmd2)
+    
+    out := map of string to any{
+        "action": "cpu",
+        "lscpu": safeSmartString(shell.GetOutput(res1)),
+        "loadavg": safeSmartString(shell.GetOutput(res2))
+    }
+    printJsonResult(out)
+
+func handleMemory()
+    cmd := shell.New("free", "-b")
+    res := shell.Execute(cmd)
+    
+    out := map of string to any{
+        "action": "memory",
+        "output": safeSmartString(shell.GetOutput(res))
+    }
+    printJsonResult(out)
+
+func handleDisk()
+    cmd := shell.New("df", "-h")
+    res := shell.Execute(cmd)
+    
+    out := map of string to any{
+        "action": "disk",
+        "output": safeSmartString(shell.GetOutput(res))
+    }
+    printJsonResult(out)
+
+func handleServices()
+    cmd := shell.New("systemctl", "list-units", "--type=service", "--no-pager")
+    res := shell.Execute(cmd)
+    
+    out := map of string to any{
+        "action": "services",
+        "output": safeSmartString(shell.GetOutput(res))
+    }
+    printJsonResult(out)
+
+func handleServiceStatus(name string)
+    cmd := shell.New("systemctl", "status", "--no-pager", name)
+    res := shell.Execute(cmd)
+    
+    out := map of string to any{
+        "action": "service_status",
+        "service": name,
+        "success": shell.Success(res),
+        "output": safeSmartString(shell.GetOutput(res)),
+        "error": safeSmartString(shell.GetError(res))
+    }
+    printJsonResult(out)
+
+func handleServiceLogs(name string, lines string)
+    cmd := shell.New("journalctl", "-u", name, "--no-pager", "-n", lines)
+    res := shell.Execute(cmd)
+    
+    out := map of string to any{
+        "action": "service_logs",
+        "service": name,
+        "output": safeSmartString(shell.GetOutput(res))
+    }
+    printJsonResult(out)
+
+func handleProcesses()
+    cmd := shell.New("ps", "aux", "--sort=-%cpu")
+    res := shell.Execute(cmd)
+    
+    out := map of string to any{
+        "action": "processes",
+        "output": safeSmartString(shell.GetOutput(res))
+    }
+    printJsonResult(out)
+
+func handleJournal(priority string, lines string)
+    cmd := shell.New("journalctl", "--no-pager", "-p", priority, "-n", lines)
+    res := shell.Execute(cmd)
+    
+    out := map of string to any{
+        "action": "journal",
+        "priority": priority,
+        "output": safeSmartString(shell.GetOutput(res))
+    }
+    printJsonResult(out)
+
+func handleNetwork()
+    cmd := shell.New("ip", "-j", "addr", "show")
+    res := shell.Execute(cmd)
+    output := safeSmartString(shell.GetOutput(res))
+    
+    if output == ""
+        cmd = shell.New("ip", "addr", "show")
+        res = shell.Execute(cmd)
+        output = safeSmartString(shell.GetOutput(res))
+
+    out := map of string to any{
+        "action": "network",
+        "output": output
+    }
+    printJsonResult(out)
+
+func handlePorts()
+    cmd := shell.New("ss", "-tlnp")
+    res := shell.Execute(cmd)
+    
+    out := map of string to any{
+        "action": "ports",
+        "output": safeSmartString(shell.GetOutput(res))
+    }
+    printJsonResult(out)
+
+func handleConnections()
+    cmd := shell.New("ss", "-tnp")
+    res := shell.Execute(cmd)
+    
+    out := map of string to any{
+        "action": "connections",
+        "output": safeSmartString(shell.GetOutput(res))
+    }
+    printJsonResult(out)
+
+func safeSmartString(data list of byte) string
+    s, err := cast.SmartString(data)
+    if err != empty
+        return ""
+    return s
+
+func printJsonResult(result any)
+    out, jsonErr := json.Marshal(result)
+    if jsonErr != empty
+        print("{{\"error\": \"Failed to marshal result\"}}")
+        return
+        
+    s, castErr := cast.SmartString(out)
+    if castErr != empty
+        print("{{\"error\": \"Failed to format output\"}}")
+        return
+        
+    print(s)
