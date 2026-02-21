@@ -227,7 +227,7 @@ func buildCommand(filename string, targetFlag string) {
 	projectDir := findProjectDir(absFile)
 	cmd := exec.Command("go", "build", "-mod=mod", outputFile)
 	cmd.Dir = projectDir
-	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2")
+	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	var stderrBuf bytes.Buffer
 	cmd.Stderr = &stderrBuf
@@ -317,7 +317,7 @@ func runCommand(filename string, targetFlag string) {
 	// stdlib transitive dependencies (e.g. gopkg.in/yaml.v3) are not yet listed.
 	cmd := exec.Command("go", "run", "-mod=mod", tmpFile)
 	cmd.Dir = findProjectDir(absFile)
-	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2")
+	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	var stderrBuf bytes.Buffer
 	cmd.Stderr = &stderrBuf

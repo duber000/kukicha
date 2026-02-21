@@ -1,13 +1,8 @@
 # Kukicha build system
 #
-# Kukicha requires Go 1.26+ and uses GOEXPERIMENT=jsonv2.
-# All make targets set this automatically. If running go commands
-# directly, export GOEXPERIMENT=jsonv2 first.
-#
+# Kukicha requires Go 1.26+.
 # The stdlib/*.go files are generated from stdlib/*.kuki sources.
 # Always edit the .kuki files, then run `make generate` to update.
-
-export GOEXPERIMENT := jsonv2
 
 KUKICHA := ./kukicha
 KUKI_SOURCES := $(wildcard stdlib/*/*.kuki)

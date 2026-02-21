@@ -285,7 +285,7 @@ select
 
 ```bash
 make build                # Build the kukicha compiler
-make test                 # Run all tests (sets GOEXPERIMENT)
+make test                 # Run all tests
 make generate             # Regenerate stdlib_registry_gen.go + all stdlib .go files
 make genstdlibregistry    # Regenerate only internal/semantic/stdlib_registry_gen.go
 kukicha check file.kuki   # Validate syntax without compiling
@@ -309,7 +309,7 @@ internal/
   formatter/              # Code formatting
 stdlib/                   # Standard library (.kuki source files)
   slice/                  # Filter, Map, GroupBy, etc.
-  json/                   # jsonv2 wrapper
+  json/                   # encoding/json wrapper
   fetch/                  # HTTP client (Auth, Sessions)
   files/                  # File I/O
   shell/                  # Command execution
@@ -347,7 +347,7 @@ Use `as alias` whenever the package's last path segment clashes with a local var
 3. **Always validate** - Run `kukicha check` before committing `.kuki` changes
 4. **4-space indentation only** - Tabs are not allowed in Kukicha
 5. **Explicit function signatures** - Parameters and return types must be declared
-6. **Test with `make test`** - Sets required `GOEXPERIMENT=jsonv2`
+6. **Test with `make test`** - Run the full test suite
 
 ## Adding Features to the Compiler
 

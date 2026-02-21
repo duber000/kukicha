@@ -111,7 +111,7 @@ func packCommand(filename string, outputDir string) {
 	binaryPath := filepath.Join(scriptsDir, binaryName)
 	cmd := exec.Command("go", "build", "-o", binaryPath, goFile)
 	cmd.Dir = projectDir
-	cmd.Env = append(os.Environ(), "GOEXPERIMENT=jsonv2")
+	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	var stderrBuf bytes.Buffer
 	cmd.Stderr = &stderrBuf

@@ -26,7 +26,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/http` | HTTP response helpers | JSON, JSONError, JSONNotFound, ReadJSON, SafeURL |
 | `stdlib/input` | User input utilities | Line, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration | Map, Filter, Reduce |
-| `stdlib/json` | jsonv2 wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
+| `stdlib/json` | encoding/json wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
 | `stdlib/kube` | Kubernetes client via client-go | Connect, New/Kubeconfig/Context/InCluster/Retry/Open, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs |
 | `stdlib/llm` | Large language model client (Chat Completions, OpenResponses, Anthropic; Retry) | Ask/Send/Complete, RAsk/RSend/Respond, MAsk/MSend/AnthropicComplete, Retry/RRetry/MRetry |
 | `stdlib/math` | Mathematical operations | Abs, Round, Floor, Ceil, Min, Max, Pow, Sqrt, Log, Log2, Log10, Pi, E, Clamp |
@@ -247,7 +247,7 @@ When a package's last path segment collides with a local variable name, use `as`
 ```kukicha
 import "stdlib/ctx" as ctxpkg          # avoids clash with local 'ctx' variables
 import "stdlib/errors" as errs         # avoids clash with local 'err' / 'errors' variables
-import "encoding/json" as jsonpkg      # avoids clash with 'stdlib/json'
+import "stdlib/json" as jsonpkg        # avoids clash with 'encoding/json'
 import "github.com/jackc/pgx/v5" as pgx
 ```
 

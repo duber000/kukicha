@@ -281,7 +281,7 @@ import "log"
 import "net/http"
 import "sync"
 import "database/sql"
-import "encoding/json/v2"
+import "encoding/json"
 
 # Kukicha stdlib
 import "stdlib/string"
