@@ -114,7 +114,7 @@ users := csvData |> parse.CsvWithHeader() onerr
     print("Failed to parse CSV: {error}")    # {error} refers to the caught error
     return
 ```
-> **`{error}` in block-style `onerr` — critical:** The caught error is always named `error`, never `err`. Use `{error}` in string interpolation to reference it. Writing `{err}` inside an `onerr` block is a silent bug — `{err}` is undefined there.
+> **`{error}` in `onerr` — critical:** The caught error is always named `error`, never `err`. Use `{error}` in string interpolation to reference it. Writing `{err}` inside any `onerr` handler is a **compile-time error** — the compiler will reject it with `use {error} not {err} inside onerr`.
 
 | onerr form | Example | Error variable available |
 |------------|---------|--------------------------|

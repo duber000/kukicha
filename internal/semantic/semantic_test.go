@@ -907,3 +907,101 @@ skill MySkill
 		t.Fatalf("expected 'should follow semver' error, got: %v", errors)
 	}
 }
+
+func TestOnerrBlockErrInterpolationIsError(t *testing.T) {
+	input := `func readFile(path string) (string, error)
+    return path, empty
+
+func Process(path string) (string, error)
+    data := readFile(path) onerr
+        return "", error "{err}"
+    return data, empty
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	found := false
+	for _, e := range errors {
+		if strings.Contains(e.Error(), "use {error} not {err} inside onerr") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected 'use {error} not {err} inside onerr' error, got: %v", errors)
+	}
+}
+
+func TestOnerrInlineErrInterpolationIsError(t *testing.T) {
+	input := `func readFile(path string) (string, error)
+    return path, empty
+
+func Process(path string) (string, error)
+    data := readFile(path) onerr return "", error "{err}"
+    return data, empty
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	found := false
+	for _, e := range errors {
+		if strings.Contains(e.Error(), "use {error} not {err} inside onerr") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected 'use {error} not {err} inside onerr' error, got: %v", errors)
+	}
+}
+
+func TestOnerrErrorInterpolationIsValid(t *testing.T) {
+	input := `func readFile(path string) (string, error)
+    return path, empty
+
+func Process(path string) (string, error)
+    data := readFile(path) onerr return "", error "{error}"
+    return data, empty
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	for _, e := range errors {
+		if strings.Contains(e.Error(), "use {error} not {err} inside onerr") {
+			t.Fatalf("unexpected onerr interpolation error: %v", e)
+		}
+	}
+}

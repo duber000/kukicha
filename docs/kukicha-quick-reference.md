@@ -83,11 +83,16 @@ data := files.Read("config.json") onerr panic "failed to read"
 # Return default value
 config := parse(data) onerr DefaultConfig
 
-# Block handler
+# Propagate — use {error} to include the caught error text
+data := files.Read("config.json") onerr return empty, error "{error}"
+
+# Block handler — caught error is always named `error`, never `err`
 user := fetchUser(id) onerr
-    log.Printf("Error fetching user {id}")
+    log.Printf("failed for user {id}: {error}")   # {error} = caught error
     return empty
 ```
+
+> **`{error}` vs `{err}`:** Inside any `onerr` handler the caught error variable is always named `error`. Writing `{err}` is a **compile-time error**.
 
 ### 6. References and Pointers
 Kukicha uses explicit keywords instead of symbols for pointers.

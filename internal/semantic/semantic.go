@@ -18,6 +18,7 @@ type Analyzer struct {
 	switchDepth      int                    // Track switch nesting for break
 	exprReturnCounts map[ast.Expression]int // Inferred return counts for expressions (used by codegen)
 	sourceFile       string                 // Source file path, used to detect stdlib context
+	inOnerr          bool                   // True while analyzing an onerr handler
 }
 
 // New creates a new semantic analyzer
@@ -992,6 +993,19 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 			a.analyzeBlock(e.Block)
 		}
 		return &TypeInfo{Kind: TypeKindUnknown}
+	case *ast.ReturnExpr:
+		for _, v := range e.Values {
+			a.analyzeExpression(v)
+		}
+		return &TypeInfo{Kind: TypeKindUnknown}
+	case *ast.ErrorExpr:
+		if e.Message != nil {
+			a.analyzeExpression(e.Message)
+		}
+		return &TypeInfo{Kind: TypeKindNamed, Name: "error"}
+	case *ast.BlockExpr:
+		a.analyzeBlock(e.Body)
+		return &TypeInfo{Kind: TypeKindUnknown}
 	default:
 		return &TypeInfo{Kind: TypeKindUnknown}
 	}
@@ -1217,7 +1231,10 @@ func (a *Analyzer) analyzePipeExprMulti(expr *ast.PipeExpr) []*TypeInfo {
 // analyzeOnErrClause analyzes the onerr clause on a statement
 func (a *Analyzer) analyzeOnErrClause(clause *ast.OnErrClause) {
 	if clause != nil {
+		prev := a.inOnerr
+		a.inOnerr = true
 		a.analyzeExpression(clause.Handler)
+		a.inOnerr = prev
 	}
 }
 
@@ -1572,6 +1589,9 @@ func (a *Analyzer) analyzeStringInterpolation(lit *ast.StringLiteral) {
 		// Full expression parsing would require parsing the expression string
 		if strings.TrimSpace(exprStr) == "" {
 			a.error(lit.Pos(), "empty expression in string interpolation")
+		}
+		if a.inOnerr && strings.TrimSpace(exprStr) == "err" {
+			a.error(lit.Pos(), "use {error} not {err} inside onerr — the caught error is always named 'error'")
 		}
 	}
 }

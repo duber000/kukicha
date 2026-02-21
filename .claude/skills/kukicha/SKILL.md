@@ -11,7 +11,7 @@ Kukicha (茎) transpiles to idiomatic Go. Full language reference is in `AGENTS.
 
 ### `{error}` vs `{err}` in onerr blocks
 
-In block-style `onerr`, the caught error variable is always named `error`, never `err`. Using `{err}` is a silent bug — it is undefined and produces wrong output with no error.
+Inside any `onerr` handler (block or inline), the caught error variable is always named `error`, never `err`. Using `{err}` is a **compile-time error** — the compiler rejects it with `use {error} not {err} inside onerr`.
 
 ```kukicha
 # CORRECT
@@ -19,9 +19,9 @@ result := fetch.Get(url) onerr
     print("failed: {error}")
     return
 
-# WRONG — {err} is undefined here, silently wrong
+# COMPILE-TIME ERROR — the compiler rejects {err} inside onerr
 result := fetch.Get(url) onerr
-    print("failed: {err}")    # BUG
+    print("failed: {err}")    # error: use {error} not {err} inside onerr
     return
 ```
 
