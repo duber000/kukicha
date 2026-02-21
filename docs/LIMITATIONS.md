@@ -8,8 +8,7 @@ and notes areas where the stdlib overlaps with dedicated tooling.
 
 | Package | File | Lines | Reason |
 |---------|------|-------|--------|
-| `stdlib/container` | `container_helper.go` | ~440 | Functional options, streaming I/O, tar archive handling |
-| `stdlib/netguard` | `netguard_helper.go` | 73 | Closure-as-struct-field pattern in `DialContext` |
+| `stdlib/container` | `container_helper.go` | ~400 | Functional options, tar archive handling, `filepath.WalkDir` closures |
 
 ---
 
@@ -47,7 +46,7 @@ for `json.Unmarshal` in the migrated `Tool()` function.
 
 ---
 
-## 3. Complex Streaming I/O
+## 3. Complex Streaming I/O (partially resolved)
 
 Some helper functions mix `bufio.Scanner`, anonymous struct JSON targets, and multi-pass
 stream processing that is idiomatic in Go but verbose in Kukicha:
@@ -62,13 +61,22 @@ json.Unmarshal(scanner.Bytes(), &msg)
 ```
 
 Kukicha requires named types for struct literals and does not support anonymous struct
-declarations inline in function bodies.
+declarations inline in function bodies. However, the **workaround** is straightforward:
+define named types at package level and use them in place of anonymous structs.
 
-**Affects:** `container.Pull`, `container.PullAuth`, `container.buildImage`,
-`container.loadDockerAuth`.
+The following functions were migrated from `container_helper.go` to `container.kuki`
+using named types (`pullStatusMsg`, `buildStreamMsg`, `dockerAuthEntry`, `dockerConfig`):
 
-Note: `container.containerLogs` was migrated to Kukicha — it uses `stdcopy.StdCopy`
-for demuxing, not anonymous structs.
+- `Pull` — image pull with digest extraction from JSON stream
+- `PullAuth` — authenticated image pull
+- `loadDockerAuth` — reads `~/.docker/config.json` credentials
+- `LoginFromConfig` — creates `Auth` from Docker config file
+
+Note: `container.containerLogs` was previously migrated to Kukicha — it uses
+`stdcopy.StdCopy` for demuxing, not anonymous structs.
+
+**Still in Go:** `container.buildImage` — uses anonymous structs *and* a
+`filepath.WalkDir` closure, which requires the closure-as-argument pattern.
 
 
 ---
@@ -154,9 +162,9 @@ helpers to Kukicha using `select`:
 - `container.Wait`, `container.WaitCtx` — migrated to `container.kuki`
 - `container.Events`, `container.EventsCtx`, `container.eventsWithContext`, `container.convertEvent` — migrated to `container.kuki`
 
-### Blocker 2: Anonymous struct literals
+### ~~Blocker 2: Anonymous struct literals~~ (resolved via named types)
 
-Used for inline JSON decode targets in streaming I/O:
+Go uses anonymous structs for inline JSON decode targets:
 
 ```go
 var msg struct {
@@ -166,8 +174,13 @@ var msg struct {
 json.Unmarshal(scanner.Bytes(), &msg)
 ```
 
-This blocks 4 functions in `container_helper.go`: `buildImage`, `loadDockerAuth`,
-`Pull`, `PullAuth`.
+Kukicha doesn't support anonymous struct declarations, but the workaround is to define
+named types at package level with `json:"tag"` struct tags. This approach was used to
+migrate `Pull`, `PullAuth`, `loadDockerAuth`, and `LoginFromConfig` from
+`container_helper.go` to `container.kuki`.
+
+Note: `buildImage` still remains in Go because it *also* depends on a
+`filepath.WalkDir` closure (Blocker 3-adjacent).
 
 ### Blocker 3: Variadic interface arg spreading
 
@@ -177,6 +190,20 @@ a slice of function-typed values.
 
 This blocks 3 functions: `newClient`, `Connect`/`ConnectRemote`, `Open`.
 
+### ~~Blocker 4: Closure-as-struct-field~~ (resolved)
+
+Kukicha's brace-delimited struct literals suppress newlines (preventing multi-line
+function literal bodies inside `{...}`), and the indented struct literal form only
+works for unqualified types. However, this was resolved by using **separate field
+assignment**: create the struct, then assign the closure field separately.
+
+The following functions were migrated from `netguard_helper.go` to `netguard.kuki`:
+
+- `DialContext` — uses `dialer.Control = func(...)` instead of embedding in struct literal
+- `HTTPTransport` — uses `t.DialContext = func(...)` instead of embedding in struct literal
+- `HTTPClient` — simple struct literal with no closure (no workaround needed)
+
+The `netguard_helper.go` file has been deleted.
 
 ### Still in Go — remaining blockers
 
@@ -185,20 +212,15 @@ This blocks 3 functions: `newClient`, `Connect`/`ConnectRemote`, `Open`.
 | `newClient` | Variadic interface spreading (`opts...`) | `container_helper.go` |
 | `Connect`, `ConnectRemote` | Call `newClient` | `container_helper.go` |
 | `Open` | Variadic interface spreading (`opts...`) | `container_helper.go` |
-| `buildImage` | Anonymous structs + `filepath.WalkDir` closure | `container_helper.go` |
+| `buildImage` | `filepath.WalkDir` closure + anonymous structs | `container_helper.go` |
 | `Build` | Calls `buildImage` | `container_helper.go` |
-| `loadDockerAuth` | Anonymous structs (nested) | `container_helper.go` |
-| `LoginFromConfig` | Calls `loadDockerAuth` | `container_helper.go` |
-| `Pull`, `PullAuth` | Anonymous structs for JSON decode | `container_helper.go` |
 | `CopyFrom`, `CopyTo` + helpers | `filepath.WalkDir` closure, tar archive handling | `container_helper.go` |
-| `DialContext` | Closure-as-struct-field in `net.Dialer` | `netguard_helper.go` |
-
 ### Impact summary
 
 | Blocker | Helpers it would unlock | Effort |
 |---------|------------------------|--------|
 | ~~`select` statement~~ | ~~7 functions (kube watch + container wait/events)~~ | **Resolved** — migrated to .kuki |
-| Anonymous struct literals | 4 functions (streaming JSON decode + auth in container) | Medium — parser + codegen |
+| ~~Anonymous struct literals~~ | ~~4 functions (streaming JSON decode + auth in container)~~ | **Resolved** — named types workaround |
 | Variadic interface spreading | 4 functions (Docker client init) | Low-medium — extend `many` |
-| Closure-as-struct-field | 1 function (netguard `DialContext`) | Low — codegen for struct field func literals |
+| ~~Closure-as-struct-field~~ | ~~3 functions (netguard DialContext, HTTPTransport, HTTPClient)~~ | **Resolved** — migrated to .kuki using separate field assignment |
 | ~~Multi-statement closure callbacks~~ | ~~1 function (MCP tool registration)~~ | **Resolved** — migrated to .kuki |

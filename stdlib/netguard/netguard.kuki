@@ -18,8 +18,12 @@
 
 petiole netguard
 
+import "context"
 import "net"
+import "net/http"
 import "fmt"
+import "syscall"
+import "stdlib/datetime"
 import "stdlib/net" as netutil
 
 type Guard
@@ -99,3 +103,49 @@ func Check(g Guard, ipStr string) bool
     if netutil.IsNil(ip)
         return false
     return checkIP(g, ip)
+
+# DialContext resolves the address, validates ALL resolved IPs against the
+# guard, then dials the first allowed IP directly (preventing DNS rebinding).
+# Uses net.Dialer Control as defense-in-depth to re-check at syscall level.
+func DialContext(g Guard, ctx context.Context, network string, addr string) (net.Conn, error)
+    host, port, err := net.SplitHostPort(addr)
+    if err != empty
+        return empty, fmt.Errorf("netguard: invalid address %q: %w", addr, err)
+
+    ips, lookupErr := net.DefaultResolver.LookupIPAddr(ctx, host)
+    if lookupErr != empty
+        return empty, fmt.Errorf("netguard: dns lookup %q: %w", host, lookupErr)
+
+    # Find the first allowed IP
+    dialIP := net.IPAddr{}
+    found := false
+    for ip in ips
+        if checkIP(g, ip.IP)
+            dialIP = ip
+            found = true
+            break
+    if not found
+        return empty, fmt.Errorf("netguard: all resolved IPs for %q are blocked", host)
+
+    # Dial with defense-in-depth Control function
+    dialer := net.Dialer{Timeout: datetime.Seconds(30)}
+    dialer.Control = func(controlNetwork string, controlAddress string, c syscall.RawConn) error
+        connHost, _, _ := net.SplitHostPort(controlAddress)
+        connIP := net.ParseIP(connHost)
+        if connIP != empty and not checkIP(g, connIP)
+            return fmt.Errorf("netguard: connection to %s blocked by policy", connHost)
+        return empty
+
+    dialAddr := net.JoinHostPort(dialIP.IP.String(), port)
+    return dialer.DialContext(ctx, network, dialAddr)
+
+# HTTPTransport returns an *http.Transport that uses the guarded DialContext.
+func HTTPTransport(g Guard) reference http.Transport
+    t := http.Transport{}
+    t.DialContext = func(dialCtx context.Context, dialNetwork string, dialAddr string) (net.Conn, error)
+        return DialContext(g, dialCtx, dialNetwork, dialAddr)
+    return reference of t
+
+# HTTPClient returns an *http.Client using the guarded transport.
+func HTTPClient(g Guard) reference http.Client
+    return reference of http.Client{Transport: HTTPTransport(g)}

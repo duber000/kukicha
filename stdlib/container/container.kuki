@@ -19,9 +19,12 @@
 
 petiole container
 
+import "bufio"
 import "bytes"
 import "fmt"
 import "io"
+import "os"
+import "path/filepath"
 import "time"
 import "stdlib/ctx" as ctxpkg
 import "stdlib/errors"
@@ -68,6 +71,29 @@ type Auth
     username string
     password string
     serverAddress string
+
+# pullStatusMsg is used for JSON decode of Docker pull progress messages.
+type pullStatusMsg
+    Status string json:"status"
+    ID string json:"id"
+
+# buildStreamMsg is used for JSON decode of Docker build progress messages.
+type buildStreamMsg
+    Stream string json:"stream"
+    Aux buildStreamAux json:"aux"
+    Error string json:"error"
+
+# buildStreamAux holds the image ID returned in build stream aux messages.
+type buildStreamAux
+    ID string json:"ID"
+
+# dockerAuthEntry represents a single registry auth entry from Docker config.
+type dockerAuthEntry
+    Auth string json:"auth"
+
+# dockerConfig represents the structure of ~/.docker/config.json.
+type dockerConfig
+    Auths map of string to dockerAuthEntry json:"auths"
 
 # ContainerEvent represents a container runtime event.
 type ContainerEvent
@@ -400,3 +426,103 @@ func Events(engine Engine, timeoutSeconds int64) (list of ContainerEvent, error)
 # EventsCtx collects runtime events until the provided context is canceled.
 func EventsCtx(engine Engine, h ctxpkg.Handle) (list of ContainerEvent, error)
     return eventsWithContext(engine, h)
+
+# --- Functions migrated from container_helper.go (anonymous struct workaround) ---
+
+# Pull pulls an image from a registry. Returns the image digest.
+# An optional ctx.Handle can be passed for cancellation support.
+func Pull(engine Engine, ref string, many handles ctxpkg.Handle) (string, error)
+    bg := ctxpkg.Background()
+    if len(handles) > 0
+        bg = handles[0]
+    reader, err := engine.cli.ImagePull(ctxpkg.Value(bg), ref, dockerimage.PullOptions{})
+    if err != empty
+        return "", fmt.Errorf("container pull: %w", err)
+    defer reader.Close()
+    digest := ""
+    scanner := bufio.NewScanner(reader)
+    for scanner.Scan()
+        msg := pullStatusMsg{}
+        unmarshalErr := json.Unmarshal(scanner.Bytes(), reference of msg)
+        if unmarshalErr == empty
+            if string.HasPrefix(msg.Status, "Digest:")
+                digest = string.TrimPrefix(msg.Status, "Digest: ")
+    if digest == ""
+        digest = ref
+    return digest, empty
+
+# PullAuth pulls an image using registry credentials.
+func PullAuth(engine Engine, ref string, auth Auth) (string, error)
+    authJSON, jsonErr := json.Marshal(map of string to string{
+        "username": auth.username,
+        "password": auth.password,
+        "serveraddress": auth.serverAddress,
+    })
+    if jsonErr != empty
+        return "", fmt.Errorf("container pull auth: %w", jsonErr)
+    encoded := base64.URLEncoding.EncodeToString(authJSON)
+    reader, err := engine.cli.ImagePull(ctxpkg.Value(ctxpkg.Background()), ref, dockerimage.PullOptions{
+        RegistryAuth: encoded,
+    })
+    if err != empty
+        return "", fmt.Errorf("container pull: %w", err)
+    defer reader.Close()
+    digest := ""
+    scanner := bufio.NewScanner(reader)
+    for scanner.Scan()
+        msg := pullStatusMsg{}
+        unmarshalErr := json.Unmarshal(scanner.Bytes(), reference of msg)
+        if unmarshalErr == empty
+            if string.HasPrefix(msg.Status, "Digest:")
+                digest = string.TrimPrefix(msg.Status, "Digest: ")
+    if digest == ""
+        digest = ref
+    return digest, empty
+
+# loadDockerAuth reads ~/.docker/config.json and resolves credentials
+# for the given registry server address.
+# Returns (username, password, serverAddress, error).
+func loadDockerAuth(serverAddress string) (string, string, string, error)
+    home, homeErr := os.UserHomeDir()
+    if homeErr != empty
+        return "", "", "", fmt.Errorf("container auth: %w", homeErr)
+    configPath := filepath.Join(home, ".docker", "config.json")
+    data, readErr := os.ReadFile(configPath)
+    if readErr != empty
+        return "", "", "", fmt.Errorf("container auth: %w", readErr)
+    config := dockerConfig{}
+    unmarshalErr := json.Unmarshal(data, reference of config)
+    if unmarshalErr != empty
+        return "", "", "", fmt.Errorf("container auth parse: %w", unmarshalErr)
+    authEntry, ok := config.Auths[serverAddress]
+    if not ok
+        variations := list of string{
+            "https://" + serverAddress,
+            "http://" + serverAddress,
+            string.TrimPrefix(serverAddress, "https://"),
+            string.TrimPrefix(serverAddress, "http://"),
+        }
+        for v in variations
+            a, found := config.Auths[v]
+            if found
+                authEntry = a
+                ok = true
+                break
+    if not ok
+        return "", "", "", fmt.Errorf("container auth: no credentials found for %s", serverAddress)
+    if authEntry.Auth == ""
+        return "", "", "", fmt.Errorf("container auth: empty credentials for %s", serverAddress)
+    decoded, decodeErr := base64.StdEncoding.DecodeString(authEntry.Auth)
+    if decodeErr != empty
+        return "", "", "", fmt.Errorf("container auth decode: %w", decodeErr)
+    parts := string.SplitN(decoded as string, ":", 2)
+    if len(parts) != 2
+        return "", "", "", fmt.Errorf("container auth: invalid credential format for %s", serverAddress)
+    return parts[0], parts[1], serverAddress, empty
+
+# LoginFromConfig loads registry credentials from ~/.docker/config.json.
+func LoginFromConfig(server string) (Auth, error)
+    username, password, addr, err := loadDockerAuth(server)
+    if err != empty
+        return Auth{}, err
+    return Auth{username: username, password: password, serverAddress: addr}, empty
