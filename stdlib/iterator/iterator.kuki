@@ -14,6 +14,8 @@ func Filter(seq iter.Seq, keep func(any) bool) iter.Seq
         return
 
 # Map transforms each item in the iterator
+# COMPILER NOTE: `any2` is a reserved placeholder for a second generic type parameter (K comparable).
+# The compiler maps any → T, any2 → U. Only used in stdlib authoring, not application code.
 func Map(seq iter.Seq, transform func(any) any2) iter.SeqU
     return func(yield func(any2) bool)
         for item in seq

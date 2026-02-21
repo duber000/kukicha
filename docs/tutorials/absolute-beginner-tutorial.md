@@ -1057,7 +1057,7 @@ Ready for the next step? Follow this learning path:
 ### Additional Resources
 
 - **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** - Complete language grammar reference
-- **[Stdlib Reference](../kukicha-stdlib-reference.md)** - Standard library documentation - additional functions to make your life easier!
+- **[Stdlib Reference](../../stdlib/AGENTS.md)** - Standard library documentation - additional functions to make your life easier!
 - **[Examples](../../examples/)** directory - More example programs
 
 ---

@@ -16,14 +16,19 @@ type SchemaProperty
     Type string
     Description string
 
-# New creates a new MCP server with the given name and version
+# New creates a new MCP server with the given name and version.
+# Example:
+#   server := mcp.New("my-server", "1.0.0")
 func New(name string, version string) reference mcp.Server
     return mcp.NewServer(reference of mcp.Implementation{
         Name: name,
         Version: version,
     }, empty)
 
-# Serve runs the server on the stdio transport (blocking)
+# Serve runs the server on the stdio transport (blocking).
+# Usually called at the very end of func main().
+# Example:
+#   server |> mcp.Serve() onerr panic "{error}"
 func Serve(server reference mcp.Server) error
     bg := ctxpkg.Background()
     return server.Run(ctxpkg.Value(bg), reference of mcp.StdioTransport{})
@@ -56,6 +61,7 @@ func Required(schema any, names list of string) any
             return schema
 
 # TextResult creates a successful tool result containing the given text.
+# Useful for returning strings directly to the AI.
 func TextResult(text string) any
     return reference of mcp.CallToolResult{
         Content: list of mcp.Content{reference of mcp.TextContent{Text: text}},
@@ -72,6 +78,8 @@ func ErrorResult(msg string) any
 # The handler receives parsed JSON arguments and returns a result.
 # String and *mcp.CallToolResult results are handled directly;
 # other types are JSON-serialized.
+# Example:
+#   server |> mcp.Tool("hello", "Say hello", schema, func(args) { return "Hi!", empty })
 func Tool(server reference mcp.Server, name string, description string, schema any, handler ToolHandler)
     server.AddTool(reference of mcp.Tool{
         Name: name,

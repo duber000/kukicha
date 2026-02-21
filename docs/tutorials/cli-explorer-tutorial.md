@@ -869,7 +869,7 @@ You now have solid programming skills with Kukicha! Continue with the tutorial s
 ### Reference Docs
 
 - **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** — Complete language grammar
-- **[Standard Library](../kukicha-stdlib-reference.md)** — iterator, slice, fetch, and more
+- **[Standard Library](../../stdlib/AGENTS.md)** — iterator, slice, fetch, and more
 
 ---
 

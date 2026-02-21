@@ -817,7 +817,7 @@ You've completed the full Kukicha tutorial series!
 ### Explore More
 
 - **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** — Complete language grammar
-- **[Standard Library](../kukicha-stdlib-reference.md)** — iterator, slice, and more
+- **[Standard Library](../../stdlib/AGENTS.md)** — iterator, slice, and more
 - **[Data & AI Scripting Tutorial](data-scripting-tutorial.md)** — Review shell + LLM + pipes
 
 ### Build Projects

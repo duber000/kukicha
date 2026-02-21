@@ -130,6 +130,10 @@ func Map(items list of any, transform func(any) any) list of any
 # GroupBy groups elements by a key function
 # Returns a map where keys are the result of keyFunc and values are slices of elements
 # Requires K to be comparable for use as a map key
+#
+# COMPILER NOTE: `any2` is a reserved placeholder name for a second generic type parameter
+# with a `comparable` constraint. The compiler maps: any → T (unconstrained), any2 → K (comparable).
+# This is only used when authoring stdlib functions — do NOT use any2 in application code.
 func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of any
     result := make(map of any2 to list of any)
     for item in items

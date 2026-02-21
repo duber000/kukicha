@@ -749,5 +749,5 @@ You now know how to translate your shell scripting knowledge into Kukicha:
 ### Additional Resources
 
 - **[Kukicha Grammar](../kukicha-grammar.ebnf.md)** - Complete language grammar reference
-- **[Stdlib Reference](../kukicha-stdlib-reference.md)** - Standard library documentation
+- **[Stdlib Reference](../../stdlib/AGENTS.md)** - Standard library documentation
 - **[Examples](../../examples/)** directory - More example programs

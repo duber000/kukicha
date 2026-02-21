@@ -1,0 +1,88 @@
+# Kukicha Standard Library - Math
+# Basic mathematical operations wrapping Go's math package.
+# All functions use float64 for precision. Use int() to convert results back to int.
+#
+# Examples:
+#   side := math.Sqrt(area)
+#   rounded := math.Round(3.7)          # 4.0
+#   biggest := math.Max(a, b)
+#   math.Pi()                            # 3.14159...
+
+petiole math
+
+import "math"
+
+# Abs returns the absolute value of x (removes the negative sign).
+# Example: math.Abs(-5.0) = 5.0
+func Abs(x float64) float64
+    return math.Abs(x)
+
+# Round returns the nearest integer, rounding half away from zero.
+# Example: math.Round(3.7) = 4.0, math.Round(3.2) = 3.0
+func Round(x float64) float64
+    return math.Round(x)
+
+# Floor returns the largest integer less than or equal to x (round down).
+# Example: math.Floor(3.9) = 3.0, math.Floor(-1.1) = -2.0
+func Floor(x float64) float64
+    return math.Floor(x)
+
+# Ceil returns the smallest integer greater than or equal to x (round up).
+# Example: math.Ceil(3.1) = 4.0, math.Ceil(-1.9) = -1.0
+func Ceil(x float64) float64
+    return math.Ceil(x)
+
+# Min returns the smaller of two float64 values.
+# Example: math.Min(3.0, 7.0) = 3.0
+func Min(a float64, b float64) float64
+    return math.Min(a, b)
+
+# Max returns the larger of two float64 values.
+# Example: math.Max(3.0, 7.0) = 7.0
+func Max(a float64, b float64) float64
+    return math.Max(a, b)
+
+# Pow returns base raised to the power of exp.
+# Example: math.Pow(2.0, 8.0) = 256.0
+func Pow(base float64, exp float64) float64
+    return math.Pow(base, exp)
+
+# Sqrt returns the square root of x. Panics if x is negative.
+# Example: math.Sqrt(9.0) = 3.0, math.Sqrt(2.0) = 1.4142...
+func Sqrt(x float64) float64
+    return math.Sqrt(x)
+
+# Log returns the natural logarithm of x.
+# Example: math.Log(math.E()) = 1.0
+func Log(x float64) float64
+    return math.Log(x)
+
+# Log2 returns the base-2 logarithm of x.
+# Example: math.Log2(8.0) = 3.0
+func Log2(x float64) float64
+    return math.Log2(x)
+
+# Log10 returns the base-10 logarithm of x.
+# Example: math.Log10(1000.0) = 3.0
+func Log10(x float64) float64
+    return math.Log10(x)
+
+# Pi returns the mathematical constant π (3.14159...).
+# Example: area := math.Pi() * radius * radius
+func Pi() float64
+    return math.Pi
+
+# E returns Euler's number (2.71828...).
+# Example: math.E() is the base of the natural logarithm
+func E() float64
+    return math.E
+
+# Clamp returns x clamped to the range [min, max].
+# If x < min, returns min. If x > max, returns max. Otherwise returns x.
+# Example: math.Clamp(150.0, 0.0, 100.0) = 100.0
+func Clamp(x float64, minimum float64, maximum float64) float64
+    if x < minimum
+        return minimum
+    if x > maximum
+        return maximum
+    return x

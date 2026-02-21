@@ -29,13 +29,14 @@ Import with: `import "stdlib/slice"`
 | `stdlib/json` | jsonv2 wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
 | `stdlib/kube` | Kubernetes client via client-go | Connect, New/Kubeconfig/Context/InCluster/Retry/Open, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs |
 | `stdlib/llm` | Large language model client (Chat Completions, OpenResponses, Anthropic; Retry) | Ask/Send/Complete, RAsk/RSend/Respond, MAsk/MSend/AnthropicComplete, Retry/RRetry/MRetry |
+| `stdlib/math` | Mathematical operations | Abs, Round, Floor, Ceil, Min, Max, Pow, Sqrt, Log, Log2, Log10, Pi, E, Clamp |
 | `stdlib/maps` | Map utilities | Keys, Values, Has, Merge |
 | `stdlib/mcp` | Model Context Protocol support | NewServer, Tool, Resource, Prompt |
 | `stdlib/must` | Panic-on-error startup helpers | Env, EnvInt, EnvIntOr, Do, OkMsg |
 | `stdlib/net` | IP address and CIDR utilities | ParseIP, ParseCIDR, Contains, SplitHostPort, LookupHost, IsLoopback, IsPrivate |
 | `stdlib/netguard` | Network restriction & SSRF protection | NewSSRFGuard, NewAllow, NewBlock, Check, DialContext, HTTPTransport, HTTPClient |
 | `stdlib/obs` | Structured observability helpers | New, Component, WithCorrelation, NewCorrelationID, Info, Warn, Error, Start, Stop, Fail |
-| `stdlib/parse` | CSV and YAML parsing | CSV, YAML |
+| `stdlib/parse` | Data format parsing | Csv, CsvWithHeader, Yaml, YamlPretty, Json, JsonLines, JsonPretty |
 | `stdlib/pg` | PostgreSQL client via pgx | Connect, New/MaxConns/MinConns/Retry/Open, Query, QueryRow, Exec, Begin, Commit, Rollback, ScanRow, CollectRows |
 | `stdlib/random` | Random number generation | Int, IntRange, Float, String, Choice |
 | `stdlib/retry` | Retry with backoff | New, Attempts, Delay, Sleep |
@@ -146,6 +147,10 @@ resp := fetch.New(url) |> fetch.BearerAuth(token) |> fetch.Timeout(30000000000) 
 text := fetch.Text(resp) onerr panic "{error}"
 
 # Typed JSON decode (readable API flow)
+# fetch.Json takes a typed zero value — the compiler uses it to infer the decode target type:
+#   fetch.Json(list of Repo)           → decodes JSON array into []Repo
+#   fetch.Json(empty Repo)             → decodes JSON object into Repo
+#   fetch.Json(map of string to string) → decodes JSON object into map[string]string
 repos := fetch.Get(url) |> fetch.CheckStatus() |> fetch.Json(list of Repo) onerr panic "{error}"
 
 # Safe URL construction (path + query encoding)
@@ -227,7 +232,17 @@ Examples:
 
 ## Import Aliases
 
-When a package's last path segment collides with a local variable name, use `as`:
+When a package's last path segment collides with a local variable name, use `as`. Always use these standard aliases:
+
+| Package | Standard alias | Reason |
+|---------|----------------|--------|
+| `stdlib/ctx` | `ctxpkg` | Clashes with local `ctx` variable |
+| `stdlib/errors` | `errs` | Clashes with local `err` / `errors` |
+| `stdlib/json` | `jsonpkg` | Clashes with `encoding/json` |
+| `stdlib/string` | `strpkg` | Clashes with `string` type name |
+| `stdlib/container` | `docker` | Clashes with local `container` variables |
+| `stdlib/http` | `httphelper` | Clashes with `net/http` |
+| `stdlib/net` | `netutil` | Clashes with `net` stdlib package |
 
 ```kukicha
 import "stdlib/ctx" as ctxpkg          # avoids clash with local 'ctx' variables
@@ -235,8 +250,6 @@ import "stdlib/errors" as errs         # avoids clash with local 'err' / 'errors
 import "encoding/json" as jsonpkg      # avoids clash with 'stdlib/json'
 import "github.com/jackc/pgx/v5" as pgx
 ```
-
-Common cases that need aliases: `ctx`, `errors`, `json`, `container`, `string`.
 
 ## Critical Rules
 

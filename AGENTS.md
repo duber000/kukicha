@@ -20,6 +20,48 @@ When editing `.kuki` files, write **Kukicha syntax, NOT Go**.
 | `func(x T) T { return expr }` | `(x T) => expr` |
 | `go func() { ... }()` | `go` + indented block |
 
+## Keyword Aliases (English-Friendly Forms)
+
+Kukicha accepts English-word aliases for two common keywords:
+
+| Short form | English alias | When to use |
+|-----------|--------------|-------------|
+| `func`    | `function`   | Beginner-facing code and tutorials |
+| `var`     | `variable`   | Top-level variable declarations in beginner-facing code |
+
+Both forms compile identically. Use `func`/`var` in idiomatic/production code, and `function`/`variable` when writing beginner tutorials or agent-generated code aimed at non-programmers.
+
+```kukicha
+# These are identical to the compiler:
+func Add(a int, b int) int
+function Add(a int, b int) int
+
+# Top-level variable (file scope):
+var AppName string = "myapp"
+variable AppName string = "myapp"
+```
+
+**For AI agents generating beginner-facing code:** prefer `function` and `variable`.
+**For all other code generation:** use `func` and `var`.
+
+## Generic Type Placeholders (stdlib authoring only)
+
+Kukicha uses reserved placeholder names to express generic type parameters in stdlib `.kuki` source files. **Do not use these in application code** — they are only meaningful inside stdlib function signatures.
+
+| Placeholder | Go equivalent | Constraint | Used for |
+|-------------|---------------|------------|----------|
+| `any` | `T` | `any` (unconstrained) | First type parameter |
+| `any2` | `K` | `comparable` | Second type parameter (e.g., map key) |
+
+Example: `slice.GroupBy` uses `any` for element type and `any2` for the map key type:
+```kukicha
+# stdlib signature (you read this; you do NOT write it in app code)
+func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of any
+```
+The compiler generates: `func GroupBy[T any, K comparable](items []T, keyFunc func(T) K) map[K][]T`
+
+Application code just calls `logs |> slice.GroupBy(getLevel)` — no generics syntax needed.
+
 ## Kukicha Syntax Quick Reference
 
 ### Variables
@@ -72,7 +114,18 @@ users := csvData |> parse.CsvWithHeader() onerr
     print("Failed to parse CSV: {error}")    # {error} refers to the caught error
     return
 ```
-> **Note:** `error` always requires a message string. Use `error "{error}"` to re-wrap the implicit onerr error variable. In block-style `onerr`, use `{error}` in string interpolation to reference the caught error variable.
+> **`{error}` in block-style `onerr` — critical:** The caught error is always named `error`, never `err`. Use `{error}` in string interpolation to reference it. Writing `{err}` inside an `onerr` block is a silent bug — `{err}` is undefined there.
+
+| onerr form | Example | Error variable available |
+|------------|---------|--------------------------|
+| Default value | `x := f() onerr 0` | — |
+| Panic | `x := f() onerr panic "msg"` | — |
+| Propagate inline | `x := f() onerr return empty, error "{error}"` | `{error}` in string |
+| Block (multi-stmt) | `x := f() onerr` + indented body | `{error}` in interpolation |
+
+Use the **block form** when the error handler needs more than one statement; use inline forms for everything else.
+
+> **Note:** `error "msg"` always requires a message string. Use `error "{error}"` to include the original error text when propagating.
 
 ### Types
 ```kukicha
@@ -91,6 +144,13 @@ type Transform func(int) (string, error)
 # Typed JSON decode (preferred over bytes + unmarshal boilerplate)
 items := fetch.Get(url) |> fetch.CheckStatus() |> fetch.Json(list of Todo) onerr panic "{error}"
 ```
+
+> **`fetch.Json` sample parameter:** The argument is a typed zero value that tells the compiler what to decode into — it is NOT passed at runtime.
+> - `fetch.Json(list of Todo)` → decodes a JSON array into `[]Todo`
+> - `fetch.Json(empty Todo)` → decodes a JSON object into `Todo`
+> - `fetch.Json(map of string to string)` → decodes a JSON object into `map[string]string`
+>
+> Passing the wrong shape (e.g., `list of Todo` when the API returns an object) produces a runtime decode error with no compile-time warning.
 
 ### Collections
 ```kukicha
@@ -263,8 +323,19 @@ import "stdlib/ctx" as ctxpkg          # alias — use when the package name con
 import "github.com/jackc/pgx/v5" as pgx  # external package with alias
 ```
 
-Use `as alias` whenever the package's last path segment clashes with a local variable name
-(common cases: `ctx`, `errors`, `json`, `container`, `string`).
+Use `as alias` whenever the package's last path segment clashes with a local variable name.
+
+**Canonical import alias table** — always use these aliases for these packages:
+
+| Package | Standard alias | Reason |
+|---------|----------------|--------|
+| `stdlib/ctx` | `ctxpkg` | Clashes with local `ctx` variable |
+| `stdlib/errors` | `errs` | Clashes with local `err` / `errors` |
+| `stdlib/json` | `jsonpkg` | Clashes with `encoding/json` |
+| `stdlib/string` | `strpkg` | Clashes with `string` type name |
+| `stdlib/container` | `docker` | Clashes with local `container` variables |
+| `stdlib/http` | `httphelper` | Clashes with `net/http` |
+| `stdlib/net` | `netutil` | Clashes with `net` stdlib package |
 
 ## Critical Rules
 
