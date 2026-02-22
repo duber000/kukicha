@@ -77,9 +77,9 @@ When adding new language features, follow this process:
 
 ### Step 1: Update Documentation
 
-1. Update the specification in `docs/kukicha-syntax-v1.0.md`
-2. Update the grammar in `docs/kukicha-grammar.ebnf.md`
-3. Add examples to `docs/language-features.md`
+1. Update the grammar in `docs/kukicha-grammar.ebnf.md`
+2. Update  `docs/kukicha-quick-reference.md`
+3. Update `AGENTS.md` we are in their world now.
 
 ### Step 2: Implement in the Compiler
 
