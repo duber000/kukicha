@@ -1005,3 +1005,106 @@ func Process(path string) (string, error)
 		}
 	}
 }
+
+func TestSQLInterpolationDetection(t *testing.T) {
+	tests := []struct {
+		name      string
+		source    string
+		expectErr string // substring expected in error, empty = no error expected
+	}{
+		{
+			name: "interpolation in pg.Query is rejected",
+			source: `import "stdlib/pg"
+
+func Bad(pool pg.Pool, id int)
+    rows := pg.Query(pool, "SELECT * FROM users WHERE id = {id}") onerr return
+    _ = rows
+`,
+			expectErr: "SQL injection risk",
+		},
+		{
+			name: "interpolation in pg.Exec is rejected",
+			source: `import "stdlib/pg"
+
+func Bad(pool pg.Pool, name string)
+    pg.Exec(pool, "INSERT INTO users (name) VALUES ('{name}')") onerr return
+`,
+			expectErr: "SQL injection risk",
+		},
+		{
+			name: "interpolation in pg.QueryRow is rejected",
+			source: `import "stdlib/pg"
+
+func Bad(pool pg.Pool, id int)
+    row := pg.QueryRow(pool, "SELECT name FROM users WHERE id = {id}") onerr return
+    _ = row
+`,
+			expectErr: "SQL injection risk",
+		},
+		{
+			name: "interpolation in pg.TxExec is rejected",
+			source: `import "stdlib/pg"
+
+func Bad(tx pg.Tx, table string)
+    pg.TxExec(tx, "DELETE FROM {table}") onerr return
+`,
+			expectErr: "SQL injection risk",
+		},
+		{
+			name: "parameterized pg.Query is allowed",
+			source: `import "stdlib/pg"
+
+func Good(pool pg.Pool, id int)
+    rows := pg.Query(pool, "SELECT * FROM users WHERE id = $1", id) onerr return
+    _ = rows
+`,
+			expectErr: "",
+		},
+		{
+			name: "plain string literal pg.Exec is allowed",
+			source: `import "stdlib/pg"
+
+func Good(pool pg.Pool)
+    pg.Exec(pool, "DELETE FROM sessions WHERE expired = true") onerr return
+`,
+			expectErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := parser.New(tt.source, "test.kuki")
+			if err != nil {
+				t.Fatalf("parser error: %v", err)
+			}
+
+			program, parseErrors := p.Parse()
+			if len(parseErrors) > 0 {
+				t.Fatalf("parse errors: %v", parseErrors)
+			}
+
+			analyzer := New(program)
+			errors := analyzer.Analyze()
+
+			if tt.expectErr == "" {
+				// Expect no SQL injection errors (other semantic errors are OK)
+				for _, e := range errors {
+					if strings.Contains(e.Error(), "SQL injection") {
+						t.Fatalf("unexpected SQL injection error: %v", e)
+					}
+				}
+			} else {
+				found := false
+				for _, e := range errors {
+					if strings.Contains(e.Error(), tt.expectErr) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Fatalf("expected error containing %q, got errors: %v", tt.expectErr, errors)
+				}
+			}
+		})
+	}
+}

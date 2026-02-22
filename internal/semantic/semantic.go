@@ -1385,6 +1385,9 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 	if objID, ok := expr.Object.(*ast.Identifier); ok {
 		qualifiedName := objID.Value + "." + methodName
 
+		// Security: detect string interpolation in SQL query arguments
+		a.checkSQLInterpolation(qualifiedName, expr, pipedArg)
+
 		// Build the registry from the auto-generated Kukicha stdlib entries,
 		// then layer in Go stdlib functions (which have no .kuki source).
 		knownExternalReturns := make(map[string]int, len(generatedStdlibRegistry)+20)
@@ -1557,6 +1560,47 @@ func (a *Analyzer) analyzeListLiteral(expr *ast.ListLiteralExpr) *TypeInfo {
 	return &TypeInfo{
 		Kind:        TypeKindList,
 		ElementType: elemType,
+	}
+}
+
+// checkSQLInterpolation detects string interpolation in SQL query arguments
+// to pg.Query, pg.QueryRow, pg.Exec and their Tx variants. This catches a
+// class of SQL injection where Kukicha's "{var}" syntax interpolates user
+// data into the query string before pgx's parameterization can protect it.
+func (a *Analyzer) checkSQLInterpolation(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
+	// Functions where the SQL string is an argument
+	sqlFunctions := map[string]bool{
+		"pg.Query":      true,
+		"pg.QueryRow":   true,
+		"pg.Exec":       true,
+		"pg.TxQuery":    true,
+		"pg.TxQueryRow": true,
+		"pg.TxExec":     true,
+	}
+
+	if !sqlFunctions[qualifiedName] {
+		return
+	}
+
+	// Determine the index of the SQL string argument.
+	// Normal call: pg.Query(pool, "SELECT ...", args) → SQL at index 1
+	// Piped call:  pool |> pg.Query("SELECT ...", args) → SQL at index 0
+	//   (pipe inserts pool as first arg at codegen; AST Arguments only has explicit args)
+	sqlArgIndex := 1
+	if pipedArg != nil {
+		sqlArgIndex = 0
+	}
+
+	if sqlArgIndex >= len(expr.Arguments) {
+		return
+	}
+
+	sqlArg := expr.Arguments[sqlArgIndex]
+	if strLit, ok := sqlArg.(*ast.StringLiteral); ok && strLit.Interpolated {
+		a.error(strLit.Pos(), fmt.Sprintf(
+			"SQL injection risk: string interpolation in %s query — use parameter placeholders ($1, $2, ...) instead",
+			qualifiedName,
+		))
 	}
 }
 
