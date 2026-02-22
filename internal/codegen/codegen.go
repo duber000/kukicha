@@ -3440,9 +3440,6 @@ func (g *Generator) scanExprForAutoImports(expr ast.Expression) {
 	case *ast.UnaryExpr:
 		g.scanExprForAutoImports(e.Right)
 	case *ast.PipeExpr:
-		// Pipe chains involving fetch.* multi-return functions generate
-		// *http.Response wrappers, so we need net/http imported early.
-		g.scanPipeForHTTPImport(e)
 		g.scanExprForAutoImports(e.Left)
 		g.scanExprForAutoImports(e.Right)
 	case *ast.CallExpr:
@@ -3493,39 +3490,6 @@ func (g *Generator) scanExprForAutoImports(expr ast.Expression) {
 	}
 }
 
-// scanPipeForHTTPImport checks whether a pipe chain contains fetch.* calls
-// that return *http.Response. When piped, these generate wrapper closures that
-// reference http.Response explicitly, so net/http must be imported.
-func (g *Generator) scanPipeForHTTPImport(pipe *ast.PipeExpr) {
-	httpFuncs := map[string]bool{
-		"fetch.Get":         true,
-		"fetch.Post":        true,
-		"fetch.Do":          true,
-		"fetch.CheckStatus": true,
-	}
-
-	var walkPipe func(expr ast.Expression)
-	walkPipe = func(expr ast.Expression) {
-		switch e := expr.(type) {
-		case *ast.PipeExpr:
-			walkPipe(e.Left)
-			walkPipe(e.Right)
-		case *ast.MethodCallExpr:
-			if obj, ok := e.Object.(*ast.Identifier); ok {
-				if httpFuncs[obj.Value+"."+e.Method.Value] {
-					g.addImport("net/http")
-				}
-			}
-		case *ast.CallExpr:
-			if id, ok := e.Function.(*ast.Identifier); ok {
-				if httpFuncs[id.Value] {
-					g.addImport("net/http")
-				}
-			}
-		}
-	}
-	walkPipe(pipe)
-}
 
 func (g *Generator) needsErrorsPackage() bool {
 	// Check if any error expressions are used
