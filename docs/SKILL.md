@@ -179,6 +179,12 @@ resp := fetch.New(url)
     |> fetch.Do() onerr panic "{error}"
 text := fetch.Text(resp) onerr panic "{error}"
 
+# SSRF-protected GET — use inside HTTP handlers or server code
+resp := fetch.SafeGet(url) onerr panic "{error}"
+
+# Cap response body size (prevent OOM)
+resp := fetch.New(url) |> fetch.MaxBodySize(1 << 20) |> fetch.Do() onerr panic "{error}"
+
 # Safe URL construction
 url := fetch.URLTemplate("https://api.example.com/users/{id}",
     map of string to string{"id": userID}) onerr panic "{error}"
@@ -312,5 +318,51 @@ defer pg.Close(rows)
 for pg.Next(rows)
     name := pg.ScanString(rows) onerr continue
 ```
+
+**stdlib/http** (`import "stdlib/http" as httphelper`) — HTTP helpers + security
+
+```kukicha
+httphelper.JSON(w, data)                        # 200 OK with JSON body
+httphelper.JSONCreated(w, data)                 # 201 Created
+httphelper.JSONNotFound(w, "not found")         # 404
+httphelper.JSONBadRequest(w, "bad input")       # 400
+httphelper.JSONError(w, 500, "server error")    # any status
+
+httphelper.ReadJSONLimit(r, 1<<20, reference of input) onerr return   # parse + size cap
+httphelper.SafeHTML(w, userContent)             # HTML-escape before write
+httphelper.SafeRedirect(w, r, url, "myapp.com") onerr return  # host-allowlist redirect
+httphelper.SetSecureHeaders(w)                  # per-handler security headers
+http.ListenAndServe(":8080", httphelper.SecureHeaders(mux))   # middleware form
+```
+
+**stdlib/template** — Templating
+
+```kukicha
+# text/template (no HTML escaping — for plain text only)
+tmpl := template.New("t") |> template.Parse(src) onerr return
+template.Execute(tmpl, data) onerr return
+
+# html/template (auto-escapes {{ }} values — use for HTML responses)
+html := template.HTMLRenderSimple(tmplStr, map of string to any{"name": username}) onerr return
+```
+
+---
+
+### Security — Compiler-Enforced Checks
+
+The compiler **rejects** these patterns as errors (not warnings):
+
+| Pattern | Error | Fix |
+|---------|-------|-----|
+| `pg.Query(pool, "... {var}")` | SQL injection | `pg.Query(pool, "... $1", val)` |
+| `httphelper.HTML(w, nonLiteral)` | XSS risk | `httphelper.SafeHTML(w, content)` |
+| `fetch.Get(url)` in HTTP handler | SSRF risk | `fetch.SafeGet(url)` |
+| `files.Read(path)` in HTTP handler | Path traversal | `sandbox.Read(box, path)` |
+| `shell.Run("cmd {var}")` | Command injection | `shell.Output("cmd", arg)` |
+| `httphelper.Redirect(w, r, nonLiteral)` | Open redirect | `httphelper.SafeRedirect(w, r, url, "host")` |
+
+HTTP handler detection: any function with an `http.ResponseWriter` parameter triggers the handler-context checks.
+
+---
 
 **All available packages:** `a2a`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`, `http`, `input`, `iterator`, `json`, `kube`, `llm`, `math`, `maps`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`, `random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `validate`
