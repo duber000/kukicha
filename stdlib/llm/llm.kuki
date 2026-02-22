@@ -567,7 +567,10 @@ func resolveBaseURL(c Client) string
     if c.provider == "ollama"
         return "http://localhost:11434"
 
-    # Gateway or unknown provider
+    # Check env var override before defaulting to gateway
+    envURL := env.GetOr("LLM_BASE_URL", "")
+    if envURL != ""
+        return envURL
     return "http://localhost:8000"
 
 # Internal: resolve the chat completions path
@@ -1216,6 +1219,10 @@ func rResolveBaseURL(c ResponseClient) string
     if c.provider == "ollama"
         return "http://localhost:11434"
 
+    # Check env var override before defaulting to gateway
+    envURL := env.GetOr("LLM_BASE_URL", "")
+    if envURL != ""
+        return envURL
     return "http://localhost:8000"
 
 # Internal: resolve the responses path

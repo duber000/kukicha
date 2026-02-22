@@ -29,7 +29,9 @@ genstdlibregistry:
 generate: genstdlibregistry build
 	@for f in $(KUKI_MAIN); do \
 		echo "Transpiling $$f ..."; \
-		$(KUKICHA) build "$$f" 2>&1 | grep -v "^Warning: go build" || true; \
+		out=$$($(KUKICHA) build "$$f" 2>&1); rc=$$?; \
+		echo "$$out" | grep -v "^Warning: go build" || true; \
+		if [ $$rc -ne 0 ]; then echo "ERROR: Failed to transpile $$f"; exit 1; fi; \
 	done
 	@echo "Done. Generated .go files from $(words $(KUKI_MAIN)) .kuki sources."
 
