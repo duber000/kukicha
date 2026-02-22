@@ -1332,3 +1332,137 @@ func LoadConfig(path string) (list of byte, error)
 		})
 	}
 }
+
+func TestShellRunNonLiteralDetection(t *testing.T) {
+	tests := []struct {
+		name      string
+		source    string
+		expectErr string
+	}{
+		{
+			name: "shell.Run with variable argument is rejected",
+			source: `import "stdlib/shell"
+
+func RunCmd(cmd string) (string, error)
+    return shell.Run(cmd)
+`,
+			expectErr: "command injection risk",
+		},
+		{
+			name: "shell.Run with string literal is allowed",
+			source: `import "stdlib/shell"
+
+func RunStatus() (string, error)
+    return shell.Run("git status")
+`,
+			expectErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := parser.New(tt.source, "test.kuki")
+			if err != nil {
+				t.Fatalf("parser error: %v", err)
+			}
+			program, parseErrors := p.Parse()
+			if len(parseErrors) > 0 {
+				t.Fatalf("parse errors: %v", parseErrors)
+			}
+			analyzer := New(program)
+			errors := analyzer.Analyze()
+			if tt.expectErr == "" {
+				for _, e := range errors {
+					if strings.Contains(e.Error(), "command injection risk") {
+						t.Fatalf("unexpected command injection error: %v", e)
+					}
+				}
+			} else {
+				found := false
+				for _, e := range errors {
+					if strings.Contains(e.Error(), tt.expectErr) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Fatalf("expected error containing %q, got errors: %v", tt.expectErr, errors)
+				}
+			}
+		})
+	}
+}
+
+func TestRedirectNonLiteralDetection(t *testing.T) {
+	tests := []struct {
+		name      string
+		source    string
+		expectErr string
+	}{
+		{
+			name: "httphelper.Redirect with variable URL is rejected",
+			source: `import "net/http"
+import "stdlib/http" as httphelper
+
+func Handle(w http.ResponseWriter, r reference http.Request)
+    returnURL := r.URL.Query().Get("return")
+    httphelper.Redirect(w, r, returnURL)
+`,
+			expectErr: "open redirect risk",
+		},
+		{
+			name: "httphelper.RedirectPermanent with variable URL is rejected",
+			source: `import "net/http"
+import "stdlib/http" as httphelper
+
+func Handle(w http.ResponseWriter, r reference http.Request)
+    target := r.URL.Query().Get("to")
+    httphelper.RedirectPermanent(w, r, target)
+`,
+			expectErr: "open redirect risk",
+		},
+		{
+			name: "httphelper.Redirect with literal URL is allowed",
+			source: `import "net/http"
+import "stdlib/http" as httphelper
+
+func Handle(w http.ResponseWriter, r reference http.Request)
+    httphelper.Redirect(w, r, "/dashboard")
+`,
+			expectErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := parser.New(tt.source, "test.kuki")
+			if err != nil {
+				t.Fatalf("parser error: %v", err)
+			}
+			program, parseErrors := p.Parse()
+			if len(parseErrors) > 0 {
+				t.Fatalf("parse errors: %v", parseErrors)
+			}
+			analyzer := New(program)
+			errors := analyzer.Analyze()
+			if tt.expectErr == "" {
+				for _, e := range errors {
+					if strings.Contains(e.Error(), "open redirect risk") {
+						t.Fatalf("unexpected open redirect error: %v", e)
+					}
+				}
+			} else {
+				found := false
+				for _, e := range errors {
+					if strings.Contains(e.Error(), tt.expectErr) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Fatalf("expected error containing %q, got errors: %v", tt.expectErr, errors)
+				}
+			}
+		})
+	}
+}

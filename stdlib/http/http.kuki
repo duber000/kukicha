@@ -11,6 +11,7 @@ import "io"
 import "strconv"
 import "fmt"
 import "html"
+import "net/url"
 
 # WithCSRF wraps a handler with Cross-Origin protection
 # Uses Fetch metadata headers (modern browsers)
@@ -101,6 +102,13 @@ func ReadJSON(r reference http.Request, target any) error
 func ReadJSONAndClose(r reference http.Request, target any) error
     defer r.Body.Close()
     return json.UnmarshalRead(r.Body, target)
+
+# ReadJSONLimit reads at most maxBytes from the request body and unmarshals as JSON
+# Use this instead of ReadJSON to prevent OOM from oversized request bodies
+# Example: http.ReadJSONLimit(r, 1 << 20, reference user) onerr return http.JSONBadRequest(w, "body too large or invalid json")
+func ReadJSONLimit(r reference http.Request, maxBytes int64, target any) error
+    limited := io.LimitReader(r.Body, maxBytes)
+    return json.UnmarshalRead(limited, target)
 
 # GetQueryParam returns a query parameter value, or empty string if not present
 # Example: name := http.GetQueryParam(r, "name")
@@ -197,6 +205,26 @@ func Redirect(w http.ResponseWriter, r reference http.Request, url string)
 func RedirectPermanent(w http.ResponseWriter, r reference http.Request, url string)
     http.Redirect(w, r, url, 301)
 
+# SafeRedirect performs a 302 redirect only when the URL is safe to redirect to.
+# Relative URLs (no host) are always allowed.
+# Absolute URLs are only allowed when their host matches one of the allowedHosts.
+# Returns an error if the redirect would go to an unexpected host.
+# Example: http.SafeRedirect(w, r, returnURL, "example.com", "api.example.com") onerr return
+func SafeRedirect(w http.ResponseWriter, r reference http.Request, redirectURL string, many allowedHosts string) error
+    parsed, err := url.Parse(redirectURL)
+    if err != empty
+        return err
+    if parsed.Host == ""
+        # Relative URL — always safe
+        http.Redirect(w, r, redirectURL, 302)
+        return empty
+    # Absolute URL — verify the host is explicitly allowed
+    for host in allowedHosts
+        if parsed.Host == host
+            http.Redirect(w, r, redirectURL, 302)
+            return empty
+    return error "redirect to '{parsed.Host}' is not in the allowed hosts list"
+
 # SafeURL builds URLs with safe-by-default escaping semantics.
 # Path parameters use URL path escaping; query params are encoded.
 # Example:
@@ -241,6 +269,17 @@ func SafeHTML(w http.ResponseWriter, content string) error
     w.Header().Set("Content-Type", "text/html; charset=utf-8")
     _, err := io.WriteString(w, html.EscapeString(content))
     return err
+
+# SetSecureHeaders sets common security response headers on w
+# Call this at the top of each handler before writing the response body
+# Sets: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Content-Security-Policy
+# For middleware-style usage (wrapping a whole handler) use http.SecureHeaders instead
+# Example: httphelper.SetSecureHeaders(w)
+func SetSecureHeaders(w http.ResponseWriter)
+    w.Header().Set("X-Content-Type-Options", "nosniff")
+    w.Header().Set("X-Frame-Options", "DENY")
+    w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+    w.Header().Set("Content-Security-Policy", "default-src 'self'")
 
 # Method check helpers
 

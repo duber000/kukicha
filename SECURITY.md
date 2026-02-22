@@ -74,47 +74,56 @@ The `netguard` package is excellent but entirely opt-in.
 
 ### 6. `shell.Run` with non-literal strings
 
-**Status:** 🟡 Open
+**Status:** ✅ Fixed
 
 `shell.Run(cmd)` splits a single string on whitespace. The doc says "literals only"
-but nothing enforces this.
+but nothing enforced this.
 
-**Mitigation:** Compiler warning when `shell.Run` argument is not a string literal.
+**Mitigations applied:**
+- Compiler error when `shell.Run` receives a non-literal argument: `command injection
+  risk: shell.Run with non-literal argument — use shell.Output() with separate arguments`
 
 ### 7. `http.Redirect` accepts unvalidated URLs
 
-**Status:** 🟡 Open
+**Status:** ✅ Fixed
 
 `http.Redirect(w, r, url)` with user-controlled `url` is an open redirect.
 
-**Mitigation:**
-- Add `http.SafeRedirect(w, r, url, allowedHosts)`
-- Compiler warning when `http.Redirect` receives a non-literal URL
+**Mitigations applied:**
+- Added `http.SafeRedirect(w, r, url, allowedHosts...)` — relative URLs always pass,
+  absolute URLs are only allowed if their host appears in `allowedHosts`
+- Compiler error when `http.Redirect` / `http.RedirectPermanent` (and their
+  `httphelper` aliases) receive a non-literal URL argument: `open redirect risk`
 
 ### 8. No HTTP response body size limits
 
-**Status:** 🟡 Open
+**Status:** ✅ Fixed
 
 `fetch.Text()`, `fetch.Bytes()`, `json.UnmarshalRead()`, `http.ReadJSON()` all
-use unbounded `io.ReadAll`, enabling OOM/DoS.
+used unbounded `io.ReadAll`, enabling OOM/DoS.
 
-**Mitigation:**
-- Add `fetch.MaxBodySize()` builder option using `io.LimitReader`
-- Add `http.ReadJSONLimit(w, r, maxBytes, &target)`
-- Consider default limits with opt-out
+**Mitigations applied:**
+- Added `fetch.MaxBodySize(req, limit)` builder option — wraps the response body
+  in `io.LimitReader` before it can be read by `Text()`/`Bytes()`/`Json()`
+- Added `http.ReadJSONLimit(r, maxBytes, target)` as a drop-in replacement for
+  `ReadJSON` that limits body consumption via `io.LimitReader`
 
 ### 9. No security headers from `http.Serve()`
 
-**Status:** 🟡 Open
+**Status:** ✅ Fixed
 
 No `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`,
-`Content-Security-Policy`, or `Referrer-Policy` headers are set.
+`Content-Security-Policy`, or `Referrer-Policy` headers were set.
 
-**Mitigation:** Add `http.SecureHeaders()` middleware that sets sensible defaults.
+**Mitigations applied:**
+- Added `http.SecureHeaders(handler)` middleware — wraps any handler and injects
+  `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, `Content-Security-Policy: default-src 'self'`
+- Added `http.SetSecureHeaders(w)` for per-handler use without middleware wrapping
 
 ### 10. No security-related static analysis in compiler
 
-**Status:** 🟡 Open — SQL interpolation check in progress
+**Status:** 🟡 Ongoing — seven checks now implemented (1–9 above)
 
 The compiler performs zero security checks. No taint tracking, no dangerous-pattern
 warnings, no lint-style security checks.
@@ -168,3 +177,19 @@ Examples show literal connection strings with passwords in source code.
 ### 5. `files.*` has no path traversal protection
 
 **Status:** ✅ Fixed — compiler warns when `files.*` I/O functions are called inside HTTP handlers
+
+### 6. `shell.Run` with non-literal strings
+
+**Status:** ✅ Fixed — compiler rejects non-literal argument to `shell.Run`
+
+### 7. `http.Redirect` accepts unvalidated URLs
+
+**Status:** ✅ Fixed — `http.SafeRedirect` added; compiler warns on non-literal URL to `http.Redirect`
+
+### 8. No HTTP response body size limits
+
+**Status:** ✅ Fixed — `fetch.MaxBodySize` builder and `http.ReadJSONLimit` added
+
+### 9. No security headers from `http.Serve()`
+
+**Status:** ✅ Fixed — `http.SecureHeaders` middleware and `http.SetSecureHeaders` per-handler helper added

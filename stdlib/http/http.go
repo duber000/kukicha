@@ -11,6 +11,7 @@ import (
 	"html"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
@@ -113,6 +114,14 @@ func ReadJSONAndClose(r *http.Request, target any) error {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:106
+func ReadJSONLimit(r *http.Request, maxBytes int64, target any) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:107
+	limited := io.LimitReader(r.Body, maxBytes)
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:108
+	return json.UnmarshalRead(limited, target)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:112
 func GetQueryParam(r *http.Request, key string) string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:107
 	return r.URL.Query().Get(key)
@@ -257,6 +266,48 @@ func RedirectPermanent(w http.ResponseWriter, r *http.Request, url string) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:203
+func SafeRedirect(w http.ResponseWriter, r *http.Request, redirectURL string, allowedHosts ...string) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:204
+	parsed, err := url.Parse(redirectURL)
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:205
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:206
+		return err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:208
+	if parsed.Host == "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:209
+		http.Redirect(w, r, redirectURL, 302)
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:210
+		return nil
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:212
+	for _, host := range allowedHosts {
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:213
+		if parsed.Host == host {
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:214
+			http.Redirect(w, r, redirectURL, 302)
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:215
+			return nil
+		}
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:218
+	return fmt.Errorf("redirect to %q is not in the allowed hosts list", parsed.Host)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:222
+func SetSecureHeaders(w http.ResponseWriter) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:223
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:224
+	w.Header().Set("X-Frame-Options", "DENY")
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:225
+	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:226
+	w.Header().Set("Content-Security-Policy", "default-src 'self'")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:231
 func SafeURL(tmpl string, pathParams map[string]string, queryParams map[string]string) (string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:204
 	base, err := fetch.URLTemplate(tmpl, pathParams)

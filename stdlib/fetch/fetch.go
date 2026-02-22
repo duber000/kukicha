@@ -29,6 +29,7 @@ type Request struct {
 	transport        *http.Transport
 	retryMaxAttempts int
 	retryDelayMs     int
+	maxBodySize      int64
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:43
@@ -110,6 +111,14 @@ func Retry(req Request, maxAttempts int, delayMs int) Request {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:99
+func MaxBodySize(req Request, limit int64) Request {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:100
+	req.maxBodySize = limit
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:101
+	return req
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:105
 func doOnce(req Request) (*http.Response, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:100
 	client := http.Client{}
@@ -166,7 +175,17 @@ func doOnce(req Request) (*http.Response, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:133
 	resp, doErr := client.Do(httpReq)
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:134
-	return resp, doErr
+	if doErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:135
+		return nil, doErr
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:137
+	if req.maxBodySize > 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:138
+		resp.Body = io.NopCloser(io.LimitReader(resp.Body, req.maxBodySize))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:140
+	return resp, nil
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:139

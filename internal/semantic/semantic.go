@@ -1397,6 +1397,12 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 		// Security: detect files.* inside HTTP handlers (path traversal risk)
 		a.checkFilesInHandler(qualifiedName, expr)
 
+		// Security: detect shell.Run with non-literal argument (command injection)
+		a.checkShellRunNonLiteral(qualifiedName, expr, pipedArg)
+
+		// Security: detect http.Redirect with non-literal URL (open redirect)
+		a.checkRedirectNonLiteral(qualifiedName, expr, pipedArg)
+
 		// Build the registry from the auto-generated Kukicha stdlib entries,
 		// then layer in Go stdlib functions (which have no .kuki source).
 		knownExternalReturns := make(map[string]int, len(generatedStdlibRegistry)+20)
@@ -1704,6 +1710,60 @@ func (a *Analyzer) checkFilesInHandler(qualifiedName string, expr *ast.MethodCal
 		"path traversal risk: %s inside an HTTP handler — use sandbox.* with a restricted root for user-controlled paths",
 		qualifiedName,
 	))
+}
+
+// checkShellRunNonLiteral warns when shell.Run is called with a non-literal
+// argument. shell.Run splits its argument on whitespace without quoting
+// awareness; a variable value can silently inject extra arguments.
+func (a *Analyzer) checkShellRunNonLiteral(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
+	if qualifiedName != "shell.Run" {
+		return
+	}
+	// Direct call: shell.Run(cmd) — cmd is at index 0.
+	// Piped call: cmd |> shell.Run() — cmd is the piped value; skip since we
+	// cannot verify a piped value's origin from TypeInfo alone.
+	if pipedArg != nil {
+		return
+	}
+	if len(expr.Arguments) == 0 {
+		return
+	}
+	cmdArg := expr.Arguments[0]
+	if _, ok := cmdArg.(*ast.StringLiteral); !ok {
+		a.error(expr.Pos(), fmt.Sprintf(
+			"command injection risk: shell.Run with non-literal argument — shell.Run splits on whitespace without quoting; use shell.Output() with separate arguments for variable input",
+		))
+	}
+}
+
+// checkRedirectNonLiteral warns when http.Redirect / http.RedirectPermanent is
+// called with a non-literal URL argument, which is an open-redirect vector.
+func (a *Analyzer) checkRedirectNonLiteral(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
+	redirectFunctions := map[string]bool{
+		"httphelper.Redirect":          true,
+		"http.Redirect":                true,
+		"httphelper.RedirectPermanent": true,
+		"http.RedirectPermanent":       true,
+	}
+	if !redirectFunctions[qualifiedName] {
+		return
+	}
+	// Redirect(w, r, url) — URL is the 3rd arg (index 2) in a plain call.
+	// If one arg is piped (e.g. w |> Redirect(r, url)), URL is at index 1.
+	urlArgIndex := 2
+	if pipedArg != nil {
+		urlArgIndex = 1
+	}
+	if urlArgIndex >= len(expr.Arguments) {
+		return
+	}
+	urlArg := expr.Arguments[urlArgIndex]
+	if _, ok := urlArg.(*ast.StringLiteral); !ok {
+		a.error(expr.Pos(), fmt.Sprintf(
+			"open redirect risk: %s with non-literal URL — use http.SafeRedirect(w, r, url, allowedHosts...) to validate the destination",
+			qualifiedName,
+		))
+	}
 }
 
 func (a *Analyzer) analyzeStringInterpolation(lit *ast.StringLiteral) {

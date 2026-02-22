@@ -37,6 +37,7 @@ type Request
     transport reference http.Transport
     retryMaxAttempts int
     retryDelayMs int
+    maxBodySize int64
 
 # New creates a new HTTP request builder for the given URL
 # Returns a Request that can be configured with Header(), Timeout(), etc.
@@ -83,6 +84,13 @@ func Body(req Request, data any) Request
 # Example: req |> fetch.Transport(netguard.HTTPTransport(guard))
 func Transport(req Request, t reference http.Transport) Request
     req.transport = t
+    return req
+
+# MaxBodySize limits the response body to at most limit bytes using io.LimitReader
+# Prevents OOM from unexpectedly large server responses
+# Example: req := fetch.New(url) |> fetch.MaxBodySize(1 << 20)
+func MaxBodySize(req Request, limit int64) Request
+    req.maxBodySize = limit
     return req
 
 # Retry configures automatic retry on transient failures (429, 503, network errors).
@@ -132,7 +140,11 @@ func doOnce(req Request) (reference http.Response, error)
             httpReq.Header.Set("Content-Type", "application/json")
 
     resp, doErr := client.Do(httpReq)
-    return resp, doErr
+    if doErr != empty
+        return empty, doErr
+    if req.maxBodySize > 0
+        resp.Body = io.NopCloser(io.LimitReader(resp.Body, req.maxBodySize))
+    return resp, empty
 
 # Do executes the configured HTTP request.
 # If Retry() was configured, automatically retries on network errors, 429, and 503.
