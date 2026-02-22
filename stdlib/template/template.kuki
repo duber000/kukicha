@@ -3,6 +3,7 @@
 petiole template
 
 import "text/template"
+import "html/template" as htmltmpl
 import "bytes"
 
 # TemplateData holds template content and data for rendering
@@ -23,6 +24,7 @@ func Data(td TemplateData, data map of string to any) TemplateData
 
 # Execute executes the template and returns the rendered string
 # This is the final step in the pipeline that produces output
+# WARNING: Uses text/template — no HTML escaping. For HTML output use HTMLExecute.
 func Execute(td TemplateData) (string, error)
     tmpl, err := template.New("template").Parse(td.Content)
     if err != empty
@@ -54,6 +56,38 @@ func WithContent(td TemplateData, content string) TemplateData
 # Takes a template string and data map, returns the rendered string
 func RenderSimple(tmplStr string, data map of string to any) (string, error)
     tmpl, err := template.New("template").Parse(tmplStr)
+    if err != empty
+        return "", err
+
+    buf := bytes.Buffer{}
+    err = tmpl.Execute(reference of buf, data)
+    if err != empty
+        return "", err
+
+    return buf.String(), empty
+
+# HTMLExecute executes the template with HTML auto-escaping via html/template
+# Use this instead of Execute when the output is rendered in a browser
+# Prevents XSS by escaping {{ }} values that contain user-controlled content
+# Example: result, err := tmplData |> template.HTMLExecute()
+func HTMLExecute(td TemplateData) (string, error)
+    tmpl, err := htmltmpl.New("template").Parse(td.Content)
+    if err != empty
+        return "", err
+
+    buf := bytes.Buffer{}
+    err = tmpl.Execute(reference of buf, td.Data)
+    if err != empty
+        return "", err
+
+    return buf.String(), empty
+
+# HTMLRenderSimple renders a template with HTML escaping in one call
+# Use this instead of RenderSimple when the output will be sent as HTML
+# Prevents XSS: values substituted via {{ }} are automatically escaped
+# Example: result, err := template.HTMLRenderSimple("<b>{{.Name}}</b>", data)
+func HTMLRenderSimple(tmplStr string, data map of string to any) (string, error)
+    tmpl, err := htmltmpl.New("template").Parse(tmplStr)
     if err != empty
         return "", err
 

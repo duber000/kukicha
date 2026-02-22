@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/duber000/kukicha/stdlib/json"
+	"github.com/duber000/kukicha/stdlib/netguard"
 	"github.com/duber000/kukicha/stdlib/retry"
 	"github.com/duber000/kukicha/stdlib/sandbox"
 	kukistring "github.com/duber000/kukicha/stdlib/string"
@@ -28,6 +29,7 @@ type Request struct {
 	transport        *http.Transport
 	retryMaxAttempts int
 	retryDelayMs     int
+	maxBodySize      int64
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:43
@@ -109,6 +111,14 @@ func Retry(req Request, maxAttempts int, delayMs int) Request {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:99
+func MaxBodySize(req Request, limit int64) Request {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:100
+	req.maxBodySize = limit
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:101
+	return req
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:105
 func doOnce(req Request) (*http.Response, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:100
 	client := http.Client{}
@@ -165,7 +175,17 @@ func doOnce(req Request) (*http.Response, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:133
 	resp, doErr := client.Do(httpReq)
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:134
-	return resp, doErr
+	if doErr != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:135
+		return nil, doErr
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:137
+	if req.maxBodySize > 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:138
+		resp.Body = io.NopCloser(io.LimitReader(resp.Body, req.maxBodySize))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:140
+	return resp, nil
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:139
@@ -244,6 +264,22 @@ func Get(url string) (*http.Response, error) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:188
+func SafeGet(url string) (*http.Response, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:189
+	guard := netguard.NewSSRFGuard()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:190
+	transport := netguard.HTTPTransport(guard)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:191
+	req := New(url)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:192
+	req.transport = transport
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:193
+	resp, err := Do(req)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:194
+	return resp, err
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:200
 func Post(data any, url string) (*http.Response, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:189
 	req := New(url)
