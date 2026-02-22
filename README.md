@@ -1,8 +1,8 @@
 # Kukicha
 
-**Describe what you want. Let AI write it. Read it. Ship it.**
+**AI-assisted coding. Not AI-replaced coding.**
 
-Kukicha is a programming language designed to be read by humans  written by AI agents. It compiles to Go, so your programs run fast and deploy as a single binary with no dependencies.
+Kukicha is a programming language designed to be read by humans and written by AI agents. It compiles to Go, so your programs run fast and deploy as a single binary with no dependencies.
 
 ```kukicha
 import "stdlib/fetch"
@@ -13,7 +13,6 @@ type Repo
     stars int as "stargazers_count"
 
 func main()
-    # Fetch, filter, print — one readable pipeline
     repos := fetch.Get("https://api.github.com/users/golang/repos")
         |> fetch.CheckStatus()
         |> fetch.Json(list of Repo) onerr panic "fetch failed: {error}"
@@ -25,6 +24,26 @@ func main()
 ```
 
 No classes. No `__init__`. No `**kwargs`. No curly braces. If you can read the code above, you can review what an AI wrote for you.
+
+---
+
+## Why This Matters Right Now
+
+As of February 2026, AI writes nearly half of all committed code. The industry is sprinting toward full autonomy — autonomous agent loops that generate, deploy, and patch code with no human in the loop.
+
+Here's what that's producing:
+
+- AI-generated code contains **2.74x more security vulnerabilities** than human-written code (Veracode 2025 GenAI Code Security Report)
+- **1.7x more logical and correctness bugs** in AI-assisted codebases (CodeRabbit, December 2025)
+- **45% of AI-generated code** contains security flaws — and the rate isn't improving with larger models (Veracode, 100+ LLMs tested)
+- In January 2026, a vibe-coded startup leaked **1.5 million API keys in three days** because no one read what the AI wrote
+- Only **3% of developers** report high trust in AI-generated output (Stack Overflow 2025 Developer Survey) — yet the industry keeps removing them from the review process
+
+The trajectory is clear: AI generates the app, deploys it, monitors it, patches it — and your entire production system becomes code that nobody at your company has ever read.
+
+**Kukicha exists because the answer to "AI writes all the code" shouldn't be "and nobody reads any of it." It should be "and a human can still understand every line."**
+
+The key word is **assisted**. While Kukicha is optimized for AI-assisted coding, it will always prioritize readable, reviewable code that a human can understand, audit, and approve before it runs in production. AI is the writer. You are the editor. That's not a limitation — it's the architecture of trust.
 
 ---
 
@@ -48,6 +67,20 @@ See the [Agent Workflow Tutorial](docs/tutorials/agent-workflow-tutorial.md) to 
 
 ---
 
+## Where We Are and Where This Is Going
+
+**Today:** You describe what you want → AI generates code across six languages and config formats you can't fully review → you deploy and hope.
+
+**Kukicha (now):** You describe what you want → AI generates one readable language → you review every line and ship a real binary.
+
+**The future:** AI-native runtimes will collapse the entire stack — from intent to running application — with far fewer intermediate artifacts. The languages, frameworks, and configuration layers that exist today were designed for humans to *write*. That assumption is already breaking down.
+
+Within three years, the best AI-generated applications won't be written in languages designed for humans to type — they'll be written in languages designed for humans to read and AI to write. The full stack, from syntax to error handling to deployment, will be optimized around the describe-generate-review-ship workflow.
+
+Kukicha is that bridge. It's the responsible step between "humans write everything" and "AI does everything unsupervised." As AI capabilities grow, the human review step may get faster — but it should never disappear.
+
+---
+
 ## Why Not Just Use Go or Python?
 
 | | Go | Python | Kukicha |
@@ -56,15 +89,17 @@ See the [Agent Workflow Tutorial](docs/tutorials/agent-workflow-tutorial.md) to 
 | Classes / OOP required | No | Common | No |
 | Special symbols (`&&`, `__`, `**`) | Yes | `__`, `**` | No |
 | Compiles to single binary | Yes | No | Yes (via Go) |
-| Built for AI generation | No | No | Yes |
+| Built for AI generation + human review | No | No | Yes |
 | Transfers to Go/Python | — | — | 1:1 |
+
+Go and Python were designed for humans to *write*. That was the right assumption for fifty years. It's no longer the right assumption for most software. The bottleneck has shifted from writing to reviewing — and no existing language is optimized for that.
 
 Kukicha uses plain English for every operator:
 
 | Other languages | Kukicha |
 |----------------|---------|
 | `&&`, `\|\|`, `!` | `and`, `or`, `not` |
-| `== ` (equality) | `equals` |
+| `==` (equality) | `equals` |
 | `nil`, `None`, `null` | `empty` |
 | `[]string`, `list[str]` | `list of string` |
 | `*User` (Go pointer) | `reference User` |
@@ -141,48 +176,6 @@ When AI writes Kukicha for you, here's the decoder ring:
 
 ## What Can You Build?
 
-### Fetch and filter data from an API
-
-```kukicha
-import "stdlib/fetch"
-import "stdlib/slice"
-
-type Repo
-    name string as "name"
-    stars int as "stargazers_count"
-
-func main()
-    repos := fetch.Get("https://api.github.com/users/golang/repos")
-        |> fetch.CheckStatus()
-        |> fetch.Json(list of Repo) onerr panic "{error}"
-
-    popular := repos |> slice.Filter((r Repo) => r.stars > 1000)
-    for repo in popular
-        print("{repo.name}: {repo.stars} stars")
-```
-
-### Check URLs in parallel
-
-```kukicha
-import "stdlib/fetch"
-
-func check(url string, results channel of string)
-    fetch.Get(url) onerr
-        send "{url} is DOWN ({error})" to results
-        return
-    send "{url} is UP" to results
-
-func main()
-    urls := list of string{"https://google.com", "https://github.com", "https://go.dev"}
-    results := make channel of string
-
-    for url in urls
-        go check(url, results)
-
-    for i from 0 to len(urls)
-        print(receive from results)
-```
-
 ### Ask an AI to summarize something
 
 ```kukicha
@@ -218,6 +211,8 @@ func main()
 ```
 
 Compile to a single binary and register it with Claude Desktop or any MCP-compatible agent.
+
+**More examples:** [Concurrent URL health checker](docs/tutorials/concurrent-url-health-checker.md), [REST API link shortener](docs/tutorials/web-app-tutorial.md), [CLI repo explorer](docs/tutorials/cli-explorer-tutorial.md)
 
 ---
 
