@@ -41,7 +41,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/random` | Random number generation | Int, IntRange, Float, String, Choice |
 | `stdlib/retry` | Retry with backoff | New, Attempts, Delay, Sleep |
 | `stdlib/sandbox` | os.Root filesystem sandboxing | New, Read, Write, List, Exists, Delete |
-| `stdlib/shell` | Safe command execution | New/Dir/Env/Execute, Output, Which, Getenv |
+| `stdlib/shell` | Safe command execution | Run, Output, New/Dir/Env/Execute, Which, Getenv |
 | `stdlib/slice` | Slice operations | Filter, Map, GroupBy, GetOr, FirstOr, Find, Pop |
 | `stdlib/string` | String utilities | Split, Join, Trim, Contains, Replace, ToUpper, ToLower |
 | `stdlib/template` | Text templating | Execute, New |
@@ -193,6 +193,18 @@ if netutil.Contains(network, ip)
 if netutil.IsPrivate(ip)
     print("private address")
 host, port, err := netutil.SplitHostPort("example.com:8080") onerr panic "{error}"
+
+# Shell command execution
+import "stdlib/shell"
+# Run: for fixed string literals only — splits on whitespace, no quoting awareness
+diff := shell.Run("git diff --staged") onerr return "", error "{error}"
+# Output: use when any argument comes from user input or a variable — args passed
+# directly to the OS, no shell involved, so metacharacters are never interpreted
+out := shell.Output("git", "log", "--oneline", userBranch) onerr return "", error "{error}"
+# Builder pattern: add working directory, env vars, or timeout
+result := shell.New("npm", "test") |> shell.Dir(projectPath) |> shell.Env("CI", "true") |> shell.Execute()
+if not shell.Success(result)
+    print(shell.GetError(result) as string)
 
 # Error wrapping and inspection
 import "stdlib/errors"

@@ -9,9 +9,10 @@ import (
 	ctxpkg "github.com/duber000/kukicha/stdlib/ctx"
 	"os"
 	"os/exec"
+	"strings"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:12
 type Command struct {
 	name    string
 	args    []string
@@ -20,7 +21,7 @@ type Command struct {
 	env     map[string]string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:20
 type Result struct {
 	stdout   []byte
 	stderr   []byte
@@ -28,175 +29,188 @@ type Result struct {
 	err      error
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:30
-func Output(name string, args ...string) (string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:31
-	cmd := New(name, args...)
+func Run(cmd string) (string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:32
-	result := Execute(cmd)
+	fields := strings.Fields(cmd)
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:33
-	if !Success(result) {
+	if len(fields) == 0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:34
-		errStr := string(GetError(result))
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:35
-		return "", errors.New(fmt.Sprintf("%v", errStr))
+		return "", errors.New("empty command")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:36
-	return string(GetOutput(result)), nil
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:35
+	return Output(fields[0], fields[1:]...)
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:40
-func New(name string, args ...string) Command {
+func Output(name string, args ...string) (string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:41
+	cmd := New(name, args...)
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:42
+	result := Execute(cmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:43
+	if !Success(result) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:44
+		errStr := string(GetError(result))
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:45
+		return "", errors.New(fmt.Sprintf("%v", errStr))
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:46
+	return string(GetOutput(result)), nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:50
+func New(name string, args ...string) Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:51
 	return Command{name: name, args: args, dir: "", timeout: 0, env: make(map[string]string)}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:55
 func Dir(cmd Command, path string) Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:56
 	cmd.dir = path
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:47
-	return cmd
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:51
-func SetTimeout(cmd Command, seconds int) Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:52
-	cmd.timeout = seconds
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:53
-	return cmd
-}
-
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:57
-func Env(cmd Command, key string, value string) Command {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:58
-	cmd.env[key] = value
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:59
 	return cmd
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:61
+func SetTimeout(cmd Command, seconds int) Command {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:62
+	cmd.timeout = seconds
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:63
-func Execute(cmd Command) Result {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:65
-	execCmd := buildExecCmd(cmd)
+	return cmd
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:67
+func Env(cmd Command, key string, value string) Command {
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:68
-	if cmd.dir != "" {
+	cmd.env[key] = value
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:69
+	return cmd
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:73
+func Execute(cmd Command) Result {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:75
+	execCmd := buildExecCmd(cmd)
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:78
+	if cmd.dir != "" {
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:79
 		execCmd.Dir = cmd.dir
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:82
 	if len(cmd.env) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:83
 		env := os.Environ()
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:84
 		for key, value := range cmd.env {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:85
 			env = append(env, fmt.Sprintf("%v=%v", key, value))
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:86
 		execCmd.Env = env
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:89
 	stdoutBuf := bytes.Buffer{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:80
-	stderrBuf := bytes.Buffer{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:81
-	execCmd.Stdout = &stdoutBuf
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:82
-	execCmd.Stderr = &stderrBuf
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:85
-	err := execCmd.Run()
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:88
-	exitCode := getExitCode(err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:90
+	stderrBuf := bytes.Buffer{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:91
+	execCmd.Stdout = &stdoutBuf
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:92
+	execCmd.Stderr = &stderrBuf
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:95
+	err := execCmd.Run()
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:98
+	exitCode := getExitCode(err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:100
 	return Result{stdout: stdoutBuf.Bytes(), stderr: stderrBuf.Bytes(), exitCode: exitCode, err: err}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:103
 func buildExecCmd(cmd Command) *exec.Cmd {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:104
 	if cmd.timeout > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:105
 		h := ctxpkg.WithTimeout(ctxpkg.Background(), int64(cmd.timeout))
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:106
 		defer ctxpkg.Cancel(h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:107
 		return exec.CommandContext(ctxpkg.Value(h), cmd.name, cmd.args...)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:109
 	return exec.Command(cmd.name, cmd.args...)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:112
 func getExitCode(err error) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:113
 	if err == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:114
 		return 0
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:116
 	switch exitErr := err.(type) {
 	case *exec.ExitError:
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:118
 		return exitErr.ExitCode()
 	default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:120
 		return 1
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:126
 func Success(result Result) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:127
 	return ((result.exitCode == 0) && (result.err == nil))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:131
 func GetOutput(result Result) []byte {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:132
 	return result.stdout
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:136
 func GetError(result Result) []byte {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:137
 	return result.stderr
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:141
 func ExitCode(result Result) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:142
 	return result.exitCode
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:149
 func Which(name string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:150
 	_, err := exec.LookPath(name)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:141
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:151
 	return (err == nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:145
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:155
 func Getenv(key string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:146
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:156
 	return os.Getenv(key)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:160
 func Setenv(key string, value string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:161
 	return os.Setenv(key, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:155
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:165
 func Unsetenv(key string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:166
 	return os.Unsetenv(key)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:161
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:171
 func Environ() []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:162
+//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell.kuki:172
 	return os.Environ()
 }

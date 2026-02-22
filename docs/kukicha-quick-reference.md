@@ -183,11 +183,11 @@ repos |> slice.Filter((r Repo) =>
 )
 ```
 
-### 12. Go Block Syntax
-Spawn a goroutine with an indented block instead of the IIFE pattern.
+### 12. Concurrency
+Spawn goroutines and multiplex channels with readable syntax.
 
 ```kukicha
-# Block form (recommended)
+# Go block (recommended for multi-statement goroutines)
 go
     s.mu.Lock()
     s.db.IncrementClicks(code)
@@ -195,6 +195,20 @@ go
 
 # Call form (still valid)
 go processItem(item)
+
+# Select: channel multiplexing
+select
+    when receive from done           # bare receive (no assignment)
+        return
+    when msg := receive from ch      # assign received value
+        print(msg)
+    when msg, ok := receive from ch  # two-value form (ok check)
+        if ok
+            print(msg)
+    when send "ping" to out          # send case
+        print("sent")
+    otherwise                        # default (non-blocking)
+        print("nothing ready")
 ```
 
 ### 13. Collection Types
@@ -342,6 +356,7 @@ func Connect(host string, port int = 8080, timeout int = 30)
 | `defer f()` | `defer f()` |
 | `go f()` | `go f()` |
 | `go func() { ... }()` | `go` + indented block |
+| `select { case v := <-ch: ... }` | `select` / `when v := receive from ch` / `otherwise` |
 | `func(x T) T { return expr }` | `(x T) => expr` |
 | `switch x { case a: ... }` | `switch x` / `when a` / `otherwise` |
 | `switch v := x.(type) { case *T: ... }` | `switch x as v` / `when reference T` |

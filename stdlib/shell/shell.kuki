@@ -4,6 +4,7 @@ petiole shell
 
 import "os/exec"
 import "os"
+import "strings"
 import "stdlib/ctx" as ctxpkg
 import "bytes"
 
@@ -23,6 +24,15 @@ type Result
     err error
 
 # Builder Pattern Functions
+
+# Run splits a fixed command string on whitespace and runs it, returning stdout
+# Only use for string literals — not safe when any part comes from user input
+# Example: out := shell.Run("git diff --staged")
+func Run(cmd string) (string, error)
+    fields := strings.Fields(cmd)
+    if len(fields) == 0
+        return "", error "empty command"
+    return Output(fields[0], many fields[1:])
 
 # Output runs the command and returns the stdout as a string
 # Returns an error if the command fails

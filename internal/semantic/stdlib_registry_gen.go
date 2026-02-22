@@ -574,6 +574,7 @@ var generatedStdlibRegistry = map[string]int{
 	"shell.Getenv":                    1,
 	"shell.New":                       1,
 	"shell.Output":                    2,
+	"shell.Run":                       2,
 	"shell.SetTimeout":                1,
 	"shell.Setenv":                    1,
 	"shell.Success":                   1,
