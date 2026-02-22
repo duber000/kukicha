@@ -192,7 +192,7 @@ import "stdlib/shell"
 func main()
     diff := shell.Output("git", "diff", "--staged") onerr return
 
-    message := llm.New("openai:gpt-4o-mini")
+    message := llm.New("openai:gpt-5-nano")
         |> llm.System("Write a concise git commit message for this diff.")
         |> llm.Ask(diff) onerr panic "AI Error: {error}"
 
