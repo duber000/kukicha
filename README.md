@@ -2,7 +2,7 @@
 
 **Describe what you want. Let AI write it. Read it. Ship it.**
 
-Kukicha is a programming language designed to be read by humans who don't program yet—and written by AI agents. It compiles to Go, so your programs run fast and deploy as a single binary with no dependencies.
+Kukicha is a programming language designed to be read by humans  written by AI agents. It compiles to Go, so your programs run fast and deploy as a single binary with no dependencies.
 
 ```kukicha
 import "stdlib/fetch"
@@ -42,7 +42,7 @@ kukicha build → single binary
 Ship it
 ```
 
-This works because Kukicha's syntax is designed to be auditable by non-programmers. You don't need to know how to write it — you need to be able to *read* it and spot when something looks wrong.
+This works because Kukicha's syntax is designed to be auditable. You don't need to know how to write it — you need to be able to *read* it and spot when something looks wrong.
 
 See the [Agent Workflow Tutorial](docs/tutorials/agent-workflow-tutorial.md) to get started immediately.
 
@@ -80,14 +80,14 @@ No `__init__`, no `self`, no `**kwargs`, no `class` hierarchies.
 ### Install
 
 ```bash
-go install github.com/duber000/kukicha/cmd/kukicha@v0.0.5
+go install github.com/duber000/kukicha/cmd/kukicha@v0.0.6
 kukicha version
 ```
 
 Or download a release binary for your OS/arch from [GitHub Releases](https://github.com/duber000/kukicha/releases):
 
 ```bash
-VERSION=v0.0.5
+VERSION=v0.0.6
 OS=linux   # or darwin, windows
 ARCH=amd64 # or arm64
 curl -L -o kukicha.tar.gz \
