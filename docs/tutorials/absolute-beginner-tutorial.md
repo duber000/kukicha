@@ -699,6 +699,62 @@ cherry
 
 **Why start at 0?** Almost all programming languages start counting at 0. Think of it as "how many items to skip from the beginning" - skip 0 to get the first item.
 
+### Getting a Range of Items (Slices)
+
+Single-item access is useful, but sometimes you want a portion of a list - the first three items, everything after the second, etc. You can do this with **slice** notation: `list[start:end]`.
+
+Update `lists.kuki`:
+
+```kukicha
+function main()
+    fruits := list of string{"apple", "banana", "cherry", "date", "elderberry"}
+
+    # [:n] - the first n items (up to but not including index n)
+    first3 := fruits[:3]
+    print(first3)   # [apple banana cherry]
+
+    # [n:] - everything from index n to the end
+    rest := fruits[2:]
+    print(rest)     # [cherry date elderberry]
+
+    # [start:end] - items from start up to (not including) end
+    middle := fruits[1:4]
+    print(middle)   # [banana cherry date]
+```
+
+**Try it yourself:**
+
+```bash
+kukicha run lists.kuki
+```
+
+**Output:**
+```
+[apple banana cherry]
+[cherry date elderberry]
+[banana cherry date]
+```
+
+You can also slice directly in a `for` loop without storing the result first - this is handy when you only want to process a limited number of items:
+
+```kukicha
+    for fruit in fruits[:3]
+        print("- {fruit}")
+```
+
+**Output:**
+```
+- apple
+- banana
+- cherry
+```
+
+| Syntax | Meaning |
+|--------|---------|
+| `list[:n]` | First `n` items |
+| `list[n:]` | From index `n` to the end |
+| `list[start:end]` | Items from `start` up to (not including) `end` |
+
 ### How Many Items? Use len()
 
 The built-in `len()` function tells you how many items are in a list. Update `lists.kuki`:
@@ -757,6 +813,7 @@ Count: 4
 **Key points:**
 - `list of Type{items}` creates a list with initial items
 - Indices start at **0** (first item) - negative indices count from the end
+- `list[:n]` gives the first `n` items; `list[n:]` gives items from `n` to the end; `list[start:end]` gives a range
 - `len(list)` returns the number of items
 - `append(list, item)` returns a new list with the item added at the end
 
@@ -1040,6 +1097,7 @@ Congratulations! You now know:
 - ✅ How to use string interpolation
 - ✅ How to make decisions with `if`, `else if`, and `else`
 - ✅ How to store multiple items in **lists**
+- ✅ How to get a portion of a list with **slices** (`list[:n]`, `list[n:]`, `list[start:end]`)
 - ✅ How to repeat actions with **loops** (`for`, `break`, `continue`)
 
 ### Continue Your Journey

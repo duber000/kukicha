@@ -145,7 +145,7 @@ function main()
     repos := FetchRepos("golang")
     print("Found {len(repos)} repos!\n")
 
-    for repo in repos[:5]
+    for repo in repos[:5]  # [:5] is a slice — it gives us just the first 5 items (see list slicing in the beginner tutorial)
         print("- {repo.Name}: {repo.Stars} stars")
 ```
 
@@ -188,6 +188,7 @@ function Summary on repo Repo(index int) string
 - `on repo Repo` — This method works on a `Repo` (syntax: receiver name first, then the type). Inside the method, we call it `repo`
 - `(index int)` — The method also takes an index number for display numbering
 - `string` — The method returns a string
+- `string.PadRight(30, " ")` — pads a string to exactly 30 characters wide by adding spaces on the right, so every repo name takes up the same width and columns line up cleanly in the output
 
 ### Filtering with Pipes and Arrow Lambdas
 

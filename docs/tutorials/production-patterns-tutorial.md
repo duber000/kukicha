@@ -18,7 +18,9 @@ This tutorial bridges Kukicha's beginner-friendly syntax with real-world Go patt
 
 ## What's Wrong with Our Current App?
 
-Our link shortener from the previous tutorial has four problems:
+You've built two things leading up to this tutorial: a **link shortener** (Tutorial 4) and a **concurrent URL health checker** (Tutorial 5). The health checker showed you how goroutines let multiple things run at the same time — and exactly why unprotected shared data is dangerous when that happens.
+
+Now let's apply that knowledge to the link shortener. It still has four problems:
 
 | Problem | Why It Matters |
 |---------|----------------|
@@ -96,6 +98,8 @@ type Server
 ```
 
 **What's a `sync.RWMutex`?**
+
+In the health checker tutorial, goroutines sent results through channels — the channel itself kept things orderly. Here, multiple HTTP handlers share a map, and there's no channel. Without coordination, two simultaneous requests could corrupt `store.links`. The tool for this is a **read-write mutex**:
 
 It's a "read-write lock" that prevents data corruption:
 - **Read Lock** (`RLock`) — Multiple readers can access at once
@@ -808,7 +812,8 @@ You've completed the full Kukicha tutorial series!
 | ✅ **2. Data & AI Scripting** | Maps (Key-Value), parsing CSVs, shell commands, AI scripting |
 | ✅ **3. CLI Explorer** | Types, methods (`on`), API data, arrow lambdas, `fetch` + `json` |
 | ✅ **4. Link Shortener** | HTTP servers, JSON, REST APIs, maps, redirects |
-| ✅ **5. Production** | Databases, concurrency, Go conventions, `env`/`must`, `validate`, `http`, `result`, `retry`, `errors`, `net`, `encoding` |
+| ✅ **5. Health Checker** | Interfaces, goroutines, channels, fan-out pattern, error wrapping |
+| ✅ **6. Production** | Databases, mutexes, Go conventions, `env`/`must`, `validate`, `http`, `result`, `retry`, `errors`, `net`, `encoding` |
 
 ---
 
@@ -825,8 +830,8 @@ You've completed the full Kukicha tutorial series!
 Ideas for your next project:
 - **Paste Bin** — Share code snippets with syntax highlighting
 - **Webhook Relay** — Receive, log, and forward webhooks
-- **Health Checker** — Monitor URLs and alert on failures
 - **Chat Application** — WebSockets, real-time messaging
+- **Monitoring Dashboard** — Extend the health checker with a web UI, alerting, and persistent history
 
 ### Learn More Go
 
