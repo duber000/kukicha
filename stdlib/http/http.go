@@ -8,6 +8,7 @@ import (
 	"github.com/duber000/kukicha/stdlib/fetch"
 	"github.com/duber000/kukicha/stdlib/json"
 	kukistring "github.com/duber000/kukicha/stdlib/string"
+	"html"
 	"io"
 	"net/http"
 	"strconv"
@@ -300,7 +301,17 @@ func HTML(w http.ResponseWriter, content string) error {
 	return err
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:237
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:238
+func SafeHTML(w http.ResponseWriter, content string) error {
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:239
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:240
+	_, err := io.WriteString(w, html.EscapeString(content))
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:241
+	return err
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:247
 func IsGet(r *http.Request) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:238
 	return (r.Method == "GET")

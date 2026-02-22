@@ -25,6 +25,7 @@ import "stdlib/json"
 import "stdlib/string"
 import "stdlib/retry"
 import "stdlib/sandbox"
+import "stdlib/netguard"
 
 # Request represents an HTTP request with builder pattern support
 type Request
@@ -178,6 +179,18 @@ func createHTTPRequest(method string, url string, bodyData any) (reference http.
 # Example: resp, err := fetch.Get("https://api.example.com/data")
 func Get(url string) (reference http.Response, error)
     req := New(url)
+    resp, err := Do(req)
+    return resp, err
+
+# SafeGet performs an SSRF-protected HTTP GET request
+# Uses netguard to block requests to internal IPs, cloud metadata endpoints,
+# and loopback addresses. Use this instead of fetch.Get inside HTTP handlers.
+# Example: resp, err := fetch.SafeGet("https://api.example.com/data")
+func SafeGet(url string) (reference http.Response, error)
+    guard := netguard.NewSSRFGuard()
+    transport := netguard.HTTPTransport(guard)
+    req := New(url)
+    req.transport = transport
     resp, err := Do(req)
     return resp, err
 

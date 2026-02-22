@@ -1388,6 +1388,15 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 		// Security: detect string interpolation in SQL query arguments
 		a.checkSQLInterpolation(qualifiedName, expr, pipedArg)
 
+		// Security: detect XSS via http.HTML with non-literal content
+		a.checkHTMLNonLiteral(qualifiedName, expr, pipedArg)
+
+		// Security: detect fetch.Get/Post/New inside HTTP handlers (SSRF risk)
+		a.checkFetchInHandler(qualifiedName, expr)
+
+		// Security: detect files.* inside HTTP handlers (path traversal risk)
+		a.checkFilesInHandler(qualifiedName, expr)
+
 		// Build the registry from the auto-generated Kukicha stdlib entries,
 		// then layer in Go stdlib functions (which have no .kuki source).
 		knownExternalReturns := make(map[string]int, len(generatedStdlibRegistry)+20)
@@ -1602,6 +1611,99 @@ func (a *Analyzer) checkSQLInterpolation(qualifiedName string, expr *ast.MethodC
 			qualifiedName,
 		))
 	}
+}
+
+// isInHTTPHandler returns true when the current function is an HTTP handler.
+// Detected by the presence of an http.ResponseWriter parameter.
+func (a *Analyzer) isInHTTPHandler() bool {
+	if a.currentFunc == nil {
+		return false
+	}
+	for _, param := range a.currentFunc.Parameters {
+		if named, ok := param.Type.(*ast.NamedType); ok {
+			if named.Name == "http.ResponseWriter" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// checkHTMLNonLiteral warns when http.HTML (or its alias) is called with a
+// non-literal content argument, which is a direct XSS vector.
+func (a *Analyzer) checkHTMLNonLiteral(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
+	htmlFunctions := map[string]bool{
+		"httphelper.HTML": true,
+		"http.HTML":       true,
+	}
+	if !htmlFunctions[qualifiedName] {
+		return
+	}
+
+	// Content is the second arg (index 1) in a plain call, or the first (index 0)
+	// when the ResponseWriter is piped in.
+	contentArgIndex := 1
+	if pipedArg != nil {
+		contentArgIndex = 0
+	}
+	if contentArgIndex >= len(expr.Arguments) {
+		return
+	}
+
+	contentArg := expr.Arguments[contentArgIndex]
+	if _, ok := contentArg.(*ast.StringLiteral); !ok {
+		a.error(expr.Pos(), fmt.Sprintf(
+			"XSS risk: %s with non-literal content — use http.SafeHTML to HTML-escape user-controlled content",
+			qualifiedName,
+		))
+	}
+}
+
+// checkFetchInHandler warns when fetch.Get, fetch.Post, or fetch.New is called
+// directly inside an HTTP handler without SSRF protection.
+func (a *Analyzer) checkFetchInHandler(qualifiedName string, expr *ast.MethodCallExpr) {
+	fetchFunctions := map[string]bool{
+		"fetch.Get":  true,
+		"fetch.Post": true,
+		"fetch.New":  true,
+	}
+	if !fetchFunctions[qualifiedName] {
+		return
+	}
+	if !a.isInHTTPHandler() {
+		return
+	}
+	a.error(expr.Pos(), fmt.Sprintf(
+		"SSRF risk: %s inside an HTTP handler — use fetch.SafeGet or add fetch.Transport(netguard.HTTPTransport(...)) to restrict outbound requests",
+		qualifiedName,
+	))
+}
+
+// checkFilesInHandler warns when files.* I/O functions are called inside an
+// HTTP handler, where the path argument may be user-controlled.
+func (a *Analyzer) checkFilesInHandler(qualifiedName string, expr *ast.MethodCallExpr) {
+	filesFunctions := map[string]bool{
+		"files.Read":        true,
+		"files.ReadBytes":   true,
+		"files.Write":       true,
+		"files.WriteString": true,
+		"files.Append":      true,
+		"files.AppendString": true,
+		"files.Delete":      true,
+		"files.DeleteAll":   true,
+		"files.List":        true,
+		"files.ListRecursive": true,
+	}
+	if !filesFunctions[qualifiedName] {
+		return
+	}
+	if !a.isInHTTPHandler() {
+		return
+	}
+	a.error(expr.Pos(), fmt.Sprintf(
+		"path traversal risk: %s inside an HTTP handler — use sandbox.* with a restricted root for user-controlled paths",
+		qualifiedName,
+	))
 }
 
 func (a *Analyzer) analyzeStringInterpolation(lit *ast.StringLiteral) {

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/duber000/kukicha/stdlib/json"
+	"github.com/duber000/kukicha/stdlib/netguard"
 	"github.com/duber000/kukicha/stdlib/retry"
 	"github.com/duber000/kukicha/stdlib/sandbox"
 	kukistring "github.com/duber000/kukicha/stdlib/string"
@@ -244,6 +245,22 @@ func Get(url string) (*http.Response, error) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:188
+func SafeGet(url string) (*http.Response, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:189
+	guard := netguard.NewSSRFGuard()
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:190
+	transport := netguard.HTTPTransport(guard)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:191
+	req := New(url)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:192
+	req.transport = transport
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:193
+	resp, err := Do(req)
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:194
+	return resp, err
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:200
 func Post(data any, url string) (*http.Response, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch.kuki:189
 	req := New(url)

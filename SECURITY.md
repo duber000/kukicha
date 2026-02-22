@@ -6,7 +6,7 @@ Security findings and planned mitigations for the Kukicha language and standard 
 
 ### 1. String interpolation bypasses SQL parameterization
 
-**Status:** 🔴 Open — compiler check in progress
+**Status:** ✅ Fixed — see Completed section
 
 Kukicha's `"text {variable}"` syntax interpolates before the string reaches pgx,
 silently defeating parameterized queries:
@@ -24,48 +24,51 @@ string argument to `pg.Query`, `pg.QueryRow`, `pg.Exec`, and their `Tx` variants
 
 ### 2. `http.HTML()` writes raw unescaped content
 
-**Status:** 🔴 Open
+**Status:** ✅ Fixed
 
 `http.HTML(w, content)` writes `content` verbatim with `text/html` content type.
 Any user input passed here is a direct XSS vector.
 
-**Mitigation:**
-- Add `http.SafeHTML(w, content)` that escapes via `html.EscapeString`
-- Compiler warning when `http.HTML` receives a non-literal argument
+**Mitigations applied:**
+- Added `http.SafeHTML(w, content)` that HTML-escapes content via `html.EscapeString`
+- Compiler error when `http.HTML` (or its `httphelper` alias) receives a non-literal
+  argument: `XSS risk: http.HTML with non-literal content — use http.SafeHTML`
 
 ### 3. `template` uses `text/template` (no HTML escaping)
 
-**Status:** 🔴 Open
+**Status:** ✅ Fixed
 
 Go's `text/template` performs zero HTML escaping. Using this package to generate
 HTML responses is unsafe.
 
-**Mitigation:**
-- Add `template.HTMLExecute` using `html/template`
-- Document that `template.Execute` is for plaintext only
+**Mitigations applied:**
+- Added `template.HTMLExecute` using `html/template` (auto-escapes `{{ }}` values)
+- Added `template.HTMLRenderSimple` using `html/template` for one-call rendering
+- `template.Execute` doc comment now warns: "For plaintext output only. Use HTMLExecute for HTML."
 
 ### 4. `fetch` has no SSRF protection by default
 
-**Status:** 🔴 Open
+**Status:** ✅ Fixed
 
 `fetch.Get(url)` will fetch internal IPs, cloud metadata endpoints, etc.
 The `netguard` package is excellent but entirely opt-in.
 
-**Mitigation:**
-- Compiler warning when `fetch.Get/Post/New` is used inside an HTTP handler
-  without `netguard.HTTPTransport`
-- Consider a `fetch.SafeGet` that uses `netguard.NewSSRFGuard()` by default
+**Mitigations applied:**
+- Added `fetch.SafeGet(url)` that wraps `netguard.NewSSRFGuard()` automatically
+- Compiler error when `fetch.Get`, `fetch.Post`, or `fetch.New` is used inside an
+  HTTP handler: `SSRF risk: fetch.Get inside an HTTP handler — use fetch.SafeGet`
 
 ### 5. `files.*` has no path traversal protection
 
-**Status:** 🔴 Open
+**Status:** ✅ Fixed
 
 `files.Read(userInput)` reads any file the process can access. The safe
 `sandbox.*` package exists but nothing guides developers toward it.
 
-**Mitigation:**
-- Compiler warning when `files.*` functions receive HTTP handler parameters
-- Documentation emphasizing `sandbox` for any user-controlled paths
+**Mitigations applied:**
+- Compiler error when `files.Read`, `files.Write`, `files.Delete`, and other I/O
+  functions are called inside an HTTP handler: `path traversal risk: files.Read
+  inside an HTTP handler — use sandbox.* with a restricted root`
 
 ## Medium Severity
 
@@ -146,4 +149,22 @@ Examples show literal connection strings with passwords in source code.
 
 ## Completed
 
-(None yet)
+### 1. String interpolation bypasses SQL parameterization
+
+**Status:** ✅ Fixed — compiler rejects `"{var}"` in pg.Query/QueryRow/Exec/Tx\* SQL arguments
+
+### 2. `http.HTML()` writes raw unescaped content
+
+**Status:** ✅ Fixed — `http.SafeHTML` added; compiler warns on non-literal arg to `http.HTML`
+
+### 3. `template` uses `text/template` (no HTML escaping)
+
+**Status:** ✅ Fixed — `template.HTMLExecute` and `template.HTMLRenderSimple` added using `html/template`
+
+### 4. `fetch` has no SSRF protection by default
+
+**Status:** ✅ Fixed — `fetch.SafeGet` added; compiler warns when `fetch.Get/Post/New` used inside HTTP handler
+
+### 5. `files.*` has no path traversal protection
+
+**Status:** ✅ Fixed — compiler warns when `files.*` I/O functions are called inside HTTP handlers

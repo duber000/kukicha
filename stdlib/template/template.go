@@ -4,6 +4,7 @@ package template
 
 import (
 	"bytes"
+	htmltmpl "html/template"
 	"text/template"
 )
 
@@ -92,6 +93,50 @@ func RenderSimple(tmplStr string, data map[string]any) (string, error) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:69
+func HTMLExecute(td TemplateData) (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:70
+	tmpl, err := htmltmpl.New("template").Parse(td.Content)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:71
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:72
+		return "", err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:74
+	buf := bytes.Buffer{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:75
+	err = tmpl.Execute(&buf, td.Data)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:76
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:77
+		return "", err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:79
+	return buf.String(), nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:83
+func HTMLRenderSimple(tmplStr string, data map[string]any) (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:84
+	tmpl, err := htmltmpl.New("template").Parse(tmplStr)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:85
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:86
+		return "", err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:88
+	buf := bytes.Buffer{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:89
+	err = tmpl.Execute(&buf, data)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:90
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:91
+		return "", err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:93
+	return buf.String(), nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:97
 func Must(result string, err error) string {
 //line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:70
 	if err != nil {

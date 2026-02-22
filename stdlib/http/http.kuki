@@ -10,6 +10,7 @@ import "stdlib/fetch"
 import "io"
 import "strconv"
 import "fmt"
+import "html"
 
 # WithCSRF wraps a handler with Cross-Origin protection
 # Uses Fetch metadata headers (modern browsers)
@@ -224,10 +225,21 @@ func TextStatus(w http.ResponseWriter, content string, status int) error
 
 # HTML writes an HTML response with status 200
 # Sets Content-Type to text/html
+# WARNING: content is written verbatim — any user input is an XSS vector.
+# Use http.SafeHTML when content may contain user-controlled data.
 # Example: http.HTML(w, "<h1>Hello</h1>")
 func HTML(w http.ResponseWriter, content string) error
     w.Header().Set("Content-Type", "text/html; charset=utf-8")
     _, err := io.WriteString(w, content)
+    return err
+
+# SafeHTML writes an HTML response after escaping content via html.EscapeString
+# Use this instead of http.HTML when content may contain user input
+# Sets Content-Type to text/html; charset=utf-8
+# Example: http.SafeHTML(w, userInput)
+func SafeHTML(w http.ResponseWriter, content string) error
+    w.Header().Set("Content-Type", "text/html; charset=utf-8")
+    _, err := io.WriteString(w, html.EscapeString(content))
     return err
 
 # Method check helpers
