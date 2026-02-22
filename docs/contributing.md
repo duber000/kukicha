@@ -191,6 +191,37 @@ The compiler implementation. Changes here require careful testing.
 
 Kukicha's built-in packages. New packages or functions welcome!
 
+## Modifying the Standard Library
+
+The stdlib is written in Kukicha (`.kuki` files) and transpiled to Go. The generated `.go` files are embedded into the `kukicha` binary at build time via `//go:embed stdlib/*/*.go`. **Never edit `stdlib/*/*.go` directly** — always edit the `.kuki` source and regenerate.
+
+### Build sequence
+
+```bash
+make generate   # transpile all stdlib/*.kuki → *.go, rebuild compiler
+make build      # re-embed the updated .go files into the kukicha binary
+```
+
+`make generate` already rebuilds the compiler internally (it needs a working binary to transpile), but that intermediate binary doesn't yet contain the newly generated `.go` files. The final `make build` is what bakes them in.
+
+### When to run `make genstdlibregistry`
+
+`make generate` calls `genstdlibregistry` automatically as its first step, so you rarely need to run it standalone. It regenerates `internal/semantic/stdlib_registry_gen.go`, which is a map of every exported stdlib function to its return-value count. The compiler's semantic analyzer uses this to correctly decompose pipe chains and `onerr` clauses.
+
+You need it (via `make generate`) when:
+- Adding a new stdlib package
+- Adding, removing, or changing the return signature of an exported stdlib function
+
+You do **not** need it when:
+- Editing the body of an existing function without changing its signature
+
+### Adding a new stdlib package
+
+1. Create `stdlib/<pkg>/<pkg>.kuki` with a `petiole <pkg>` declaration
+2. Run `make generate && make build`
+3. Run `kukicha check stdlib/<pkg>/<pkg>.kuki` to validate
+4. Add the package to `stdlib/AGENTS.md` so AI agents know it exists
+
 ### Documentation (`docs/`)
 
 Always appreciated! Improvements to tutorials, references, and examples help everyone.
@@ -202,6 +233,21 @@ Real-world examples showing Kukicha in action.
 ### CLI (`cmd/kukicha/`)
 
 Command-line interface improvements.
+
+## Releasing a New Version
+
+Follow these steps in order. Skipping step 3 is how the stdlib `.go` files end up out of date with the tagged release.
+
+1. Bump the version constant in `internal/version/version.go`.
+2. Update the version references in `README.md` (the `go install` snippet and the **Status** section at the bottom).
+3. Run `make generate && make build` to regenerate all stdlib `.go` files with the new version header and rebuild the compiler with the updated files embedded.
+4. Commit everything — source `.kuki` files, regenerated `.go` files, and doc/version updates — in a single commit.
+5. Tag and push:
+
+```bash
+git tag v0.0.X
+git push && git push --tags
+```
 
 ## Questions?
 
