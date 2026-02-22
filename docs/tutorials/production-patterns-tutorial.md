@@ -341,9 +341,9 @@ function handleShorten on s reference Server(w http.ResponseWriter, r reference 
         httphelper.MethodNotAllowed(w)
         return
 
-    # Parse request body
+    # Parse request body — limit to 64 KB to prevent OOM from huge bodies
     input := ShortenRequest{}
-    readErr := r |> httphelper.ReadJSON(reference of input)
+    readErr := r |> httphelper.ReadJSONLimit(65536, reference of input)
     if readErr not equals empty
         httphelper.JSONBadRequest(w, "Invalid JSON")
         return
@@ -406,7 +406,12 @@ function handleRedirect on s reference Server(w http.ResponseWriter, r reference
         s.db.IncrementClicks(code)
         s.mu.Unlock()
 
-    http.Redirect(w, r, link.url, 301)
+    # A link shortener intentionally redirects to arbitrary user-submitted URLs.
+    # We set the Location header directly — the compiler warns when
+    # http.Redirect / httphelper.Redirect receive a non-literal URL to flag
+    # accidental open redirects. We've validated the URL on creation (http/https only).
+    w.Header().Set("Location", link.url)
+    w.WriteHeader(301)
 
 # GET /links — List all links
 function handleListLinks on s reference Server(w http.ResponseWriter, r reference http.Request)
@@ -467,16 +472,21 @@ function main()
     defer server.db.Close()
 
     # Register routes
-    http.HandleFunc("/shorten", server.handleShorten)
-    http.HandleFunc("/r/", server.handleRedirect)
-    http.HandleFunc("/links", server.handleListLinks)
-    http.HandleFunc("/links/", server.handleLinkDetail)
+    mux := http.NewServeMux()
+    mux.HandleFunc("/shorten", server.handleShorten)
+    mux.HandleFunc("/r/", server.handleRedirect)
+    mux.HandleFunc("/links", server.handleListLinks)
+    mux.HandleFunc("/links/", server.handleLinkDetail)
+
+    # Wrap mux with security headers middleware:
+    # sets X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Content-Security-Policy
+    handler := httphelper.SecureHeaders(mux)
 
     log.Printf("Link shortener starting on %s", port)
     log.Printf("Database: %s", dbPath)
     log.Printf("Base URL: %s", baseURL)
 
-    http.ListenAndServe(port, empty) onerr panic "Server failed: {error}"
+    http.ListenAndServe(port, handler) onerr panic "Server failed: {error}"
 ```
 
 ---
@@ -595,9 +605,13 @@ function ValidateShortenRequest(url string) error
 import "stdlib/http" as httphelper
 
 function HandleRequest(w http.ResponseWriter, r reference http.Request)
-    # Read JSON body
+    # Set security headers (X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy)
+    # Tip: use httphelper.SecureHeaders(mux) as middleware instead for the whole server
+    httphelper.SetSecureHeaders(w)
+
+    # Read JSON body — limit body to 1 MB to prevent OOM
     input := ShortenRequest{}
-    readErr := r |> httphelper.ReadJSON(reference of input)
+    readErr := r |> httphelper.ReadJSONLimit(1 << 20, reference of input)
     if readErr not equals empty
         httphelper.JSONBadRequest(w, "Invalid JSON")
         return
@@ -733,10 +747,17 @@ function FetchReposResilient(username string) list of Repo
         repos := empty list of Repo
         fetchOk := true
 
-        repos = fetch.Get(url)
-            |> fetch.CheckStatus()
-            |> fetch.Json(list of Repo) onerr
-                fetchOk = false
+        # fetch.SafeGet: SSRF-protected GET; use fetch.New(...) |> fetch.Retry(3, 500) |> fetch.Do()
+        # for SSRF protection + built-in retry in a single pipeline (no manual loop needed).
+        # Manual loop shown here to illustrate retry.Sleep usage.
+        resp := fetch.SafeGet(url) onerr
+            fetchOk = false
+
+        if fetchOk
+            repos = resp
+                |> fetch.CheckStatus()
+                |> fetch.Json(list of Repo) onerr
+                    fetchOk = false
 
         if fetchOk
             return repos

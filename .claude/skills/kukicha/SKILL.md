@@ -176,6 +176,71 @@ print(user.Name, user.Age)
 
 ---
 
+## Security — Compiler Checks and Safe APIs
+
+The Kukicha compiler rejects common security anti-patterns at **compile time**. The table below lists what triggers each error and the safe replacement.
+
+| Anti-pattern | Compiler error | Safe replacement |
+|---|---|---|
+| `pg.Query(pool, "... {var}")` | SQL injection risk | Use `$1` parameters: `pg.Query(pool, "... WHERE x = $1", val)` |
+| `httphelper.HTML(w, nonLiteral)` | XSS risk | `httphelper.SafeHTML(w, content)` |
+| `fetch.Get(url)` inside HTTP handler | SSRF risk | `fetch.SafeGet(url)` |
+| `files.Read(path)` inside HTTP handler | Path traversal risk | `sandbox.Read(box, path)` with `sandbox.New(root)` |
+| `shell.Run("cmd {var}")` | Command injection risk | `shell.Output("cmd", arg1, arg2)` |
+| `httphelper.Redirect(w, r, nonLiteral)` | Open redirect risk | `httphelper.SafeRedirect(w, r, url, "allowed.host")` |
+| `template.Execute(tmpl, data)` for HTML | (warning in docs) | `template.HTMLExecute` / `template.HTMLRenderSimple` |
+
+### New security APIs (stdlib/http, stdlib/fetch, stdlib/template)
+
+```kukicha
+# HTML output — escape user content
+httphelper.SafeHTML(w, userInput)
+
+# SSRF-protected HTTP fetch (use inside server code / HTTP handlers)
+resp := fetch.SafeGet(url) onerr return
+# With retry + SSRF protection (builder pattern):
+import "stdlib/netguard"
+resp := fetch.New(url)
+    |> fetch.Transport(netguard.HTTPTransport(netguard.NewSSRFGuard()))
+    |> fetch.Retry(3, 500)
+    |> fetch.Do() onerr return
+
+# Limit request/response body size (prevent OOM)
+httphelper.ReadJSONLimit(r, 1 << 20, reference of input) onerr return
+resp := fetch.New(url) |> fetch.MaxBodySize(1 << 20) |> fetch.Do() onerr return
+
+# Safe redirect — allowlist-based host validation (relative URLs always pass)
+httphelper.SafeRedirect(w, r, returnURL, "example.com", "api.example.com") onerr return
+# For intentional redirects to arbitrary URLs (e.g., a link shortener), set header directly:
+w.Header().Set("Location", link.url)
+w.WriteHeader(301)
+
+# Security headers — middleware (preferred) or per-handler
+http.ListenAndServe(":8080", httphelper.SecureHeaders(mux))
+httphelper.SetSecureHeaders(w)  # per-handler alternative
+
+# HTML templates with auto-escaping (html/template instead of text/template)
+result := template.HTMLRenderSimple(tmplStr, map of string to any{"name": username}) onerr return
+httphelper.HTML(w, result)
+# Multi-template workflow:
+td := template.TemplateData{Name: "page", Text: tmplStr, Data: data}
+html, err := template.HTMLExecute(td) onerr return
+httphelper.HTML(w, html)
+```
+
+### Detecting HTTP handlers
+
+The compiler's SSRF, path-traversal, and related checks activate when the **enclosing function** has an `http.ResponseWriter` parameter. Any function matching that signature is treated as a handler:
+
+```kukicha
+# ← SSRF / path-traversal checks active inside this function
+function handleSearch(w http.ResponseWriter, r reference http.Request)
+    resp := fetch.Get(url)  # compile error: SSRF risk
+    resp := fetch.SafeGet(url)  # OK
+```
+
+---
+
 ## DevOps & SRE Patterns
 
 ```kukicha

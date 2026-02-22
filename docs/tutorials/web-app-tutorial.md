@@ -270,9 +270,9 @@ function handleShorten on store reference LinkStore(response http.ResponseWriter
         httphelper.MethodNotAllowed(response)
         return
 
-    # Parse the incoming JSON — one line replaces manual decoding
+    # Parse the incoming JSON — limit to 64 KB to prevent OOM from huge bodies
     input := ShortenRequest{}
-    httphelper.ReadJSON(request, reference of input) onerr
+    httphelper.ReadJSONLimit(request, 65536, reference of input) onerr
         httphelper.JSONBadRequest(response, "Invalid JSON")
         return
 
@@ -317,8 +317,14 @@ function handleRedirect on store reference LinkStore(response http.ResponseWrite
     link.clicks = link.clicks + 1
     store.links[code] = link
 
-    # Redirect! The browser will automatically follow this to the original URL
-    httphelper.RedirectPermanent(response, request, link.url)
+    # Redirect! Set the Location header and return 301 Moved Permanently.
+    # Note: a link shortener intentionally redirects to arbitrary user-supplied URLs —
+    # that's the whole point. We set the header directly rather than using
+    # httphelper.RedirectPermanent because the compiler (correctly) warns about
+    # non-literal redirect targets to help catch *accidental* open redirects.
+    # We've already validated that link.url starts with http:// or https://.
+    response.Header().Set("Location", link.url)
+    response.WriteHeader(301)
 
 # GET /links — List all links
 function handleListLinks on store reference LinkStore(response http.ResponseWriter, request reference http.Request)
@@ -474,11 +480,11 @@ Congratulations! You've built a real web service. Let's review:
 | **HTTP Server** | `http.ListenAndServe()` starts a web server |
 | **Method Values** | Pass `store.handleShorten` directly as an HTTP handler |
 | **Handlers** | Functions that respond to web requests |
-| **`stdlib/json`** | Encode and decode JSON with `MarshalWrite`, `UnmarshalRead`, `ReadJSON` |
-| **`stdlib/http`** | Response helpers: `JSON()`, `JSONBadRequest()`, `ReadJSON()`, `NoContent()` |
+| **`stdlib/json`** | Encode and decode JSON with `MarshalWrite`, `UnmarshalRead` |
+| **`stdlib/http`** | Response helpers: `JSON()`, `JSONBadRequest()`, `ReadJSONLimit()`, `NoContent()` |
 | **Status Codes** | Numbers that indicate success, failure, or redirect |
 | **Map-backed Store** | Use `map of string to Link` for fast code lookup |
-| **HTTP Redirects** | `httphelper.RedirectPermanent()` sends browsers to another URL |
+| **HTTP Redirects** | Set `Location` header + `WriteHeader(301)` — or use `httphelper.SafeRedirect` for known hosts |
 
 ---
 
@@ -546,9 +552,17 @@ http.HandleFunc("/", store.handleHome)
 Now visiting `http://localhost:8080` shows a real HTML form!
 
 **Why `stdlib/template`?**
-- Safe against XSS attacks (auto-escaping)
+- Safe against XSS attacks (auto-escaping via `html/template`)
 - Powerful logic (`{{if .}}`, loops, etc.)
 - Familiar syntax for Go developers (it wraps `html/template`)
+
+> **Rendering dynamic data safely.** The example above uses a static HTML string with no user data, so `tmpl.Execute` is fine. If your template renders user-supplied values (names, URLs, etc.), use `template.HTMLExecute` or `template.HTMLRenderSimple` instead — they use `html/template` which auto-escapes `{{ }}` values:
+> ```kukicha
+> # One-shot render with auto-escaping (html/template)
+> html := template.HTMLRenderSimple(tmplStr, map of string to any{"name": username}) onerr return
+> httphelper.HTML(w, html)
+> ```
+> `template.Execute` uses `text/template` and performs **no** HTML escaping — never pass user input through it for HTML responses.
 
 ---
 

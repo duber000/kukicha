@@ -21,9 +21,9 @@ Import with: `import "stdlib/slice"`
 | `stdlib/encoding` | Base64 and hex encoding/decoding | Base64Encode, Base64Decode, Base64URLEncode, HexEncode, HexDecode |
 | `stdlib/env` | Typed env vars with onerr | Get, GetInt, GetBool, GetFloat, GetOr, Set |
 | `stdlib/errors` | Error wrapping and inspection | Wrap, Is, Unwrap, New, Join |
-| `stdlib/fetch` | HTTP client (Builder, Auth, Sessions, Safe URL helpers, Retry) | Get, Post, Json, Decode, URLTemplate, URLWithQuery, PathEscape, QueryEscape, New/Header/Timeout/Retry/Do, BearerAuth, BasicAuth, FormData, NewSession |
+| `stdlib/fetch` | HTTP client (Builder, Auth, Sessions, Safe URL helpers, Retry) | Get, SafeGet, Post, Json, Decode, URLTemplate, URLWithQuery, PathEscape, QueryEscape, New/Header/Timeout/Retry/MaxBodySize/Do, BearerAuth, BasicAuth, FormData, NewSession |
 | `stdlib/files` | File I/O operations | Read, Write, Append, Exists, Copy, Move, Delete, Watch |
-| `stdlib/http` | HTTP response helpers | JSON, JSONError, JSONNotFound, ReadJSON, SafeURL |
+| `stdlib/http` | HTTP response/request helpers + security | JSON, JSONError, JSONNotFound, ReadJSON, ReadJSONLimit, SafeURL, HTML, SafeHTML, Redirect, SafeRedirect, SetSecureHeaders, SecureHeaders |
 | `stdlib/input` | User input utilities | Line, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration | Map, Filter, Reduce |
 | `stdlib/json` | encoding/json wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
@@ -44,7 +44,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/shell` | Safe command execution | Run, Output, New/Dir/Env/Execute, Which, Getenv |
 | `stdlib/slice` | Slice operations | Filter, Map, GroupBy, GetOr, FirstOr, Find, Pop |
 | `stdlib/string` | String utilities | Split, Join, Trim, Contains, Replace, ToUpper, ToLower |
-| `stdlib/template` | Text templating | Execute, New |
+| `stdlib/template` | Text templating (plain + HTML-safe) | Execute, New, HTMLExecute, HTMLRenderSimple |
 | `stdlib/validate` | Input validation | Email, URL, InRange, NotEmpty, MinLen, MaxLen |
 
 ## Common Patterns
@@ -158,9 +158,13 @@ base := fetch.URLTemplate("https://api.github.com/users/{username}/repos", map o
 safeURL := fetch.URLWithQuery(base, map of string to string{"per_page": "30", "sort": "stars"}) onerr panic "{error}"
 
 # Network-restricted fetch (SSRF protection)
+# Preferred: fetch.SafeGet wraps netguard automatically — use in any HTTP handler
+import "stdlib/fetch"
+resp := fetch.SafeGet(url) onerr panic "{error}"
+# Builder pattern: add headers/retry and still get SSRF protection
 import "stdlib/netguard"
 guard := netguard.NewSSRFGuard()
-resp := fetch.New(url) |> fetch.Transport(netguard.HTTPTransport(guard)) |> fetch.Do() onerr panic "{error}"
+resp := fetch.New(url) |> fetch.Transport(netguard.HTTPTransport(guard)) |> fetch.Retry(3, 500) |> fetch.Do() onerr panic "{error}"
 
 # Container management (Docker/Podman)
 import "stdlib/container"
@@ -220,6 +224,84 @@ decoded := encoding.Base64Decode(encoded) onerr panic "invalid base64: {error}"
 hexStr := encoding.HexEncode(hashBytes)
 ```
 
+## Security Patterns
+
+The compiler enforces several security checks. Use the safe alternatives below to avoid compile errors.
+
+```kukicha
+# --- XSS Prevention ---
+import "stdlib/http" as httphelper
+
+# UNSAFE — triggers compiler error for non-literal content
+httphelper.HTML(w, userInput)  # XSS risk: http.HTML with non-literal content — use http.SafeHTML
+
+# SAFE — HTML-escapes content before writing
+httphelper.SafeHTML(w, userInput)
+
+# --- SQL Injection Prevention ---
+import "stdlib/pg"
+# UNSAFE — string interpolation before parameterization
+pg.Query(pool, "SELECT * FROM users WHERE name = '{name}'")  # compiler error
+
+# SAFE — $N parameters
+pg.Query(pool, "SELECT * FROM users WHERE name = $1", name)
+
+# --- SSRF Prevention (inside HTTP handlers) ---
+# UNSAFE — triggers compiler error inside any HTTP handler
+fetch.Get(url)   # SSRF risk: fetch.Get inside an HTTP handler — use fetch.SafeGet
+
+# SAFE — wraps netguard SSRF protection automatically
+resp := fetch.SafeGet(url) onerr return
+
+# --- Open Redirect Prevention ---
+# UNSAFE — triggers compiler error for non-literal URL
+httphelper.Redirect(w, r, userSuppliedURL)  # open redirect risk
+
+# SAFE — validates host against explicit allowlist; relative URLs always pass
+httphelper.SafeRedirect(w, r, returnURL, "example.com", "api.example.com") onerr return
+
+# --- Path Traversal Prevention (inside HTTP handlers) ---
+# UNSAFE — triggers compiler error inside any HTTP handler
+files.Read(userInput)  # path traversal risk: files.Read inside an HTTP handler
+
+# SAFE — use sandbox with a restricted root
+import "stdlib/sandbox"
+box := sandbox.New("/var/data") onerr return
+content := sandbox.Read(box, userInput) onerr return
+
+# --- Command Injection Prevention ---
+# UNSAFE — triggers compiler error for non-literal argument
+shell.Run("git log {branch}")  # command injection risk
+
+# SAFE — pass arguments separately (no shell interpolation)
+out := shell.Output("git", "log", branch) onerr return
+
+# --- Response Body Size Limits ---
+# Add a size cap to prevent OOM from oversized responses
+resp := fetch.New(url) |> fetch.MaxBodySize(1 << 20) |> fetch.Do() onerr return
+text := fetch.Text(resp) onerr return
+
+# Cap request body when reading JSON (1 MB example)
+httphelper.ReadJSONLimit(r, 1 << 20, reference of input) onerr return
+
+# --- Security Headers ---
+# Middleware: wraps an entire mux or handler
+import "stdlib/http" as httphelper
+http.ListenAndServe(":8080", httphelper.SecureHeaders(mux))
+
+# Per-handler: set at the top of each handler
+httphelper.SetSecureHeaders(w)
+
+# --- HTML Templates (auto-escaping) ---
+# UNSAFE — text/template performs NO HTML escaping
+import "stdlib/template"
+tmpl := template.New("page") |> template.Parse(tmplStr) onerr return
+template.Execute(tmpl, data) onerr return  # WARNING: plaintext only — no HTML escaping
+
+# SAFE — html/template auto-escapes {{ }} values
+result := template.HTMLRenderSimple(tmplStr, data) onerr return
+```
+
 ## Module Structure
 
 Each stdlib module follows one of two patterns:
@@ -227,7 +309,7 @@ Each stdlib module follows one of two patterns:
 ### Pure Kukicha (types + logic in .kuki)
 Used when the implementation is straightforward Kukicha code. No `_helper.go` or `_tool.go`.
 Examples: `a2a`, `cast`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
-`http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
+`input`, `iterator`, `json`, `kube`, `llm`, `maps`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
 `random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `validate`
 
 ### Kukicha types + Go helper (types in .kuki, implementation in _helper.go)
@@ -240,6 +322,7 @@ Examples: *(currently none — `container` and `kube` have both moved to other p
 Used when most logic is pure Kukicha but some operations require hand-written Go.
 Examples:
 - `container` — most logic in `.kuki` (pull, auth, wait, events, exec, logs); Docker client init (`newClient`/`Connect`/`Open`), `buildImage`, tar archive handling (`CopyFrom`/`CopyTo`) in `_helper.go`
+- `http` — most helpers in `.kuki`; `SecureHeaders(handler)` middleware in `http_helper.go` because it requires a Go closure (`http.HandlerFunc(func(...){...})`) not yet expressible in Kukicha
 - `mcp` — core in `.kuki`, callback bridge in `_tool.go`
 
 ## Import Aliases

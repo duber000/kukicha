@@ -281,6 +281,61 @@ select
         print("nothing ready")
 ```
 
+## Security Checks (Compiler-Enforced)
+
+The semantic analyzer enforces security rules at compile time. When triggered, these are **errors** (not warnings) — the program will not compile until the issue is addressed.
+
+| Check | Trigger | Error Message | Safe Alternative |
+|-------|---------|---------------|-----------------|
+| SQL injection | `pg.Query/QueryRow/Exec` first arg contains `{var}` interpolation | `SQL injection risk: string interpolation in SQL argument` | Use `$1` parameters: `pg.Query(pool, "... WHERE id = $1", id)` |
+| XSS | `httphelper.HTML` / `http.HTML` receives non-literal arg | `XSS risk: http.HTML with non-literal content — use http.SafeHTML` | `httphelper.SafeHTML(w, content)` |
+| SSRF | `fetch.Get/Post/New` called inside an HTTP handler | `SSRF risk: fetch.Get inside an HTTP handler — use fetch.SafeGet` | `fetch.SafeGet(url)` or `fetch.New(url) \|> fetch.Transport(netguard.HTTPTransport(...))` |
+| Path traversal | `files.Read/Write/Delete` (etc.) called inside an HTTP handler | `path traversal risk: files.Read inside an HTTP handler — use sandbox.* with a restricted root` | `sandbox.Read(box, path)` with a restricted `sandbox.New(root)` |
+| Command injection | `shell.Run` receives non-literal argument | `command injection risk: shell.Run with non-literal argument — use shell.Output() with separate arguments` | `shell.Output("cmd", arg1, arg2)` |
+| Open redirect | `httphelper.Redirect/RedirectPermanent` / `http.Redirect` receives non-literal URL | `open redirect risk: http.Redirect with non-literal URL argument — use http.SafeRedirect` | `httphelper.SafeRedirect(w, r, url, "allowed.host.com")` |
+
+### What triggers "inside an HTTP handler"
+
+The compiler detects HTTP handlers by the presence of an `http.ResponseWriter` parameter in the containing function. Any function with this signature is treated as a handler:
+
+```kukicha
+function myHandler(w http.ResponseWriter, r reference http.Request)
+    # fetch.Get, files.Read, etc. here will trigger SSRF / path-traversal checks
+```
+
+### Safe alternatives quick reference
+
+```kukicha
+# XSS — HTML-escape user content
+httphelper.SafeHTML(w, userContent)
+
+# SSRF — SSRF-protected fetch (inside handlers or server code)
+resp := fetch.SafeGet(url) onerr return
+
+# Open redirect — validate host before redirecting
+httphelper.SafeRedirect(w, r, url, "myapp.com") onerr return
+
+# Path traversal — constrain file access to a root directory
+import "stdlib/sandbox"
+box := sandbox.New("/var/uploads") onerr return
+data := sandbox.Read(box, filename) onerr return
+
+# Command injection — pass arguments separately, never interpolated
+out := shell.Output("git", "log", userBranch) onerr return
+
+# Body size — cap request and response bodies
+httphelper.ReadJSONLimit(r, 1 << 20, reference of input) onerr return
+resp := fetch.New(url) |> fetch.MaxBodySize(1 << 20) |> fetch.Do() onerr return
+
+# Security headers — inject on every response
+http.ListenAndServe(":8080", httphelper.SecureHeaders(mux))  # middleware
+# or per-handler:
+httphelper.SetSecureHeaders(w)
+
+# HTML templates — use html/template (auto-escaping)
+result := template.HTMLRenderSimple(tmplStr, data) onerr return
+```
+
 ## Build & Test Commands
 
 ```bash
