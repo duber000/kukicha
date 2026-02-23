@@ -1748,6 +1748,12 @@ func (a *Analyzer) checkRedirectNonLiteral(qualifiedName string, expr *ast.Metho
 	if !redirectFunctions[qualifiedName] {
 		return
 	}
+	// Stdlib files (e.g. http.kuki itself) are exempt: SafeRedirect and the
+	// Redirect/RedirectPermanent wrappers call http.Redirect internally after
+	// validation, so flagging them would produce false positives.
+	if strings.Contains(a.sourceFile, "stdlib/") {
+		return
+	}
 	// Redirect(w, r, url) — URL is the 3rd arg (index 2) in a plain call.
 	// If one arg is piped (e.g. w |> Redirect(r, url)), URL is at index 1.
 	urlArgIndex := 2

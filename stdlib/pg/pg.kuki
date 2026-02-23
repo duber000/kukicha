@@ -2,12 +2,14 @@
 # Provides a pipe-friendly wrapper around pgx/pgxpool for database access.
 #
 # Examples:
-#   # Simple connection
-#   pool := pg.Connect("postgres://user:pass@localhost/mydb") onerr panic "db: {error}"
+#   # Simple connection — always load credentials from the environment, never hardcode them
+#   url := env.Get("DATABASE_URL") onerr panic "set DATABASE_URL env var"
+#   pool := pg.Connect(url) onerr panic "db: {error}"
 #   defer pg.ClosePool(pool)
 #
 #   # Builder pattern
-#   pool := pg.New("postgres://user:pass@localhost/mydb")
+#   url := env.Get("DATABASE_URL") onerr panic "set DATABASE_URL env var"
+#   pool := pg.New(url)
 #       |> pg.MaxConns(20)
 #       |> pg.MinConns(5)
 #       |> pg.Open()

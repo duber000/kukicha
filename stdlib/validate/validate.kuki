@@ -286,3 +286,50 @@ func Require(s string, fieldName string) (string, error)
     if string.TrimSpace(s) == ""
         return "", error "{fieldName} is required"
     return s, empty
+
+# Security Validators
+
+# NoHTML checks that a string contains no HTML tags
+# Rejects any string containing '<' or '>' characters
+# Example: comment |> validate.NoHTML() onerr return error
+func NoHTML(s string) (string, error)
+    if string.Contains(s, "<") or string.Contains(s, ">")
+        return s, error "value must not contain HTML"
+    return s, empty
+
+# SafeFilename checks that a string is a safe filename (no path traversal)
+# Rejects empty strings, ".", "..", and strings containing '/', '\', '..' or null bytes
+# Example: filename |> validate.SafeFilename() onerr return error
+func SafeFilename(s string) (string, error)
+    if s == "" or s == "." or s == ".."
+        return s, error "unsafe filename"
+    if string.Contains(s, "/") or string.Contains(s, "\\") or string.Contains(s, "..") or string.Contains(s, "\x00")
+        return s, error "filename contains unsafe characters"
+    return s, empty
+
+# NoNullBytes checks that a string contains no null bytes
+# Null bytes can cause security issues in C-based systems and some parsers
+# Example: input |> validate.NoNullBytes() onerr return error
+func NoNullBytes(s string) (string, error)
+    if string.Contains(s, "\x00")
+        return s, error "value must not contain null bytes"
+    return s, empty
+
+# CompilePattern compiles a regex pattern for use with MatchesCompiled.
+# Pre-compile at startup to avoid recompilation on every validation call.
+# Example: pattern := validate.CompilePattern(`^\d{3}-\d{4}$`) onerr panic "{error}"
+func CompilePattern(pattern string) (reference regexp.Regexp, error)
+    r, err := regexp.Compile(pattern)
+    if err != empty
+        return empty, error "invalid pattern: {err}"
+    return r, empty
+
+# MatchesCompiled checks that a string matches a pre-compiled regular expression.
+# Use instead of Matches to avoid regex recompilation on every call (ReDoS mitigation).
+# Example:
+#   pattern := validate.CompilePattern(`^\d{3}-\d{4}$`) onerr panic "{error}"
+#   phone |> validate.MatchesCompiled(pattern) onerr return error
+func MatchesCompiled(s string, r reference regexp.Regexp) (string, error)
+    if not r.MatchString(s)
+        return s, error "value does not match required pattern"
+    return s, empty
