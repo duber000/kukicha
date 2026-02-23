@@ -34,7 +34,7 @@ func main()
     lastTag := ""
     if len(tagLines) > 1
         lastTag = tagLines[1]
-    else if len(tagLines) == 1 && tagLines[0] != ""
+    else if len(tagLines) == 1 and tagLines[0] != ""
         lastTag = tagLines[0]
 
     # Get commits since previous tag (or last 50 if no prior tags exist)
