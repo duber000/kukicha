@@ -90,6 +90,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history so git log/describe work
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+
       - name: Set version
         id: vars
         shell: bash
@@ -99,6 +109,14 @@ jobs:
           else
             echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Build kukicha
+        run: go build -o ./kukicha ./cmd/kukicha
+
+      - name: Generate changelog
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: ./kukicha run scripts/changelog.kuki ${{ steps.vars.outputs.version }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -116,6 +134,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.vars.outputs.version }}
+          body_path: changelog-entry.md
           files: |
             dist/**/kukicha_*.tar.gz
             dist/**/kukicha_*.zip
