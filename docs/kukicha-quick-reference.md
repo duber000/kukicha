@@ -333,7 +333,7 @@ func Connect(host string, port int = 8080, timeout int = 30)
 | `&v` | `reference of v` |
 | `*v` | `dereference v` |
 | `nil` | `empty` or `nil` |
-| `if err != nil { return err }` | `onerr return error` |
+| `if err != nil { return err }` | `onerr return empty, error "{error}"` |
 | `fmt.Println(...)` | `print(...)` |
 | `fmt.Sprintf("Hello %s", name)` | `"Hello {name}"` |
 | `[]T` | `list of T` |

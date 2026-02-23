@@ -41,7 +41,7 @@ The syntax will feel familiar — `and`/`or`/`not`, indentation, `for x in items
 | `f"{name}"` | `"{name}"` (no prefix) |
 | `def greet(name: str) -> str:` | `func Greet(name string) string` |
 | `**kwargs` / named args | `F(x: 10)` |
-| `try: ... except Exception as e:` | `result onerr return error "{error}"` |
+| `try: ... except Exception as e:` | `result onerr return empty, error "{error}"` |
 | `[x for x in items if pred(x)]` | `items \|> slice.Filter((x T) => pred(x))` |
 
 If your work is ML/data science, Python's ecosystem (numpy, pandas, PyTorch) has no equivalent here. Kukicha is aimed at infrastructure automation, CLI tools, and AI agent tooling.
