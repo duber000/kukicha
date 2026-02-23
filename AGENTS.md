@@ -283,58 +283,7 @@ select
 
 ## Security Checks (Compiler-Enforced)
 
-The semantic analyzer enforces security rules at compile time. When triggered, these are **errors** (not warnings) — the program will not compile until the issue is addressed.
-
-| Check | Trigger | Error Message | Safe Alternative |
-|-------|---------|---------------|-----------------|
-| SQL injection | `pg.Query/QueryRow/Exec` first arg contains `{var}` interpolation | `SQL injection risk: string interpolation in SQL argument` | Use `$1` parameters: `pg.Query(pool, "... WHERE id = $1", id)` |
-| XSS | `httphelper.HTML` / `http.HTML` receives non-literal arg | `XSS risk: http.HTML with non-literal content — use http.SafeHTML` | `httphelper.SafeHTML(w, content)` |
-| SSRF | `fetch.Get/Post/New` called inside an HTTP handler | `SSRF risk: fetch.Get inside an HTTP handler — use fetch.SafeGet` | `fetch.SafeGet(url)` or `fetch.New(url) \|> fetch.Transport(netguard.HTTPTransport(...))` |
-| Path traversal | `files.Read/Write/Delete` (etc.) called inside an HTTP handler | `path traversal risk: files.Read inside an HTTP handler — use sandbox.* with a restricted root` | `sandbox.Read(box, path)` with a restricted `sandbox.New(root)` |
-| Command injection | `shell.Run` receives non-literal argument | `command injection risk: shell.Run with non-literal argument — use shell.Output() with separate arguments` | `shell.Output("cmd", arg1, arg2)` |
-| Open redirect | `httphelper.Redirect/RedirectPermanent` / `http.Redirect` receives non-literal URL | `open redirect risk: http.Redirect with non-literal URL argument — use http.SafeRedirect` | `httphelper.SafeRedirect(w, r, url, "allowed.host.com")` |
-
-### What triggers "inside an HTTP handler"
-
-The compiler detects HTTP handlers by the presence of an `http.ResponseWriter` parameter in the containing function. Any function with this signature is treated as a handler:
-
-```kukicha
-function myHandler(w http.ResponseWriter, r reference http.Request)
-    # fetch.Get, files.Read, etc. here will trigger SSRF / path-traversal checks
-```
-
-### Safe alternatives quick reference
-
-```kukicha
-# XSS — HTML-escape user content
-httphelper.SafeHTML(w, userContent)
-
-# SSRF — SSRF-protected fetch (inside handlers or server code)
-resp := fetch.SafeGet(url) onerr return
-
-# Open redirect — validate host before redirecting
-httphelper.SafeRedirect(w, r, url, "myapp.com") onerr return
-
-# Path traversal — constrain file access to a root directory
-import "stdlib/sandbox"
-box := sandbox.New("/var/uploads") onerr return
-data := sandbox.Read(box, filename) onerr return
-
-# Command injection — pass arguments separately, never interpolated
-out := shell.Output("git", "log", userBranch) onerr return
-
-# Body size — cap request and response bodies
-httphelper.ReadJSONLimit(r, 1 << 20, reference of input) onerr return
-resp := fetch.New(url) |> fetch.MaxBodySize(1 << 20) |> fetch.Do() onerr return
-
-# Security headers — inject on every response
-http.ListenAndServe(":8080", httphelper.SecureHeaders(mux))  # middleware
-# or per-handler:
-httphelper.SetSecureHeaders(w)
-
-# HTML templates — use html/template (auto-escaping)
-result := template.HTMLRenderSimple(tmplStr, data) onerr return
-```
+The compiler enforces SQL injection, XSS, SSRF, path traversal, command injection, and open redirect checks at compile time. See **[`stdlib/AGENTS.md`](stdlib/AGENTS.md)** for the full check table and safe alternatives.
 
 ## Build & Test Commands
 
@@ -381,28 +330,14 @@ import "stdlib/ctx" as ctxpkg          # alias — use when the package name con
 import "github.com/jackc/pgx/v5" as pgx  # external package with alias
 ```
 
-Use `as alias` whenever the package's last path segment clashes with a local variable name.
-
-**Canonical import alias table** — always use these aliases for these packages:
-
-| Package | Standard alias | Reason |
-|---------|----------------|--------|
-| `stdlib/ctx` | `ctxpkg` | Clashes with local `ctx` variable |
-| `stdlib/errors` | `errs` | Clashes with local `err` / `errors` |
-| `stdlib/json` | `jsonpkg` | Clashes with `encoding/json` |
-| `stdlib/string` | `strpkg` | Clashes with `string` type name |
-| `stdlib/container` | `docker` | Clashes with local `container` variables |
-| `stdlib/http` | `httphelper` | Clashes with `net/http` |
-| `stdlib/net` | `netutil` | Clashes with `net` stdlib package |
+Use `as alias` whenever the package's last path segment clashes with a local variable name. See **[`stdlib/AGENTS.md`](stdlib/AGENTS.md)** for the canonical alias table.
 
 ## Critical Rules
 
-1. **Never edit `stdlib/*/*.go` directly** - Edit the `.kuki` files, then run `make generate`
-2. **Never edit `internal/semantic/stdlib_registry_gen.go` directly** - Run `make genstdlibregistry` (called automatically by `make generate`)
-3. **Always validate** - Run `kukicha check` before committing `.kuki` changes
-4. **4-space indentation only** - Tabs are not allowed in Kukicha
-5. **Explicit function signatures** - Parameters and return types must be declared
-6. **Test with `make test`** - Run the full test suite
+1. **Always validate** - Run `kukicha check` before committing `.kuki` changes
+2. **4-space indentation only** - Tabs are not allowed in Kukicha
+3. **Explicit function signatures** - Parameters and return types must be declared
+4. **Test with `make test`** - Run the full test suite
 
 ## Adding Features to the Compiler
 

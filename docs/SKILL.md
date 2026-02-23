@@ -265,10 +265,16 @@ func main()
 **stdlib/shell** — Run commands
 
 ```kukicha
-out := shell.New("kubectl", "get", "pods")
-    |> shell.Dir("/app")
-    |> shell.Output() onerr panic "{error}"
-print(out)
+# Run: for fixed string literals only (no variable interpolation)
+diff := shell.Run("git diff --staged") onerr panic "{error}"
+
+# Output: use when any argument is a variable — args passed directly to OS
+out := shell.Output("git", "log", "--oneline", userBranch) onerr panic "{error}"
+
+# Builder: add working directory, env vars, timeout
+result := shell.New("npm", "test") |> shell.Dir(projectPath) |> shell.Env("CI", "true") |> shell.Execute()
+if not shell.Success(result)
+    print(shell.GetError(result) as string)
 ```
 
 **stdlib/obs** — Structured logging

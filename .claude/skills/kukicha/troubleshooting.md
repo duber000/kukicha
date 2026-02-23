@@ -510,8 +510,8 @@ func Handle(ctx context.Context)
 | `stdlib/ctx` | `ctxpkg` |
 | `stdlib/errors` | `errs` |
 | `stdlib/json` | `jsonpkg` |
-| `stdlib/container` | `ctr` |
-| `stdlib/string` | `strutil` |
+| `stdlib/container` | `docker` |
+| `stdlib/string` | `strpkg` |
 
 ### "variadic argument mismatch" or spreading a slice
 
