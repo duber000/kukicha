@@ -70,7 +70,7 @@ func main()
     if lastTag != ""
         context = "Previous release tag: {lastTag}\n"
 
-    prompt := "You are a changelog writer for Kukicha, a beginner-friendly programming language that transpiles to Go.\n\n{context}New commits to summarize:\n{gitLog}\n\nWrite a single CHANGELOG entry for version {version}.\n\nRules:\n- Start with: ## [{version}] - YYYY-MM-DD (use today's date)\n- Group changes under ### Added, ### Changed, ### Fixed, ### Security (only include sections that apply)\n- Write concise bullet points from the developer perspective\n- Skip trivial or internal-only changes\n- Output ONLY the markdown section starting with ##, no preamble or explanation"
+    prompt := "You are a changelog writer for Kukicha, a beginner-friendly programming language that transpiles to Go.\n\n{context}New commits to summarize:\n{gitLog}\n\nWrite a single CHANGELOG entry for version {version}.\n\nRules:\n- Start with: ## [{version}] - YYYY-MM-DD (use today's date)\n- Group changes under ### Added, ### Changed, ### Fixed, ### Security (only include sections that apply)\n- Write concise bullet points from the developer perspective\n- Each bullet point must end with a markdown link to the relevant commit(s), e.g. ([abc1234](https://github.com/duber000/kukicha/commit/abc1234)). Use the 7-character short hash from the commit log.\n- Skip trivial or internal-only changes\n- Output ONLY the markdown section starting with ##, no preamble or explanation"
 
     entry := llm.New("mistral:mistral-large-latest")
         |> llm.MaxTokens(2048)
