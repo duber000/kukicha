@@ -17,6 +17,8 @@ func main()
         |> fetch.CheckStatus()
         |> fetch.Json(list of Repo) onerr panic "fetch failed: {error}"
 
+    # Keep only repos with more than 1000 stars
+    # (r is each repo — like "for each r in repos, keep it if...")
     popular := repos |> slice.Filter((r Repo) => r.stars > 1000)
 
     for repo in popular
@@ -43,7 +45,7 @@ The trajectory is clear: AI generates the app, deploys it, monitors it, patches 
 
 **Kukicha exists because the answer to "AI writes all the code" shouldn't be "and nobody reads any of it." It should be "and a human can still understand every line."**
 
-The key word is **assisted**. While Kukicha is optimized for AI-assisted coding, it will always prioritize readable, reviewable code that a human can understand, audit, and approve before it runs in production. AI is the writer. You are the editor. That's not a limitation — it's the architecture of trust.
+The key word is **assisted**. AI is the writer. You are the editor. That's not a limitation — it's the architecture of trust.
 
 ---
 
@@ -61,7 +63,7 @@ kukicha build → single binary
 Ship it
 ```
 
-This works because Kukicha's syntax is designed to be auditable. You don't need to know how to write it — you need to be able to *read* it and spot when something looks wrong.
+You don't need to know how to write Kukicha — you just need to *read* it and spot when something looks wrong.
 
 See the [Agent Workflow Tutorial](docs/tutorials/agent-workflow-tutorial.md) to get started immediately.
 
@@ -75,9 +77,9 @@ See the [Agent Workflow Tutorial](docs/tutorials/agent-workflow-tutorial.md) to 
 
 **The future:** AI-native runtimes will collapse the entire stack — from intent to running application — with far fewer intermediate artifacts. The languages, frameworks, and configuration layers that exist today were designed for humans to *write*. That assumption is already breaking down.
 
-Within three years, the best AI-generated applications won't be written in languages designed for humans to type — they'll be written in languages designed for humans to read and AI to write. The full stack, from syntax to error handling to deployment, will be optimized around the describe-generate-review-ship workflow.
+Within three years, the best AI-generated applications won't be written in languages designed for humans to type — they'll target the describe-generate-review-ship workflow end to end.
 
-Kukicha is that bridge. It's the responsible step between "humans write everything" and "AI does everything unsupervised." As AI capabilities grow, the human review step may get faster — but it should never disappear.
+Kukicha is that bridge. As AI capabilities grow, the human review step may get faster — but it should never disappear.
 
 ---
 
@@ -92,7 +94,7 @@ Kukicha is that bridge. It's the responsible step between "humans write everythi
 | Built for AI generation + human review | No | No | Yes |
 | Transfers to Go/Python | — | — | 1:1 |
 
-Go and Python were designed for humans to *write*. That was the right assumption for fifty years. It's no longer the right assumption for most software. The bottleneck has shifted from writing to reviewing — and no existing language is optimized for that.
+Go and Python were designed for humans to *write*. The bottleneck has shifted from writing to reviewing.
 
 Kukicha uses plain English for every operator:
 
