@@ -1,0 +1,3170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kukicha Language — Development History</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --green: #3fb950; --green2: #56d364; --teal: #34d399;
+  --gold: #d29922; --blue: #58a6ff; --purple: #bc8cff;
+  --orange: #f78166; --red: #f85149; --radius: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+.header { background: linear-gradient(180deg, #161b22 0%, #0d1117 100%); border-bottom: 1px solid var(--border); padding: 28px 32px; }
+.header-inner { max-width: 1200px; margin: 0 auto; }
+.header h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.header p { color: var(--text2); margin-top: 6px; font-size: 14px; }
+.badge { background: rgba(63,185,80,0.15); border: 1px solid rgba(63,185,80,0.4); border-radius: 20px; padding: 2px 10px; font-size: 11px; color: var(--green2); font-weight: 700; }
+
+.stats-row { max-width: 1200px; margin: 24px auto; padding: 0 32px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; text-align: center; }
+.stat-val { font-size: 32px; font-weight: 700; color: var(--green2); line-height: 1; font-variant-numeric: tabular-nums; }
+.stat-lbl { color: var(--text2); font-size: 12px; margin-top: 5px; }
+
+.main { max-width: 1200px; margin: 0 auto; padding: 0 32px 48px; }
+
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.tab-btn { background: none; border: none; color: var(--text2); padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--green2); border-bottom-color: var(--green2); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+.card-title { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+.card-sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; }
+.chart-h300 { position: relative; height: 300px; }
+.chart-h380 { position: relative; height: 380px; }
+.chart-h420 { position: relative; height: 420px; }
+
+/* --- TIMELINE --- */
+.tl-wrap { overflow-x: auto; padding-bottom: 8px; }
+.tl-inner { position: relative; min-width: 1200px; margin: 120px 16px 170px; }
+.tl-track { height: 3px; background: var(--bg3); border-radius: 2px; position: relative; }
+.tl-fill { position: absolute; inset: 0; background: linear-gradient(90deg, #3fb950, #58a6ff); border-radius: 2px; }
+
+/* version tags above — stem height set inline per level */
+.vt { position: absolute; bottom: calc(100% + 4px); transform: translateX(-50%); text-align: center; white-space: nowrap; }
+.vt-pill { color: #000; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 3px; }
+.vt-stem { width: 1px; background: rgba(63,185,80,0.4); margin: 2px auto 0; }
+.vt-dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--bg2); margin: 0 auto; position: relative; bottom: -1px; }
+
+/* milestone markers below — top offset set inline per level */
+.ms { position: absolute; transform: translateX(-50%); text-align: center; }
+.ms-dot { width: 8px; height: 8px; border-radius: 50%; margin: 0 auto; border: 2px solid var(--bg2); }
+.ms-stem { width: 1px; margin: 0 auto; }
+.ms-label { font-size: 9.5px; font-weight: 600; margin-top: 3px; max-width: 90px; line-height: 1.25; word-break: break-word; }
+
+/* date axis */
+.tl-dates { display: flex; justify-content: space-between; margin-top: 6px; }
+.tl-date { font-size: 10px; color: var(--text3); }
+
+.tl-legend { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
+.tl-leg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
+.tl-leg-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* milestone table */
+.ms-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ms-table th { color: var(--text3); text-transform: uppercase; font-size: 10px; letter-spacing: .06em; padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+.ms-table td { padding: 9px 10px; border-bottom: 1px solid rgba(48,54,61,0.6); vertical-align: middle; }
+.ms-table tr:last-child td { border-bottom: none; }
+.ms-table tr:hover td { background: rgba(255,255,255,.02); }
+.chip { border-radius: 4px; padding: 1px 7px; font-size: 10px; font-weight: 700; display: inline-block; white-space: nowrap; }
+.chip-lang   { background: rgba(88,166,255,0.12); color: var(--blue); }
+.chip-stdlib { background: rgba(63,185,80,0.12);  color: var(--green2); }
+.chip-compiler { background: rgba(188,140,255,0.12); color: var(--purple); }
+.chip-tooling  { background: rgba(247,129,102,0.12); color: var(--orange); }
+.chip-runtime  { background: rgba(210,153,34,0.12);  color: var(--gold); }
+.chip-security { background: rgba(248,81,73,0.12);   color: var(--red); }
+.chip-release  { background: rgba(63,185,80,0.2);    color: var(--green2); }
+.mono { font-family: ui-monospace, monospace; color: var(--text3); font-size: 10px; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.note { background: rgba(88,166,255,.04); border: 1px solid rgba(88,166,255,.2); border-radius: var(--radius); padding: 10px 14px; font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.note strong { color: var(--blue); }
+.toggle-btn { background: rgba(255,255,255,.05); border: 1px solid var(--border); color: var(--text2); border-radius: 20px; padding: 3px 11px; font-size: 11px; cursor: pointer; font-weight: 600; transition: opacity .15s; }
+.toggle-btn.off { opacity: .4; }
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.search-box { background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 12px; font-size: 12px; width: 240px; margin-bottom: 14px; }
+.search-box::placeholder { color: var(--text3); }
+
+@media (max-width: 900px) {
+  .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .grid2 { grid-template-columns: 1fr; }
+  .main, .stats-row { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>🍵 Kukicha Language — Development History <span class="badge">v0.0.8</span></h1>
+    <p>A beginner-friendly language that transpiles to Go · Jan 19 – Feb 22, 2026 · Built from <code style="color:var(--green);font-size:12px">git log --numstat</code></p>
+  </div>
+</div>
+
+<div class="stats-row" id="stats-row"></div>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('milestones',this)">🗓 Milestones</button>
+    <button class="tab-btn" onclick="showTab('growth',this)">📈 Codebase Growth</button>
+    <button class="tab-btn" onclick="showTab('stdlib',this)">📦 Standard Library</button>
+    <button class="tab-btn" onclick="showTab('compiler',this)">⚙️ Compiler</button>
+    <button class="tab-btn" onclick="showTab('activity',this)">📊 Activity</button>
+  </div>
+
+  <!-- MILESTONES -->
+  <div class="tab-pane active" id="tab-milestones">
+    <div class="card">
+      <div class="card-title">Release Timeline</div>
+      <div class="card-sub">Jan 19 – Feb 22, 2026 · 8 official releases · 74 detected milestones</div>
+      <div class="tl-wrap">
+        <div class="tl-inner" id="tl-inner">
+          <div class="tl-track"><div class="tl-fill"></div></div>
+        </div>
+      </div>
+      <div class="tl-legend" id="tl-legend"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Feature Milestones</div>
+      <div class="card-sub">All detected milestones from commit history — filter by category or search</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        <input class="search-box" id="ms-search" type="text" placeholder="Search milestones…" oninput="filterMilestones()">
+        <div class="filter-row" id="ms-filter-row"></div>
+      </div>
+      <table class="ms-table"><thead><tr><th>Date</th><th>Category</th><th>Feature</th><th>Commit</th><th>Author</th></tr></thead>
+      <tbody id="ms-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- GROWTH -->
+  <div class="tab-pane" id="tab-growth">
+    <div class="note"><strong>Note:</strong> "Editor Support" is large due to a generated tree-sitter <code>parser.c</code> (~15k lines added in one commit). Toggle it off below for a cleaner view of code growth.</div>
+    <div class="card">
+      <div class="card-title">Codebase Growth by Category</div>
+      <div class="card-sub">Cumulative net lines of code over time · Jan–Feb 2026</div>
+      <div class="filter-row" id="cat-toggles"></div>
+      <div class="chart-h420"><canvas id="growthChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Current Composition</div>
+      <div class="card-sub">Share of each category today</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;height:240px;">
+        <canvas id="growthPie"></canvas>
+        <div id="pie-legend" style="display:flex;flex-direction:column;justify-content:center;gap:9px;font-size:13px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STDLIB -->
+  <div class="tab-pane" id="tab-stdlib">
+    <div class="card">
+      <div class="card-title">Standard Library Package Growth</div>
+      <div class="card-sub">Cumulative net lines per package · stacked area</div>
+      <div class="chart-h420"><canvas id="stdlibChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Package Size Breakdown (current)</div>
+      <div class="card-sub">Net lines of code per stdlib package, sorted largest first</div>
+      <div class="chart-h300"><canvas id="stdlibBar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- COMPILER -->
+  <div class="tab-pane" id="tab-compiler">
+    <div class="card">
+      <div class="card-title">Compiler Module Growth</div>
+      <div class="card-sub">Cumulative net lines per subsystem · stacked area</div>
+      <div class="chart-h420"><canvas id="compilerChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Compiler Subsystem Breakdown (current)</div>
+      <div class="card-sub">Relative size of each compiler component</div>
+      <div class="chart-h300"><canvas id="compilerBar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ACTIVITY -->
+  <div class="tab-pane" id="tab-activity">
+    <div class="card">
+      <div class="card-title">Commits Per Day</div>
+      <div class="card-sub">Color-coded: green ≤ 9, amber 10–19, red ≥ 20</div>
+      <div class="chart-h380"><canvas id="activityChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cumulative Commits</div>
+      <div class="card-sub">Total commits accumulated over the project lifetime</div>
+      <div class="chart-h300"><canvas id="cumulativeChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const DATA = {
+  "category_snapshots": [
+    {
+      "date": "2026-01-19",
+      "Standard Library": 0,
+      "Compiler": 0,
+      "Docs": 4467,
+      "Editor Support": 0,
+      "Tools": 0,
+      "Examples": 0,
+      "Build/Other": 21
+    },
+    {
+      "date": "2026-01-20",
+      "Standard Library": 0,
+      "Compiler": 8036,
+      "Docs": 6278,
+      "Editor Support": 0,
+      "Tools": 421,
+      "Examples": 43,
+      "Build/Other": 24
+    },
+    {
+      "date": "2026-01-21",
+      "Standard Library": 248,
+      "Compiler": 8776,
+      "Docs": 6687,
+      "Editor Support": 0,
+      "Tools": 423,
+      "Examples": 78,
+      "Build/Other": 24
+    },
+    {
+      "date": "2026-01-22",
+      "Standard Library": 586,
+      "Compiler": 9158,
+      "Docs": 9368,
+      "Editor Support": 0,
+      "Tools": 423,
+      "Examples": 78,
+      "Build/Other": 59
+    },
+    {
+      "date": "2026-01-23",
+      "Standard Library": 2498,
+      "Compiler": 9340,
+      "Docs": 12009,
+      "Editor Support": 0,
+      "Tools": 423,
+      "Examples": 297,
+      "Build/Other": 58
+    },
+    {
+      "date": "2026-01-24",
+      "Standard Library": 2003,
+      "Compiler": 10140,
+      "Docs": 7720,
+      "Editor Support": 0,
+      "Tools": 425,
+      "Examples": 255,
+      "Build/Other": 63
+    },
+    {
+      "date": "2026-01-25",
+      "Standard Library": 2041,
+      "Compiler": 11072,
+      "Docs": 9386,
+      "Editor Support": 0,
+      "Tools": 427,
+      "Examples": 258,
+      "Build/Other": 64
+    },
+    {
+      "date": "2026-01-26",
+      "Standard Library": 2520,
+      "Compiler": 11092,
+      "Docs": 9661,
+      "Editor Support": 0,
+      "Tools": 427,
+      "Examples": 270,
+      "Build/Other": 64
+    },
+    {
+      "date": "2026-01-27",
+      "Standard Library": 4156,
+      "Compiler": 11589,
+      "Docs": 9911,
+      "Editor Support": 0,
+      "Tools": 379,
+      "Examples": 457,
+      "Build/Other": 114
+    },
+    {
+      "date": "2026-01-28",
+      "Standard Library": 4828,
+      "Compiler": 11817,
+      "Docs": 10029,
+      "Editor Support": 38539,
+      "Tools": 632,
+      "Examples": 457,
+      "Build/Other": 128
+    },
+    {
+      "date": "2026-01-29",
+      "Standard Library": 4828,
+      "Compiler": 13039,
+      "Docs": 10216,
+      "Editor Support": 39262,
+      "Tools": 656,
+      "Examples": 457,
+      "Build/Other": 146
+    },
+    {
+      "date": "2026-01-30",
+      "Standard Library": 4828,
+      "Compiler": 13046,
+      "Docs": 10223,
+      "Editor Support": 39262,
+      "Tools": 655,
+      "Examples": 457,
+      "Build/Other": 146
+    },
+    {
+      "date": "2026-02-02",
+      "Standard Library": 4828,
+      "Compiler": 13128,
+      "Docs": 10224,
+      "Editor Support": 39262,
+      "Tools": 719,
+      "Examples": 457,
+      "Build/Other": 155
+    },
+    {
+      "date": "2026-02-03",
+      "Standard Library": 6173,
+      "Compiler": 13646,
+      "Docs": 10801,
+      "Editor Support": 39262,
+      "Tools": 721,
+      "Examples": 457,
+      "Build/Other": 155
+    },
+    {
+      "date": "2026-02-04",
+      "Standard Library": 6183,
+      "Compiler": 14230,
+      "Docs": 11366,
+      "Editor Support": 39262,
+      "Tools": 721,
+      "Examples": 584,
+      "Build/Other": 155
+    },
+    {
+      "date": "2026-02-05",
+      "Standard Library": 10429,
+      "Compiler": 14415,
+      "Docs": 11505,
+      "Editor Support": 41499,
+      "Tools": 721,
+      "Examples": 807,
+      "Build/Other": 155
+    },
+    {
+      "date": "2026-02-06",
+      "Standard Library": 11065,
+      "Compiler": 14419,
+      "Docs": 11716,
+      "Editor Support": 41511,
+      "Tools": 721,
+      "Examples": 950,
+      "Build/Other": 155
+    },
+    {
+      "date": "2026-02-07",
+      "Standard Library": 11489,
+      "Compiler": 14429,
+      "Docs": 11874,
+      "Editor Support": 41511,
+      "Tools": 721,
+      "Examples": 1286,
+      "Build/Other": 155
+    },
+    {
+      "date": "2026-02-09",
+      "Standard Library": 11489,
+      "Compiler": 14704,
+      "Docs": 11728,
+      "Editor Support": 41511,
+      "Tools": 723,
+      "Examples": 1286,
+      "Build/Other": 277
+    },
+    {
+      "date": "2026-02-10",
+      "Standard Library": 11489,
+      "Compiler": 14704,
+      "Docs": 11447,
+      "Editor Support": 41511,
+      "Tools": 723,
+      "Examples": 1286,
+      "Build/Other": 277
+    },
+    {
+      "date": "2026-02-12",
+      "Standard Library": 11489,
+      "Compiler": 14704,
+      "Docs": 12017,
+      "Editor Support": 41511,
+      "Tools": 723,
+      "Examples": 1286,
+      "Build/Other": 277
+    },
+    {
+      "date": "2026-02-13",
+      "Standard Library": 14260,
+      "Compiler": 16220,
+      "Docs": 14023,
+      "Editor Support": 43133,
+      "Tools": 739,
+      "Examples": 1414,
+      "Build/Other": 360
+    },
+    {
+      "date": "2026-02-14",
+      "Standard Library": 14659,
+      "Compiler": 17071,
+      "Docs": 14103,
+      "Editor Support": 43570,
+      "Tools": 1115,
+      "Examples": 1447,
+      "Build/Other": 374
+    },
+    {
+      "date": "2026-02-15",
+      "Standard Library": 19183,
+      "Compiler": 17123,
+      "Docs": 14352,
+      "Editor Support": 43570,
+      "Tools": 1169,
+      "Examples": 1573,
+      "Build/Other": 653
+    },
+    {
+      "date": "2026-02-16",
+      "Standard Library": 21174,
+      "Compiler": 18361,
+      "Docs": 14154,
+      "Editor Support": 43570,
+      "Tools": 1169,
+      "Examples": 957,
+      "Build/Other": 653
+    },
+    {
+      "date": "2026-02-17",
+      "Standard Library": 22145,
+      "Compiler": 18340,
+      "Docs": 14522,
+      "Editor Support": 43570,
+      "Tools": 1184,
+      "Examples": 957,
+      "Build/Other": 653
+    },
+    {
+      "date": "2026-02-18",
+      "Standard Library": 22145,
+      "Compiler": 18377,
+      "Docs": 14586,
+      "Editor Support": 43570,
+      "Tools": 1184,
+      "Examples": 957,
+      "Build/Other": 653
+    },
+    {
+      "date": "2026-02-19",
+      "Standard Library": 22479,
+      "Compiler": 19019,
+      "Docs": 15334,
+      "Editor Support": 43632,
+      "Tools": 1816,
+      "Examples": 995,
+      "Build/Other": 653
+    },
+    {
+      "date": "2026-02-20",
+      "Standard Library": 22724,
+      "Compiler": 19019,
+      "Docs": 15385,
+      "Editor Support": 43632,
+      "Tools": 2354,
+      "Examples": 995,
+      "Build/Other": 653
+    },
+    {
+      "date": "2026-02-21",
+      "Standard Library": 23028,
+      "Compiler": 19926,
+      "Docs": 13577,
+      "Editor Support": 44815,
+      "Tools": 2582,
+      "Examples": 995,
+      "Build/Other": 664
+    },
+    {
+      "date": "2026-02-22",
+      "Standard Library": 23386,
+      "Compiler": 20455,
+      "Docs": 13890,
+      "Editor Support": 44815,
+      "Tools": 2582,
+      "Examples": 995,
+      "Build/Other": 664
+    }
+  ],
+  "stdlib_snapshots": [
+    {
+      "date": "2026-01-19",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 0,
+      "concurrent": 0,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 0,
+      "files": 0,
+      "http": 0,
+      "input": 0,
+      "iter": 0,
+      "iterator": 0,
+      "json": 0,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 0,
+      "pg": 0,
+      "random": 0,
+      "result": 0,
+      "retry": 0,
+      "sandbox": 0,
+      "shell": 0,
+      "slice": 0,
+      "string": 0,
+      "template": 0,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-20",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 0,
+      "concurrent": 0,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 0,
+      "files": 0,
+      "http": 0,
+      "input": 0,
+      "iter": 0,
+      "iterator": 0,
+      "json": 0,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 0,
+      "pg": 0,
+      "random": 0,
+      "result": 0,
+      "retry": 0,
+      "sandbox": 0,
+      "shell": 0,
+      "slice": 0,
+      "string": 0,
+      "template": 0,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-21",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 0,
+      "concurrent": 0,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 0,
+      "files": 0,
+      "http": 0,
+      "input": 0,
+      "iter": 127,
+      "iterator": 0,
+      "json": 0,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 0,
+      "pg": 0,
+      "random": 0,
+      "result": 0,
+      "retry": 0,
+      "sandbox": 0,
+      "shell": 0,
+      "slice": 0,
+      "string": 0,
+      "template": 0,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-22",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 0,
+      "concurrent": 0,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 0,
+      "files": 0,
+      "http": 0,
+      "input": 0,
+      "iter": 164,
+      "iterator": 0,
+      "json": 0,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 0,
+      "pg": 0,
+      "random": 0,
+      "result": 0,
+      "retry": 0,
+      "sandbox": 0,
+      "shell": 0,
+      "slice": 129,
+      "string": 159,
+      "template": 0,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-23",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 270,
+      "concurrent": 38,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 338,
+      "files": 552,
+      "http": 16,
+      "input": 0,
+      "iter": 164,
+      "iterator": 0,
+      "json": 0,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 109,
+      "pg": 0,
+      "random": 0,
+      "result": 0,
+      "retry": 0,
+      "sandbox": 0,
+      "shell": 387,
+      "slice": 129,
+      "string": 159,
+      "template": 0,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-24",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 258,
+      "concurrent": 43,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 277,
+      "files": 505,
+      "http": 21,
+      "input": 0,
+      "iter": 164,
+      "iterator": 0,
+      "json": 96,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 93,
+      "pg": 0,
+      "random": 0,
+      "result": 0,
+      "retry": 0,
+      "sandbox": 0,
+      "shell": 248,
+      "slice": 139,
+      "string": 159,
+      "template": 0,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-25",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 182,
+      "concurrent": 43,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 318,
+      "files": 608,
+      "http": 21,
+      "input": 0,
+      "iter": 164,
+      "iterator": 0,
+      "json": 124,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 100,
+      "pg": 0,
+      "random": 0,
+      "result": 0,
+      "retry": 0,
+      "sandbox": 0,
+      "shell": 183,
+      "slice": 139,
+      "string": 159,
+      "template": 0,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-26",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 236,
+      "concurrent": 43,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 318,
+      "files": 608,
+      "http": 21,
+      "input": 0,
+      "iter": 164,
+      "iterator": 0,
+      "json": 124,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 100,
+      "pg": 0,
+      "random": 0,
+      "result": 215,
+      "retry": 68,
+      "sandbox": 0,
+      "shell": 244,
+      "slice": 139,
+      "string": 159,
+      "template": 81,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-27",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 354,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 458,
+      "files": 837,
+      "http": 41,
+      "input": 0,
+      "iter": 0,
+      "iterator": 340,
+      "json": 211,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 190,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 372,
+      "slice": 279,
+      "string": 285,
+      "template": 156,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-28",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 636,
+      "files": 1148,
+      "http": 41,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 190,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 279,
+      "string": 285,
+      "template": 156,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-29",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 636,
+      "files": 1148,
+      "http": 41,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 190,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 279,
+      "string": 285,
+      "template": 156,
+      "validate": 0
+    },
+    {
+      "date": "2026-01-30",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 636,
+      "files": 1148,
+      "http": 41,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 190,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 279,
+      "string": 285,
+      "template": 156,
+      "validate": 0
+    },
+    {
+      "date": "2026-02-02",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 0,
+      "encoding": 0,
+      "env": 0,
+      "errors": 0,
+      "fetch": 636,
+      "files": 1148,
+      "http": 41,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 0,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 190,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 279,
+      "string": 285,
+      "template": 156,
+      "validate": 0
+    },
+    {
+      "date": "2026-02-03",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 327,
+      "encoding": 0,
+      "env": 188,
+      "errors": 0,
+      "fetch": 636,
+      "files": 1148,
+      "http": 277,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 167,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 190,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 417,
+      "string": 285,
+      "template": 156,
+      "validate": 289
+    },
+    {
+      "date": "2026-02-04",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 335,
+      "encoding": 0,
+      "env": 190,
+      "errors": 0,
+      "fetch": 636,
+      "files": 1148,
+      "http": 277,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 0,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 167,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 190,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 417,
+      "string": 285,
+      "template": 156,
+      "validate": 289
+    },
+    {
+      "date": "2026-02-05",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 608,
+      "encoding": 0,
+      "env": 380,
+      "errors": 0,
+      "fetch": 636,
+      "files": 1148,
+      "http": 473,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 3010,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 330,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 190,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 545,
+      "string": 285,
+      "template": 156,
+      "validate": 575
+    },
+    {
+      "date": "2026-02-06",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 608,
+      "encoding": 0,
+      "env": 408,
+      "errors": 0,
+      "fetch": 636,
+      "files": 1148,
+      "http": 475,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 3648,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 294,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 192,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 547,
+      "string": 285,
+      "template": 156,
+      "validate": 575
+    },
+    {
+      "date": "2026-02-07",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 608,
+      "encoding": 0,
+      "env": 408,
+      "errors": 0,
+      "fetch": 1060,
+      "files": 1148,
+      "http": 475,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 3648,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 294,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 192,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 547,
+      "string": 285,
+      "template": 156,
+      "validate": 575
+    },
+    {
+      "date": "2026-02-09",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 608,
+      "encoding": 0,
+      "env": 408,
+      "errors": 0,
+      "fetch": 1060,
+      "files": 1148,
+      "http": 475,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 3648,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 294,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 192,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 547,
+      "string": 285,
+      "template": 156,
+      "validate": 575
+    },
+    {
+      "date": "2026-02-10",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 608,
+      "encoding": 0,
+      "env": 408,
+      "errors": 0,
+      "fetch": 1060,
+      "files": 1148,
+      "http": 475,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 3648,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 294,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 192,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 547,
+      "string": 285,
+      "template": 156,
+      "validate": 575
+    },
+    {
+      "date": "2026-02-12",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 460,
+      "concurrent": 85,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 608,
+      "encoding": 0,
+      "env": 408,
+      "errors": 0,
+      "fetch": 1060,
+      "files": 1148,
+      "http": 475,
+      "input": 0,
+      "iter": 0,
+      "iterator": 312,
+      "json": 211,
+      "kube": 0,
+      "llm": 3648,
+      "maps": 0,
+      "math": 0,
+      "mcp": 0,
+      "must": 294,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 192,
+      "pg": 0,
+      "random": 0,
+      "result": 428,
+      "retry": 120,
+      "sandbox": 0,
+      "shell": 477,
+      "slice": 547,
+      "string": 285,
+      "template": 156,
+      "validate": 575
+    },
+    {
+      "date": "2026-02-13",
+      "a2a": 0,
+      "cast": 0,
+      "cli": 515,
+      "concurrent": 106,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 754,
+      "encoding": 0,
+      "env": 525,
+      "errors": 0,
+      "fetch": 1205,
+      "files": 1287,
+      "http": 594,
+      "input": 76,
+      "iter": 0,
+      "iterator": 410,
+      "json": 249,
+      "kube": 0,
+      "llm": 4558,
+      "maps": 72,
+      "math": 0,
+      "mcp": 0,
+      "must": 370,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 242,
+      "pg": 0,
+      "random": 45,
+      "result": 538,
+      "retry": 142,
+      "sandbox": 0,
+      "shell": 563,
+      "slice": 702,
+      "string": 385,
+      "template": 191,
+      "validate": 731
+    },
+    {
+      "date": "2026-02-14",
+      "a2a": 0,
+      "cast": 216,
+      "cli": 515,
+      "concurrent": 106,
+      "container": 0,
+      "ctx": 0,
+      "datetime": 754,
+      "encoding": 0,
+      "env": 525,
+      "errors": 0,
+      "fetch": 1205,
+      "files": 1287,
+      "http": 594,
+      "input": 76,
+      "iter": 0,
+      "iterator": 410,
+      "json": 249,
+      "kube": 0,
+      "llm": 4558,
+      "maps": 72,
+      "math": 0,
+      "mcp": 183,
+      "must": 370,
+      "net": 0,
+      "netguard": 0,
+      "obs": 0,
+      "parse": 242,
+      "pg": 0,
+      "random": 45,
+      "result": 538,
+      "retry": 142,
+      "sandbox": 0,
+      "shell": 563,
+      "slice": 702,
+      "string": 385,
+      "template": 191,
+      "validate": 731
+    },
+    {
+      "date": "2026-02-15",
+      "a2a": 346,
+      "cast": 216,
+      "cli": 515,
+      "concurrent": 106,
+      "container": 815,
+      "ctx": 0,
+      "datetime": 754,
+      "encoding": 114,
+      "env": 525,
+      "errors": 84,
+      "fetch": 1274,
+      "files": 1287,
+      "http": 594,
+      "input": 76,
+      "iter": 0,
+      "iterator": 410,
+      "json": 249,
+      "kube": 699,
+      "llm": 4558,
+      "maps": 72,
+      "math": 0,
+      "mcp": 192,
+      "must": 370,
+      "net": 149,
+      "netguard": 524,
+      "obs": 0,
+      "parse": 242,
+      "pg": 788,
+      "random": 45,
+      "result": 538,
+      "retry": 142,
+      "sandbox": 764,
+      "shell": 563,
+      "slice": 702,
+      "string": 385,
+      "template": 191,
+      "validate": 731
+    },
+    {
+      "date": "2026-02-16",
+      "a2a": 602,
+      "cast": 216,
+      "cli": 515,
+      "concurrent": 106,
+      "container": 1281,
+      "ctx": 164,
+      "datetime": 754,
+      "encoding": 114,
+      "env": 525,
+      "errors": 84,
+      "fetch": 1755,
+      "files": 1287,
+      "http": 619,
+      "input": 76,
+      "iter": 0,
+      "iterator": 410,
+      "json": 271,
+      "kube": 966,
+      "llm": 4549,
+      "maps": 72,
+      "math": 0,
+      "mcp": 197,
+      "must": 370,
+      "net": 149,
+      "netguard": 524,
+      "obs": 279,
+      "parse": 242,
+      "pg": 788,
+      "random": 45,
+      "result": 536,
+      "retry": 142,
+      "sandbox": 764,
+      "shell": 563,
+      "slice": 702,
+      "string": 385,
+      "template": 191,
+      "validate": 731
+    },
+    {
+      "date": "2026-02-17",
+      "a2a": 602,
+      "cast": 216,
+      "cli": 515,
+      "concurrent": 106,
+      "container": 1473,
+      "ctx": 211,
+      "datetime": 754,
+      "encoding": 114,
+      "env": 525,
+      "errors": 84,
+      "fetch": 1755,
+      "files": 1287,
+      "http": 619,
+      "input": 76,
+      "iter": 0,
+      "iterator": 410,
+      "json": 271,
+      "kube": 1723,
+      "llm": 4549,
+      "maps": 72,
+      "math": 0,
+      "mcp": 197,
+      "must": 370,
+      "net": 149,
+      "netguard": 524,
+      "obs": 277,
+      "parse": 235,
+      "pg": 788,
+      "random": 45,
+      "result": 536,
+      "retry": 142,
+      "sandbox": 759,
+      "shell": 561,
+      "slice": 695,
+      "string": 385,
+      "template": 191,
+      "validate": 729
+    },
+    {
+      "date": "2026-02-18",
+      "a2a": 602,
+      "cast": 216,
+      "cli": 515,
+      "concurrent": 106,
+      "container": 1473,
+      "ctx": 211,
+      "datetime": 754,
+      "encoding": 114,
+      "env": 525,
+      "errors": 84,
+      "fetch": 1755,
+      "files": 1287,
+      "http": 619,
+      "input": 76,
+      "iter": 0,
+      "iterator": 410,
+      "json": 271,
+      "kube": 1723,
+      "llm": 4549,
+      "maps": 72,
+      "math": 0,
+      "mcp": 197,
+      "must": 370,
+      "net": 149,
+      "netguard": 524,
+      "obs": 277,
+      "parse": 235,
+      "pg": 788,
+      "random": 45,
+      "result": 536,
+      "retry": 142,
+      "sandbox": 759,
+      "shell": 561,
+      "slice": 695,
+      "string": 385,
+      "template": 191,
+      "validate": 729
+    },
+    {
+      "date": "2026-02-19",
+      "a2a": 689,
+      "cast": 356,
+      "cli": 515,
+      "concurrent": 106,
+      "container": 1600,
+      "ctx": 211,
+      "datetime": 754,
+      "encoding": 114,
+      "env": 525,
+      "errors": 84,
+      "fetch": 1870,
+      "files": 1287,
+      "http": 619,
+      "input": 76,
+      "iter": 0,
+      "iterator": 410,
+      "json": 271,
+      "kube": 1869,
+      "llm": 4655,
+      "maps": 72,
+      "math": 0,
+      "mcp": 200,
+      "must": 370,
+      "net": 149,
+      "netguard": 524,
+      "obs": 277,
+      "parse": 235,
+      "pg": 897,
+      "random": 45,
+      "result": 0,
+      "retry": 135,
+      "sandbox": 759,
+      "shell": 559,
+      "slice": 695,
+      "string": 385,
+      "template": 191,
+      "validate": 728
+    },
+    {
+      "date": "2026-02-20",
+      "a2a": 689,
+      "cast": 356,
+      "cli": 515,
+      "concurrent": 106,
+      "container": 1761,
+      "ctx": 211,
+      "datetime": 754,
+      "encoding": 114,
+      "env": 525,
+      "errors": 84,
+      "fetch": 1870,
+      "files": 1287,
+      "http": 619,
+      "input": 76,
+      "iter": 0,
+      "iterator": 410,
+      "json": 271,
+      "kube": 1869,
+      "llm": 4655,
+      "maps": 72,
+      "math": 0,
+      "mcp": 224,
+      "must": 370,
+      "net": 149,
+      "netguard": 584,
+      "obs": 277,
+      "parse": 235,
+      "pg": 897,
+      "random": 45,
+      "result": 0,
+      "retry": 135,
+      "sandbox": 759,
+      "shell": 559,
+      "slice": 695,
+      "string": 385,
+      "template": 191,
+      "validate": 728
+    },
+    {
+      "date": "2026-02-21",
+      "a2a": 687,
+      "cast": 354,
+      "cli": 513,
+      "concurrent": 104,
+      "container": 1955,
+      "ctx": 209,
+      "datetime": 752,
+      "encoding": 112,
+      "env": 523,
+      "errors": 82,
+      "fetch": 1868,
+      "files": 1285,
+      "http": 617,
+      "input": 74,
+      "iter": 0,
+      "iterator": 410,
+      "json": 264,
+      "kube": 1867,
+      "llm": 4583,
+      "maps": 70,
+      "math": 187,
+      "mcp": 230,
+      "must": 368,
+      "net": 147,
+      "netguard": 582,
+      "obs": 275,
+      "parse": 233,
+      "pg": 895,
+      "random": 43,
+      "result": 0,
+      "retry": 133,
+      "sandbox": 757,
+      "shell": 581,
+      "slice": 697,
+      "string": 383,
+      "template": 189,
+      "validate": 726
+    },
+    {
+      "date": "2026-02-22",
+      "a2a": 687,
+      "cast": 354,
+      "cli": 513,
+      "concurrent": 104,
+      "container": 1955,
+      "ctx": 209,
+      "datetime": 752,
+      "encoding": 112,
+      "env": 523,
+      "errors": 82,
+      "fetch": 1929,
+      "files": 1285,
+      "http": 752,
+      "input": 74,
+      "iter": 0,
+      "iterator": 410,
+      "json": 264,
+      "kube": 1867,
+      "llm": 4583,
+      "maps": 70,
+      "math": 187,
+      "mcp": 230,
+      "must": 368,
+      "net": 147,
+      "netguard": 582,
+      "obs": 275,
+      "parse": 233,
+      "pg": 895,
+      "random": 43,
+      "result": 0,
+      "retry": 133,
+      "sandbox": 757,
+      "shell": 581,
+      "slice": 697,
+      "string": 383,
+      "template": 268,
+      "validate": 726
+    }
+  ],
+  "stdlib_packages": [
+    "a2a",
+    "cast",
+    "cli",
+    "concurrent",
+    "container",
+    "ctx",
+    "datetime",
+    "encoding",
+    "env",
+    "errors",
+    "fetch",
+    "files",
+    "http",
+    "input",
+    "iter",
+    "iterator",
+    "json",
+    "kube",
+    "llm",
+    "maps",
+    "math",
+    "mcp",
+    "must",
+    "net",
+    "netguard",
+    "obs",
+    "parse",
+    "pg",
+    "random",
+    "result",
+    "retry",
+    "sandbox",
+    "shell",
+    "slice",
+    "string",
+    "template",
+    "validate"
+  ],
+  "compiler_snapshots": [
+    {
+      "date": "2026-01-19",
+      "codegen": 0,
+      "semantic": 0,
+      "parser": 0,
+      "lexer": 0,
+      "formatter": 0,
+      "lsp": 0,
+      "ast": 0,
+      "version": 0
+    },
+    {
+      "date": "2026-01-20",
+      "codegen": 1216,
+      "semantic": 1424,
+      "parser": 1993,
+      "lexer": 1233,
+      "formatter": 1551,
+      "lsp": 0,
+      "ast": 619,
+      "version": 0
+    },
+    {
+      "date": "2026-01-21",
+      "codegen": 1585,
+      "semantic": 1512,
+      "parser": 2128,
+      "lexer": 1250,
+      "formatter": 1556,
+      "lsp": 0,
+      "ast": 745,
+      "version": 0
+    },
+    {
+      "date": "2026-01-22",
+      "codegen": 1727,
+      "semantic": 1551,
+      "parser": 2297,
+      "lexer": 1254,
+      "formatter": 1562,
+      "lsp": 0,
+      "ast": 767,
+      "version": 0
+    },
+    {
+      "date": "2026-01-23",
+      "codegen": 1793,
+      "semantic": 1618,
+      "parser": 2337,
+      "lexer": 1254,
+      "formatter": 1570,
+      "lsp": 0,
+      "ast": 768,
+      "version": 0
+    },
+    {
+      "date": "2026-01-24",
+      "codegen": 2237,
+      "semantic": 1653,
+      "parser": 2513,
+      "lexer": 1372,
+      "formatter": 1570,
+      "lsp": 0,
+      "ast": 795,
+      "version": 0
+    },
+    {
+      "date": "2026-01-25",
+      "codegen": 2670,
+      "semantic": 1987,
+      "parser": 2633,
+      "lexer": 1380,
+      "formatter": 1574,
+      "lsp": 0,
+      "ast": 828,
+      "version": 0
+    },
+    {
+      "date": "2026-01-26",
+      "codegen": 2690,
+      "semantic": 1987,
+      "parser": 2633,
+      "lexer": 1380,
+      "formatter": 1574,
+      "lsp": 0,
+      "ast": 828,
+      "version": 0
+    },
+    {
+      "date": "2026-01-27",
+      "codegen": 3033,
+      "semantic": 2100,
+      "parser": 2677,
+      "lexer": 1380,
+      "formatter": 1571,
+      "lsp": 0,
+      "ast": 828,
+      "version": 0
+    },
+    {
+      "date": "2026-01-28",
+      "codegen": 3261,
+      "semantic": 2099,
+      "parser": 2678,
+      "lexer": 1380,
+      "formatter": 1571,
+      "lsp": 0,
+      "ast": 828,
+      "version": 0
+    },
+    {
+      "date": "2026-01-29",
+      "codegen": 3307,
+      "semantic": 2099,
+      "parser": 2702,
+      "lexer": 1405,
+      "formatter": 1571,
+      "lsp": 1127,
+      "ast": 828,
+      "version": 0
+    },
+    {
+      "date": "2026-01-30",
+      "codegen": 3308,
+      "semantic": 2099,
+      "parser": 2702,
+      "lexer": 1405,
+      "formatter": 1571,
+      "lsp": 1127,
+      "ast": 828,
+      "version": 6
+    },
+    {
+      "date": "2026-02-02",
+      "codegen": 3328,
+      "semantic": 2099,
+      "parser": 2702,
+      "lexer": 1405,
+      "formatter": 1571,
+      "lsp": 1189,
+      "ast": 828,
+      "version": 6
+    },
+    {
+      "date": "2026-02-03",
+      "codegen": 3480,
+      "semantic": 2201,
+      "parser": 2806,
+      "lexer": 1548,
+      "formatter": 1571,
+      "lsp": 1189,
+      "ast": 845,
+      "version": 6
+    },
+    {
+      "date": "2026-02-04",
+      "codegen": 3549,
+      "semantic": 2413,
+      "parser": 2966,
+      "lexer": 1679,
+      "formatter": 1571,
+      "lsp": 1189,
+      "ast": 857,
+      "version": 6
+    },
+    {
+      "date": "2026-02-05",
+      "codegen": 3670,
+      "semantic": 2475,
+      "parser": 2966,
+      "lexer": 1679,
+      "formatter": 1571,
+      "lsp": 1191,
+      "ast": 857,
+      "version": 6
+    },
+    {
+      "date": "2026-02-06",
+      "codegen": 3674,
+      "semantic": 2475,
+      "parser": 2966,
+      "lexer": 1679,
+      "formatter": 1571,
+      "lsp": 1191,
+      "ast": 857,
+      "version": 6
+    },
+    {
+      "date": "2026-02-07",
+      "codegen": 3684,
+      "semantic": 2475,
+      "parser": 2966,
+      "lexer": 1679,
+      "formatter": 1571,
+      "lsp": 1191,
+      "ast": 857,
+      "version": 6
+    },
+    {
+      "date": "2026-02-09",
+      "codegen": 3911,
+      "semantic": 2523,
+      "parser": 2966,
+      "lexer": 1679,
+      "formatter": 1571,
+      "lsp": 1191,
+      "ast": 857,
+      "version": 6
+    },
+    {
+      "date": "2026-02-10",
+      "codegen": 3911,
+      "semantic": 2523,
+      "parser": 2966,
+      "lexer": 1679,
+      "formatter": 1571,
+      "lsp": 1191,
+      "ast": 857,
+      "version": 6
+    },
+    {
+      "date": "2026-02-12",
+      "codegen": 3911,
+      "semantic": 2523,
+      "parser": 2966,
+      "lexer": 1679,
+      "formatter": 1571,
+      "lsp": 1191,
+      "ast": 857,
+      "version": 6
+    },
+    {
+      "date": "2026-02-13",
+      "codegen": 4522,
+      "semantic": 2626,
+      "parser": 3574,
+      "lexer": 1708,
+      "formatter": 1692,
+      "lsp": 1191,
+      "ast": 901,
+      "version": 6
+    },
+    {
+      "date": "2026-02-14",
+      "codegen": 4849,
+      "semantic": 2841,
+      "parser": 3862,
+      "lexer": 1711,
+      "formatter": 1692,
+      "lsp": 1191,
+      "ast": 919,
+      "version": 6
+    },
+    {
+      "date": "2026-02-15",
+      "codegen": 4849,
+      "semantic": 2859,
+      "parser": 3896,
+      "lexer": 1711,
+      "formatter": 1692,
+      "lsp": 1191,
+      "ast": 919,
+      "version": 6
+    },
+    {
+      "date": "2026-02-16",
+      "codegen": 5431,
+      "semantic": 2946,
+      "parser": 4311,
+      "lexer": 1747,
+      "formatter": 1783,
+      "lsp": 1195,
+      "ast": 942,
+      "version": 6
+    },
+    {
+      "date": "2026-02-17",
+      "codegen": 5382,
+      "semantic": 2955,
+      "parser": 4310,
+      "lexer": 1747,
+      "formatter": 1798,
+      "lsp": 1200,
+      "ast": 942,
+      "version": 6
+    },
+    {
+      "date": "2026-02-18",
+      "codegen": 5410,
+      "semantic": 2964,
+      "parser": 4310,
+      "lexer": 1747,
+      "formatter": 1798,
+      "lsp": 1200,
+      "ast": 942,
+      "version": 6
+    },
+    {
+      "date": "2026-02-19",
+      "codegen": 5792,
+      "semantic": 2991,
+      "parser": 4483,
+      "lexer": 1751,
+      "formatter": 1834,
+      "lsp": 1200,
+      "ast": 962,
+      "version": 6
+    },
+    {
+      "date": "2026-02-20",
+      "codegen": 5792,
+      "semantic": 2991,
+      "parser": 4483,
+      "lexer": 1751,
+      "formatter": 1834,
+      "lsp": 1200,
+      "ast": 962,
+      "version": 6
+    },
+    {
+      "date": "2026-02-21",
+      "codegen": 5768,
+      "semantic": 3922,
+      "parser": 4483,
+      "lexer": 1751,
+      "formatter": 1834,
+      "lsp": 1200,
+      "ast": 962,
+      "version": 6
+    },
+    {
+      "date": "2026-02-22",
+      "codegen": 5768,
+      "semantic": 4451,
+      "parser": 4483,
+      "lexer": 1751,
+      "formatter": 1834,
+      "lsp": 1200,
+      "ast": 962,
+      "version": 6
+    }
+  ],
+  "compiler_modules": [
+    "codegen",
+    "semantic",
+    "parser",
+    "lexer",
+    "formatter",
+    "lsp",
+    "ast",
+    "version"
+  ],
+  "milestones": [
+    {
+      "date": "2026-01-19",
+      "label": "Initial commit",
+      "subject": "Initial commit",
+      "author": "duber000",
+      "hash": "500cc2dd",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-20",
+      "label": "Standardize docs & file extensions",
+      "subject": "Standardize documentation and fix inconsistencies",
+      "author": "Claude",
+      "hash": "f5abf1af",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-20",
+      "label": "Add membership operators (in/not in)",
+      "subject": "Add membership operators (in, not in) and negative indexing",
+      "author": "Claude",
+      "hash": "8fbccbdc",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-20",
+      "label": "Implement initial lexer",
+      "subject": "Implement initial lexer for Kukicha language",
+      "author": "Claude",
+      "hash": "e605be95",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-01-20",
+      "label": "Add onerr operator",
+      "subject": "Improve language readability: add onerr operator and explicit this receiver",
+      "author": "Claude",
+      "hash": "ad13b5b9",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-20",
+      "label": "First full compiler (parser + codegen + CLI)",
+      "subject": "Implement parser, semantic analysis, code generation, and CLI tool",
+      "author": "Claude",
+      "hash": "ec723015",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-01-20",
+      "label": "Go runtime configuration",
+      "subject": "Update to v1.0.0 and add Green Tea GC support",
+      "author": "Claude",
+      "hash": "3ac4a8d7",
+      "category": "Build/Other"
+    },
+    {
+      "date": "2026-01-20",
+      "label": "kukicha fmt command",
+      "subject": "Implement kukicha fmt command for code formatting",
+      "author": "Tivon Luker",
+      "hash": "b7961d25",
+      "category": "Tooling"
+    },
+    {
+      "date": "2026-01-21",
+      "label": "English-first generics syntax",
+      "subject": "Implement English-first generics and variadic syntax",
+      "author": "Tivon Luker",
+      "hash": "41db5468",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-21",
+      "label": "Drop generics; add variadics",
+      "subject": "Add proposal to drop generics entirely from Kukicha",
+      "author": "Claude",
+      "hash": "bd0a8ea5",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-21",
+      "label": "Remove 'this' keyword",
+      "subject": "Merge pull request #14 from duber000/claude/remove-this-keyword-sD6o5",
+      "author": "duber000",
+      "hash": "2b78a1af",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-21",
+      "label": "Unify func/function type syntax",
+      "subject": "Add function type syntax and remove old generics code",
+      "author": "Claude",
+      "hash": "706a9fd1",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-21",
+      "label": "Multi-value variable assignment",
+      "subject": "feat: Add multi-value variable declaration/assignment support",
+      "author": "Tivon Luker",
+      "hash": "512692f7",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-22",
+      "label": "stdlib: iter package",
+      "subject": "feat: Add essential iter functions and fix build issue",
+      "author": "Claude",
+      "hash": "599ba53b",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-01-22",
+      "label": "stdlib: Slice package",
+      "subject": "feat: Implement complete Slice package for stdlib",
+      "author": "Claude",
+      "hash": "a12ed591",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-01-22",
+      "label": "stdlib: String package",
+      "subject": "feat: Implement String package for HTTP text handling",
+      "author": "Claude",
+      "hash": "9ff3db79",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-01-22",
+      "label": "reference-of & dereference operators",
+      "subject": "feat: implement reference-of and dereference operators",
+      "author": "Tivon Luker",
+      "hash": "2dbfdaf6",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-23",
+      "label": "stdlib: fetch & files packages",
+      "subject": "feat: implement fetch and files stdlib packages with pipe-first design",
+      "author": "Claude",
+      "hash": "62b8b6c4",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-01-23",
+      "label": "stdlib: parse (JSON/CSV/YAML)",
+      "subject": "feat: add parse package with JSON, CSV, and YAML support",
+      "author": "Claude",
+      "hash": "a2db4a66",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-01-23",
+      "label": "Go 1.25 language improvements",
+      "subject": "feat: implement Go 1.25+ improvements (phases 1-4)",
+      "author": "Tivon Luker",
+      "hash": "043b9aab",
+      "category": "Runtime"
+    },
+    {
+      "date": "2026-01-23",
+      "label": "stdlib: cli & shell packages",
+      "subject": "feat: implement cli and shell stdlib packages",
+      "author": "Tivon Luker",
+      "hash": "5098c84a",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-01-24",
+      "label": "Python-like print() builtin",
+      "subject": "feat: add Python-like print() builtin function",
+      "author": "Claude",
+      "hash": "017500ff",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-01-24",
+      "label": "All stdlib packages compile",
+      "subject": "feat: complete stdlib compilation - all 10 packages now compile",
+      "author": "Claude",
+      "hash": "95d5f158",
+      "category": "Tooling"
+    },
+    {
+      "date": "2026-01-24",
+      "label": "Fetch builder pattern",
+      "subject": "feat: implement fetch builder pattern (New, Header, Timeout, Method, Do)",
+      "author": "Tivon Luker",
+      "hash": "1625d0a4",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-01-24",
+      "label": "stdlib: JSON (pipe-friendly)",
+      "subject": "feat: add stdlib/json with pipe-friendly jsonv2 wrapper",
+      "author": "Tivon Luker",
+      "hash": "4202f16b",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-01-25",
+      "label": "Pipe placeholder strategy",
+      "subject": "feat: add pipe placeholder strategy and improve onerr code generation",
+      "author": "Tivon Luker",
+      "hash": "a66bff6d",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-25",
+      "label": "Loop control (break/continue)",
+      "subject": "feat: add loop control (break, continue), bare loops, and improved empty parsing; update docs and verify stdlib",
+      "author": "Tivon Luker",
+      "hash": "a11098b5",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-25",
+      "label": "Context-first pipes & pipe shorthands",
+      "subject": "feat: implement context-first pipes, shorthand pipes, and return in onerr; update stdlib and docs",
+      "author": "Tivon Luker",
+      "hash": "372fae44",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-26",
+      "label": "stdlib: missing packages batch",
+      "subject": "Implement missing Kukicha stdlib packages",
+      "author": "Claude",
+      "hash": "9e9a95a9",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-01-26",
+      "label": "Shell/CLI builder patterns",
+      "subject": "Implement builder patterns for shell and cli packages",
+      "author": "Tivon Luker",
+      "hash": "83622c7f",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-01-27",
+      "label": "Typed list literals",
+      "subject": "feat: add typed list literal parsing (list of Type{values})",
+      "author": "Tivon Luker",
+      "hash": "eafe3b40",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-01-27",
+      "label": "Prevent pkg name collisions",
+      "subject": "feat: prevent package name collisions with Go stdlib",
+      "author": "Tivon Luker",
+      "hash": "27b6ad1d",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-01-28",
+      "label": "stdlib embed distribution",
+      "subject": "feat: add stdlib embed distribution and import collision auto-aliasing",
+      "author": "Tivon Luker",
+      "hash": "ca100644",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-01-28",
+      "label": "Zed editor extension (Tree-sitter)",
+      "subject": "feat: add Zed editor extension with Tree-sitter grammar",
+      "author": "Tivon Luker",
+      "hash": "94690a81",
+      "category": "Tooling"
+    },
+    {
+      "date": "2026-01-29",
+      "label": "LSP language server + Zed",
+      "subject": "feat: add kukicha-lsp language server with Zed integration",
+      "author": "Tivon Luker",
+      "hash": "d2bb6f21",
+      "category": "Tooling"
+    },
+    {
+      "date": "2026-02-03",
+      "label": "LLM-usability improvements",
+      "subject": "feat: add LLM-usability improvements to kukicha",
+      "author": "Claude",
+      "hash": "b5023ead",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-02-03",
+      "label": "Named argument restrictions",
+      "subject": "ix: restrict named arguments to local functions only - Forbid named arguments on imported functions and methods in the semantic analyzer.   This prevents silent argument swapping bugs, as the transpiler cannot currently   resolve parameter names for external packages. - Return a user-friendly error message advising usage of positional arguments for imports. - Update quick reference documentation to remove invalid examples of named arguments with imports.",
+      "author": "Tivon Luker",
+      "hash": "0a8c0255",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-03",
+      "label": "Multiline pipes & trailing commas",
+      "subject": "feat: support multiline pipes, lists, and trailing commas",
+      "author": "Tivon Luker",
+      "hash": "f6002b92",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-04",
+      "label": "Map/struct literals & multi-value pipe returns",
+      "subject": "feat(parser): implement core missing grammar features Implemented several major parser features to align with the Kukicha grammar: - Add support for top-level  declarations. - Implement map literals using  syntax. - Support indented/multiline struct literals with robust disambiguation logic   using a new [peekAt](cci:1://file:///var/home/tluker/repos/go/kukicha/internal/parser/parser.go:123:0-131:1) three-token lookahead. - Enable multi-statement  blocks via indentation. - Implement [in](cci:1://file:///var/home/tluker/repos/go/kukicha/internal/lexer/lexer.go:338:0-388:1) and  operators in general expression contexts. - Support multi-value returns through pipes () at the parser level. - Refine context-sensitive keyword handling for  and  in expressions to   allow them as variable names when not used as type annotations.",
+      "author": "Tivon Luker",
+      "hash": "ef5a28ff",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-04",
+      "label": "Closures as function arguments",
+      "subject": "fix: enable closures as function call arguments",
+      "author": "Tivon Luker",
+      "hash": "dc7b4fe5",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-04",
+      "label": "Type assertion support",
+      "subject": "feat: add type assertion support and fix stdlib type checking",
+      "author": "Tivon Luker",
+      "hash": "4ee45c6a",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-04",
+      "label": "function/variable keyword aliases",
+      "subject": "docs and support variable and function keywords",
+      "author": "Tivon Luker",
+      "hash": "e3436f0",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-05",
+      "label": "stdlib: llm package",
+      "subject": "feat: add llm stdlib package for any-llm gateway client",
+      "author": "Claude",
+      "hash": "6c51f048",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-05",
+      "label": "Global variable declarations",
+      "subject": "Add support for global variable declarations",
+      "author": "Tivon Luker",
+      "hash": "e3476a81",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-06",
+      "label": "stdlib: Anthropic API client",
+      "subject": "feat(llm): add Anthropic Messages API client alongside Chat Completions and OpenResponses",
+      "author": "Claude",
+      "hash": "f6c8aa78",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-06",
+      "label": "Stdlib migration to pure Kukicha",
+      "subject": "refactor(stdlib): replace Go stdlib imports with Kukicha stdlib equivalents",
+      "author": "Claude",
+      "hash": "c2f592e4",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-07",
+      "label": "DuckDB example",
+      "subject": "Merge pull request #36 from duber000/claude/duckdb-kukicha-example-oJcws",
+      "author": "duber000",
+      "hash": "6bb5ba7a",
+      "category": "Tooling"
+    },
+    {
+      "date": "2026-02-09",
+      "label": "Release: v0.0.1",
+      "subject": ".github action for release",
+      "author": "Tivon Luker",
+      "hash": "79f1cf86",
+      "category": "Release"
+    },
+    {
+      "date": "2026-02-13",
+      "label": "Arrow lambda syntax (=>)",
+      "subject": "Add arrow lambda (=>) and go block syntax",
+      "author": "Tivon Luker",
+      "hash": "e3aa022",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-13",
+      "label": "Source mapping (line directives)",
+      "subject": "Add source mapping via //line directives for .kuki error reporting",
+      "author": "Tivon Luker",
+      "hash": "03d9e3ed",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-02-14",
+      "label": "Release: v0.0.4",
+      "subject": "Bump version to v0.0.4",
+      "author": "Tivon Luker",
+      "hash": "48103264",
+      "category": "Release"
+    },
+    {
+      "date": "2026-02-14",
+      "label": "stdlib: MCP support",
+      "subject": "feat: implement Model Context Protocol (MCP) support - Add  for smart type conversion (handling string-encoded LLM data). - Update compiler to support  and  directive. - Implement specialized codegen for the MCP target (redirect  to ). - Add  as a beginner-friendly wrapper around the Go MCP SDK. - Update  with the  dependency. - Removed unused at keyword from transpiler code",
+      "author": "Tivon Luker",
+      "hash": "f43c9142",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-14",
+      "label": "onerr explain, skill declarations & pack",
+      "subject": "feat: add skill declaration, onerr explain, and kukicha pack command",
+      "author": "Tivon Luker",
+      "hash": "a3a5cee1",
+      "category": "Tooling"
+    },
+    {
+      "date": "2026-02-15",
+      "label": "stdlib: A2A protocol",
+      "subject": "feat: add A2A client stdlib module for agent-to-agent protocol",
+      "author": "Tivon Luker",
+      "hash": "990cb31a",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-15",
+      "label": "stdlib: sandbox module",
+      "subject": "feat: add stdlib/sandbox module for os.Root filesystem sandboxing",
+      "author": "Tivon Luker",
+      "hash": "2b7bea7f",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-15",
+      "label": "stdlib: netguard module",
+      "subject": "feat: add stdlib/netguard module for network restriction and SSRF protection",
+      "author": "Tivon Luker",
+      "hash": "ab2ba33a",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-15",
+      "label": "stdlib: PostgreSQL (pg)",
+      "subject": "feat: add stdlib/pg and stdlib/kube modules",
+      "author": "Tivon Luker",
+      "hash": "1c5c316e",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-15",
+      "label": "stdlib: Container/Docker",
+      "subject": "feat: add stdlib/container module for Docker/Podman management",
+      "author": "Tivon Luker",
+      "hash": "d8ba900f",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-16",
+      "label": "JSON field aliases",
+      "subject": "feat: add JSON field aliases and improve fetch/http ergonomics",
+      "author": "Tivon Luker",
+      "hash": "494fa0d6",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-16",
+      "label": "Semantic inference of return counts",
+      "subject": "refactor: replace hardcoded getMultiReturnType with semantic inferReturnCount",
+      "author": "Tivon Luker",
+      "hash": "c6fe726c",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-02-16",
+      "label": "json.DecodeRead",
+      "subject": "feat: add json.DecodeRead and fix tutorial issues",
+      "author": "Tivon Luker",
+      "hash": "99d1db25",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-16",
+      "label": "stdlib: ctx/obs packages",
+      "subject": "Add ctx/obs stdlib, kube/container ops, and docs consistency fixes",
+      "author": "Tivon Luker",
+      "hash": "bfaadeb5",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-17",
+      "label": "stdlib: Kubernetes (kube)",
+      "subject": "Merge pull request #41 from duber000/claude/migrate-kube-helpers-LoF8u",
+      "author": "duber000",
+      "hash": "76810966",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-17",
+      "label": "Release: v0.0.5",
+      "subject": "Bump version to v0.0.5",
+      "author": "Tivon Luker",
+      "hash": "7f37be10",
+      "category": "Release"
+    },
+    {
+      "date": "2026-02-17",
+      "label": "Go 1.26 upgrade",
+      "subject": "Apply go fix modernizations and update transpiler for Go 1.26",
+      "author": "Tivon Luker",
+      "hash": "1f1fc975",
+      "category": "Runtime"
+    },
+    {
+      "date": "2026-02-19",
+      "label": "select statement (channel mux)",
+      "subject": "feat: add select statement for channel multiplexing",
+      "author": "Tivon Luker",
+      "hash": "3209df7e",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-20",
+      "label": "ku-diag diagnostic tool",
+      "subject": "ku-diag binary",
+      "author": "Tivon Luker",
+      "hash": "1c43b22b",
+      "category": "Tooling"
+    },
+    {
+      "date": "2026-02-21",
+      "label": "Auto stdlib registry generation",
+      "subject": "Implement automatic stdlib registry generation (address COMPILER-FIX.md)",
+      "author": "Tivon Luker",
+      "hash": "2a45eb72",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-02-21",
+      "label": "Release: v0.0.6",
+      "subject": "Bump to v0.0.6; fix omitzero tags; add stdlib version stamp cache invalidation",
+      "author": "Tivon Luker",
+      "hash": "e6cb4ce3",
+      "category": "Release"
+    },
+    {
+      "date": "2026-02-21",
+      "label": "Release: v0.0.7",
+      "subject": "Bump to v0.0.7; regenerate stdlib; add release checklist to contributing",
+      "author": "Tivon Luker",
+      "hash": "f10eaa9b",
+      "category": "Release"
+    },
+    {
+      "date": "2026-02-21",
+      "label": "SQL injection detection",
+      "subject": "semantic: add SQL injection detection for string interpolation in pg queries",
+      "author": "Tivon Luker",
+      "hash": "ebf6478b",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-02-22",
+      "label": "Security: XSS/SSRF/path traversal",
+      "subject": "security: address SECURITY.md issues 2-5 (XSS, template, SSRF, path traversal)",
+      "author": "Claude",
+      "hash": "2c363ab1",
+      "category": "Security"
+    },
+    {
+      "date": "2026-02-22",
+      "label": "LLM-powered changelog generator",
+      "subject": "feat: add LLM-powered changelog generator",
+      "author": "Tivon Luker",
+      "hash": "cd1eed3",
+      "category": "Tooling"
+    },
+    {
+      "date": "2026-02-22",
+      "label": "Release: v0.0.8",
+      "subject": "chore: release v0.0.8",
+      "author": "Tivon Luker",
+      "hash": "d8d0061",
+      "category": "Release"
+    }
+  ],
+  "tags": [
+    {
+      "date": "2026-02-09",
+      "tag": "v0.0.1",
+      "desc": "Initial release"
+    },
+    {
+      "date": "2026-02-13",
+      "tag": "v0.0.2",
+      "desc": "Arrow lambdas, go blocks"
+    },
+    {
+      "date": "2026-02-13",
+      "tag": "v0.0.3",
+      "desc": "Doc & version cleanup"
+    },
+    {
+      "date": "2026-02-14",
+      "tag": "v0.0.4",
+      "desc": "Go 1.26, MCP, source mapping"
+    },
+    {
+      "date": "2026-02-17",
+      "tag": "v0.0.5",
+      "desc": "A2A, sandbox, pg, kube, container, netguard"
+    },
+    {
+      "date": "2026-02-21",
+      "tag": "v0.0.6",
+      "desc": "Stdlib rewritten in pure Kukicha"
+    },
+    {
+      "date": "2026-02-21",
+      "tag": "v0.0.7",
+      "desc": "Auto stdlib registry, select statement"
+    },
+    {
+      "date": "2026-02-22",
+      "tag": "v0.0.8",
+      "desc": "Security enforcement, LLM changelog"
+    }
+  ],
+  "commit_activity": {
+    "2026-01-19": 7,
+    "2026-01-20": 27,
+    "2026-01-21": 25,
+    "2026-01-22": 18,
+    "2026-01-23": 16,
+    "2026-01-24": 17,
+    "2026-01-25": 13,
+    "2026-01-26": 16,
+    "2026-01-27": 16,
+    "2026-01-28": 6,
+    "2026-01-29": 3,
+    "2026-01-30": 3,
+    "2026-02-02": 1,
+    "2026-02-03": 9,
+    "2026-02-04": 7,
+    "2026-02-05": 12,
+    "2026-02-06": 17,
+    "2026-02-07": 6,
+    "2026-02-09": 5,
+    "2026-02-10": 1,
+    "2026-02-12": 1,
+    "2026-02-13": 26,
+    "2026-02-14": 8,
+    "2026-02-15": 7,
+    "2026-02-16": 17,
+    "2026-02-17": 13,
+    "2026-02-18": 1,
+    "2026-02-19": 15,
+    "2026-02-20": 4,
+    "2026-02-21": 22,
+    "2026-02-22": 6
+  },
+  "snapshot_dates": [
+    "2026-01-19",
+    "2026-01-20",
+    "2026-01-21",
+    "2026-01-22",
+    "2026-01-23",
+    "2026-01-24",
+    "2026-01-25",
+    "2026-01-26",
+    "2026-01-27",
+    "2026-01-28",
+    "2026-01-29",
+    "2026-01-30",
+    "2026-02-02",
+    "2026-02-03",
+    "2026-02-04",
+    "2026-02-05",
+    "2026-02-06",
+    "2026-02-07",
+    "2026-02-09",
+    "2026-02-10",
+    "2026-02-12",
+    "2026-02-13",
+    "2026-02-14",
+    "2026-02-15",
+    "2026-02-16",
+    "2026-02-17",
+    "2026-02-18",
+    "2026-02-19",
+    "2026-02-20",
+    "2026-02-21",
+    "2026-02-22"
+  ],
+  "total_commits": 345,
+  "categories": [
+    "Standard Library",
+    "Compiler",
+    "Docs",
+    "Editor Support",
+    "Tools",
+    "Examples",
+    "Build/Other"
+  ],
+  "final_totals": {
+    "Standard Library": 23386,
+    "Compiler": 20455,
+    "Docs": 13890,
+    "Editor Support": 44815,
+    "Tools": 2582,
+    "Examples": 995,
+    "Build/Other": 664
+  }
+};
+
+// ===== DEFAULTS =====
+Chart.defaults.color = '#8b949e';
+Chart.defaults.borderColor = '#30363d';
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+const CAT_COLORS = {
+  'Standard Library': '#3fb950', 'Compiler': '#58a6ff', 'Docs': '#d29922',
+  'Editor Support': '#bc8cff', 'Tools': '#f78166', 'Examples': '#39d353', 'Build/Other': '#6e7681',
+};
+const COMP_COLORS = {
+  semantic:'#58a6ff', codegen:'#3fb950', parser:'#bc8cff', lexer:'#f78166',
+  formatter:'#d29922', lsp:'#39d353', ast:'#ff7b72', version:'#6e7681',
+};
+const CAT_CHIP = {
+  'Language Core':'chip-lang', 'Stdlib':'chip-stdlib', 'Compiler':'chip-compiler',
+  'Tooling':'chip-tooling', 'Runtime':'chip-runtime', 'Security':'chip-security', 'Release':'chip-release',
+};
+function genColors(n) {
+  const p = ['#3fb950','#58a6ff','#bc8cff','#f78166','#d29922','#39d353','#ff7b72','#ffa657',
+    '#79c0ff','#d2a8ff','#7ee787','#56d364','#a5d6ff','#f2cc60','#ffb3c8','#ffdcd7',
+    '#cae8ff','#ddf4ff','#e2c08d','#b1f0a3','#ff9f43','#ee5a24','#0984e3','#6c5ce7',
+    '#00b894','#fd79a8','#fdcb6e','#00cec9','#e17055','#a29bfe','#fab1a0','#81ecec',
+    '#74b9ff','#55efc4','#fd79a8','#dfe6e9','#b2bec3'];
+  return Array.from({length:n}, (_,i) => p[i%p.length]);
+}
+
+// ===== STATS =====
+const lastSnap = DATA.category_snapshots[DATA.category_snapshots.length-1];
+const totalLines = Object.entries(lastSnap).filter(([k])=>k!=='date').reduce((s,[,v])=>s+v,0);
+const firstDate = DATA.snapshot_dates[0];
+const lastDate = DATA.snapshot_dates[DATA.snapshot_dates.length-1];
+const daySpan = Math.round((new Date(lastDate)-new Date(firstDate))/(1000*86400));
+document.getElementById('stats-row').innerHTML = [
+  {val:DATA.total_commits,lbl:'Total Commits'},
+  {val:daySpan+'d', lbl:'Active Development'},
+  {val:DATA.stdlib_packages.length, lbl:'Stdlib Packages'},
+  {val:DATA.milestones.length, lbl:'Milestones Detected'},
+  {val:totalLines.toLocaleString(), lbl:'Net Lines of Code'},
+].map(s=>`<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-lbl">${s.lbl}</div></div>`).join('');
+
+// ===== TIMELINE =====
+function pctNum(dateStr){
+  const min=new Date(firstDate), max=new Date(lastDate);
+  return (new Date(dateStr)-min)/(max-min)*100;
+}
+function pct(dateStr){ return pctNum(dateStr).toFixed(2)+'%'; }
+
+const CAT_COLORS_TL = {'Language Core':'#58a6ff','Stdlib':'#3fb950','Compiler':'#bc8cff',
+  'Tooling':'#f78166','Runtime':'#d29922','Security':'#f85149','Release':'#56d364'};
+
+// Stem heights — VT above track (3 levels), MS below (4 levels, same stem, staggered by topOff)
+const VT_STEMS = [20, 50, 82];        // level 0,1,2
+const MS_STEM  = 16;                  // all milestone stems same height; level controls vertical offset
+
+const tlInner = document.getElementById('tl-inner');
+const tlTrack = tlInner.querySelector('.tl-track');
+
+// --- Version tags: manually assign levels to avoid collision ---
+// v0.0.2 & v0.0.3 share Feb 13; v0.0.4 is Feb 14 (very close)
+const TAG_LEVELS = {'v0.0.1':0, 'v0.0.2':0, 'v0.0.3':2, 'v0.0.4':1, 'v0.0.5':0, 'v0.0.6':0};
+DATA.tags.forEach(t => {
+  const lv = TAG_LEVELS[t.tag] ?? 0;
+  const stemH = VT_STEMS[lv];
+  const el = document.createElement('div');
+  el.className = 'vt'; el.style.left = pct(t.date); el.title = t.desc;
+  el.innerHTML = `<div class="vt-pill" style="background:var(--green)">${t.tag}</div>`+
+    `<div class="vt-stem" style="height:${stemH}px"></div>`+
+    `<div class="vt-dot" style="background:var(--green)"></div>`;
+  tlTrack.appendChild(el);
+});
+
+// --- 13 landmark milestones below the track, 4 stagger levels (lv 0–3) ---
+// Same-level items verified to be 4+ days apart (≥140px on 1200px track) so labels don't collide.
+// topOff = 4 + lv*26: level 0→4px, 1→30px, 2→56px, 3→82px below track
+const LANDMARKS = [
+  // ── Early language (Jan 20–25) ────────────────────────────────────────────
+  {date:'2026-01-20', label:'First full compiler',   cat:'Compiler',      lv:0},
+  {date:'2026-01-20', label:'kukicha fmt',            cat:'Tooling',       lv:3},
+  {date:'2026-01-21', label:'Drop generics',          cat:'Language Core', lv:2},
+  {date:'2026-01-22', label:'stdlib: iter',            cat:'Stdlib',        lv:1},
+  {date:'2026-01-24', label:'print() builtin',         cat:'Language Core', lv:3},
+  {date:'2026-01-25', label:'Context-first pipes',    cat:'Language Core', lv:2},
+  {date:'2026-01-25', label:'Loop control',            cat:'Language Core', lv:0},
+  // ── Tooling & syntax (Jan 28–Feb 5) ──────────────────────────────────────
+  {date:'2026-01-28', label:'Zed + Tree-sitter',       cat:'Tooling',       lv:1},
+  {date:'2026-02-03', label:'Multiline pipes',         cat:'Language Core', lv:0},
+  {date:'2026-02-05', label:'stdlib: llm',             cat:'Stdlib',        lv:2},
+  // ── Recent features (Feb 14–22) ──────────────────────────────────────────
+  {date:'2026-02-14', label:'stdlib: MCP',             cat:'Stdlib',        lv:3},
+  {date:'2026-02-19', label:'select statement',        cat:'Language Core', lv:1},
+  {date:'2026-02-22', label:'Security hardening',      cat:'Security',      lv:0},
+];
+LANDMARKS.forEach(m => {
+  const c = CAT_COLORS_TL[m.cat]||'#8b949e';
+  const topOff = 4 + m.lv * 26;
+  const el = document.createElement('div');
+  el.className = 'ms';
+  el.style.cssText = `left:${pct(m.date)};top:calc(100% + ${topOff}px)`;
+  el.title = m.label;
+  el.innerHTML = `<div class="ms-dot" style="background:${c}"></div>`+
+    `<div class="ms-stem" style="height:${MS_STEM}px;background:${c}44"></div>`+
+    `<div class="ms-label" style="color:${c}">${m.label}</div>`;
+  tlTrack.appendChild(el);
+});
+
+// Date axis labels
+const datesDiv = document.createElement('div'); datesDiv.className='tl-dates';
+['2026-01-19','2026-01-26','2026-02-02','2026-02-09','2026-02-16','2026-02-22']
+  .forEach(d=>{ const s=document.createElement('span'); s.className='tl-date'; s.textContent=d.slice(5); datesDiv.appendChild(s); });
+tlInner.appendChild(datesDiv);
+
+// Legend
+document.getElementById('tl-legend').innerHTML =
+  `<div class="tl-leg"><div class="tl-leg-dot" style="background:var(--green)"></div> Version release</div>` +
+  Object.entries(CAT_COLORS_TL).filter(([k])=>k!=='Release').map(([k,c])=>
+    `<div class="tl-leg"><div class="tl-leg-dot" style="background:${c}"></div> ${k}</div>`).join('');
+
+// ===== MILESTONE TABLE =====
+const allCats = [...new Set(DATA.milestones.map(m=>m.category))].sort();
+let activeFilters = new Set();
+const filterRow = document.getElementById('ms-filter-row');
+allCats.forEach(cat => {
+  const btn = document.createElement('button');
+  btn.className='toggle-btn'; btn.textContent=cat; btn.dataset.cat=cat;
+  btn.onclick=()=>{ if(activeFilters.has(cat)){activeFilters.delete(cat);btn.classList.remove('off');}else{activeFilters.add(cat);btn.classList.add('off');} filterMilestones(); };
+  filterRow.appendChild(btn);
+});
+
+function chipFor(cat){ return `<span class="chip ${CAT_CHIP[cat]||'chip-lang'}">${cat}</span>`; }
+function renderMilestones(list){
+  document.getElementById('ms-tbody').innerHTML = list.map(m=>`<tr>
+    <td><span class="mono">${m.date}</span></td>
+    <td>${chipFor(m.category)}</td>
+    <td style="font-weight:500;color:var(--text)">${m.label}</td>
+    <td style="color:var(--text2);max-width:280px;">${m.subject.length>75?m.subject.slice(0,75)+'…':m.subject}</td>
+    <td style="white-space:nowrap"><span style="color:var(--blue);font-size:11px">${m.author}</span> <span class="mono">${m.hash}</span></td>
+  </tr>`).join('');
+}
+
+function filterMilestones(){
+  const q = document.getElementById('ms-search').value.toLowerCase();
+  const list = DATA.milestones.filter(m =>
+    !activeFilters.has(m.category) &&
+    (m.label.toLowerCase().includes(q) || m.subject.toLowerCase().includes(q) || m.date.includes(q))
+  );
+  renderMilestones(list);
+}
+renderMilestones(DATA.milestones);
+
+// ===== TAB SWITCHING =====
+function showTab(name, btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='growth' && !growthInst) renderGrowth();
+  if(name==='stdlib' && !stdlibInst) renderStdlib();
+  if(name==='compiler' && !compilerInst) renderCompiler();
+  if(name==='activity' && !activityInst) renderActivity();
+}
+
+// ===== GROWTH =====
+let growthInst=null, hiddenCats=new Set(['Editor Support']); // hide by default
+function renderGrowth(){
+  const cats=DATA.categories, dates=DATA.snapshot_dates;
+  const togRow=document.getElementById('cat-toggles');
+  cats.forEach(cat=>{
+    const btn=document.createElement('button');
+    const col=CAT_COLORS[cat]||'#888';
+    btn.className='toggle-btn'+(hiddenCats.has(cat)?' off':'');
+    btn.style.cssText=`border-color:${col};color:${col}`;
+    btn.textContent=cat;
+    btn.onclick=()=>{ if(hiddenCats.has(cat)){hiddenCats.delete(cat);btn.classList.remove('off');}else{hiddenCats.add(cat);btn.classList.add('off');} updateGrowth(); };
+    togRow.appendChild(btn);
+  });
+  updateGrowth();
+
+  // Pie
+  const fv=cats.map(c=>lastSnap[c]||0), ft=fv.reduce((a,b)=>a+b,0);
+  new Chart(document.getElementById('growthPie'),{type:'doughnut',
+    data:{labels:cats,datasets:[{data:fv,backgroundColor:cats.map(c=>CAT_COLORS[c]||'#888'),borderColor:'#161b22',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed.toLocaleString()} lines`}}}}
+  });
+  const pl=document.getElementById('pie-legend');
+  cats.forEach((c,i)=>{ const p=ft>0?(fv[i]/ft*100).toFixed(1):0;
+    pl.innerHTML+=`<div style="display:flex;align-items:center;gap:8px"><div style="width:11px;height:11px;border-radius:2px;background:${CAT_COLORS[c]||'#888'};flex-shrink:0"></div><span style="flex:1">${c}</span><span style="color:var(--text2)">${p}%</span></div>`;
+  });
+}
+function updateGrowth(){
+  if(growthInst) growthInst.destroy();
+  const cats=DATA.categories.filter(c=>!hiddenCats.has(c)), dates=DATA.snapshot_dates;
+  growthInst=new Chart(document.getElementById('growthChart'),{type:'line',
+    data:{labels:dates,datasets:cats.map(cat=>({
+      label:cat,data:DATA.category_snapshots.map(s=>s[cat]||0),fill:true,
+      backgroundColor:(CAT_COLORS[cat]||'#888')+'44',borderColor:CAT_COLORS[cat]||'#888',
+      borderWidth:1.5,pointRadius:0,tension:.3
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,stacked:true,
+      interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{maxTicksLimit:12,maxRotation:0},grid:{color:'#21262d'}},
+              y:{stacked:true,grid:{color:'#21262d'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v}}},
+      plugins:{legend:{position:'top',labels:{boxWidth:10,padding:14,usePointStyle:true,font:{size:11}}},
+               tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} lines`,footer:its=>`Total: ${its.reduce((s,i)=>s+i.parsed.y,0).toLocaleString()} lines`}}}}
+  });
+}
+
+// ===== STDLIB =====
+let stdlibInst=null;
+function renderStdlib(){
+  const pkgs=DATA.stdlib_packages, dates=DATA.snapshot_dates;
+  const cols=genColors(pkgs.length);
+  stdlibInst=new Chart(document.getElementById('stdlibChart'),{type:'line',
+    data:{labels:dates,datasets:pkgs.map((pkg,i)=>({
+      label:pkg,data:DATA.stdlib_snapshots.map(s=>s[pkg]||0),fill:true,
+      backgroundColor:cols[i]+'55',borderColor:cols[i],borderWidth:1,pointRadius:0,tension:.3
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,stacked:true,
+      interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{maxTicksLimit:12,maxRotation:0},grid:{color:'#21262d'}},
+              y:{stacked:true,grid:{color:'#21262d'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v}}},
+      plugins:{legend:{position:'top',labels:{boxWidth:8,padding:8,usePointStyle:true,font:{size:10}}},
+               tooltip:{callbacks:{label:ctx=>ctx.parsed.y>0?` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}`:null}}}}
+  });
+
+  const last=DATA.stdlib_snapshots[DATA.stdlib_snapshots.length-1];
+  const sorted=pkgs.map((p,i)=>({p,v:last[p]||0,c:cols[i]})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+  new Chart(document.getElementById('stdlibBar'),{type:'bar',
+    data:{labels:sorted.map(x=>x.p),datasets:[{data:sorted.map(x=>x.v),backgroundColor:sorted.map(x=>x.c+'cc'),borderColor:sorted.map(x=>x.c),borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toLocaleString()} lines`}}},
+      scales:{x:{ticks:{font:{size:10}},grid:{color:'#21262d'}},y:{grid:{color:'#21262d'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v}}}}
+  });
+}
+
+// ===== COMPILER =====
+let compilerInst=null;
+function renderCompiler(){
+  const mods=DATA.compiler_modules, dates=DATA.snapshot_dates;
+  compilerInst=new Chart(document.getElementById('compilerChart'),{type:'line',
+    data:{labels:dates,datasets:mods.map(mod=>({
+      label:mod,data:DATA.compiler_snapshots.map(s=>s[mod]||0),fill:true,
+      backgroundColor:(COMP_COLORS[mod]||'#888')+'44',borderColor:COMP_COLORS[mod]||'#888',
+      borderWidth:1.5,pointRadius:0,tension:.3
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,stacked:true,
+      interaction:{mode:'index',intersect:false},
+      scales:{x:{ticks:{maxTicksLimit:12,maxRotation:0},grid:{color:'#21262d'}},
+              y:{stacked:true,grid:{color:'#21262d'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v}}},
+      plugins:{legend:{position:'top',labels:{boxWidth:10,padding:12,usePointStyle:true,font:{size:11}}},
+               tooltip:{callbacks:{label:ctx=>ctx.parsed.y>0?` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} lines`:null}}}}
+  });
+
+  const last=DATA.compiler_snapshots[DATA.compiler_snapshots.length-1];
+  const sorted=mods.map(m=>({m,v:last[m]||0})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+  new Chart(document.getElementById('compilerBar'),{type:'bar',
+    data:{labels:sorted.map(x=>x.m),datasets:[{data:sorted.map(x=>x.v),backgroundColor:sorted.map(x=>(COMP_COLORS[x.m]||'#888')+'cc'),borderColor:sorted.map(x=>COMP_COLORS[x.m]||'#888'),borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toLocaleString()} lines`}}},
+      scales:{x:{grid:{color:'#21262d'}},y:{grid:{color:'#21262d'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v}}}}
+  });
+}
+
+// ===== ACTIVITY =====
+let activityInst=null;
+function renderActivity(){
+  const dates=DATA.snapshot_dates;
+  const counts=dates.map(d=>DATA.commit_activity[d]||0);
+  activityInst=new Chart(document.getElementById('activityChart'),{type:'bar',
+    data:{labels:dates,datasets:[{label:'Commits',data:counts,
+      backgroundColor:counts.map(c=>c>=20?'#f85149cc':c>=10?'#d29922cc':'#3fb950cc'),
+      borderColor:counts.map(c=>c>=20?'#f85149':c>=10?'#d29922':'#3fb950'),borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y} commits`}}},
+      scales:{x:{ticks:{maxTicksLimit:15,maxRotation:45},grid:{color:'#21262d'}},y:{grid:{color:'#21262d'}}}}
+  });
+
+  let cum=0;
+  const cumData=dates.map(d=>{cum+=(DATA.commit_activity[d]||0);return cum;});
+  new Chart(document.getElementById('cumulativeChart'),{type:'line',
+    data:{labels:dates,datasets:[{label:'Total Commits',data:cumData,fill:true,
+      backgroundColor:'#3fb95020',borderColor:'#3fb950',borderWidth:2,pointRadius:2,tension:.2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y} total`}}},
+      scales:{x:{ticks:{maxTicksLimit:10,maxRotation:0},grid:{color:'#21262d'}},y:{grid:{color:'#21262d'}}}}
+  });
+}
+</script>
+</body>
+</html>
