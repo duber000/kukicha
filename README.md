@@ -87,7 +87,7 @@ Kukicha is that bridge. It's the responsible step between "humans write everythi
 |-|----|---------|----|
 | Reads like English | Partially | Yes | Yes |
 | Classes / OOP required | No | Common | No |
-| Special symbols (`&&`, `__`, `**`) | Yes | `__`, `**` | No |
+| Special symbols (`&&`, `__`, `**`) | `&&` | `__`, `**` | No |
 | Compiles to single binary | Yes | No | Yes (via Go) |
 | Built for AI generation + human review | No | No | Yes |
 | Transfers to Go/Python | — | — | 1:1 |
@@ -103,10 +103,8 @@ Kukicha uses plain English for every operator:
 | `nil`, `None`, `null` | `empty` |
 | `[]string`, `list[str]` | `list of string` |
 | `*User` (Go pointer) | `reference User` |
-| `if err != nil { return err }` | `onerr return error "{error}"` |
+| `if err != nil { return err }` | `onerr return empty, error "{error}"` |
 | Curly braces `{ }` | 4-space indentation |
-
-No `__init__`, no `self`, no `**kwargs`, no `class` hierarchies.
 
 ---
 
@@ -158,7 +156,7 @@ When AI writes Kukicha for you, here's the decoder ring:
 | You'll see | It means |
 |-----------|---------|
 | `onerr panic "message"` | If this fails, crash with message |
-| `onerr return error "{error}"` | If this fails, pass the error up |
+| `onerr return empty, error "{error}"` | If this fails, pass the error up |
 | `onerr "default value"` | If this fails, use this instead |
 | `\|>` | Then pass result to the next step |
 | `list of string` | A collection of text values |
@@ -309,6 +307,6 @@ See [Contributing Guide](docs/contributing.md) for development setup, tests, and
 
 ## Status
 
-**Version:** 0.0.7 — Ready for testing
+**Version:** 0.0.8 — Ready for testing
 **Go:** 1.26+ required
 **License:** See [LICENSE](LICENSE)
