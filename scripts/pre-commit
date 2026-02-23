@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# scripts/pre-commit — AI-assisted documentation sync
+#
+# Before each commit, passes the staged diff to Claude and asks it to update
+# any CLAUDE.md files that need changes, then copies each updated CLAUDE.md
+# to the corresponding AGENTS.md in the same directory.
+#
+# Install: make install-hooks
+
+set -euo pipefail
+
+# Skip if already inside a Claude Code session (nested launch is not allowed)
+if [ -n "${CLAUDECODE:-}" ]; then
+    echo "pre-commit: running inside Claude Code session, skipping doc sync" >&2
+    exit 0
+fi
+
+# Require claude CLI
+if ! command -v claude &>/dev/null; then
+    echo "pre-commit: 'claude' not found in PATH, skipping doc sync" >&2
+    exit 0
+fi
+
+# Get staged diff, excluding the doc files themselves to avoid noise
+DIFF=$(git diff --cached -- . \
+    ':(exclude)CLAUDE.md' ':(exclude)AGENTS.md' \
+    ':(exclude)stdlib/CLAUDE.md' ':(exclude)stdlib/AGENTS.md' \
+    ':(exclude)internal/CLAUDE.md' ':(exclude)internal/AGENTS.md' \
+    ':(exclude).claude/skills/**' ':(exclude).agent/skills/**')
+
+if [ -z "$DIFF" ]; then
+    exit 0
+fi
+
+echo "pre-commit: reviewing documentation with Claude..." >&2
+
+PROMPT="You are a pre-commit documentation reviewer for the Kukicha compiler project.
+
+Kukicha is a beginner-friendly programming language that transpiles to Go.
+
+There are two sets of documentation files you may need to update:
+
+CLAUDE.md files (compiler/language reference for AI agents):
+- CLAUDE.md (root) — language syntax, keywords, pipe operator, onerr, build commands, file map, imports, critical rules
+- stdlib/CLAUDE.md — stdlib package API reference (fetch, slice, json, files, shell, llm, etc.)
+- internal/CLAUDE.md — compiler internals (lexer, parser, AST, semantic analysis, codegen)
+
+Skill files (detailed syntax reference and troubleshooting for AI tools):
+- .claude/skills/kukicha/SKILL.md — comprehensive syntax reference and examples
+- .claude/skills/kukicha/troubleshooting.md — common errors and fixes
+
+Instructions:
+1. Read each file listed above (use your Read tool)
+2. Review the staged diff below and decide which files need updating
+3. Only update a file if the staged changes materially affect what it documents
+4. For any CLAUDE.md you update, also copy it verbatim to the corresponding AGENTS.md in the same directory
+5. For any .claude/skills/ file you update, also copy it verbatim to the corresponding .agent/skills/ file
+6. If nothing needs updating, do nothing and exit silently
+
+Be concise. Only change what the diff actually requires. Do not reformat or rewrite unrelated sections.
+
+Staged diff:
+${DIFF}"
+
+claude --dangerouslySkipPermissions -p "$PROMPT"
+
+# Stage any updated documentation files
+for f in CLAUDE.md AGENTS.md stdlib/CLAUDE.md stdlib/AGENTS.md internal/CLAUDE.md internal/AGENTS.md; do
+    if [ -f "$f" ]; then
+        git add "$f"
+    fi
+done
+
+# Stage any updated skill files
+git add .claude/skills/ .agent/skills/ 2>/dev/null || true

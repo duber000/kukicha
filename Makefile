@@ -9,7 +9,7 @@ KUKI_SOURCES := $(wildcard stdlib/*/*.kuki)
 # Exclude test files from generation
 KUKI_MAIN := $(filter-out %_test.kuki,$(KUKI_SOURCES))
 
-.PHONY: all build lsp generate genstdlibregistry test check-generate clean install-lsp
+.PHONY: all build lsp generate genstdlibregistry test check-generate clean install-lsp install-hooks
 
 all: build lsp
 
@@ -59,3 +59,9 @@ lsp:
 # Install the LSP server to GOPATH/bin (or ~/go/bin if GOPATH not set)
 install-lsp: lsp
 	cp ./kukicha-lsp $(shell go env GOPATH)/bin/
+
+# Install git hooks (symlinks scripts/pre-commit into .git/hooks/)
+install-hooks:
+	chmod +x scripts/pre-commit
+	ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
+	@echo "Git hooks installed."

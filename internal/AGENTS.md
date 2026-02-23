@@ -1,0 +1,214 @@
+# internal/CLAUDE.md
+
+Compiler internals reference. Read this when working in `internal/`. For language syntax and build commands see the root `CLAUDE.md`.
+
+## Pipeline Overview
+
+```
+source (.kuki)
+  → lexer/     — runes → []Token (INDENT/DEDENT injected)
+  → parser/    — []Token → *ast.Program
+  → semantic/  — validates AST, infers return counts, enforces security checks
+  → codegen/   — *ast.Program → Go source string
+```
+
+Semantic analysis produces `exprReturnCounts map[ast.Expression]int` which is passed to codegen via `generator.SetExprReturnCounts(...)`. This tells codegen how many values an expression returns so it can emit the right `val, err := f()` split for `onerr`.
+
+The formatter (`formatter/`) is a separate pipeline that re-parses and pretty-prints. The LSP (`lsp/`) wraps the compiler pipeline and is independent of the above.
+
+---
+
+## Lexer (`internal/lexer/`)
+
+**Key files:** `lexer.go`, `token.go`
+
+### INDENT/DEDENT
+
+Kukicha is indentation-sensitive. The lexer converts 4-space indentation changes into `TOKEN_INDENT` / `TOKEN_DEDENT` tokens using an `indentStack []int` (always starts at `[0]`).
+
+- Indentation must be multiples of 4 spaces — tabs are rejected
+- Each increase must be exactly +4 spaces
+- Dedents can skip multiple levels (e.g., 8→0 emits two `TOKEN_DEDENT`)
+- Blank lines and comment-only lines do not affect the indent stack
+
+### Line continuation
+
+`TOKEN_NEWLINE` is suppressed (continuation mode) when:
+- Previous token was `TOKEN_PIPE` (`|>`)
+- Next line starts with `|>` (checked by `isPipeAtStartOfNextLine`)
+- Next line starts with `onerr` (checked by `isOnErrAtStartOfNextLine`)
+- Inside `[]` or `{}` (`braceDepth > 0`)
+
+`()` (parentheses) do NOT suppress newlines when inside a function literal body — closures need `INDENT/DEDENT` for their block structure.
+
+### Adding a new keyword
+
+Add the keyword string → `TokenType` mapping in `token.go`'s `keywords` map and define the `TokenType` constant there.
+
+---
+
+## Parser (`internal/parser/`)
+
+**Key file:** `parser.go` (~2700 lines)
+
+### Design
+
+- Recursive descent
+- **Error collection** (not fail-fast): errors are appended to `p.errors`, parsing continues. This allows multiple errors per compile.
+- `peekToken()` calls `skipIgnoredTokens()` first, which skips `TOKEN_COMMENT` and `TOKEN_SEMICOLON`
+- Context-sensitive keywords: `list`, `map`, `channel` are only keywords when followed by `of` in a type context — this allows them as variable names elsewhere
+
+### Key helpers
+
+| Helper | Purpose |
+|--------|---------|
+| `peekToken()` | Look at next meaningful token (skips comments/semicolons) |
+| `consume(type, msg)` | Advance and return token, or record error |
+| `skipNewlines()` | Skip `TOKEN_NEWLINE` tokens |
+| `parseBlock()` | Parse `INDENT … DEDENT` block into `*ast.BlockStmt` |
+| `parseTypeAnnotation()` | Parse any Kukicha type (`list of T`, `map of K to V`, `reference T`, etc.) |
+
+### Adding a new statement
+
+1. Add a `TOKEN_*` keyword in `lexer/token.go`
+2. In `parser.go`'s `parseStatement()` switch, add a `case TOKEN_*:` branch calling your new `parseXxxStmt()` method
+3. Return the new `*ast.XxxStmt` node (defined in `ast/ast.go`)
+
+### Adding a new expression
+
+1. Hook into `parsePrimaryExpr()` for new literal/prefix forms, or `parseInfixExpr()` / operator precedence for binary forms
+2. Return a new `*ast.XxxExpr` node
+
+---
+
+## AST (`internal/ast/`)
+
+**Key file:** `ast.go` (~960 lines)
+
+### Interface hierarchy
+
+```
+Node
+├── Declaration  (declNode marker)  — FunctionDecl, TypeDecl, ImportDecl, …
+├── Statement    (stmtNode marker)  — IfStmt, ForRangeStmt, ReturnStmt, …
+├── Expression   (exprNode marker)  — CallExpr, PipeExpr, ArrowLambda, …
+└── TypeAnnotation (typeNode marker) — ListType, MapType, ReferenceType, …
+```
+
+### Convention for new nodes
+
+Every node must implement `Node`:
+```go
+type XxxStmt struct {
+    Token lexer.Token  // The keyword token (for position info)
+    // ... fields
+}
+
+func (s *XxxStmt) TokenLiteral() string { return s.Token.Lexeme }
+func (s *XxxStmt) Pos() Position {
+    return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
+}
+func (s *XxxStmt) stmtNode() {} // or declNode() / exprNode() / typeNode()
+```
+
+Always store the keyword's `lexer.Token` as the first field — it carries line/column for error messages.
+
+### OnErrClause
+
+`OnErrClause` is **not** a standalone `Statement` or `Expression`. It is an optional field on `VarDeclStmt`, `AssignStmt`, and `ExpressionStmt`. The `Handler` field holds the parsed error handler expression (`PanicExpr`, `EmptyExpr`, `DiscardExpr`, `ReturnExpr`, or a default value expression).
+
+---
+
+## Semantic Analysis (`internal/semantic/`)
+
+**Key files:** `semantic.go` (~2050 lines), `symbols.go`, `stdlib_registry_gen.go`
+
+### Two-pass analysis
+
+1. **`collectDeclarations()`** — registers all top-level types, interfaces, and function signatures into the symbol table (so functions can call each other regardless of order)
+2. **`analyzeDeclarations()`** — validates function bodies, infers `exprReturnCounts`, enforces security checks
+
+### exprReturnCounts
+
+The analyzer infers how many values an expression returns and stores it in `a.exprReturnCounts[expr]`. Codegen reads this to decide whether to emit `val, err := f()` (2-return) vs `val := f()` (1-return) for pipe + onerr chains.
+
+When a new stdlib function is added to a `.kuki` file, run `make genstdlibregistry` to regenerate `stdlib_registry_gen.go` so the analyzer knows the function's return count.
+
+### Security checks
+
+Security checks run during `analyzeDeclarations()`. The analyzer detects "inside an HTTP handler" by checking whether the enclosing `FunctionDecl` has an `http.ResponseWriter` parameter. The `inOnerr bool` field tracks whether the analyzer is currently inside an `onerr` block (used to enforce `{error}` not `{err}`).
+
+### Adding a new security check
+
+Find the relevant call site (e.g., `analyzeCallExpr`) and add a pattern match. Emit an error via `a.errors = append(a.errors, fmt.Errorf(...))`.
+
+### stdlib_registry_gen.go
+
+Auto-generated by `cmd/genstdlibregistry/`. Do not edit manually. Regenerate with:
+```bash
+make genstdlibregistry   # or: make generate (runs everything)
+```
+
+---
+
+## Codegen (`internal/codegen/`)
+
+**Key file:** `codegen.go` (~3660 lines)
+
+### Generator state
+
+| Field | Purpose |
+|-------|---------|
+| `output strings.Builder` | Accumulates generated Go source |
+| `indent int` | Current indentation level (each level = 1 tab in output) |
+| `autoImports map[string]bool` | Packages auto-imported by codegen (e.g., `fmt`, `errors`) |
+| `pkgAliases map[string]string` | Collision aliases (e.g., `json` → `kukijson`) |
+| `funcDefaults map[string]*FuncDefaults` | Default parameter info for wrapper generation |
+| `placeholderMap map[string]string` | Generic placeholder substitution (`"any"→"T"`, `"any2"→"K"`) |
+| `currentOnErrVar string` | Error variable name in active `onerr` block (for `{error}` interpolation) |
+| `exprReturnCounts map[ast.Expression]int` | From semantic — drives `onerr` multi-value split |
+
+### onerr code generation
+
+`onerr` is the most complex part of codegen. The generator wraps the call in a temporary assignment, checks the error, and runs the handler. `currentOnErrVar` holds the generated error variable name so that `{error}` in string interpolation inside the block resolves to it.
+
+### Generics via placeholders
+
+When `isStdlibIter` is true (or per-function for `stdlib/slice`), the generator detects `any`/`any2` placeholders in type annotations and:
+1. Builds a `placeholderMap` mapping placeholder → Go type param name (`T`, `K`)
+2. Emits `[T any, K comparable]` on the function signature
+3. Substitutes placeholders throughout parameter and return types
+
+Application code never sees this — it just calls functions normally.
+
+### Writing to output
+
+Use `g.write(str)` (no indent) or `g.writeLine(str)` (with current indent + newline). Do not write to `g.output` directly.
+
+---
+
+## Adding a Feature: End-to-End Example
+
+**Example: add `repeat N times` loop (`for i repeat 5`)**
+
+1. **Lexer** (`lexer/token.go`): add `TOKEN_REPEAT`, add `"repeat"` to `keywords` map
+2. **AST** (`ast/ast.go`): add `ForRepeatStmt { Token, Count Expression, Body *BlockStmt }`
+3. **Parser** (`parser/parser.go`): in `parseStatement()` add `case lexer.TOKEN_REPEAT:` → `parseForRepeatStmt()`
+4. **Semantic** (`semantic/semantic.go`): in `analyzeStatement()` add `case *ast.ForRepeatStmt:` → validate `Count` is numeric
+5. **Codegen** (`codegen/codegen.go`): in `generateStatement()` add `case *ast.ForRepeatStmt:` → emit `for _i := 0; _i < N; _i++ { ... }`
+6. **Tests**: add test cases in each package's `*_test.go`
+
+---
+
+## Test Patterns
+
+Each package has its own `*_test.go`. The pattern is:
+- **Lexer tests**: feed source string → check token types/lexemes
+- **Parser tests**: feed source string → check AST structure
+- **Codegen tests**: feed source string → check generated Go string (often with `strings.Contains`)
+- **Semantic tests**: feed source string → check error messages
+
+Run all tests:
+```bash
+make test
+```
