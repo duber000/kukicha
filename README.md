@@ -237,7 +237,7 @@ repos := fetch.Get("https://api.github.com/users/golang/repos")
     |> fetch.Json(list of Repo) onerr panic "{error}"
 
 names := repos
-    |> slice.Filter((r Repo) => r.stars > 1000)
+    |> slice.Filter((r Repo) => r.stars > 1000)          # r is each repo
     |> slice.Map((r Repo) => r.name |> string.ToUpper())
 ```
 
