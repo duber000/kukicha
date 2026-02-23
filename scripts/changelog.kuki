@@ -24,11 +24,20 @@ func main()
     if len(os.Args) > 1
         version = os.Args[1]
 
-    # Get the latest git tag to bound the commit range
-    lastTagRaw := shell.Output("git", "describe", "--tags", "--abbrev=0") onerr ""
-    lastTag := strpkg.Trim(lastTagRaw, "\n")
+    # Get sorted tag list to find the previous release tag
+    # We use the second-most-recent tag so we capture commits *in* the current release,
+    # not just commits after it (which would be the case if we used git describe HEAD).
+    tagsRaw := shell.Output("git", "tag", "-l", "--sort=-version:refname") onerr ""
+    tagsRaw = strpkg.Trim(tagsRaw, "\n")
+    tagLines := strpkg.Split(tagsRaw, "\n")
 
-    # Get commits since last tag (or last 50 if no tags exist yet)
+    lastTag := ""
+    if len(tagLines) > 1
+        lastTag = tagLines[1]
+    else if len(tagLines) == 1 && tagLines[0] != ""
+        lastTag = tagLines[0]
+
+    # Get commits since previous tag (or last 50 if no prior tags exist)
     gitLog := ""
     if lastTag != ""
         rangeArg := "{lastTag}..HEAD"

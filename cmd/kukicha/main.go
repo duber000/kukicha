@@ -40,10 +40,10 @@ func main() {
 		buildCommand(args[0], target)
 	case "run":
 		if len(args) < 1 {
-			fmt.Println("Usage: kukicha run [--target <target>] <file.kuki>")
+			fmt.Println("Usage: kukicha run [--target <target>] <file.kuki> [args...]")
 			os.Exit(1)
 		}
-		runCommand(args[0], target)
+		runCommand(args[0], target, args[1:])
 	case "check":
 		if len(args) < 1 {
 			fmt.Println("Usage: kukicha check <file.kuki>")
@@ -245,7 +245,7 @@ func buildCommand(filename string, targetFlag string) {
 	fmt.Printf("Successfully built binary: %s\n", binaryName)
 }
 
-func runCommand(filename string, targetFlag string) {
+func runCommand(filename string, targetFlag string, scriptArgs []string) {
 	absFile, err := filepath.Abs(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
@@ -315,7 +315,8 @@ func runCommand(filename string, targetFlag string) {
 
 	// Run with go run. Use -mod=mod so Go updates go.sum automatically when
 	// stdlib transitive dependencies (e.g. gopkg.in/yaml.v3) are not yet listed.
-	cmd := exec.Command("go", "run", "-mod=mod", tmpFile)
+	goArgs := append([]string{"run", "-mod=mod", tmpFile}, scriptArgs...)
+	cmd := exec.Command("go", goArgs...)
 	cmd.Dir = findProjectDir(absFile)
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
