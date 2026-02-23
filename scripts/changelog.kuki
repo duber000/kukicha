@@ -51,7 +51,10 @@ func main()
     print("")
 
     # Read existing CHANGELOG.md if present
-    existing := files.Read("CHANGELOG.md") onerr ""
+    existing := ""
+    if files.Exists("CHANGELOG.md")
+        rawBytes := files.Read("CHANGELOG.md") onerr panic "Failed to read CHANGELOG.md: {error}"
+        existing = rawBytes as string
 
     # Build the prompt
     context := ""
@@ -79,8 +82,8 @@ func main()
     else
         newContent = existing + "\n" + entry + "\n"
 
-    files.Write("CHANGELOG.md", newContent) onerr panic "Failed to write CHANGELOG.md: {error}"
-    files.Write("changelog-entry.md", entry) onerr panic "Failed to write changelog-entry.md: {error}"
+    files.WriteString(newContent, "CHANGELOG.md") onerr panic "Failed to write CHANGELOG.md: {error}"
+    files.WriteString(entry, "changelog-entry.md") onerr panic "Failed to write changelog-entry.md: {error}"
 
     print("CHANGELOG.md updated.")
     print("")
