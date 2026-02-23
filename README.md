@@ -17,9 +17,7 @@ func main()
         |> fetch.CheckStatus()
         |> fetch.Json(list of Repo) onerr panic "fetch failed: {error}"
 
-    # Keep only repos with more than 1000 stars
-    # (r is each repo — like "for each r in repos, keep it if...")
-    popular := repos |> slice.Filter((r Repo) => r.stars > 1000)
+    popular := repos |> slice.Filter((repo Repo) => repo.stars > 1000)
 
     for repo in popular
         print("{repo.name}: {repo.stars} stars")
