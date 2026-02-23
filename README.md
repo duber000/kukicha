@@ -115,14 +115,14 @@ No `__init__`, no `self`, no `**kwargs`, no `class` hierarchies.
 ### Install
 
 ```bash
-go install github.com/duber000/kukicha/cmd/kukicha@v0.0.7
+go install github.com/duber000/kukicha/cmd/kukicha@v0.0.8
 kukicha version
 ```
 
 Or download a release binary for your OS/arch from [GitHub Releases](https://github.com/duber000/kukicha/releases):
 
 ```bash
-VERSION=v0.0.7
+VERSION=v0.0.8
 OS=linux   # or darwin, windows
 ARCH=amd64 # or arm64
 curl -L -o kukicha.tar.gz \
