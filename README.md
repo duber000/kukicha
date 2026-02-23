@@ -157,7 +157,7 @@ When AI writes Kukicha for you, here's the decoder ring:
 |-----------|---------|
 | `onerr panic "message"` | If this fails, crash with message |
 | `onerr return empty, error "{error}"` | If this fails, pass the error up |
-| `onerr "default value"` | If this fails, use this instead |
+| `onerr 0` or `onerr "unknown"` | If this fails, use this default value |
 | `\|>` | Then pass result to the next step |
 | `list of string` | A collection of text values |
 | `map of string to int` | A lookup table: text key → number |
