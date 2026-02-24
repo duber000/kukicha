@@ -146,7 +146,7 @@ func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of a
 
 # Get returns the element at index, or an error if out of bounds
 # Supports negative indexing: -1 is last element, -2 is second to last, etc.
-# Example: item := slice.Get(items, 5) onerr return error
+# Example: item := slice.Get(items, 5) onerr return
 func Get(items list of any, index int) (any, error)
     length := len(items)
     if length == 0
@@ -182,7 +182,7 @@ func GetOr(items list of any, index int, defaultValue any) any
     return items[actualIndex]
 
 # FirstOne returns the first element, or an error if empty
-# Example: first := slice.FirstOne(items) onerr return error
+# Example: first := slice.FirstOne(items) onerr return
 func FirstOne(items list of any) (any, error)
     if len(items) == 0
         return empty, error("slice is empty")
@@ -197,7 +197,7 @@ func FirstOr(items list of any, defaultValue any) any
     return items[0]
 
 # LastOne returns the last element, or an error if empty
-# Example: last := slice.LastOne(items) onerr return error
+# Example: last := slice.LastOne(items) onerr return
 func LastOne(items list of any) (any, error)
     if len(items) == 0
         return empty, error("slice is empty")
@@ -212,7 +212,7 @@ func LastOr(items list of any, defaultValue any) any
     return items[len(items) - 1]
 
 # Find returns the first element matching the predicate, or error if not found
-# Example: user := slice.Find(users, func(u) { return u.Active }) onerr return error
+# Example: user := slice.Find(users, func(u) { return u.Active }) onerr return
 func Find(items list of any, predicate func(any) bool) (any, error)
     for item in items
         if predicate(item)
@@ -238,7 +238,7 @@ func FindIndex(items list of any, predicate func(any) bool) int
     return -1
 
 # FindLast returns the last element matching the predicate, or error if not found
-# Example: user := slice.FindLast(users, func(u) { return u.Active }) onerr return error
+# Example: user := slice.FindLast(users, func(u) { return u.Active }) onerr return
 func FindLast(items list of any, predicate func(any) bool) (any, error)
     for i from len(items) - 1 through 0
         if predicate(items[i])
@@ -265,7 +265,7 @@ func IsNotEmpty(items list of any) bool
 
 # Pop returns the last element and the remaining slice, or error if empty
 # Does not modify the original slice
-# Example: last, rest := slice.Pop(items) onerr return error
+# Example: last, rest := slice.Pop(items) onerr return
 func Pop(items list of any) (any, list of any, error)
     if len(items) == 0
         return empty, items, error("cannot pop from empty slice")
@@ -273,7 +273,7 @@ func Pop(items list of any) (any, list of any, error)
 
 # Shift returns the first element and the remaining slice, or error if empty
 # Does not modify the original slice
-# Example: first, rest := slice.Shift(items) onerr return error
+# Example: first, rest := slice.Shift(items) onerr return
 func Shift(items list of any) (any, list of any, error)
     if len(items) == 0
         return empty, items, error("cannot shift from empty slice")

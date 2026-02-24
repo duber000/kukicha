@@ -263,9 +263,11 @@ func (t *FunctionType) typeNode() {}
 // OnErrClause represents the error handling part of an onerr statement.
 // It is not an AST node itself — it is a field on VarDeclStmt, AssignStmt, and ExpressionStmt.
 type OnErrClause struct {
-	Token   lexer.Token // The 'onerr' token
-	Handler Expression  // Error handler (panic, error, empty, discard, or default value)
-	Explain string      // Optional explanation/hint for LLM (e.g., onerr explain "hint message")
+	Token          lexer.Token // The 'onerr' token
+	Handler        Expression  // Error handler (panic, error, empty, discard, or default value)
+	Explain        string      // Optional explanation/hint for LLM (e.g., onerr explain "hint message")
+	ShorthandReturn bool       // True for bare "onerr return" — propagate error with zero values
+	Alias          string      // Named alias for the caught error in block handlers (e.g., "onerr as e")
 }
 
 // ============================================================================

@@ -13,12 +13,14 @@ type Analyzer struct {
 	program          *ast.Program
 	symbolTable      *SymbolTable
 	errors           []error
+	warnings         []error                // Non-fatal diagnostics (e.g. risky onerr handlers)
 	currentFunc      *ast.FunctionDecl      // Track current function for return type checking
 	loopDepth        int                    // Track loop nesting for break/continue
 	switchDepth      int                    // Track switch nesting for break
-	exprReturnCounts map[ast.Expression]int // Inferred return counts for expressions (used by codegen)
-	sourceFile       string                 // Source file path, used to detect stdlib context
-	inOnerr          bool                   // True while analyzing an onerr handler
+	exprReturnCounts    map[ast.Expression]int // Inferred return counts for expressions (used by codegen)
+	sourceFile          string                 // Source file path, used to detect stdlib context
+	inOnerr             bool                   // True while analyzing an onerr handler
+	currentOnerrrAlias  string                 // Named alias for caught error in current onerr block (e.g., "e" for "onerr as e")
 }
 
 // New creates a new semantic analyzer
@@ -1230,12 +1232,56 @@ func (a *Analyzer) analyzePipeExprMulti(expr *ast.PipeExpr) []*TypeInfo {
 
 // analyzeOnErrClause analyzes the onerr clause on a statement
 func (a *Analyzer) analyzeOnErrClause(clause *ast.OnErrClause) {
-	if clause != nil {
-		prev := a.inOnerr
-		a.inOnerr = true
-		a.analyzeExpression(clause.Handler)
-		a.inOnerr = prev
+	if clause == nil {
+		return
 	}
+
+	pos := ast.Position{Line: clause.Token.Line, Column: clause.Token.Column, File: clause.Token.File}
+
+	// Validate bare "onerr return" shorthand: enclosing function must return an error.
+	if clause.ShorthandReturn {
+		if a.currentFunc == nil {
+			a.error(pos, "'onerr return' used outside of a function")
+		} else if !funcReturnsError(a.currentFunc) {
+			a.error(pos, "'onerr return' requires the enclosing function to return an error; use an explicit handler instead")
+		}
+		return
+	}
+
+	// Lint: onerr discard outside test files silently swallows errors.
+	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
+		if !strings.HasSuffix(a.sourceFile, "_test.kuki") {
+			a.warn(pos, "onerr discard silently swallows errors; prefer an explicit handler (use in test files only)")
+		}
+	}
+
+	// Lint: onerr panic in library (non-main) packages terminates the program.
+	if _, isPanic := clause.Handler.(*ast.PanicExpr); isPanic {
+		if a.program.PetioleDecl != nil && a.program.PetioleDecl.Name != nil &&
+			a.program.PetioleDecl.Name.Value != "main" {
+			a.warn(pos, "onerr panic in library code terminates the entire program; prefer returning an error to the caller")
+		}
+	}
+
+	prev := a.inOnerr
+	prevAlias := a.currentOnerrrAlias
+	a.inOnerr = true
+	if clause.Alias != "" {
+		a.currentOnerrrAlias = clause.Alias
+	}
+	a.analyzeExpression(clause.Handler)
+	a.inOnerr = prev
+	a.currentOnerrrAlias = prevAlias
+}
+
+// funcReturnsError reports whether the function's last return type is "error".
+func funcReturnsError(decl *ast.FunctionDecl) bool {
+	if len(decl.Returns) == 0 {
+		return false
+	}
+	last := decl.Returns[len(decl.Returns)-1]
+	named, ok := last.(*ast.NamedType)
+	return ok && named.Name == "error"
 }
 
 func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*TypeInfo {
@@ -1787,7 +1833,13 @@ func (a *Analyzer) analyzeStringInterpolation(lit *ast.StringLiteral) {
 			a.error(lit.Pos(), "empty expression in string interpolation")
 		}
 		if a.inOnerr && strings.TrimSpace(exprStr) == "err" {
-			a.error(lit.Pos(), "use {error} not {err} inside onerr — the caught error is always named 'error'")
+			hint := "use {error} not {err} inside onerr — the caught error is always named 'error'"
+			if a.currentOnerrrAlias != "" {
+				hint += fmt.Sprintf(", or {%s} via your 'onerr as %s' alias", a.currentOnerrrAlias, a.currentOnerrrAlias)
+			} else {
+				hint += ", or name it with 'onerr as e' and use {e}"
+			}
+			a.error(lit.Pos(), hint)
 		}
 	}
 }
@@ -1954,6 +2006,17 @@ func (a *Analyzer) typesCompatible(t1, t2 *TypeInfo) bool {
 func (a *Analyzer) error(pos ast.Position, message string) {
 	err := fmt.Errorf("%s:%d:%d: %s", pos.File, pos.Line, pos.Column, message)
 	a.errors = append(a.errors, err)
+}
+
+func (a *Analyzer) warn(pos ast.Position, message string) {
+	w := fmt.Errorf("%s:%d:%d: %s", pos.File, pos.Line, pos.Column, message)
+	a.warnings = append(a.warnings, w)
+}
+
+// Warnings returns non-fatal diagnostics collected during analysis.
+// Call after Analyze(). The caller decides whether to display or promote them to errors.
+func (a *Analyzer) Warnings() []error {
+	return a.warnings
 }
 
 // Helper functions

@@ -1606,8 +1606,36 @@ func (p *Parser) parsePipeExpr() ast.Expression {
 //	onerr <handler> explain "hint"           - handler with explain
 //	onerr explain "hint"                     - standalone explain (implies fmt.Errorf return)
 //	onerr INDENT ... DEDENT                  - block handler
+//	onerr return                             - shorthand: propagate error with zero-value returns
+//	onerr as <ident> INDENT ... DEDENT       - block handler with named error alias
 func (p *Parser) parseOnErrClause() *ast.OnErrClause {
 	token := p.advance() // consume 'onerr'
+
+	// Check for "onerr as <ident>" — block handler with named error alias.
+	// Must appear before skipNewlines so we catch "as" on the same line as "onerr".
+	if p.check(lexer.TOKEN_AS) {
+		p.advance() // consume 'as'
+		aliasToken := p.advance()
+		if aliasToken.Type != lexer.TOKEN_IDENTIFIER {
+			p.error(aliasToken, "expected identifier after 'onerr as'")
+			return &ast.OnErrClause{Token: token}
+		}
+		alias := aliasToken.Lexeme
+		p.skipNewlines()
+		if !p.check(lexer.TOKEN_INDENT) {
+			p.error(p.peekToken(), "'onerr as <ident>' must be followed by an indented block")
+			return &ast.OnErrClause{Token: token}
+		}
+		block := p.parseBlock()
+		return &ast.OnErrClause{
+			Token: token,
+			Alias: alias,
+			Handler: &ast.BlockExpr{
+				Token: block.Token,
+				Body:  block,
+			},
+		}
+	}
 
 	// Check for block handler: onerr \n INDENT ...
 	p.skipNewlines()
@@ -1619,6 +1647,24 @@ func (p *Parser) parseOnErrClause() *ast.OnErrClause {
 				Token: block.Token,
 				Body:  block,
 			},
+		}
+	}
+
+	// Check for bare "onerr return" shorthand.
+	// Disambiguate from "onerr return empty, error ..." by peeking at the token
+	// immediately after "return": if it is a newline, dedent, or EOF the user
+	// wrote the shorthand form; otherwise fall through to parseExpression so the
+	// existing verbose form continues to work.
+	if p.check(lexer.TOKEN_RETURN) {
+		next := p.peekNextToken()
+		if next.Type == lexer.TOKEN_NEWLINE ||
+			next.Type == lexer.TOKEN_DEDENT ||
+			next.Type == lexer.TOKEN_EOF {
+			p.advance() // consume 'return'
+			return &ast.OnErrClause{
+				Token:           token,
+				ShorthandReturn: true,
+			}
 		}
 	}
 

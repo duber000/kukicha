@@ -63,6 +63,7 @@ type Generator struct {
 	exprReturnCounts     map[ast.Expression]int   // Semantic return counts passed from analyzer
 	mcpTarget            bool                     // True if targeting MCP (Model Context Protocol)
 	currentOnErrVar      string                   // Current onerr error variable name (for block-style onerr {error} references)
+	currentOnErrAlias    string                   // Named alias for caught error in current onerr block (e.g., "e" for "onerr as e")
 	stdlibModuleBase     string                   // Base module path for rewriting "stdlib/X" imports (default: defaultStdlibModuleBase)
 }
 
@@ -1583,8 +1584,23 @@ func (g *Generator) exprStrings(exprs []ast.Expression) []string {
 func (g *Generator) writeOnErrCheck(clause *ast.OnErrClause, errVar string, names []*ast.Identifier) {
 	g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
 	g.indent++
+
+	// "onerr return" shorthand: propagate error as-is with zero-value returns.
+	if clause.ShorthandReturn {
+		g.generateStandaloneExplainReturn(errVar)
+		g.indent--
+		g.writeLine("}")
+		return
+	}
+
+	// Set alias for block-style handlers that use "onerr as <ident>".
+	prevAlias := g.currentOnErrAlias
+	g.currentOnErrAlias = clause.Alias
+
 	g.generateOnErrExplainWrap(clause, errVar)
 	g.generateOnErrHandler(names, clause.Handler, errVar)
+
+	g.currentOnErrAlias = prevAlias
 	g.indent--
 	g.writeLine("}")
 }
@@ -1748,8 +1764,15 @@ func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClau
 	g.indent++
 
 	// Generate the error handler (no variable names for statement-level)
-	g.generateOnErrExplainWrap(clause, errVar)
-	g.generateOnErrHandler([]*ast.Identifier{}, clause.Handler, errVar)
+	if clause.ShorthandReturn {
+		g.generateStandaloneExplainReturn(errVar)
+	} else {
+		prevAlias := g.currentOnErrAlias
+		g.currentOnErrAlias = clause.Alias
+		g.generateOnErrExplainWrap(clause, errVar)
+		g.generateOnErrHandler([]*ast.Identifier{}, clause.Handler, errVar)
+		g.currentOnErrAlias = prevAlias
+	}
 
 	g.indent--
 	g.writeLine("}")
@@ -2149,9 +2172,14 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 
 	switch e := expr.(type) {
 	case *ast.Identifier:
-		// Inside block-style onerr, replace "error" with the actual error variable
-		if e.Value == "error" && g.currentOnErrVar != "" {
-			return g.currentOnErrVar
+		// Inside block-style onerr, replace "error" (or the named alias) with the actual error variable.
+		if g.currentOnErrVar != "" {
+			if e.Value == "error" {
+				return g.currentOnErrVar
+			}
+			if g.currentOnErrAlias != "" && e.Value == g.currentOnErrAlias {
+				return g.currentOnErrVar
+			}
 		}
 		return e.Value
 	case *ast.IntegerLiteral:
@@ -2369,9 +2397,15 @@ func (g *Generator) parseStringInterpolation(str string) (string, []string) {
 // transformInterpolatedExpr converts Kukicha expression syntax in string
 // interpolation to valid Go syntax.
 func (g *Generator) transformInterpolatedExpr(expr string) string {
-	// Inside block-style onerr, replace "error" with the actual error variable
-	if strings.TrimSpace(expr) == "error" && g.currentOnErrVar != "" {
-		return g.currentOnErrVar
+	// Inside block-style onerr, replace "error" (or the named alias) with the actual error variable.
+	trimmed := strings.TrimSpace(expr)
+	if g.currentOnErrVar != "" {
+		if trimmed == "error" {
+			return g.currentOnErrVar
+		}
+		if g.currentOnErrAlias != "" && trimmed == g.currentOnErrAlias {
+			return g.currentOnErrVar
+		}
 	}
 
 	// Handle "X as Type" -> "Type(X)" for type conversions

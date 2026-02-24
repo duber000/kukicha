@@ -13,12 +13,17 @@ Kukicha (茎) transpiles to idiomatic Go. Full language reference is in `AGENTS.
 
 ### `{error}` vs `{err}` in onerr blocks
 
-Inside any `onerr` handler, the caught error is always named `error`, never `err`. Using `{err}` is a **compile-time error**.
+Inside any `onerr` handler, the caught error is always named `error`, never `err`. Using `{err}` is a **compile-time error**. To use a custom name, write `onerr as <ident>` — then both `{error}` and `{<ident>}` are valid inside that block.
 
 ```kukicha
-# CORRECT
+# CORRECT — canonical name
 result := fetch.Get(url) onerr
     print("failed: {error}")
+    return
+
+# CORRECT — named alias (onerr as e)
+result := fetch.Get(url) onerr as e
+    print("failed: {e}")    # {e} and {error} both work here
     return
 
 # WRONG — compiler rejects {err} inside onerr

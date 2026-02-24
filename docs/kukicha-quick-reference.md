@@ -83,8 +83,8 @@ data := files.Read("config.json") onerr panic "failed to read"
 # Return default value
 config := parse(data) onerr DefaultConfig
 
-# Propagate — use {error} to include the caught error text
-data := files.Read("config.json") onerr return empty, error "{error}"
+# Propagate — passes the original error to the caller
+data := files.Read("config.json") onerr return
 
 # Block handler — caught error is always named `error`, never `err`
 user := fetchUser(id) onerr
@@ -333,7 +333,7 @@ func Connect(host string, port int = 8080, timeout int = 30)
 | `&v` | `reference of v` |
 | `*v` | `dereference v` |
 | `nil` | `empty` or `nil` |
-| `if err != nil { return err }` | `onerr return empty, error "{error}"` |
+| `if err != nil { return err }` | `onerr return` |
 | `fmt.Println(...)` | `print(...)` |
 | `fmt.Sprintf("Hello %s", name)` | `"Hello {name}"` |
 | `[]T` | `list of T` |

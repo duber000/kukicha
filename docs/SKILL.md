@@ -51,11 +51,12 @@ type Repo
 
 ### Error Handling (`onerr`)
 
-The caught error is always `{error}` — never `{err}`. Using `{err}` is a compile-time error.
+The caught error is always `{error}` — never `{err}`. Using `{err}` is a compile-time error. To use a custom name in a block handler, write `onerr as e`.
 
 ```kukicha
 data := fetch.Get(url) onerr panic "failed: {error}"        # stop with message
-data := fetch.Get(url) onerr return empty, error "{error}"  # propagate
+data := fetch.Get(url) onerr return                         # propagate (shorthand — raw error, zero values)
+data := fetch.Get(url) onerr return empty, error "{error}"  # propagate (verbose, wraps error)
 port := getPort()      onerr 8080                           # default value
 _    := riskyOp()      onerr discard                        # ignore
 data := fetch.Get(url) onerr explain "context hint"         # wrap and propagate
@@ -63,6 +64,11 @@ data := fetch.Get(url) onerr explain "context hint"         # wrap and propagate
 # Block form — multiple statements
 users := parse() onerr
     print("failed: {error}")
+    return
+
+# Block form with named alias
+users := parse() onerr as e
+    print("failed: {e}")    # {e} and {error} both work
     return
 ```
 
@@ -288,9 +294,9 @@ logger |> obs.Error("failed",  map of string to any{"err": err})
 **stdlib/validate** — Input validation
 
 ```kukicha
-email |> validate.Email()          onerr return error "{error}"
-age   |> validate.InRange(18, 120) onerr return error "{error}"
-name  |> validate.NotEmpty()       onerr return error "{error}"
+email |> validate.Email()          onerr return
+age   |> validate.InRange(18, 120) onerr return
+name  |> validate.NotEmpty()       onerr return
 ```
 
 **stdlib/parse** — Data parsing

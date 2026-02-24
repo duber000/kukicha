@@ -143,7 +143,7 @@ function CreateLink on s reference Server(url string) (Link, error)
             break
         code = random.String(6)
 
-    link := s.db.InsertLink(code, url) onerr return Link{}, error "{error}"
+    link := s.db.InsertLink(code, url) onerr return
 
     return link, empty
 
@@ -197,7 +197,7 @@ type Link
 
 # Open the database and create the table if needed
 function OpenDatabase(filename string) (Database, error)
-    db := sql.Open("sqlite3", filename) onerr return empty, error "{error}"
+    db := sql.Open("sqlite3", filename) onerr return
 
     # Create the links table
     createTable := `
@@ -208,7 +208,7 @@ function OpenDatabase(filename string) (Database, error)
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `
-    createTable |> db.Exec() onerr return empty, error "{error}"
+    createTable |> db.Exec() onerr return
 
     return Database{db: db}, empty
 
@@ -224,7 +224,7 @@ function Close on d Database()
 # InsertLink creates a new link in the database
 function InsertLink on d Database(code string, url string) (Link, error)
     d.db.Exec(
-        "INSERT INTO links (code, url) VALUES (?, ?)", code, url) onerr return Link{}, error "{error}"
+        "INSERT INTO links (code, url) VALUES (?, ?)", code, url) onerr return
 
     return d.GetLink(code)
 
@@ -238,14 +238,14 @@ function GetLink on d Database(code string) (Link, error)
         reference of link.code,
         reference of link.url,
         reference of link.clicks,
-        reference of link.createdAt) onerr return Link{}, error "{error}"
+        reference of link.createdAt) onerr return
 
     return link, empty
 
 # GetAllLinks returns all links, newest first
 function GetAllLinks on d Database() (list of Link, error)
     rows := d.db.Query(
-        "SELECT code, url, clicks, created_at FROM links ORDER BY created_at DESC") onerr return empty, error "{error}"
+        "SELECT code, url, clicks, created_at FROM links ORDER BY created_at DESC") onerr return
     defer rows.Close()
 
     links := empty list of Link
