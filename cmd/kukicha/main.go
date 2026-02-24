@@ -37,7 +37,7 @@ func main() {
 		}
 		buildArgs := buildFlags.Args()
 		if len(buildArgs) < 1 {
-			fmt.Println("Usage: kukicha build [--target <target>] <file.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] <file.kuki>")
 			os.Exit(1)
 		}
 		buildCommand(buildArgs[0], *target)
@@ -51,19 +51,19 @@ func main() {
 		}
 		runArgs := runFlags.Args()
 		if len(runArgs) < 1 {
-			fmt.Println("Usage: kukicha run [--target <target>] <file.kuki> [args...]")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha run [--target <target>] <file.kuki> [args...]")
 			os.Exit(1)
 		}
 		runCommand(runArgs[0], *target, runArgs[1:])
 	case "check":
 		if len(args) < 1 {
-			fmt.Println("Usage: kukicha check <file.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha check <file.kuki>")
 			os.Exit(1)
 		}
 		checkCommand(args[0])
 	case "fmt":
 		if len(args) < 1 {
-			fmt.Println("Usage: kukicha fmt [options] <files>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha fmt [options] <files>")
 			os.Exit(1)
 		}
 		fmtCommand(args)
@@ -77,7 +77,7 @@ func main() {
 		}
 		packArgs := packFlags.Args()
 		if len(packArgs) < 1 {
-			fmt.Println("Usage: kukicha pack [--output <dir>] <skill.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha pack [--output <dir>] <skill.kuki>")
 			os.Exit(1)
 		}
 		packCommand(packArgs[0], *outputDir)
@@ -88,26 +88,26 @@ func main() {
 	case "help", "-h", "--help":
 		printUsage()
 	default:
-		fmt.Printf("Unknown command: %s\n", command)
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		printUsage()
 		os.Exit(1)
 	}
 }
 
 func printUsage() {
-	fmt.Println("Kukicha - A transpiler that compiles Kukicha to Go")
-	fmt.Println()
-	fmt.Println("Usage:")
-	fmt.Println("  kukicha build [--target t] <file.kuki> Compile Kukicha file to Go")
-	fmt.Println("  kukicha run [--target t] <file.kuki>   Transpile and execute Kukicha file")
-	fmt.Println("  kukicha check <file.kuki>   Type check Kukicha file")
-	fmt.Println("  kukicha fmt [options] <files>  Fix indentation and normalize style")
-	fmt.Println("    -w          Write result to file instead of stdout")
-	fmt.Println("    --check     Check if files are formatted (exit 1 if not)")
-	fmt.Println("  kukicha pack [--output dir] <skill.kuki>  Package skill for distribution")
-	fmt.Println("  kukicha init                Extract stdlib and configure go.mod")
-	fmt.Println("  kukicha version             Show version information")
-	fmt.Println("  kukicha help                Show this help message")
+	fmt.Fprintln(os.Stderr, "Kukicha - A transpiler that compiles Kukicha to Go")
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Usage:")
+	fmt.Fprintln(os.Stderr, "  kukicha build [--target t] <file.kuki> Compile Kukicha file to Go")
+	fmt.Fprintln(os.Stderr, "  kukicha run [--target t] <file.kuki>   Transpile and execute Kukicha file")
+	fmt.Fprintln(os.Stderr, "  kukicha check <file.kuki>   Type check Kukicha file")
+	fmt.Fprintln(os.Stderr, "  kukicha fmt [options] <files>  Fix indentation and normalize style")
+	fmt.Fprintln(os.Stderr, "    -w          Write result to file instead of stdout")
+	fmt.Fprintln(os.Stderr, "    --check     Check if files are formatted (exit 1 if not)")
+	fmt.Fprintln(os.Stderr, "  kukicha pack [--output dir] <skill.kuki>  Package skill for distribution")
+	fmt.Fprintln(os.Stderr, "  kukicha init                Extract stdlib and configure go.mod")
+	fmt.Fprintln(os.Stderr, "  kukicha version             Show version information")
+	fmt.Fprintln(os.Stderr, "  kukicha help                Show this help message")
 }
 
 func loadAndAnalyze(filename string) (*ast.Program, map[ast.Expression]int, error) {
