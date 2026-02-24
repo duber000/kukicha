@@ -265,7 +265,10 @@ items := list of string{}   # Type required
 
 ### Multiple Return Values with onerr
 ```kukicha
-# When function returns (T, error)
+# When function returns (T, error) — shorthand (raw error, zero values)
+value := getData() onerr return
+
+# When function returns (T, error) — verbose (wraps error in new error object)
 value := getData() onerr return empty, error "{error}"
 
 # When function returns (T1, T2, error)
@@ -275,7 +278,21 @@ if err != empty
     return empty, empty, err
 ```
 
-### onerr with return
+### onerr return shorthand
+```kukicha
+# "onerr return" propagates the original error unchanged with zero values for
+# all non-error return positions. The enclosing function must return an error.
+func Process(path string) (string, error)
+    data := readFile(path) onerr return   # emits: return "", err_1
+    return data, empty
+
+# Verbose form wraps the error in a new error object (loses chain):
+func Process(path string) (string, error)
+    data := readFile(path) onerr return empty, error "{error}"   # emits: return "", errors.New(...)
+    return data, empty
+```
+
+### onerr with return (verbose)
 ```kukicha
 # Must match function's return signature
 func LoadConfig() Config, error
@@ -290,7 +307,12 @@ data := fetchData() onerr
     print("Error occurred: {error}")   # {error} references the caught error
     return
 
-# {error} only works inside the onerr block - it maps to the generated error variable
+# Named alias — use "onerr as <ident>" to give the caught error a custom name
+data := fetchData() onerr as e
+    print("Error occurred: {e}")   # {e} and {error} are both valid here
+    return
+
+# {error} / {alias} only work inside the onerr block
 # Outside onerr blocks, "error" is the Go type, not a variable
 ```
 

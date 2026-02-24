@@ -101,7 +101,8 @@ func SetDone on todo reference Todo       # Pointer receiver
 ### Error Handling (`onerr`)
 ```kukicha
 data := fetchData() onerr panic "failed"              # Panic on error
-data := fetchData() onerr return empty, error "{error}" # Propagate error
+data := fetchData() onerr return                      # Propagate error (shorthand — zero values + raw error)
+data := fetchData() onerr return empty, error "{error}" # Propagate error (verbose, wraps error)
 port := getPort() onerr 8080                          # Default value
 _ := riskyOp() onerr discard                          # Ignore error
 
@@ -113,19 +114,26 @@ data := fetchData() onerr 0 explain "fetch failed"        # With handler: wraps 
 users := csvData |> parse.CsvWithHeader() onerr
     print("Failed to parse CSV: {error}")    # {error} refers to the caught error
     return
+
+# Named alias for the caught error in block handlers
+payload := fetchData() onerr as e
+    print("fetch failed: {e}")    # {e} and {error} both refer to the caught error
+    return
 ```
-> **`{error}` in `onerr` — critical:** The caught error is always named `error`, never `err`. Use `{error}` in string interpolation to reference it. Writing `{err}` inside any `onerr` handler is a **compile-time error** — the compiler will reject it with `use {error} not {err} inside onerr`.
+> **`{error}` in `onerr` — critical:** The caught error is always named `error`, never `err`. Use `{error}` in string interpolation to reference it. Writing `{err}` inside any `onerr` handler is a **compile-time error** — the compiler will reject it with `use {error} not {err} inside onerr`. To use a custom name, write `onerr as e` and use `{e}`.
 
 | onerr form | Example | Error variable available |
 |------------|---------|--------------------------|
 | Default value | `x := f() onerr 0` | — |
 | Panic | `x := f() onerr panic "msg"` | — |
+| Propagate shorthand | `x := f() onerr return` | — |
 | Propagate inline | `x := f() onerr return empty, error "{error}"` | `{error}` in string |
 | Block (multi-stmt) | `x := f() onerr` + indented body | `{error}` in interpolation |
+| Block with alias | `x := f() onerr as e` + indented body | `{e}` or `{error}` in interpolation |
 
 Use the **block form** when the error handler needs more than one statement; use inline forms for everything else.
 
-> **Note:** `error "msg"` always requires a message string. Use `error "{error}"` to include the original error text when propagating.
+> **Note:** `error "msg"` always requires a message string. Use `error "{error}"` to include the original error text when propagating. `onerr return` (bare shorthand) passes the original error through unchanged — use it when no additional context is needed.
 
 ### Types
 ```kukicha
