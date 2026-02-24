@@ -13,6 +13,7 @@ type Analyzer struct {
 	program          *ast.Program
 	symbolTable      *SymbolTable
 	errors           []error
+	warnings         []error                // Non-fatal diagnostics (e.g. risky onerr handlers)
 	currentFunc      *ast.FunctionDecl      // Track current function for return type checking
 	loopDepth        int                    // Track loop nesting for break/continue
 	switchDepth      int                    // Track switch nesting for break
@@ -1235,15 +1236,31 @@ func (a *Analyzer) analyzeOnErrClause(clause *ast.OnErrClause) {
 		return
 	}
 
+	pos := ast.Position{Line: clause.Token.Line, Column: clause.Token.Column, File: clause.Token.File}
+
 	// Validate bare "onerr return" shorthand: enclosing function must return an error.
 	if clause.ShorthandReturn {
-		pos := ast.Position{Line: clause.Token.Line, Column: clause.Token.Column, File: clause.Token.File}
 		if a.currentFunc == nil {
 			a.error(pos, "'onerr return' used outside of a function")
 		} else if !funcReturnsError(a.currentFunc) {
 			a.error(pos, "'onerr return' requires the enclosing function to return an error; use an explicit handler instead")
 		}
 		return
+	}
+
+	// Lint: onerr discard outside test files silently swallows errors.
+	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
+		if !strings.HasSuffix(a.sourceFile, "_test.kuki") {
+			a.warn(pos, "onerr discard silently swallows errors; prefer an explicit handler (use in test files only)")
+		}
+	}
+
+	// Lint: onerr panic in library (non-main) packages terminates the program.
+	if _, isPanic := clause.Handler.(*ast.PanicExpr); isPanic {
+		if a.program.PetioleDecl != nil && a.program.PetioleDecl.Name != nil &&
+			a.program.PetioleDecl.Name.Value != "main" {
+			a.warn(pos, "onerr panic in library code terminates the entire program; prefer returning an error to the caller")
+		}
 	}
 
 	prev := a.inOnerr
@@ -1989,6 +2006,17 @@ func (a *Analyzer) typesCompatible(t1, t2 *TypeInfo) bool {
 func (a *Analyzer) error(pos ast.Position, message string) {
 	err := fmt.Errorf("%s:%d:%d: %s", pos.File, pos.Line, pos.Column, message)
 	a.errors = append(a.errors, err)
+}
+
+func (a *Analyzer) warn(pos ast.Position, message string) {
+	w := fmt.Errorf("%s:%d:%d: %s", pos.File, pos.Line, pos.Column, message)
+	a.warnings = append(a.warnings, w)
+}
+
+// Warnings returns non-fatal diagnostics collected during analysis.
+// Call after Analyze(). The caller decides whether to display or promote them to errors.
+func (a *Analyzer) Warnings() []error {
+	return a.warnings
 }
 
 // Helper functions

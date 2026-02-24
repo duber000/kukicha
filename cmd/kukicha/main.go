@@ -56,11 +56,19 @@ func main() {
 		}
 		runCommand(runArgs[0], *target, runArgs[1:])
 	case "check":
-		if len(args) < 1 {
-			fmt.Fprintln(os.Stderr, "Usage: kukicha check <file.kuki>")
+		checkFlags := flag.NewFlagSet("check", flag.ContinueOnError)
+		checkFlags.SetOutput(os.Stderr)
+		strictOnerr := checkFlags.Bool("strict-onerr", false, "Treat onerr lint warnings as errors")
+		if err := checkFlags.Parse(args); err != nil {
+			fmt.Fprintln(os.Stderr, "Usage: kukicha check [--strict-onerr] <file.kuki>")
 			os.Exit(1)
 		}
-		checkCommand(args[0])
+		checkArgs := checkFlags.Args()
+		if len(checkArgs) < 1 {
+			fmt.Fprintln(os.Stderr, "Usage: kukicha check [--strict-onerr] <file.kuki>")
+			os.Exit(1)
+		}
+		checkCommand(checkArgs[0], *strictOnerr)
 	case "fmt":
 		if len(args) < 1 {
 			fmt.Fprintln(os.Stderr, "Usage: kukicha fmt [options] <files>")
@@ -365,10 +373,46 @@ func runCommand(filename string, targetFlag string, scriptArgs []string) {
 	}
 }
 
-func checkCommand(filename string) {
-	_, _, err := loadAndAnalyze(filename)
+func checkCommand(filename string, strictOnerr bool) {
+	source, err := os.ReadFile(filename)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, fmt.Errorf("Error reading file: %v", err))
+		os.Exit(1)
+	}
+
+	p, err := parser.New(string(source), filename)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Errorf("Lexer error: %v", err))
+		os.Exit(1)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		var msgs []string
+		for _, e := range parseErrors {
+			msgs = append(msgs, fmt.Sprintf("  %v", e))
+		}
+		fmt.Fprintln(os.Stderr, fmt.Errorf("Parse errors:\n%s", strings.Join(msgs, "\n")))
+		os.Exit(1)
+	}
+
+	analyzer := semantic.NewWithFile(program, filename)
+	semanticErrors := analyzer.Analyze()
+	if len(semanticErrors) > 0 {
+		var msgs []string
+		for _, e := range semanticErrors {
+			msgs = append(msgs, fmt.Sprintf("  %v", e))
+		}
+		fmt.Fprintln(os.Stderr, fmt.Errorf("Semantic errors:\n%s", strings.Join(msgs, "\n")))
+		os.Exit(1)
+	}
+
+	warnings := analyzer.Warnings()
+	for _, w := range warnings {
+		fmt.Fprintf(os.Stderr, "warning: %v\n", w)
+	}
+	if strictOnerr && len(warnings) > 0 {
+		fmt.Fprintln(os.Stderr, "onerr warnings promoted to errors (--strict-onerr)")
 		os.Exit(1)
 	}
 

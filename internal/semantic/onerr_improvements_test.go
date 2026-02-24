@@ -128,12 +128,112 @@ func Process(path string) (string, error)
 }
 
 // ---------------------------------------------------------------------------
-// helper
+// Proposal C: lint warnings for risky onerr handlers
+// ---------------------------------------------------------------------------
+
+// TestOnErrDiscardOutsideTestFileWarns verifies that onerr discard in a non-test
+// source file produces a lint warning.
+func TestOnErrDiscardOutsideTestFileWarns(t *testing.T) {
+	input := `func readData(path string) (string, error)
+    return "data", empty
+
+func Process(path string) string
+    data := readData(path) onerr discard
+    return data
+`
+	_, warnings := analyzeInputWithFile(t, input, "app.kuki")
+	if len(warnings) == 0 {
+		t.Fatal("expected lint warning for onerr discard outside test file, got none")
+	}
+	if !strings.Contains(warnings[0].Error(), "discard") {
+		t.Errorf("expected 'discard' in warning message, got: %s", warnings[0])
+	}
+}
+
+// TestOnErrDiscardInTestFileNoWarn verifies that onerr discard in a _test.kuki
+// file does NOT produce a lint warning.
+func TestOnErrDiscardInTestFileNoWarn(t *testing.T) {
+	input := `func readData(path string) (string, error)
+    return "data", empty
+
+func Process(path string) string
+    data := readData(path) onerr discard
+    return data
+`
+	_, warnings := analyzeInputWithFile(t, input, "app_test.kuki")
+	if len(warnings) != 0 {
+		t.Errorf("expected no lint warnings in test file, got: %v", warnings)
+	}
+}
+
+// TestOnErrPanicInLibraryPackageWarns verifies that onerr panic in a non-main
+// package produces a lint warning.
+func TestOnErrPanicInLibraryPackageWarns(t *testing.T) {
+	input := `petiole mylib
+
+func readData(path string) (string, error)
+    return "data", empty
+
+func Process(path string) string
+    data := readData(path) onerr panic "operation failed"
+    return data
+`
+	_, warnings := analyzeInputWithFile(t, input, "mylib.kuki")
+	if len(warnings) == 0 {
+		t.Fatal("expected lint warning for onerr panic in library package, got none")
+	}
+	if !strings.Contains(warnings[0].Error(), "panic") {
+		t.Errorf("expected 'panic' in warning message, got: %s", warnings[0])
+	}
+}
+
+// TestOnErrPanicInMainPackageNoWarn verifies that onerr panic in the main
+// package does NOT produce a lint warning.
+func TestOnErrPanicInMainPackageNoWarn(t *testing.T) {
+	input := `petiole main
+
+func readData(path string) (string, error)
+    return "data", empty
+
+func main()
+    data := readData("file.txt") onerr panic "operation failed"
+    print(data)
+`
+	_, warnings := analyzeInputWithFile(t, input, "main.kuki")
+	if len(warnings) != 0 {
+		t.Errorf("expected no lint warnings for onerr panic in main package, got: %v", warnings)
+	}
+}
+
+// TestOnErrPanicNoPetioleNoWarn verifies that onerr panic with no petiole
+// declaration (implicit main) does NOT produce a lint warning.
+func TestOnErrPanicNoPetioleNoWarn(t *testing.T) {
+	input := `func readData(path string) (string, error)
+    return "data", empty
+
+func main()
+    data := readData("file.txt") onerr panic "operation failed"
+    print(data)
+`
+	_, warnings := analyzeInputWithFile(t, input, "main.kuki")
+	if len(warnings) != 0 {
+		t.Errorf("expected no lint warnings when no petiole (implicit main), got: %v", warnings)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// helpers
 // ---------------------------------------------------------------------------
 
 func analyzeInput(t *testing.T, input string) []error {
 	t.Helper()
-	p, err := parser.New(input, "test.kuki")
+	errs, _ := analyzeInputWithFile(t, input, "test.kuki")
+	return errs
+}
+
+func analyzeInputWithFile(t *testing.T, input, filename string) (errs []error, warnings []error) {
+	t.Helper()
+	p, err := parser.New(input, filename)
 	if err != nil {
 		t.Fatalf("parser init error: %v", err)
 	}
@@ -141,6 +241,8 @@ func analyzeInput(t *testing.T, input string) []error {
 	if len(parseErrors) > 0 {
 		t.Fatalf("parse errors: %v", parseErrors)
 	}
-	analyzer := New(program)
-	return analyzer.Analyze()
+	analyzer := NewWithFile(program, filename)
+	errs = analyzer.Analyze()
+	warnings = analyzer.Warnings()
+	return
 }
