@@ -1,4 +1,5 @@
 ; Kukicha syntax highlighting for Zed
+; Source of truth for Zed highlighting. Keep in sync with grammars/kukicha/queries/highlights.scm.
 
 ; Boolean literals
 (boolean_literal) @constant.builtin

@@ -9,7 +9,7 @@ KUKI_SOURCES := $(wildcard stdlib/*/*.kuki)
 # Exclude test files from generation
 KUKI_MAIN := $(filter-out %_test.kuki,$(KUKI_SOURCES))
 
-.PHONY: all build lsp generate genstdlibregistry test check-generate clean install-lsp install-hooks
+.PHONY: all build lsp generate genstdlibregistry test check-generate clean install-lsp install-hooks zed-test
 
 all: build lsp
 
@@ -65,3 +65,9 @@ install-hooks:
 	chmod +x scripts/pre-commit
 	ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
 	@echo "Git hooks installed."
+
+# Run Zed extension validation checks.
+zed-test:
+	cd editors/zed && cargo check
+	./editors/zed/scripts/check-highlights.sh
+	cd editors/zed/grammars/kukicha && npm test

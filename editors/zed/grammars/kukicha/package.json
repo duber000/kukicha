@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-kukicha",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Tree-sitter grammar for Kukicha",
   "main": "bindings/node",
   "types": "bindings/node",
@@ -22,7 +22,9 @@
   },
   "scripts": {
     "build": "tree-sitter generate && node-gyp build",
-    "test": "tree-sitter test",
+    "sync-highlights": "../../scripts/sync-highlights.sh",
+    "check-highlights": "../../scripts/check-highlights.sh",
+    "test": "npm run check-highlights && tree-sitter test",
     "parse": "tree-sitter parse"
   }
 }

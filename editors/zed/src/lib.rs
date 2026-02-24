@@ -12,10 +12,24 @@ impl zed::Extension for KukichaExtension {
         _language_server_id: &LanguageServerId,
         worktree: &Worktree,
     ) -> Result<Command> {
-        // Try to find kukicha-lsp in PATH
-        let path = worktree
-            .which("kukicha-lsp")
-            .ok_or_else(|| "kukicha-lsp not found in PATH. Install it with: make install-lsp")?;
+        if let Ok(explicit_path) = std::env::var("KUKICHA_LSP_PATH") {
+            let explicit_path = explicit_path.trim();
+            if !explicit_path.is_empty() {
+                return Ok(Command {
+                    command: explicit_path.to_string(),
+                    args: vec![],
+                    env: worktree.shell_env(),
+                });
+            }
+        }
+
+        let candidates = ["kukicha-lsp", "./kukicha-lsp", "kukicha-lsp.exe", "./kukicha-lsp.exe"];
+        let path = candidates
+            .iter()
+            .find_map(|candidate| worktree.which(candidate))
+            .ok_or_else(|| {
+                "kukicha-lsp not found. Set KUKICHA_LSP_PATH or install with: make install-lsp"
+            })?;
 
         Ok(Command {
             command: path,

@@ -1,0 +1,40 @@
+==================
+Function declaration
+==================
+
+func Add(a int, b int) int
+    return a + b
+
+---
+
+(source_file
+  (function_declaration
+    name: (identifier)
+    parameters: (parameter_list
+      (parameter
+        name: (identifier)
+        type: (primitive_type))
+      (parameter
+        name: (identifier)
+        type: (primitive_type)))
+    return_type: (primitive_type)
+    body: (block
+      (return_statement
+        (binary_expression
+          (identifier)
+          (identifier))))))
+
+==================
+Petiole and import
+==================
+
+petiole app
+import "stdlib/slice"
+
+---
+
+(source_file
+  (petiole_declaration
+    name: (identifier))
+  (import_declaration
+    path: (interpreted_string_literal)))
