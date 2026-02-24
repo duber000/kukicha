@@ -1501,6 +1501,8 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 	// So just updating signature is enough.
 
 	// For now, return unknown - full method resolution requires more complex type system
+	// Record a return count of 1 so codegen's onerr discard path has a safe default
+	a.recordReturnCount(expr, 1)
 	return []*TypeInfo{{Kind: TypeKindUnknown}}
 }
 

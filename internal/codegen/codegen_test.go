@@ -549,6 +549,46 @@ func Use()
 	}
 }
 
+func TestOnErrDiscardMethodCall(t *testing.T) {
+	input := `type Writer
+    path string
+
+func Write on w Writer error
+    return empty
+
+func Use()
+    w := Writer{path: "out.txt"}
+    w.Write() onerr discard
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.New(program)
+	semanticErrors := analyzer.Analyze()
+	if len(semanticErrors) > 0 {
+		t.Fatalf("semantic errors: %v", semanticErrors)
+	}
+
+	gen := New(program)
+	gen.SetExprReturnCounts(analyzer.ReturnCounts())
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "_ = w.Write()") {
+		t.Errorf("expected single-value discard for method call, got: %s", output)
+	}
+}
+
 func TestNumericForLoopThrough(t *testing.T) {
 	input := `func Test()
     for i from 0 through 10

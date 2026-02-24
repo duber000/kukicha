@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"sync"
-
 	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -19,7 +17,6 @@ type Server struct {
 	reader    io.Reader
 	writer    io.Writer
 	documents *DocumentStore
-	mu        sync.RWMutex
 }
 
 // NewServer creates a new LSP server
