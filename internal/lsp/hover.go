@@ -88,25 +88,9 @@ func (s *Server) getHoverContent(doc *Document, word string, pos lsp.Position) s
 }
 
 // getBuiltinInfo returns documentation for builtin functions
+// using the shared builtin registry in builtins.go.
 func getBuiltinInfo(name string) string {
-	builtins := map[string]string{
-		"print":   "func print(args ...any)\nPrints values to stdout",
-		"len":     "func len(v any) int\nReturns the length of a string, list, or map",
-		"append":  "func append(slice []T, elems ...T) []T\nAppends elements to a slice",
-		"make":    "func make(T type, size ...int) T\nCreates a slice, map, or channel",
-		"min":     "func min(x T, y T, rest ...T) T\nReturns the minimum of its arguments (Go 1.21+)",
-		"max":     "func max(x T, y T, rest ...T) T\nReturns the maximum of its arguments (Go 1.21+)",
-		"close":   "func close(ch chan T)\nCloses a channel",
-		"panic":   "func panic(v any)\nStops normal execution and begins panicking",
-		"recover": "func recover() any\nRegains control of a panicking goroutine",
-		"empty":   "empty T\nReturns the zero value of type T",
-		"error":   "error \"message\"\nCreates a new error with the given message",
-	}
-
-	if info, ok := builtins[name]; ok {
-		return info
-	}
-	return ""
+	return lookupBuiltin(name)
 }
 
 // formatFunctionDecl formats a function declaration for hover display

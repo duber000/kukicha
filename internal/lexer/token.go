@@ -381,6 +381,16 @@ var keywords = map[string]TokenType{
 	"select":      TOKEN_SELECT,
 }
 
+// Keywords returns all keyword strings from the canonical keywords map.
+// This is the single source of truth for keyword completion in the LSP.
+func Keywords() []string {
+	result := make([]string, 0, len(keywords))
+	for kw := range keywords {
+		result = append(result, kw)
+	}
+	return result
+}
+
 // LookupKeyword returns the token type for a keyword, or TOKEN_IDENTIFIER if not a keyword
 func LookupKeyword(identifier string) TokenType {
 	if tok, ok := keywords[identifier]; ok {

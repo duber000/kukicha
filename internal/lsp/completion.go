@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/duber000/kukicha/internal/ast"
+	"github.com/duber000/kukicha/internal/lexer"
 	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -51,18 +52,8 @@ func (s *Server) handleDocumentSymbol(ctx context.Context, req *jsonrpc2.Request
 func (s *Server) getCompletions(doc *Document, pos lsp.Position) []lsp.CompletionItem {
 	items := []lsp.CompletionItem{}
 
-	// Add keywords
-	keywords := []string{
-		"func", "function", "type", "interface", "petiole", "import",
-		"if", "else", "for", "in", "from", "to", "through",
-		"switch", "select", "when", "otherwise", "default",
-		"return", "break", "continue", "defer", "go",
-		"true", "false", "empty", "nil", "make", "onerr",
-		"and", "or", "not", "equals", "reference", "dereference",
-		"send", "receive", "many", "channel", "list", "map", "of", "as",
-		"variable", "var", "on", "close", "panic", "error", "discard",
-	}
-	for _, kw := range keywords {
+	// Add keywords (from the lexer's canonical list)
+	for _, kw := range lexer.Keywords() {
 		items = append(items, lsp.CompletionItem{
 			Label:  kw,
 			Kind:   lsp.CIKKeyword,
@@ -70,26 +61,12 @@ func (s *Server) getCompletions(doc *Document, pos lsp.Position) []lsp.Completio
 		})
 	}
 
-	// Add builtin functions
-	builtins := []struct {
-		name   string
-		detail string
-	}{
-		{"print", "func print(args ...any)"},
-		{"len", "func len(v any) int"},
-		{"append", "func append(slice []T, elems ...T) []T"},
-		{"make", "func make(T type, size ...int) T"},
-		{"min", "func min(x T, y T, rest ...T) T"},
-		{"max", "func max(x T, y T, rest ...T) T"},
-		{"close", "func close(ch chan T)"},
-		{"panic", "func panic(v any)"},
-		{"recover", "func recover() any"},
-	}
-	for _, b := range builtins {
+	// Add builtin functions (from the shared registry)
+	for _, b := range builtinCompletions() {
 		items = append(items, lsp.CompletionItem{
-			Label:  b.name,
+			Label:  b.Name,
 			Kind:   lsp.CIKFunction,
-			Detail: b.detail,
+			Detail: b.Signature,
 		})
 	}
 
