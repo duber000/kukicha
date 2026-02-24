@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"go/format"
 	"os"
@@ -25,25 +26,35 @@ func main() {
 	command := os.Args[1]
 	args := os.Args[2:]
 
-	target := ""
-	if len(args) >= 2 && args[0] == "--target" {
-		target = args[1]
-		args = args[2:]
-	}
-
 	switch command {
 	case "build":
-		if len(args) < 1 {
+		buildFlags := flag.NewFlagSet("build", flag.ContinueOnError)
+		buildFlags.SetOutput(os.Stderr)
+		target := buildFlags.String("target", "", "Compile target")
+		if err := buildFlags.Parse(args); err != nil {
+			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] <file.kuki>")
+			os.Exit(1)
+		}
+		buildArgs := buildFlags.Args()
+		if len(buildArgs) < 1 {
 			fmt.Println("Usage: kukicha build [--target <target>] <file.kuki>")
 			os.Exit(1)
 		}
-		buildCommand(args[0], target)
+		buildCommand(buildArgs[0], *target)
 	case "run":
-		if len(args) < 1 {
+		runFlags := flag.NewFlagSet("run", flag.ContinueOnError)
+		runFlags.SetOutput(os.Stderr)
+		target := runFlags.String("target", "", "Run target")
+		if err := runFlags.Parse(args); err != nil {
+			fmt.Fprintln(os.Stderr, "Usage: kukicha run [--target <target>] <file.kuki> [args...]")
+			os.Exit(1)
+		}
+		runArgs := runFlags.Args()
+		if len(runArgs) < 1 {
 			fmt.Println("Usage: kukicha run [--target <target>] <file.kuki> [args...]")
 			os.Exit(1)
 		}
-		runCommand(args[0], target, args[1:])
+		runCommand(runArgs[0], *target, runArgs[1:])
 	case "check":
 		if len(args) < 1 {
 			fmt.Println("Usage: kukicha check <file.kuki>")
@@ -57,20 +68,19 @@ func main() {
 		}
 		fmtCommand(args)
 	case "pack":
-		outputDir := ""
-		packArgs := args
-		for i := 0; i < len(packArgs)-1; i++ {
-			if packArgs[i] == "--output" {
-				outputDir = packArgs[i+1]
-				packArgs = append(packArgs[:i], packArgs[i+2:]...)
-				break
-			}
+		packFlags := flag.NewFlagSet("pack", flag.ContinueOnError)
+		packFlags.SetOutput(os.Stderr)
+		outputDir := packFlags.String("output", "", "Output directory")
+		if err := packFlags.Parse(args); err != nil {
+			fmt.Fprintln(os.Stderr, "Usage: kukicha pack [--output <dir>] <skill.kuki>")
+			os.Exit(1)
 		}
+		packArgs := packFlags.Args()
 		if len(packArgs) < 1 {
 			fmt.Println("Usage: kukicha pack [--output <dir>] <skill.kuki>")
 			os.Exit(1)
 		}
-		packCommand(packArgs[0], outputDir)
+		packCommand(packArgs[0], *outputDir)
 	case "init":
 		initCommand()
 	case "version":
@@ -147,6 +157,14 @@ func detectTarget(source string) string {
 	return ""
 }
 
+func detectTargetFromFile(filename string) (string, error) {
+	source, err := os.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	return detectTarget(string(source)), nil
+}
+
 // rewriteGoErrors replaces references to the generated .go file path in stderr
 // output with the original .kuki source path. This cleans up any residual file
 // references that aren't covered by //line directives (e.g., temp file paths).
@@ -161,6 +179,7 @@ func buildCommand(filename string, targetFlag string) {
 		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
 		os.Exit(1)
 	}
+	projectDir := findProjectDir(absFile)
 
 	program, returnCounts, err := loadAndAnalyze(absFile)
 	if err != nil {
@@ -172,8 +191,11 @@ func buildCommand(filename string, targetFlag string) {
 	if targetFlag != "" {
 		program.Target = targetFlag
 	} else {
-		source, _ := os.ReadFile(absFile)
-		if t := detectTarget(string(source)); t != "" {
+		t, readErr := detectTargetFromFile(absFile)
+		if readErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not read %s for target detection: %v\n", absFile, readErr)
+		}
+		if t != "" {
 			program.Target = t
 		}
 	}
@@ -209,8 +231,7 @@ func buildCommand(filename string, targetFlag string) {
 	fmt.Printf("Successfully compiled %s to %s\n", absFile, outputFile)
 
 	// If the generated code imports Kukicha stdlib, extract it and configure go.mod
-	if needsStdlib(goCode) {
-		projectDir := findProjectDir(absFile)
+	if needsStdlib(goCode, projectDir) {
 		stdlibPath, stdlibErr := ensureStdlib(projectDir)
 		if stdlibErr != nil {
 			fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", stdlibErr)
@@ -224,7 +245,6 @@ func buildCommand(filename string, targetFlag string) {
 
 	// Run go build on the generated file. Use -mod=mod so go.sum is updated
 	// automatically when stdlib transitive dependencies are not yet listed.
-	projectDir := findProjectDir(absFile)
 	cmd := exec.Command("go", "build", "-mod=mod", outputFile)
 	cmd.Dir = projectDir
 	cmd.Env = os.Environ()
@@ -251,6 +271,7 @@ func runCommand(filename string, targetFlag string, scriptArgs []string) {
 		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
 		os.Exit(1)
 	}
+	projectDir := findProjectDir(absFile)
 
 	program, returnCounts, err := loadAndAnalyze(absFile)
 	if err != nil {
@@ -261,8 +282,11 @@ func runCommand(filename string, targetFlag string, scriptArgs []string) {
 	if targetFlag != "" {
 		program.Target = targetFlag
 	} else {
-		source, _ := os.ReadFile(absFile)
-		if t := detectTarget(string(source)); t != "" {
+		t, readErr := detectTargetFromFile(absFile)
+		if readErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not read %s for target detection: %v\n", absFile, readErr)
+		}
+		if t != "" {
 			program.Target = t
 		}
 	}
@@ -280,10 +304,10 @@ func runCommand(filename string, targetFlag string, scriptArgs []string) {
 		os.Exit(1)
 	}
 
-	// If stdlib is needed, extract it and ensure go.mod is configured
-	var tmpFile string
-	if needsStdlib(goCode) {
-		projectDir := findProjectDir(absFile)
+	// If stdlib is needed, extract it and ensure go.mod is configured.
+	// Keep temp source in project context so local replace directives resolve.
+	var tmp *os.File
+	if needsStdlib(goCode, projectDir) {
 		stdlibPath, stdlibErr := ensureStdlib(projectDir)
 		if stdlibErr != nil {
 			fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", stdlibErr)
@@ -293,31 +317,36 @@ func runCommand(filename string, targetFlag string, scriptArgs []string) {
 			fmt.Fprintf(os.Stderr, "Error updating go.mod: %v\n", modErr)
 			os.Exit(1)
 		}
-		// Write temp file into .kukicha/ (already created by ensureStdlib)
-		// so go.mod resolves correctly. Must not use a dotfile name at the
-		// top of projectDir: the go tool ignores files starting with ".".
-		tmpFile = filepath.Join(projectDir, ".kukicha", "temp.go")
+		tmp, err = os.CreateTemp(filepath.Join(projectDir, ".kukicha"), "run-*.go")
 	} else {
-		tmpFile = filepath.Join(os.TempDir(), "kukicha_temp.go")
+		tmp, err = os.CreateTemp("", "kukicha-run-*.go")
 	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating temporary file: %v\n", err)
+		os.Exit(1)
+	}
+	tmpFile := tmp.Name()
+	defer os.Remove(tmpFile)
 
 	formatted, fmtErr := format.Source([]byte(goCode))
 	if fmtErr != nil {
 		formatted = []byte(goCode)
 	}
 
-	err = os.WriteFile(tmpFile, formatted, 0644)
-	if err != nil {
+	if _, err := tmp.Write(formatted); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing temporary file: %v\n", err)
 		os.Exit(1)
 	}
-	defer os.Remove(tmpFile)
+	if err := tmp.Close(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error closing temporary file: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Run with go run. Use -mod=mod so Go updates go.sum automatically when
 	// stdlib transitive dependencies (e.g. gopkg.in/yaml.v3) are not yet listed.
 	goArgs := append([]string{"run", "-mod=mod", tmpFile}, scriptArgs...)
 	cmd := exec.Command("go", goArgs...)
-	cmd.Dir = findProjectDir(absFile)
+	cmd.Dir = projectDir
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	var stderrBuf bytes.Buffer

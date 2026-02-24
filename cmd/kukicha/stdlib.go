@@ -286,13 +286,14 @@ func ensureGoMod(projectDir, stdlibPath string) error {
 }
 
 // needsStdlib checks if the generated Go code imports any Kukicha stdlib packages.
-// Returns false if we're inside the kukicha repo itself (stdlib already available).
-func needsStdlib(goCode string) bool {
+// Returns false if the target project is inside the kukicha repo itself
+// (where stdlib source is already available).
+func needsStdlib(goCode string, projectDir string) bool {
 	if !strings.Contains(goCode, "github.com/duber000/kukicha/stdlib/") {
 		return false
 	}
-	// Don't extract stdlib if we're inside the kukicha repo itself
-	if isKukichaRepo() {
+	// Don't extract stdlib if we're inside the kukicha repo itself.
+	if isKukichaRepo(projectDir) {
 		return false
 	}
 
@@ -321,10 +322,18 @@ func hasRequire(mod *modfile.File, path string) bool {
 	return false
 }
 
-// isKukichaRepo checks if the current working directory is inside the kukicha repo.
+// isKukichaRepo checks if startDir is inside the kukicha repo.
 // This is detected by checking if go.mod declares module github.com/duber000/kukicha.
-func isKukichaRepo() bool {
-	cwd, err := os.Getwd()
+func isKukichaRepo(startDir string) bool {
+	if startDir == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return false
+		}
+		startDir = cwd
+	}
+
+	cwd, err := filepath.Abs(startDir)
 	if err != nil {
 		return false
 	}

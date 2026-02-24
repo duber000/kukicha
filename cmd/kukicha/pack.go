@@ -12,6 +12,7 @@ import (
 
 	"github.com/duber000/kukicha/internal/ast"
 	"github.com/duber000/kukicha/internal/codegen"
+	"gopkg.in/yaml.v3"
 )
 
 func packCommand(filename string, outputDir string) {
@@ -36,8 +37,11 @@ func packCommand(filename string, outputDir string) {
 	skill := program.SkillDecl
 
 	// Detect target from source (default to mcp for skills)
-	source, _ := os.ReadFile(absFile)
-	if t := detectTarget(string(source)); t != "" {
+	t, readErr := detectTargetFromFile(absFile)
+	if readErr != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not read %s for target detection: %v\n", absFile, readErr)
+	}
+	if t != "" {
 		program.Target = t
 	} else {
 		program.Target = "mcp"
@@ -94,7 +98,7 @@ func packCommand(filename string, outputDir string) {
 
 	// If the generated code imports Kukicha stdlib, extract it and configure go.mod
 	projectDir := findProjectDir(absFile)
-	if needsStdlib(goCode) {
+	if needsStdlib(goCode, projectDir) {
 		stdlibPath, stdlibErr := ensureStdlib(projectDir)
 		if stdlibErr != nil {
 			fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", stdlibErr)
@@ -137,9 +141,10 @@ type FunctionSchema struct {
 
 // ParameterSchema holds extracted metadata for a function parameter
 type ParameterSchema struct {
-	Name    string
-	Type    string
-	Default string
+	Name       string
+	Type       string
+	Default    any
+	HasDefault bool
 }
 
 func extractFunctionSchemas(program *ast.Program) []FunctionSchema {
@@ -172,7 +177,10 @@ func extractFunctionSchemas(program *ast.Program) []FunctionSchema {
 				Type: typeToJSONSchemaType(param.Type),
 			}
 			if param.DefaultValue != nil {
-				ps.Default = defaultValueToString(param.DefaultValue)
+				if def, ok := defaultValueToYAML(param.DefaultValue); ok {
+					ps.Default = def
+					ps.HasDefault = true
+				}
 			}
 			schema.Parameters = append(schema.Parameters, ps)
 		}
@@ -189,39 +197,51 @@ func extractFunctionSchemas(program *ast.Program) []FunctionSchema {
 }
 
 func generateSkillMD(skill *ast.SkillDecl, functions []FunctionSchema) string {
-	var b strings.Builder
-
-	b.WriteString("---\n")
-	b.WriteString(fmt.Sprintf("name: %s\n", toSnakeCase(skill.Name.Value)))
-	if skill.Description != "" {
-		b.WriteString(fmt.Sprintf("description: %s\n", skill.Description))
+	type yamlParam struct {
+		Type    string `yaml:"type"`
+		Default any    `yaml:"default,omitempty"`
 	}
-	if skill.Version != "" {
-		b.WriteString(fmt.Sprintf("version: \"%s\"\n", skill.Version))
+	type yamlFunction struct {
+		Name        string               `yaml:"name"`
+		Description string               `yaml:"description,omitempty"`
+		Parameters  map[string]yamlParam `yaml:"parameters,omitempty"`
+	}
+	type yamlSkill struct {
+		Name        string         `yaml:"name"`
+		Description string         `yaml:"description,omitempty"`
+		Version     string         `yaml:"version,omitempty"`
+		Functions   []yamlFunction `yaml:"functions,omitempty"`
 	}
 
-	if len(functions) > 0 {
-		b.WriteString("functions:\n")
-		for _, fn := range functions {
-			b.WriteString(fmt.Sprintf("  - name: %s\n", fn.Name))
-			if fn.Description != "" {
-				b.WriteString(fmt.Sprintf("    description: %s\n", fn.Description))
-			}
-			if len(fn.Parameters) > 0 {
-				b.WriteString("    parameters:\n")
-				for _, p := range fn.Parameters {
-					if p.Default != "" {
-						b.WriteString(fmt.Sprintf("      %s: { type: %s, default: %s }\n", p.Name, p.Type, p.Default))
-					} else {
-						b.WriteString(fmt.Sprintf("      %s: { type: %s }\n", p.Name, p.Type))
-					}
+	doc := yamlSkill{
+		Name:        toSnakeCase(skill.Name.Value),
+		Description: skill.Description,
+		Version:     skill.Version,
+	}
+
+	for _, fn := range functions {
+		yfn := yamlFunction{
+			Name:        fn.Name,
+			Description: fn.Description,
+		}
+		if len(fn.Parameters) > 0 {
+			yfn.Parameters = make(map[string]yamlParam, len(fn.Parameters))
+			for _, p := range fn.Parameters {
+				yp := yamlParam{Type: p.Type}
+				if p.HasDefault {
+					yp.Default = p.Default
 				}
+				yfn.Parameters[p.Name] = yp
 			}
 		}
+		doc.Functions = append(doc.Functions, yfn)
 	}
 
-	b.WriteString("---\n")
-	return b.String()
+	out, err := yaml.Marshal(doc)
+	if err != nil {
+		return "---\nname: " + toSnakeCase(skill.Name.Value) + "\n---\n"
+	}
+	return "---\n" + string(out) + "---\n"
 }
 
 // typeToJSONSchemaType maps Kukicha/Go type annotations to JSON Schema types
@@ -279,22 +299,19 @@ func typeAnnotationName(typeAnn ast.TypeAnnotation) string {
 	return "any"
 }
 
-// defaultValueToString returns a string representation of a default value expression
-func defaultValueToString(expr ast.Expression) string {
+// defaultValueToYAML converts a literal default value expression into a YAML value.
+func defaultValueToYAML(expr ast.Expression) (any, bool) {
 	switch e := expr.(type) {
 	case *ast.IntegerLiteral:
-		return fmt.Sprintf("%d", e.Value)
+		return e.Value, true
 	case *ast.FloatLiteral:
-		return fmt.Sprintf("%g", e.Value)
+		return e.Value, true
 	case *ast.StringLiteral:
-		return fmt.Sprintf("%q", e.Value)
+		return e.Value, true
 	case *ast.BooleanLiteral:
-		if e.Value {
-			return "true"
-		}
-		return "false"
+		return e.Value, true
 	}
-	return ""
+	return nil, false
 }
 
 // toSnakeCase converts PascalCase to snake_case

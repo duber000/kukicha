@@ -32,6 +32,7 @@ func main() {
 	// are handled correctly. If the same qualified name appears twice (shouldn't
 	// happen in valid Kukicha), we keep the larger return count.
 	registry := map[string]int{}
+	hadErrors := false
 
 	for _, path := range matches {
 		base := filepath.Base(path)
@@ -42,20 +43,23 @@ func main() {
 		src, err := os.ReadFile(path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "read %s: %v\n", path, err)
+			hadErrors = true
 			continue
 		}
 
 		p, err := parser.New(string(src), path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "lex %s: %v\n", path, err)
+			hadErrors = true
 			continue
 		}
 
 		prog, parseErrs := p.Parse()
 		if len(parseErrs) > 0 {
 			for _, e := range parseErrs {
-				fmt.Fprintf(os.Stderr, "parse warning %s: %v\n", path, e)
+				fmt.Fprintf(os.Stderr, "parse error %s: %v\n", path, e)
 			}
+			hadErrors = true
 		}
 		if prog == nil || prog.PetioleDecl == nil {
 			continue
@@ -122,6 +126,11 @@ var generatedStdlibRegistry = map[string]int{
 		fmt.Fprintf(os.Stderr, "gofmt error: %v\n", fmtErr)
 		// Fall back to unformatted — still valid Go.
 		formatted = []byte(src)
+	}
+
+	if hadErrors {
+		fmt.Fprintln(os.Stderr, "aborting: stdlib scan had errors; registry not updated")
+		os.Exit(1)
 	}
 
 	outPath := filepath.Join("internal", "semantic", "stdlib_registry_gen.go")
