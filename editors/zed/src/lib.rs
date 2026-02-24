@@ -39,3 +39,6 @@ impl zed::Extension for KukichaExtension {
 }
 
 zed::register_extension!(KukichaExtension);
+// test
+// test
+// test
