@@ -85,6 +85,8 @@ func (ds *DocumentStore) Get(uri lsp.DocumentURI) *Document {
 	return cloneDocument(ds.documents[uri])
 }
 
+// cloneDocument returns a shallow copy of doc with deep-copied slices.
+// Program and SymbolTable are shared pointers; callers must treat them as read-only.
 func cloneDocument(doc *Document) *Document {
 	if doc == nil {
 		return nil
