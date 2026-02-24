@@ -17,14 +17,14 @@ Thank you for your interest in contributing to Kukicha! This document provides g
 git clone https://github.com/duber000/kukicha.git
 cd kukicha
 
-# Install dependencies
-go mod tidy
-
 # Build the compiler
-go build -o kukicha ./cmd/kukicha
+make build
 
 # Run tests to verify setup
-go test ./...
+make test
+
+# Install pre-commit hooks
+make install-hooks
 ```
 
 ## Development Workflow
@@ -45,13 +45,10 @@ Follow the existing code style and patterns in the codebase.
 
 ```bash
 # Run all tests
-go test ./...
+make test
 
 # Run with verbose output
 go test ./... -v
-
-# Run with coverage
-go test ./... -cover
 
 # Run specific package tests
 go test ./internal/lexer/... -v
@@ -230,9 +227,50 @@ Always appreciated! Improvements to tutorials, references, and examples help eve
 
 Real-world examples showing Kukicha in action.
 
+### Editor Extensions (`editors/`)
+
+Syntax highlighting, tree-sitter grammars, and LSP integration for editors.
+
 ### CLI (`cmd/kukicha/`)
 
 Command-line interface improvements.
+
+## Git Hooks
+
+Run `make install-hooks` to install the pre-commit hook. This links `scripts/pre-commit` into `.git/hooks/` and runs automatically on every commit to catch common issues before they reach CI.
+
+## Zed Extension
+
+The Zed editor extension lives in `editors/zed/` and includes:
+
+- **Tree-sitter grammar** (`editors/zed/grammars/kukicha/`) — parsing for syntax highlighting
+- **Highlight queries** (`editors/zed/languages/kukicha/highlights.scm`) — the source of truth for highlighting rules
+- **LSP integration** (`editors/zed/src/lib.rs`) — connects Zed to `kukicha-lsp`
+
+### Testing
+
+```bash
+make zed-test
+```
+
+This runs three checks:
+1. `cargo check` — verifies the Rust extension compiles
+2. `check-highlights.sh` — verifies highlight queries are in sync between `languages/` and `grammars/`
+3. `npm test` (in `grammars/kukicha/`) — runs tree-sitter grammar tests
+
+### Editing highlights
+
+Edit `editors/zed/languages/kukicha/highlights.scm` (the source of truth), then sync:
+
+```bash
+editors/zed/scripts/sync-highlights.sh
+```
+
+Never edit `editors/zed/grammars/kukicha/queries/highlights.scm` directly — it gets overwritten by the sync script.
+
+### Adding tree-sitter tests
+
+Add test cases to `editors/zed/grammars/kukicha/test/corpus/`. Each test file uses the tree-sitter test format: a name header, source code, a `---` separator, and the expected S-expression parse tree.
 
 ## Releasing a New Version
 

@@ -1,5 +1,5 @@
 ; Kukicha syntax highlighting for Zed
-; Source of truth for Zed highlighting. Keep in sync with grammars/kukicha/queries/highlights.scm.
+; Edit in languages/kukicha/, then run: editors/zed/scripts/sync-highlights.sh
 
 ; Boolean literals
 (boolean_literal) @constant.builtin

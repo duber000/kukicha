@@ -7,8 +7,9 @@ description = "Kukicha language support with LSP - a beginner-friendly language 
 repository = "https://github.com/duber000/kukicha"
 
 [grammars.kukicha]
-repository = "./grammars/kukicha"
-rev = "28bf5e67f2aa9ca5db85a3dc2ecbb23f174de254"
+repository = "https://github.com/duber000/kukicha"
+path = "editors/zed/grammars/kukicha"
+rev = "1e52e9d0061c598bf4e667abfe24560664ec9de5"
 
 [language_servers.kukicha-lsp]
 name = "Kukicha Language Server"

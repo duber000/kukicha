@@ -9,9 +9,11 @@
 
 set -euo pipefail
 
-# Skip if already inside a Claude Code session (nested launch is not allowed)
+# Skip if already inside a Claude Code session — nested claude launches are
+# not allowed. Doc review is handled by the PreToolUse hook in
+# .claude/settings.local.json instead.
 if [ -n "${CLAUDECODE:-}" ]; then
-    echo "pre-commit: running inside Claude Code session, skipping doc sync" >&2
+    echo "pre-commit: inside Claude Code session, skipping (PreToolUse hook handles doc review)" >&2
     exit 0
 fi
 
