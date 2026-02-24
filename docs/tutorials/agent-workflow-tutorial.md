@@ -132,7 +132,7 @@ This is the most important step. You don't need to understand every detail — y
 | You'll see | It means |
 |-----------|---------|
 | `onerr panic "message"` | If this fails, stop the program with this message |
-| `onerr return error "{error}"` | If this fails, pass the error to the caller |
+| `onerr return` | If this fails, pass the error to the caller |
 | `onerr "default"` | If this fails, use this value instead |
 | `\|>` | Take the result and pass it to the next step |
 | `list of string` | A collection of text values |
@@ -150,7 +150,7 @@ Before running the code, ask yourself:
 
 - [ ] Does it do what I described? Read through the steps in `main()`.
 - [ ] Are errors handled? Every operation that can fail should have `onerr`.
-- [ ] Does `onerr panic` make sense here? Panicking is fine for prototype tools; for production you'd prefer `onerr return error "{error}"`.
+- [ ] Does `onerr panic` make sense here? Panicking is fine for prototype tools; for production you'd prefer `onerr return`.
 - [ ] Are there any hardcoded secrets or credentials? (There shouldn't be — use `stdlib/env` or `stdlib/must` for those.)
 - [ ] Does the output format match what you want? Check any `print()` calls.
 - [ ] Are external URLs correct? Verify any API endpoints match what you intended.

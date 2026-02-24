@@ -52,8 +52,8 @@ Import with: `import "stdlib/slice"`
 ```kukicha
 # Validation (returns error for onerr)
 import "stdlib/validate"
-email |> validate.Email() onerr return error "{error}"
-age |> validate.InRange(18, 120) onerr return error "{error}"
+email |> validate.Email() onerr return
+age |> validate.InRange(18, 120) onerr return
 
 # Startup config (panics if missing/invalid)
 import "stdlib/must"
@@ -201,10 +201,10 @@ host, port, err := netutil.SplitHostPort("example.com:8080") onerr panic "{error
 # Shell command execution
 import "stdlib/shell"
 # Run: for fixed string literals only — splits on whitespace, no quoting awareness
-diff := shell.Run("git diff --staged") onerr return "", error "{error}"
+diff := shell.Run("git diff --staged") onerr return
 # Output: use when any argument comes from user input or a variable — args passed
 # directly to the OS, no shell involved, so metacharacters are never interpreted
-out := shell.Output("git", "log", "--oneline", userBranch) onerr return "", error "{error}"
+out := shell.Output("git", "log", "--oneline", userBranch) onerr return
 # Builder pattern: add working directory, env vars, or timeout
 result := shell.New("npm", "test") |> shell.Dir(projectPath) |> shell.Env("CI", "true") |> shell.Execute()
 if not shell.Success(result)

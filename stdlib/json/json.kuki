@@ -53,7 +53,6 @@ func WithPrefix(enc Encoder, prefix string) Encoder
 # Uses json.NewEncoder(w).Encode(v) for direct io.Writer support
 # Note: indent/prefix options not yet supported
 # Example: response |> json.NewEncoder() |> json.Encode(todo) onerr return
-# Or with onerr: json.Encode(enc, todo) onerr return error
 func Encode(enc Encoder, value any) error
     # Use standard encoder; v1 already sorts map keys deterministically
     encoder := json.NewEncoder(enc.writer)
@@ -70,37 +69,33 @@ func NewDecoder(reader io.Reader) Decoder
 # Decode reads JSON from the decoder's reader into the target value
 # Target must be a pointer (use "reference of" in Kukicha)
 # Example: body |> json.NewDecoder() |> json.Decode(reference todo) onerr return
-# Or with onerr: json.Decode(dec, reference todo) onerr return error
 func Decode(dec Decoder, target any) error
     decoder := json.NewDecoder(dec.reader)
     return decoder.Decode(target)
 
 # Marshal converts a value to JSON bytes (convenience function)
 # For simple marshaling without a writer
-# Example: jsonBytes, err := Marshal(data) onerr panic
-# Or with onerr: jsonBytes := Marshal(data) onerr return empty, error
+# Example: jsonBytes := Marshal(data) onerr return
 func Marshal(value any) (list of byte, error)
     bytes, err := json.Marshal(value)
     return bytes, err
 
 # MarshalPretty converts a value to pretty-printed JSON bytes with 2-space indentation
-# Example: jsonBytes, err := MarshalPretty(config) onerr panic
-# Or with onerr: jsonBytes := MarshalPretty(config) onerr return empty, error
+# Example: jsonBytes := MarshalPretty(config) onerr return
 func MarshalPretty(value any) (list of byte, error)
     bytes, err := json.MarshalIndent(value, "", "  ")
     return bytes, err
 
 # Unmarshal parses JSON bytes into a target value
 # Target must be a pointer (use "reference of" in Kukicha)
-# Example: Unmarshal(jsonBytes, reference config) onerr panic
-# Or with onerr: Unmarshal(jsonBytes, reference config) onerr return error
+# Example: Unmarshal(jsonBytes, reference config) onerr return
 func Unmarshal(data list of byte, target any) error
     return json.Unmarshal(data, target)
 
 # MarshalWrite writes JSON directly to an io.Writer
 # Perfect for HTTP responses and streaming scenarios
 # Uses placeholder strategy: todo |> MarshalWrite(response, _)
-# Example: todo |> json.MarshalWrite(w, _) onerr panic
+# Example: todo |> json.MarshalWrite(w, _) onerr return
 func MarshalWrite(writer io.Writer, value any) error
     encoder := json.NewEncoder(writer)
     return encoder.Encode(value)

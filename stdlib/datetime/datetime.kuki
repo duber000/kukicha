@@ -24,13 +24,13 @@ func Format(t time.Time, format string) string
 
 # Parse parses a string using a named format or custom layout
 # Named formats: "iso8601", "rfc3339", "date", "time", "datetime"
-# Example: t := datetime.Parse("2024-01-15", "date") onerr return error
+# Example: t := datetime.Parse("2024-01-15", "date") onerr return
 func Parse(value string, format string) (time.Time, error)
     layout := getLayout(format)
     return time.Parse(layout, value)
 
 # ParseInLocation parses a string in a specific timezone
-# Example: t := datetime.ParseInLocation("2024-01-15 14:30", "datetime", "America/New_York") onerr return error
+# Example: t := datetime.ParseInLocation("2024-01-15 14:30", "datetime", "America/New_York") onerr return
 func ParseInLocation(value string, format string, location string) (time.Time, error)
     layout := getLayout(format)
     loc, err := time.LoadLocation(location)
@@ -295,7 +295,7 @@ func InLocal(t time.Time) time.Time
     return t.Local()
 
 # InLocation converts a time to a specific timezone
-# Example: ny := datetime.InLocation(t, "America/New_York") onerr return error
+# Example: ny := datetime.InLocation(t, "America/New_York") onerr return
 func InLocation(t time.Time, location string) (time.Time, error)
     loc, err := time.LoadLocation(location)
     if err != empty

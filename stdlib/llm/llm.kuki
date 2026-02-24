@@ -477,14 +477,14 @@ func SendRaw(c Client) (Completion, error)
 # Takes a "provider:model" string and a prompt, returns the response text
 # Uses provider-specific env vars for API keys
 #
-# Example: reply := llm.Complete("openai:gpt-4o-mini", "What is Go?") onerr return "", error "{error}"
+# Example: reply := llm.Complete("openai:gpt-4o-mini", "What is Go?") onerr return
 func Complete(model string, prompt string) (string, error)
     c := New(model)
     return Ask(c, prompt)
 
 # CompleteWithSystem is a quick completion with a system prompt
 #
-# Example: reply := llm.CompleteWithSystem("openai:gpt-4o-mini", "Be brief.", "What is Go?") onerr return "", error "{error}"
+# Example: reply := llm.CompleteWithSystem("openai:gpt-4o-mini", "Be brief.", "What is Go?") onerr return
 func CompleteWithSystem(model string, systemPrompt string, prompt string) (string, error)
     c := New(model)
     c = System(c, systemPrompt)
@@ -619,7 +619,7 @@ func execute(c Client) (string, error)
     if c.streamHandler != empty
         return executeStream(c)
 
-    comp := executeRaw(c) onerr return "", error "{error}"
+    comp := executeRaw(c) onerr return
     return GetContent(comp), empty
 
 # Internal: execute a completion and return the full response
@@ -641,7 +641,7 @@ func executeRaw(c Client) (Completion, error)
     if c.retryMaxAttempts > 1
         req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 
-    resp := fetch.Do(req) onerr return Completion{}, error "{error}"
+    resp := fetch.Do(req) onerr return
 
     defer resp.Body.Close()
 
@@ -650,7 +650,7 @@ func executeRaw(c Client) (Completion, error)
         return Completion{}, error "API request failed ({resp.StatusCode}): {errBody as string}"
 
     comp := Completion{}
-    json.UnmarshalRead(resp.Body, reference of comp) onerr return Completion{}, error "{error}"
+    json.UnmarshalRead(resp.Body, reference of comp) onerr return
 
     return comp, empty
 
@@ -671,7 +671,7 @@ func executeStream(c Client) (string, error)
     if apiKey != ""
         req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
 
-    resp := fetch.Do(req) onerr return "", error "{error}"
+    resp := fetch.Do(req) onerr return
 
     defer resp.Body.Close()
 
@@ -1091,7 +1091,7 @@ func RRetry(c ResponseClient, maxAttempts int, delayMs int) ResponseClient
 # RAsk sends a user message and executes the OpenResponses request
 # Returns the text content of the first output message and any error
 #
-# Example: reply := llm.NewResponse("openai:gpt-4o") |> llm.RAsk("Hello!") onerr return error "{error}"
+# Example: reply := llm.NewResponse("openai:gpt-4o") |> llm.RAsk("Hello!") onerr return
 func RAsk(c ResponseClient, prompt string) (string, error)
     c = RUserMessage(c, prompt)
     return rExecute(c)
@@ -1129,14 +1129,14 @@ func RSendRaw(c ResponseClient) (Response, error)
 # Respond is a quick one-shot OpenResponses completion
 # Takes a "provider:model" string and a prompt, returns the response text
 #
-# Example: reply := llm.Respond("openai:gpt-4o", "What is Go?") onerr return error "{error}"
+# Example: reply := llm.Respond("openai:gpt-4o", "What is Go?") onerr return
 func Respond(model string, prompt string) (string, error)
     c := NewResponse(model)
     return RAsk(c, prompt)
 
 # RespondWithInstructions is a quick completion with instructions
 #
-# Example: reply := llm.RespondWithInstructions("openai:gpt-4o", "Be brief.", "What is Go?") onerr return error "{error}"
+# Example: reply := llm.RespondWithInstructions("openai:gpt-4o", "Be brief.", "What is Go?") onerr return
 func RespondWithInstructions(model string, instructions string, prompt string) (string, error)
     c := NewResponse(model)
     c = Instructions(c, instructions)
@@ -1279,7 +1279,7 @@ func rExecute(c ResponseClient) (string, error)
     if c.streamHandler != empty or c.eventHandler != empty
         return rExecuteStream(c)
 
-    resp := rExecuteRaw(c) onerr return "", error "{error}"
+    resp := rExecuteRaw(c) onerr return
     return GetResponseText(resp), empty
 
 # Internal: execute an OpenResponses request and return the full Response
@@ -1301,7 +1301,7 @@ func rExecuteRaw(c ResponseClient) (Response, error)
     if c.retryMaxAttempts > 1
         req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 
-    resp := fetch.Do(req) onerr return Response{}, error "{error}"
+    resp := fetch.Do(req) onerr return
 
     defer resp.Body.Close()
 
@@ -1310,7 +1310,7 @@ func rExecuteRaw(c ResponseClient) (Response, error)
         return Response{}, error "API request failed ({resp.StatusCode}): {errBody as string}"
 
     result := Response{}
-    json.UnmarshalRead(resp.Body, reference of result) onerr return Response{}, error "{error}"
+    json.UnmarshalRead(resp.Body, reference of result) onerr return
 
     return result, empty
 
@@ -1331,7 +1331,7 @@ func rExecuteStream(c ResponseClient) (string, error)
     if apiKey != ""
         req = fetch.Header(req, "Authorization", "Bearer {apiKey}")
 
-    resp := fetch.Do(req) onerr return "", error "{error}"
+    resp := fetch.Do(req) onerr return
 
     defer resp.Body.Close()
 
@@ -1730,7 +1730,7 @@ func MRetry(c MessagesClient, maxAttempts int, delayMs int) MessagesClient
 # MAsk sends a user message and executes the Anthropic Messages request
 # Returns the text content and any error
 #
-# Example: reply := llm.NewMessages("claude-opus-4-6") |> llm.MAsk("Hello!") onerr return error "{error}"
+# Example: reply := llm.NewMessages("claude-opus-4-6") |> llm.MAsk("Hello!") onerr return
 func MAsk(c MessagesClient, prompt string) (string, error)
     c = MUser(c, prompt)
     return mExecute(c)
@@ -1766,13 +1766,13 @@ func MSendRaw(c MessagesClient) (AnthropicResponse, error)
     return mExecuteRaw(c)
 
 # AnthropicComplete is a quick one-shot completion using the Anthropic Messages API
-# Example: reply := llm.AnthropicComplete("claude-opus-4-6", "What is Go?") onerr return error "{error}"
+# Example: reply := llm.AnthropicComplete("claude-opus-4-6", "What is Go?") onerr return
 func AnthropicComplete(model string, prompt string) (string, error)
     c := NewMessages(model)
     return MAsk(c, prompt)
 
 # AnthropicCompleteWithSystem is a quick completion with a system prompt
-# Example: reply := llm.AnthropicCompleteWithSystem("claude-opus-4-6", "Be brief.", "What is Go?") onerr return error "{error}"
+# Example: reply := llm.AnthropicCompleteWithSystem("claude-opus-4-6", "Be brief.", "What is Go?") onerr return
 func AnthropicCompleteWithSystem(model string, system string, prompt string) (string, error)
     c := NewMessages(model)
     c = MSystem(c, system)
@@ -1873,7 +1873,7 @@ func mExecute(c MessagesClient) (string, error)
     if c.streamHandler != empty or c.eventHandler != empty
         return mExecuteStream(c)
 
-    resp := mExecuteRaw(c) onerr return "", error "{error}"
+    resp := mExecuteRaw(c) onerr return
     return GetAnthropicText(resp), empty
 
 # Internal: execute an Anthropic Messages request and return the full response
@@ -1898,7 +1898,7 @@ func mExecuteRaw(c MessagesClient) (AnthropicResponse, error)
     if c.retryMaxAttempts > 1
         req = fetch.Retry(req, c.retryMaxAttempts, c.retryDelayMs)
 
-    resp := fetch.Do(req) onerr return AnthropicResponse{}, error "{error}"
+    resp := fetch.Do(req) onerr return
 
     defer resp.Body.Close()
 
@@ -1907,7 +1907,7 @@ func mExecuteRaw(c MessagesClient) (AnthropicResponse, error)
         return AnthropicResponse{}, error "Anthropic API request failed ({resp.StatusCode}): {errBody as string}"
 
     result := AnthropicResponse{}
-    json.UnmarshalRead(resp.Body, reference of result) onerr return AnthropicResponse{}, error "{error}"
+    json.UnmarshalRead(resp.Body, reference of result) onerr return
 
     return result, empty
 
@@ -1939,7 +1939,7 @@ func mExecuteStream(c MessagesClient) (string, error)
 
     req = fetch.Body(req, body)
 
-    resp := fetch.Do(req) onerr return "", error "{error}"
+    resp := fetch.Do(req) onerr return
 
     defer resp.Body.Close()
 

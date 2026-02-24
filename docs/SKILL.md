@@ -294,9 +294,9 @@ logger |> obs.Error("failed",  map of string to any{"err": err})
 **stdlib/validate** — Input validation
 
 ```kukicha
-email |> validate.Email()          onerr return error "{error}"
-age   |> validate.InRange(18, 120) onerr return error "{error}"
-name  |> validate.NotEmpty()       onerr return error "{error}"
+email |> validate.Email()          onerr return
+age   |> validate.InRange(18, 120) onerr return
+name  |> validate.NotEmpty()       onerr return
 ```
 
 **stdlib/parse** — Data parsing

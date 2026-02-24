@@ -103,7 +103,7 @@ Kukicha uses plain English for every operator:
 | `nil`, `None`, `null` | `empty` |
 | `[]string`, `list[str]` | `list of string` |
 | `*User` (Go pointer) | `reference User` |
-| `if err != nil { return err }` | `onerr return empty, error "{error}"` |
+| `if err != nil { return err }` | `onerr return` |
 | Curly braces `{ }` | 4-space indentation |
 
 ---
@@ -156,7 +156,7 @@ When AI writes Kukicha for you, here's the decoder ring:
 | You'll see | It means |
 |-----------|---------|
 | `onerr panic "message"` | If this fails, crash with message |
-| `onerr return empty, error "{error}"` | If this fails, pass the error up |
+| `onerr return` | If this fails, pass the error up |
 | `onerr 0` or `onerr "unknown"` | If this fails, use this default value |
 | `\|>` | Then pass result to the next step |
 | `list of string` | A collection of text values |
