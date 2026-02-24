@@ -277,6 +277,31 @@ kukicha fmt -w myapp.kuki     # Format in place
 
 ---
 
+## Editor Support
+
+### Zed
+
+Install the extension from the repo:
+
+1. Open Zed → `zed: install dev extension`
+2. Point it at the `editors/zed/` directory in this repo
+
+Includes syntax highlighting (tree-sitter grammar) and full LSP integration.
+
+### LSP Server (other editors)
+
+Build and install the language server:
+
+```bash
+make install-lsp   # installs kukicha-lsp to $GOPATH/bin
+```
+
+Then configure your editor to run `kukicha-lsp` for `.kuki` files. Supports hover, go-to-definition, completions, and diagnostics.
+
+**VS Code:** No extension yet. Contributions welcome.
+
+---
+
 ## Documentation
 
 **Start here:**
