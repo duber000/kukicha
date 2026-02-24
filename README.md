@@ -135,8 +135,7 @@ tar -xzf kukicha.tar.gz
 
 ```bash
 mkdir myapp && cd myapp
-go mod init myapp
-kukicha init          # sets up stdlib
+kukicha init          # go mod init + sets up stdlib
 kukicha run hello.kuki
 ```
 
@@ -269,7 +268,7 @@ Once you understand these patterns in Kukicha, reading Go or Python code will fe
 ## Usage
 
 ```bash
-kukicha init                  # Set up stdlib in a new project
+kukicha init                  # go mod init + set up stdlib (run once per project)
 kukicha run myapp.kuki        # Compile and run
 kukicha build myapp.kuki      # Compile to binary
 kukicha check myapp.kuki      # Validate syntax only

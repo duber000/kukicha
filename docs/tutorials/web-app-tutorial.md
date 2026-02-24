@@ -43,8 +43,7 @@ Don't worry if this looks complicated — we'll build it step by step!
 
 ```bash
 mkdir link-shortener && cd link-shortener
-go mod init link-shortener
-kukicha init    # Extracts stdlib for JSON, etc.
+kukicha init    # go mod init + extracts stdlib for JSON, etc.
 ```
 
 ---

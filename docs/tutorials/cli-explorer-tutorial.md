@@ -66,8 +66,7 @@ If you haven't already, set up your project:
 
 ```bash
 mkdir repo-explorer && cd repo-explorer
-go mod init repo-explorer
-kukicha init    # Extracts stdlib for imports like "stdlib/fetch"
+kukicha init    # go mod init + extracts stdlib for imports like "stdlib/fetch"
 ```
 
 ---

@@ -71,11 +71,10 @@ Before writing code, let's set up a project folder:
 ```bash
 mkdir my-kukicha-project
 cd my-kukicha-project
-go mod init my-project    # Create a Go module
-kukicha init              # Extract Kukicha stdlib and configure go.mod
+kukicha init              # Create Go module, extract Kukicha stdlib, configure go.mod
 ```
 
-The `kukicha init` command sets up the Kukicha standard library in your project. This is needed when using `import "stdlib/..."` packages. For simple programs that don't use stdlib, you can skip this step.
+The `kukicha init` command creates a `go.mod` file (using the directory name as the module name), then sets up the Kukicha standard library. This is needed when using `import "stdlib/..."` packages. For simple programs that don't use stdlib, you can skip this step.
 
 ### Writing Your First Program
 

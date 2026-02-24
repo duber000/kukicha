@@ -245,7 +245,7 @@ func ensureGoMod(projectDir, stdlibPath string) error {
 	data, err := os.ReadFile(goModPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("no go.mod found in %s; run 'go mod init <module>' or 'kukicha init' first", projectDir)
+			return fmt.Errorf("no go.mod found in %s; run 'kukicha init' first", projectDir)
 		}
 		return err
 	}

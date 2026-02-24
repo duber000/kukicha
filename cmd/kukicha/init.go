@@ -7,18 +7,29 @@ import (
 	"path/filepath"
 )
 
-func initCommand() {
+func initCommand(args []string) {
 	projectDir, err := os.Getwd()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting working directory: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Check if go.mod exists
+	// Check if go.mod exists; if not, run go mod init
 	goModPath := filepath.Join(projectDir, "go.mod")
 	if _, err := os.Stat(goModPath); os.IsNotExist(err) {
-		fmt.Fprintln(os.Stderr, "No go.mod found. Run 'go mod init <module-name>' first.")
-		os.Exit(1)
+		moduleName := filepath.Base(projectDir)
+		if len(args) > 0 {
+			moduleName = args[0]
+		}
+		fmt.Printf("Initializing Go module: %s\n", moduleName)
+		cmd := exec.Command("go", "mod", "init", moduleName)
+		cmd.Dir = projectDir
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error running 'go mod init': %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Extract stdlib

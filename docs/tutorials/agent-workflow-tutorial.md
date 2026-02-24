@@ -44,7 +44,6 @@ Ship it
 
 3. **Initialize your project** — this sets up the stdlib and the language reference your agent needs:
    ```bash
-   go mod init myproject
    kukicha init
    ```
 

@@ -35,7 +35,7 @@ result := fetch.Get(url) onerr
 ### `kukicha init` required before stdlib imports
 
 ```bash
-kukicha init    # run once per project before using import "stdlib/..."
+kukicha init    # run once per project: go mod init + extract stdlib
 ```
 
 ### `import "fmt"` for interpolated `error ""` literals

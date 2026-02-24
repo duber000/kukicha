@@ -1490,7 +1490,8 @@ Distribute the Kukicha standard library embedded within the compiler binary, eli
 ```
 kukicha binary (contains embedded stdlib/)
     │
-    ├── kukicha init
+    ├── kukicha init [module-name]
+    │       └── Runs go mod init (if go.mod absent)
     │       └── Extracts to .kukicha/stdlib/
     │       └── Updates go.mod with replace directive
     │
