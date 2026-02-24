@@ -3,6 +3,7 @@ package lsp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -50,10 +51,7 @@ func (s *Server) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.
 	result, err := s.handleRequest(ctx, req)
 	if err != nil {
 		if !req.Notif {
-			if respErr := conn.ReplyWithError(ctx, req.ID, &jsonrpc2.Error{
-				Code:    jsonrpc2.CodeInternalError,
-				Message: err.Error(),
-			}); respErr != nil {
+			if respErr := conn.ReplyWithError(ctx, req.ID, toJSONRPCError(err)); respErr != nil {
 				log.Printf("Error sending error response: %v", respErr)
 			}
 		}
@@ -94,7 +92,21 @@ func (s *Server) handleRequest(ctx context.Context, req *jsonrpc2.Request) (any,
 	case "textDocument/documentSymbol":
 		return s.handleDocumentSymbol(ctx, req)
 	default:
-		return nil, fmt.Errorf("method not supported: %s", req.Method)
+		return nil, &jsonrpc2.Error{
+			Code:    jsonrpc2.CodeMethodNotFound,
+			Message: fmt.Sprintf("method not found: %s", req.Method),
+		}
+	}
+}
+
+func toJSONRPCError(err error) *jsonrpc2.Error {
+	var rpcErr *jsonrpc2.Error
+	if errors.As(err, &rpcErr) {
+		return rpcErr
+	}
+	return &jsonrpc2.Error{
+		Code:    jsonrpc2.CodeInternalError,
+		Message: err.Error(),
 	}
 }
 

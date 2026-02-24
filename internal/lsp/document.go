@@ -31,6 +31,17 @@ type DocumentStore struct {
 	mu        sync.RWMutex
 }
 
+func newDocument(uri lsp.DocumentURI, content string, version int) *Document {
+	doc := &Document{
+		URI:     uri,
+		Content: content,
+		Version: version,
+		Lines:   strings.Split(content, "\n"),
+	}
+	doc.analyze()
+	return doc
+}
+
 // NewDocumentStore creates a new document store
 func NewDocumentStore() *DocumentStore {
 	return &DocumentStore{
@@ -43,18 +54,9 @@ func (ds *DocumentStore) Open(uri lsp.DocumentURI, content string, version int) 
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
-	doc := &Document{
-		URI:     uri,
-		Content: content,
-		Version: version,
-		Lines:   strings.Split(content, "\n"),
-	}
-
-	// Parse and analyze the document
-	doc.analyze()
-
+	doc := newDocument(uri, content, version)
 	ds.documents[uri] = doc
-	return doc
+	return cloneDocument(doc)
 }
 
 // Update updates an existing document
@@ -62,20 +64,9 @@ func (ds *DocumentStore) Update(uri lsp.DocumentURI, content string, version int
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
-	doc, exists := ds.documents[uri]
-	if !exists {
-		doc = &Document{URI: uri}
-		ds.documents[uri] = doc
-	}
-
-	doc.Content = content
-	doc.Version = version
-	doc.Lines = strings.Split(content, "\n")
-
-	// Re-analyze the document
-	doc.analyze()
-
-	return doc
+	doc := newDocument(uri, content, version)
+	ds.documents[uri] = doc
+	return cloneDocument(doc)
 }
 
 // Close removes a document from the store
@@ -91,7 +82,28 @@ func (ds *DocumentStore) Get(uri lsp.DocumentURI) *Document {
 	ds.mu.RLock()
 	defer ds.mu.RUnlock()
 
-	return ds.documents[uri]
+	return cloneDocument(ds.documents[uri])
+}
+
+func cloneDocument(doc *Document) *Document {
+	if doc == nil {
+		return nil
+	}
+
+	cloned := &Document{
+		URI:         doc.URI,
+		Content:     doc.Content,
+		Version:     doc.Version,
+		Program:     doc.Program,
+		SymbolTable: doc.SymbolTable,
+	}
+	if len(doc.Errors) > 0 {
+		cloned.Errors = append([]error(nil), doc.Errors...)
+	}
+	if len(doc.Lines) > 0 {
+		cloned.Lines = append([]string(nil), doc.Lines...)
+	}
+	return cloned
 }
 
 // analyze parses and performs semantic analysis on the document
