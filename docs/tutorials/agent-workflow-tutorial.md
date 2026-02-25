@@ -33,7 +33,7 @@ Ship it
 
 1. **Kukicha compiler installed**
    ```bash
-   go install github.com/duber000/kukicha/cmd/kukicha@v0.0.5
+   go install github.com/duber000/kukicha/cmd/kukicha@v0.0.9
    kukicha version  # Confirm it works
    ```
 
@@ -44,6 +44,7 @@ Ship it
 
 3. **Initialize your project** — this sets up the stdlib and the language reference your agent needs:
    ```bash
+   mkdir go_agent_go && cd go_agent_go
    kukicha init
    ```
 
