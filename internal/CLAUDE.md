@@ -49,7 +49,15 @@ Add the keyword string → `TokenType` mapping in `token.go`'s `keywords` map an
 
 ## Parser (`internal/parser/`)
 
-**Key file:** `parser.go` (~2700 lines)
+**Key files** (split from the original monolithic `parser.go`):
+
+| File | Contents |
+|------|---------|
+| `parser.go` | Core struct, `New`, `Parse`, token helpers (`peekToken`, `consume`, `advance`, …) |
+| `parser_type.go` | `parseTypeAnnotation` and all type sub-parsers |
+| `parser_decl.go` | Declaration parsers (`parseFunctionDecl`, `parseTypeDecl`, `parseVarDeclaration`, …) |
+| `parser_stmt.go` | Statement parsers (`parseBlock`, `parseStatement`, `parseIfStmt`, `parseForStmt`, `parseOnErrClause`, …) |
+| `parser_expr.go` | Expression parsers (`parseExpression`, `parsePipeExpr`, `parseArrowLambda`, …) |
 
 ### Design
 
@@ -71,12 +79,12 @@ Add the keyword string → `TokenType` mapping in `token.go`'s `keywords` map an
 ### Adding a new statement
 
 1. Add a `TOKEN_*` keyword in `lexer/token.go`
-2. In `parser.go`'s `parseStatement()` switch, add a `case TOKEN_*:` branch calling your new `parseXxxStmt()` method
+2. In `parser_stmt.go`'s `parseStatement()` switch, add a `case TOKEN_*:` branch calling your new `parseXxxStmt()` method
 3. Return the new `*ast.XxxStmt` node (defined in `ast/ast.go`)
 
 ### Adding a new expression
 
-1. Hook into `parsePrimaryExpr()` for new literal/prefix forms, or `parseInfixExpr()` / operator precedence for binary forms
+1. Hook into `parsePrimaryExpr()` in `parser_expr.go` for new literal/prefix forms, or the operator precedence chain for binary forms
 2. Return a new `*ast.XxxExpr` node
 
 ---
@@ -121,7 +129,15 @@ Always store the keyword's `lexer.Token` as the first field — it carries line/
 
 ## Semantic Analysis (`internal/semantic/`)
 
-**Key files:** `semantic.go` (~2050 lines), `symbols.go`, `stdlib_registry_gen.go`
+**Key files:**
+
+| File | Contents |
+|------|---------|
+| `semantic.go` | Core `Analyzer` struct, `Analyze`, `analyzeStatement`, `analyzeExpression`, type-checking helpers |
+| `semantic_calls.go` | `analyzeCallExpr`, `analyzeMethodCallExpr` |
+| `semantic_security.go` | Security checks (`checkSQLInterpolation`, `checkHTMLNonLiteral`, `checkFetchInHandler`, `checkFilesInHandler`, `checkShellRunNonLiteral`, `checkRedirectNonLiteral`, `isInHTTPHandler`) |
+| `symbols.go` | Symbol table and type info |
+| `stdlib_registry_gen.go` | Generated stdlib return-count registry |
 
 ### Two-pass analysis
 
@@ -140,7 +156,7 @@ Security checks run during `analyzeDeclarations()`. The analyzer detects "inside
 
 ### Adding a new security check
 
-Find the relevant call site (e.g., `analyzeCallExpr`) and add a pattern match. Emit an error via `a.errors = append(a.errors, fmt.Errorf(...))`.
+Add a new `checkXxx` method in `semantic_security.go` following the existing pattern, then call it from `analyzeMethodCallExpr` in `semantic_calls.go`. Emit an error via `a.error(expr.Pos(), ...)`.
 
 ### stdlib_registry_gen.go
 
@@ -153,7 +169,16 @@ make genstdlibregistry   # or: make generate (runs everything)
 
 ## Codegen (`internal/codegen/`)
 
-**Key file:** `codegen.go` (~3660 lines)
+**Key files** (split from the original monolithic `codegen.go`):
+
+| File | Contents |
+|------|---------|
+| `codegen.go` | Core `Generator` struct, `Generate`, declaration/statement/type generators, output helpers |
+| `codegen_expr.go` | Expression generators (`exprToString`, `generatePipeExpr`, `generateCallExpr`, string interpolation, …) |
+| `codegen_onerr.go` | `onerr` code generation (`generateOnErrVarDecl`, `generateOnErrHandler`, pipe-chain onerr, …) |
+| `codegen_imports.go` | Import generation and auto-import scanning (`generateImports`, `scanStmtForAutoImports`, …) |
+| `codegen_stdlib.go` | Stdlib/generics type inference (`inferStdlibTypeParameters`, `zeroValueForType`, …) |
+| `codegen_walk.go` | Unified AST visitor (`walkProgram`, `walkBlock`, `walkStmt`, `walkExpr`) and `needsXxx` helpers |
 
 ### Generator state
 
@@ -193,7 +218,7 @@ Use `g.write(str)` (no indent) or `g.writeLine(str)` (with current indent + newl
 
 1. **Lexer** (`lexer/token.go`): add `TOKEN_REPEAT`, add `"repeat"` to `keywords` map
 2. **AST** (`ast/ast.go`): add `ForRepeatStmt { Token, Count Expression, Body *BlockStmt }`
-3. **Parser** (`parser/parser.go`): in `parseStatement()` add `case lexer.TOKEN_REPEAT:` → `parseForRepeatStmt()`
+3. **Parser** (`parser/parser_stmt.go`): in `parseStatement()` add `case lexer.TOKEN_REPEAT:` → `parseForRepeatStmt()`
 4. **Semantic** (`semantic/semantic.go`): in `analyzeStatement()` add `case *ast.ForRepeatStmt:` → validate `Count` is numeric
 5. **Codegen** (`codegen/codegen.go`): in `generateStatement()` add `case *ast.ForRepeatStmt:` → emit `for _i := 0; _i < N; _i++ { ... }`
 6. **Tests**: add test cases in each package's `*_test.go`
