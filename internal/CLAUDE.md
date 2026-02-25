@@ -133,7 +133,13 @@ Always store the keyword's `lexer.Token` as the first field — it carries line/
 
 | File | Contents |
 |------|---------|
-| `semantic.go` | Core `Analyzer` struct, `Analyze`, `analyzeStatement`, `analyzeExpression`, type-checking helpers |
+| `semantic.go` | Core `Analyzer` struct, `New`, `Analyze`, `Warnings`, `ReturnCounts`, `error`/`warn` helpers |
+| `semantic_declarations.go` | Package name validation, skill validation, declaration collection/analysis (`collectDeclarations`, `analyzeFunctionDecl`, …) |
+| `semantic_statements.go` | Statement analysis (`analyzeBlock`, `analyzeStatement`, `analyzeIfStmt`, `analyzeForRangeStmt`, `analyzeVarDeclStmt`, …) |
+| `semantic_expressions.go` | Expression analysis (`analyzeExpression`, `analyzeIdentifier`, `analyzeBinaryExpr`, `analyzePipeExprMulti`, `analyzeListLiteral`, …) |
+| `semantic_onerr.go` | `onerr` clause analysis (`analyzeOnErrClause`, `funcReturnsError`, `analyzeStringInterpolation`) |
+| `semantic_types.go` | Type annotation validation and conversion (`validateTypeAnnotation`, `typeAnnotationToTypeInfo`, `typesCompatible`) |
+| `semantic_helpers.go` | Pure utilities (`isValidIdentifier`, `extractPackageName`, `isExported`, `isNumericType`, `primitiveTypeFromString`) |
 | `semantic_calls.go` | `analyzeCallExpr`, `analyzeMethodCallExpr` |
 | `semantic_security.go` | Security checks (`checkSQLInterpolation`, `checkHTMLNonLiteral`, `checkFetchInHandler`, `checkFilesInHandler`, `checkShellRunNonLiteral`, `checkRedirectNonLiteral`, `isInHTTPHandler`) |
 | `symbols.go` | Symbol table and type info |
@@ -219,7 +225,7 @@ Use `g.write(str)` (no indent) or `g.writeLine(str)` (with current indent + newl
 1. **Lexer** (`lexer/token.go`): add `TOKEN_REPEAT`, add `"repeat"` to `keywords` map
 2. **AST** (`ast/ast.go`): add `ForRepeatStmt { Token, Count Expression, Body *BlockStmt }`
 3. **Parser** (`parser/parser_stmt.go`): in `parseStatement()` add `case lexer.TOKEN_REPEAT:` → `parseForRepeatStmt()`
-4. **Semantic** (`semantic/semantic.go`): in `analyzeStatement()` add `case *ast.ForRepeatStmt:` → validate `Count` is numeric
+4. **Semantic** (`semantic/semantic_statements.go`): in `analyzeStatement()` add `case *ast.ForRepeatStmt:` → validate `Count` is numeric
 5. **Codegen** (`codegen/codegen.go`): in `generateStatement()` add `case *ast.ForRepeatStmt:` → emit `for _i := 0; _i < N; _i++ { ... }`
 6. **Tests**: add test cases in each package's `*_test.go`
 
