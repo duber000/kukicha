@@ -25,6 +25,8 @@ var generatedStdlibRegistry = map[string]int{
 	"a2a.Skills":                      1,
 	"a2a.Stream":                      2,
 	"a2a.Text":                        1,
+	"cast.Atoi":                       2,
+	"cast.ParseFloat":                 2,
 	"cast.SmartBool":                  2,
 	"cast.SmartFloat64":               2,
 	"cast.SmartInt":                   2,

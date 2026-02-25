@@ -4,7 +4,7 @@ petiole mcp
 
 import "context"
 import "stdlib/ctx" as ctxpkg
-import "encoding/json"
+import "stdlib/json"
 import "github.com/modelcontextprotocol/go-sdk/mcp"
 
 # ToolHandler is a callback for handling MCP tool invocations.

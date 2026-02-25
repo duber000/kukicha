@@ -5,6 +5,7 @@ package http
 import (
 	"errors"
 	"fmt"
+	"github.com/duber000/kukicha/stdlib/cast"
 	"github.com/duber000/kukicha/stdlib/fetch"
 	"github.com/duber000/kukicha/stdlib/json"
 	kukistring "github.com/duber000/kukicha/stdlib/string"
@@ -12,7 +13,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 )
 
 //line /home/user/kukicha/stdlib/http/http.kuki:20
@@ -150,7 +150,7 @@ func GetQueryInt(r *http.Request, key string) (int, error) {
 		return 0, errors.New(fmt.Sprintf("query parameter '%v' is required", key))
 	}
 //line /home/user/kukicha/stdlib/http/http.kuki:133
-	n, err := strconv.Atoi(value)
+	n, err := cast.Atoi(value)
 //line /home/user/kukicha/stdlib/http/http.kuki:134
 	if err != nil {
 //line /home/user/kukicha/stdlib/http/http.kuki:135
@@ -170,7 +170,7 @@ func GetQueryIntOr(r *http.Request, key string, defaultValue int) int {
 		return defaultValue
 	}
 //line /home/user/kukicha/stdlib/http/http.kuki:145
-	n, err := strconv.Atoi(value)
+	n, err := cast.Atoi(value)
 //line /home/user/kukicha/stdlib/http/http.kuki:146
 	if err != nil {
 //line /home/user/kukicha/stdlib/http/http.kuki:147

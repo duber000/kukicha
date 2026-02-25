@@ -9,7 +9,7 @@ import "slices"
 import "stdlib/string"
 import "unicode"
 import "net/url"
-import "strconv"
+import "stdlib/cast"
 
 # String Validation Functions
 
@@ -213,7 +213,7 @@ func InRangeFloat(n float64, min float64, max float64) (float64, error)
 # ParseInt parses a string as an integer with validation
 # Example: count := input |> validate.ParseInt() onerr return
 func ParseInt(s string) (int, error)
-    n, err := strconv.Atoi(s)
+    n, err := cast.Atoi(s)
     if err != empty
         return 0, error "invalid integer: {s}"
     return n, empty
@@ -221,7 +221,7 @@ func ParseInt(s string) (int, error)
 # ParsePositiveInt parses and validates a positive integer
 # Example: id := input |> validate.ParsePositiveInt() onerr return
 func ParsePositiveInt(s string) (int, error)
-    n, err := strconv.Atoi(s)
+    n, err := cast.Atoi(s)
     if err != empty
         return 0, error "invalid integer: {s}"
     if n <= 0
@@ -231,7 +231,7 @@ func ParsePositiveInt(s string) (int, error)
 # ParseFloat parses a string as a float64 with validation
 # Example: price := input |> validate.ParseFloat() onerr return
 func ParseFloat(s string) (float64, error)
-    n, err := strconv.ParseFloat(s, 64)
+    n, err := cast.ParseFloat(s, 64)
     if err != empty
         return 0.0, error "invalid number: {s}"
     return n, empty
