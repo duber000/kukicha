@@ -1,4 +1,4 @@
-# stdlib/AGENTS.md
+# stdlib/CLAUDE.md
 
 Kukicha standard library reference. Each package lives in `stdlib/<name>/` with:
 - `<name>.kuki` — Kukicha source (types, function signatures, inline implementations)
