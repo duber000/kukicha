@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # .claude/hooks/pre-commit-doc-review.sh
 #
-# PreToolUse hook: intercepts "git commit" commands and reminds the session
+# PreToolUse hook: intercepts "git commit" commands and requires the session
 # to review documentation before committing.
+#
+# Blocks every code commit until the session explicitly confirms it has reviewed
+# docs by prefixing the commit command with KUKICHA_DOCS_REVIEWED=1.
 #
 # Returns a JSON deny decision so Claude updates docs first.
 # NOTE: Do not use "set -euo pipefail" — a non-zero exit from any command
@@ -13,7 +16,7 @@ INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null) || COMMAND=""
 
 # Only intercept git commit commands — allow everything else
-if [[ ! "$COMMAND" =~ ^[[:space:]]*git[[:space:]]+commit ]]; then
+if [[ ! "$COMMAND" =~ ^[[:space:]]*(KUKICHA_DOCS_REVIEWED=1[[:space:]]+)?git[[:space:]]+commit ]]; then
     exit 0
 fi
 
@@ -27,20 +30,13 @@ if [ -z "$STAGED_CODE" ]; then
     exit 0
 fi
 
-# Check if doc files are already staged (user/session already updated them)
-STAGED_DOCS=$(git diff --cached --name-only -- \
-    'CLAUDE.md' 'AGENTS.md' \
-    'stdlib/CLAUDE.md' 'stdlib/AGENTS.md' \
-    'internal/CLAUDE.md' 'internal/AGENTS.md' \
-    '.claude/skills/**' '.agent/skills/**' 2>/dev/null) || true
-
-if [ -n "$STAGED_DOCS" ]; then
-    # Docs are already staged — allow the commit
+# Allow if the session has explicitly confirmed doc review via the env var prefix
+if [[ "$COMMAND" =~ ^[[:space:]]*KUKICHA_DOCS_REVIEWED=1 ]]; then
     exit 0
 fi
 
-# Block the commit and ask the session to review docs
+# Block the commit and require explicit doc review confirmation
 cat <<'DENY'
-{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Documentation review required before committing. Staged code changes were detected but no documentation files are staged. Please review and update any affected CLAUDE.md/AGENTS.md files (root, stdlib/, internal/) and .claude/skills/ files, then stage them before committing. After updating, also copy each CLAUDE.md to the corresponding AGENTS.md in the same directory."}}
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Documentation review required before committing. Review and update any affected CLAUDE.md/AGENTS.md files (root, stdlib/, internal/) and .claude/skills/ files. Copy each CLAUDE.md to its corresponding AGENTS.md in the same directory. Then commit with: KUKICHA_DOCS_REVIEWED=1 git commit ..."}}
 DENY
 exit 0
