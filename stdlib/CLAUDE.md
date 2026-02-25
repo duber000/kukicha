@@ -336,3 +336,4 @@ import "github.com/jackc/pgx/v5" as pgx
 2. **Never edit `internal/semantic/stdlib_registry_gen.go`** — it is auto-generated from stdlib `.kuki` signatures; `make generate` regenerates it automatically
 3. **Types must be defined in `.kuki`** — so the Kukicha compiler knows about them
 4. **After adding an exported function to a stdlib `.kuki` file**, run `make genstdlibregistry` (or just `make generate`) so `onerr` and pipe expressions work correctly with the new function
+5. There must be a test for each stdlib package.
