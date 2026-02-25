@@ -179,7 +179,9 @@ make genstdlibregistry   # or: make generate (runs everything)
 
 | File | Contents |
 |------|---------|
-| `codegen.go` | Core `Generator` struct, `Generate`, declaration/statement/type generators, output helpers |
+| `codegen.go` | Core `Generator` struct, public API (`New`, `SetSourceFile`, `SetExprReturnCounts`, …), `Generate`, top-level `generatePackage/Skill/Declaration`, output helpers (`write`, `writeLine`, `emitLineDirective`, `uniqueId`) |
+| `codegen_decl.go` | Declaration generators (`generateTypeDecl`, `generateInterfaceDecl`, `generateFunctionDecl`, `generateFunctionLiteral`, `generateArrowLambda`, `generateTypeAnnotation`, `generateReturnTypes`, …) |
+| `codegen_stmt.go` | Statement generators (`generateBlock`, `generateStatement`, `generateVarDeclStmt`, `generateAssignStmt`, `generateReturnStmt`, `coerceReturnValue`, `generateIfStmt`, `generateFor*`, `generateSwitch*`, `generateSelect*`) |
 | `codegen_expr.go` | Expression generators (`exprToString`, `generatePipeExpr`, `generateCallExpr`, string interpolation, …) |
 | `codegen_onerr.go` | `onerr` code generation (`generateOnErrVarDecl`, `generateOnErrHandler`, pipe-chain onerr, …) |
 | `codegen_imports.go` | Import generation and auto-import scanning (`generateImports`, `scanStmtForAutoImports`, …) |
