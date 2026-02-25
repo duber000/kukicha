@@ -1466,3 +1466,34 @@ func Handle(w http.ResponseWriter, r reference http.Request)
 		})
 	}
 }
+
+func TestExternalInterfaceTypeAsParameter(t *testing.T) {
+	// http.Handler should be accepted as a parameter and return type
+	// when net/http is imported
+	input := `import "net/http"
+
+func Wrap(handler http.Handler) http.Handler
+    return handler
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	// Should not produce any type-related errors
+	for _, e := range errors {
+		if strings.Contains(e.Error(), "undefined type") ||
+			strings.Contains(e.Error(), "not imported") {
+			t.Fatalf("unexpected type error for http.Handler: %v", e)
+		}
+	}
+}

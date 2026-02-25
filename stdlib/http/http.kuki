@@ -16,18 +16,14 @@ import "net/url"
 # WithCSRF wraps a handler with Cross-Origin protection
 # Uses Fetch metadata headers (modern browsers)
 # Example: http.WithCSRF(myHandler)
-# Note: Using 'any' for http.Handler due to type checker limitations
-func WithCSRF(handler any) any
+func WithCSRF(handler http.Handler) http.Handler
     protection := http.NewCrossOriginProtection()
-    h := handler as http.Handler
-    return protection.Handler(h)
+    return protection.Handler(handler)
 
 # Serve starts an HTTP server on the specified address
 # Example: http.Serve(":8080", handler)
-# Note: Using 'any' for http.Handler due to type checker limitations
-func Serve(addr string, handler any) error
-    h := handler as http.Handler
-    return http.ListenAndServe(addr, h)
+func Serve(addr string, handler http.Handler) error
+    return http.ListenAndServe(addr, handler)
 
 # Response Helpers
 # These functions simplify writing HTTP responses
@@ -322,12 +318,11 @@ func MethodNotAllowed(w http.ResponseWriter, many allowed string)
 # SecureHeaders returns middleware that injects security response headers
 # before delegating to the wrapped handler.
 # Use as: http.Serve(":8080", httphelper.SecureHeaders(mux))
-func SecureHeaders(handler any) any
-    h := handler.(http.Handler)
+func SecureHeaders(handler http.Handler) http.Handler
     return http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
         w.Header().Set("X-Content-Type-Options", "nosniff")
         w.Header().Set("X-Frame-Options", "DENY")
         w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
         w.Header().Set("Content-Security-Policy", "default-src 'self'")
-        h.ServeHTTP(w, r)
+        handler.ServeHTTP(w, r)
     )
