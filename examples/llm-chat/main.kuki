@@ -112,8 +112,7 @@ func main()
     print("--- OpenResponses: Streaming ---")
     orStreamed, err9 := llm.NewResponse("openai:gpt-4o") |> llm.RTemperature(0.9) |> llm.RStream(printChunk) |> llm.RAsk("Write a haiku about programming")
     if (err9 not equals empty)
-        print("
-Stream error: {err9}")
+        print("\nStream error: {err9}")
     else
         print("")
         print("(Full text: {orStreamed})")
@@ -223,8 +222,7 @@ Stream error: {err9}")
     print("--- Anthropic: Streaming ---")
     aStreamed, err18 := llm.NewMessages("claude-opus-4-6") |> llm.MMaxTokens(200) |> llm.MTemperature(0.9) |> llm.MStream(printChunk) |> llm.MAsk("Write a haiku about programming")
     if (err18 not equals empty)
-        print("
-Stream error: {err18}")
+        print("\nStream error: {err18}")
     else
         print("")
         print("(Full text: {aStreamed})")

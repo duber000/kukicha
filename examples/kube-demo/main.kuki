@@ -17,7 +17,6 @@ func main()
         print("  {kube.PodName(pod)} - {status} (ready: {ready}, restarts: {restarts})")
     # List deployments
     deps := scoped |> kube.ListDeployments onerr panic "{error}"
-    print("
-Deployments:")
+    print("\nDeployments:")
     for dep in kube.Deployments(deps)
         print("  {kube.DeploymentName(dep)} - {kube.DeploymentReady(dep)}/{kube.DeploymentReplicas(dep)} ready ({kube.DeploymentImage(dep)})")
