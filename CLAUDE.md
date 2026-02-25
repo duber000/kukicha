@@ -1,4 +1,4 @@
-# AGENTS.md
+# CLAUDE.md
 
 Kukicha is a beginner-friendly programming language that **transpiles to Go**.
 Current version: **0.0.9**
