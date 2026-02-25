@@ -1,23 +1,19 @@
 # Kukicha Language Limitations
 
-This document explains why some stdlib packages still contain hand-written Go helper files
-(`*_helper.go`) or tool files (`*_tool.go`) rather than being expressed purely in Kukicha,
-and notes areas where the stdlib overlaps with dedicated tooling.
+This document tracks language features that were previously missing from Kukicha,
+and notes remaining gaps where Kukicha syntax differs from Go.
 
-## Current Packages with Go Helpers
+## Resolved Limitations (all Go helpers eliminated)
 
-| Package | File | Lines | Reason |
-|---------|------|-------|--------|
-| `stdlib/container` | `container_helper.go` | ~400 | Functional options, tar archive handling, `filepath.WalkDir` closures |
+All stdlib packages that previously required hand-written Go helper files
+(`*_helper.go`) have been fully migrated to Kukicha. The following limitations
+were resolved using existing compiler capabilities:
 
----
-
-## 1. Functional Options / Variadic `...T` of Interface Type
+### 1. Functional Options / Variadic `...T` of Interface Type ✅ RESOLVED
 
 Go libraries often accept a variadic slice of option functions:
 
 ```go
-// Go — not expressible in Kukicha
 opts := []client.Opt{
     client.FromEnv,
     client.WithAPIVersionNegotiation(),
@@ -26,45 +22,96 @@ opts := []client.Opt{
 cli, err := client.NewClientWithOpts(opts...)
 ```
 
-Kukicha's `many` keyword handles variadic arguments but cannot build a `[]client.Opt` slice
-incrementally and pass it with spread syntax when the element type is a function type.
+**Resolution:** Kukicha's `list of` syntax and `many` spread already support this pattern:
 
-**Affects:** `container.Connect`, `container.ConnectRemote`, `container.Open`.
+```kukicha
+opts := list of client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
+if host != ""
+    opts = append(opts, client.WithHost(host))
+cli := client.NewClientWithOpts(many opts) onerr return empty, error "{error}"
+```
+
+**Migrated:** `container.newClient`, `container.Connect`, `container.ConnectRemote`, `container.Open`.
 
 ---
 
-## 2. Complex Streaming I/O (partially resolved)
+### 2. Complex Streaming I/O ✅ RESOLVED
 
-Some helper functions mix `bufio.Scanner`, anonymous struct JSON targets, and multi-pass
-stream processing that is idiomatic in Go but verbose in Kukicha:
+Anonymous struct declarations are not supported inline in function bodies.
+The **workaround** is to define named types at package level:
 
-```go
-// Go — terse due to anonymous struct
-var msg struct {
-    Status string `json:"status"`
-    Digest string `json:"id"`
-}
-json.Unmarshal(scanner.Bytes(), &msg)
+```kukicha
+# Named types replace anonymous structs
+type buildStreamMsg
+    Stream string json:"stream"
+    Aux buildStreamAux json:"aux"
+    Error string json:"error"
 ```
 
-Kukicha requires named types for struct literals and does not support anonymous struct
-declarations inline in function bodies. However, the **workaround** is straightforward:
-define named types at package level and use them in place of anonymous structs.
+**Migrated:** `Pull`, `PullAuth`, `loadDockerAuth`, `LoginFromConfig`, `buildImage`, `Build`.
 
-The following functions were migrated from `container_helper.go` to `container.kuki`
-using named types (`pullStatusMsg`, `buildStreamMsg`, `dockerAuthEntry`, `dockerConfig`):
+---
 
-- `Pull` — image pull with digest extraction from JSON stream
-- `PullAuth` — authenticated image pull
-- `loadDockerAuth` — reads `~/.docker/config.json` credentials
-- `LoginFromConfig` — creates `Auth` from Docker config file
+### 3. Closure-as-Struct-Field ✅ RESOLVED
 
-Note: `container.containerLogs` was previously migrated to Kukicha — it uses
-`stdcopy.StdCopy` for demuxing, not anonymous structs.
+Assigning closures to struct fields works in Kukicha:
 
-**Still in Go:** `container.buildImage` — uses anonymous structs *and* a
-`filepath.WalkDir` closure, which requires the closure-as-argument pattern.
+```kukicha
+dialer := net.Dialer{Timeout: datetime.Seconds(30)}
+dialer.Control = func(network string, address string, c syscall.RawConn) error
+    # closure body
+    return empty
+```
 
+**Migrated:** `netguard.DialContext`, `netguard.HTTPTransport`.
+
+---
+
+### 4. filepath.WalkDir Closures ✅ RESOLVED
+
+Passing closures to `filepath.WalkDir` (and `filepath.Walk`) works:
+
+```kukicha
+walkErr := filepath.WalkDir(path, func(walkPath string, d os.DirEntry, err error) error
+    if err != empty
+        return err
+    if d.IsDir() and d.Name() == ".git"
+        return filepath.SkipDir
+    # ... process file
+    return empty
+)
+```
+
+**Migrated:** `container.buildImage`, `container.createTarFromPath`, `container.CopyFrom`, `container.CopyTo`.
+
+---
+
+### 5. http.HandlerFunc Middleware ✅ RESOLVED
+
+Wrapping closures in `http.HandlerFunc` for middleware works:
+
+```kukicha
+func SecureHeaders(handler any) any
+    h := handler.(http.Handler)
+    return http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+        w.Header().Set("X-Content-Type-Options", "nosniff")
+        h.ServeHTTP(w, r)
+    )
+```
+
+**Migrated:** `http.SecureHeaders`.
+
+---
+
+## Remaining Syntax Gaps (no Go helpers needed)
+
+These are Kukicha language limitations that do **not** require Go helper files
+but are worth documenting:
+
+### Anonymous struct literals
+
+Kukicha does not support anonymous struct declarations inline in function bodies.
+Use named types at package level instead. This is a style difference, not a blocker.
 
 ### `stdlib/string` does not wrap all of Go's `strings` package
 
@@ -78,23 +125,11 @@ A few `strings` functions have no equivalent in `stdlib/string`:
 When migrating `.kuki` files from raw `import "strings"` to `import "stdlib/string"`, check for
 these two functions. Both replacements are slightly more verbose but fully equivalent.
 
----
+## Current Packages with Go Helpers
 
-### Still in Go — remaining blockers
+| Package | File | Lines | Reason |
+|---------|------|-------|--------|
+| `stdlib/mcp` | `mcp_tool.go` | ~100 | Callback bridge for MCP tool/resource/prompt handlers |
 
-| Function | Blocker | File |
-|----------|---------|------|
-| `newClient` | Variadic interface spreading (`opts...`) | `container_helper.go` |
-| `Connect`, `ConnectRemote` | Call `newClient` | `container_helper.go` |
-| `Open` | Variadic interface spreading (`opts...`) | `container_helper.go` |
-| `buildImage` | `filepath.WalkDir` closure + anonymous structs | `container_helper.go` |
-| `Build` | Calls `buildImage` | `container_helper.go` |
-| `CopyFrom`, `CopyTo` + helpers | `filepath.WalkDir` closure, tar archive handling | `container_helper.go` |
-
-### Impact summary
-
-| Blocker | Helpers it would unlock | Effort |
-|---------|------------------------|--------|
-| Variadic interface spreading | 4 functions (Docker client init) | Low-medium — extend `many` |
-| Anonymous struct literals | 4 functions (streaming JSON decode + auth in container) | Medium — parser + codegen |
-| Closure-as-struct-field | 1 function (netguard `DialContext`) | Low — codegen for struct field func literals |
+The `mcp` package's `_tool.go` uses a Go callback bridge pattern that requires
+runtime reflection and interface{} dispatch not yet expressible in Kukicha.
