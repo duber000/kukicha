@@ -2,7 +2,6 @@
 
 Kukicha standard library reference. Each package lives in `stdlib/<name>/` with:
 - `<name>.kuki` — Kukicha source (types, function signatures, inline implementations)
-- optional `<name>_helper.go` / `<name>_tool.go` — hand-written Go for cases not yet expressible in Kukicha
 - `<name>.go` — **Generated** by `make generate` from the `.kuki` file. Never edit directly.
 
 Import with: `import "stdlib/slice"`
@@ -304,26 +303,11 @@ result := template.HTMLRenderSimple(tmplStr, data) onerr return
 
 ## Module Structure
 
-Each stdlib module follows one of two patterns:
+Every stdlib module is **pure Kukicha**: `<name>.kuki` source + `<name>.go` generated output. No `_helper.go` or `_tool.go` files.
 
-### Pure Kukicha (types + logic in .kuki)
-Used when the implementation is straightforward Kukicha code. No `_helper.go` or `_tool.go`.
-Examples: `a2a`, `cast`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
-`input`, `iterator`, `json`, `kube`, `llm`, `maps`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
+All packages: `a2a`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
+`http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
 `random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `validate`
-
-### Kukicha types + Go helper (types in .kuki, implementation in _helper.go)
-Used when wrapping complex Go libraries where the entire implementation lives in Go.
-The `.kuki` file defines types visible to Kukicha code, and the `_helper.go` provides the implementation.
-Function type aliases (`type Handler func(string)`) are supported in `.kuki` files, enabling callback types.
-Examples: *(currently none — `container` and `kube` have both moved to other patterns)*
-
-### Mixed (most logic in .kuki, Go helper for ops not yet expressible in Kukicha)
-Used when most logic is pure Kukicha but some operations require hand-written Go.
-Examples:
-- `container` — most logic in `.kuki` (pull, auth, wait, events, exec, logs); Docker client init (`newClient`/`Connect`/`Open`), `buildImage`, tar archive handling (`CopyFrom`/`CopyTo`) in `_helper.go`
-- `http` — most helpers in `.kuki`; `SecureHeaders(handler)` middleware in `http_helper.go` because it requires a Go closure (`http.HandlerFunc(func(...){...})`) not yet expressible in Kukicha
-- `mcp` — core in `.kuki`, callback bridge in `_tool.go`
 
 ## Import Aliases
 
