@@ -118,8 +118,8 @@ function FetchRepos(username string) list of Repo
     repos := fetch.Get(url)
         |> fetch.CheckStatus()
         |> fetch.Json(list of Repo) onerr
-            print("Failed to fetch repos for '{username}': {error}")
-            return empty list of Repo
+        print("Failed to fetch repos for '{username}': {error}")
+        return empty list of Repo
 
     return repos
 ```
