@@ -344,9 +344,10 @@ Use `as alias` whenever the package's last path segment clashes with a local var
 ## Critical Rules
 
 1. **Always validate** - Run `kukicha check` before committing `.kuki` changes
-2. **4-space indentation only** - Tabs are not allowed in Kukicha
-3. **Explicit function signatures** - Parameters and return types must be declared
-4. **Test with `make test`** - Run the full test suite
+2. Use red/green TDD when adding new features. Update existing tests when required.
+3. **4-space indentation only** - Tabs are not allowed in Kukicha
+4. **Explicit function signatures** - Parameters and return types must be declared
+5. **Test with `make test`** - Run the full test suite
 
 ## Adding Features to the Compiler
 
