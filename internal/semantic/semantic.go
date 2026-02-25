@@ -987,7 +987,23 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 		// Return the target type
 		return a.typeAnnotationToTypeInfo(e.TargetType)
 	case *ast.ArrowLambda:
-		// Analyze arrow lambda body
+		// Analyze arrow lambda body — parameters must be in scope
+		a.symbolTable.EnterScope()
+		defer a.symbolTable.ExitScope()
+		for _, param := range e.Parameters {
+			if param.Type != nil {
+				a.validateTypeAnnotation(param.Type)
+			}
+			paramSymbol := &Symbol{
+				Name:    param.Name.Value,
+				Kind:    SymbolParameter,
+				Type:    a.typeAnnotationToTypeInfo(param.Type),
+				Defined: param.Name.Pos(),
+			}
+			if err := a.symbolTable.Define(paramSymbol); err != nil {
+				a.error(param.Name.Pos(), err.Error())
+			}
+		}
 		if e.Body != nil {
 			a.analyzeExpression(e.Body)
 		}

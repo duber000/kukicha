@@ -36,11 +36,26 @@ func (g *Generator) inferExprReturnType(expr ast.Expression) string {
 		return "float64"
 	case *ast.StringLiteral:
 		return "string"
+	case *ast.PipeExpr:
+		// For a pipe chain, the return type is determined by the final step.
+		return g.inferExprReturnType(e.Right)
+	case *ast.MethodCallExpr:
+		// Known bool-returning stdlib methods used in filter/predicate lambdas.
+		boolMethods := map[string]bool{
+			"Contains":  true,
+			"HasPrefix": true,
+			"HasSuffix": true,
+			"EqualFold": true,
+		}
+		if boolMethods[e.Method.Value] {
+			return "bool"
+		}
+		return ""
 	case *ast.CallExpr:
 		// Can't easily determine return type of arbitrary call
 		return ""
 	}
-	// For field access, method calls, etc. — can't determine without full type info
+	// For field access, identifiers, etc. — can't determine without full type info
 	return ""
 }
 
