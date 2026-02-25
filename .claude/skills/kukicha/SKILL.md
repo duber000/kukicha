@@ -5,7 +5,7 @@ description: Help write, debug, and understand Kukicha code - a beginner-friendl
 
 # Kukicha Language Skill
 
-Kukicha (茎) transpiles to idiomatic Go. Full language reference is in `AGENTS.md`; stdlib API and patterns are in `stdlib/AGENTS.md` — both always available.
+Kukicha (茎) transpiles to idiomatic Go. Full language reference is in `CLAUDE.md`; stdlib API and patterns are in `stdlib/CLAUDE.md` — both always available.
 
 **For compiler errors and diagnostics**, read `.claude/skills/kukicha/troubleshooting.md`.
 
