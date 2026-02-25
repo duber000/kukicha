@@ -81,10 +81,20 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 		}
 
 		if funcType.Variadic {
-			// Variadic: must have at least (required params - 1) arguments
-			minArgs := max(requiredParams-1, 0)
-			if totalProvidedArgs < minArgs {
-				a.error(expr.Pos(), fmt.Sprintf("expected at least %d arguments, got %d", minArgs, totalProvidedArgs))
+			if expr.Variadic {
+				// Spreading a slice into variadic: f(many args)
+				// The spread argument replaces the entire variadic portion,
+				// so we need at least (non-variadic params) + 1 (the spread) arguments.
+				nonVariadicParams := len(funcType.Params) - 1
+				if totalProvidedArgs < nonVariadicParams+1 {
+					a.error(expr.Pos(), fmt.Sprintf("expected at least %d arguments, got %d", nonVariadicParams+1, totalProvidedArgs))
+				}
+			} else {
+				// Variadic: must have at least (required params - 1) arguments
+				minArgs := max(requiredParams-1, 0)
+				if totalProvidedArgs < minArgs {
+					a.error(expr.Pos(), fmt.Sprintf("expected at least %d arguments, got %d", minArgs, totalProvidedArgs))
+				}
 			}
 		} else {
 			// Non-variadic: must have between required and total params
@@ -111,6 +121,25 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 			paramIndex := i
 			if funcType.Variadic && i >= len(funcType.Params)-1 {
 				paramIndex = len(funcType.Params) - 1
+			}
+
+			// When spreading a slice (expr.Variadic), the last argument is a
+			// slice being unpacked. Check that its element type matches the
+			// variadic parameter type instead of comparing directly.
+			if expr.Variadic && funcType.Variadic && paramIndex == len(funcType.Params)-1 && i == len(providedArgTypes)-1 {
+				variadicParamType := funcType.Params[paramIndex]
+				if argType.Kind == TypeKindList && argType.ElementType != nil {
+					// list of T spread into ...T — check element type
+					if !a.typesCompatible(variadicParamType, argType.ElementType) {
+						a.error(expr.Pos(), fmt.Sprintf("argument %d: cannot use %s as []%s in variadic spread", i+1, argType, variadicParamType))
+					}
+				} else if argType.Kind != TypeKindUnknown {
+					// Not a list — could still be valid for interface{} params or unknown types
+					if !a.typesCompatible(variadicParamType, argType) {
+						a.error(expr.Pos(), fmt.Sprintf("argument %d: cannot use %s as %s", i+1, argType, variadicParamType))
+					}
+				}
+				continue
 			}
 
 			if paramIndex < len(funcType.Params) && !a.typesCompatible(funcType.Params[paramIndex], argType) {

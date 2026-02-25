@@ -8,7 +8,7 @@
 petiole must
 
 import "stdlib/env"
-import "strconv"
+import "stdlib/cast"
 import "fmt"
 
 # Do executes a function that returns (T, error) and panics if there's an error
@@ -64,7 +64,7 @@ func EnvInt(key string) int
     value := env.GetOr(key, "")
     if value == ""
         panic("must: environment variable {key} is required but not set")
-    n, err := strconv.Atoi(value)
+    n, err := cast.Atoi(value)
     if err != empty
         panic("must: environment variable {key} must be a valid integer, got '{value}'")
     return n
@@ -76,7 +76,7 @@ func EnvIntOr(key string, defaultValue int) int
     value := env.GetOr(key, "")
     if value == ""
         return defaultValue
-    n, err := strconv.Atoi(value)
+    n, err := cast.Atoi(value)
     if err != empty
         panic("must: environment variable {key} must be a valid integer, got '{value}'")
     return n

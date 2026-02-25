@@ -67,6 +67,40 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) *TypeInfo {
 		_ = a.analyzeExpression(e.Expression)
 		// Return the target type
 		return a.typeAnnotationToTypeInfo(e.TargetType)
+	case *ast.FunctionLiteral:
+		// Analyze function literal — parameters and body must be validated
+		a.symbolTable.EnterScope()
+		defer a.symbolTable.ExitScope()
+		for _, param := range e.Parameters {
+			if param.Type != nil {
+				a.validateTypeAnnotation(param.Type)
+			}
+			paramSymbol := &Symbol{
+				Name:    param.Name.Value,
+				Kind:    SymbolParameter,
+				Type:    a.typeAnnotationToTypeInfo(param.Type),
+				Defined: param.Name.Pos(),
+			}
+			if err := a.symbolTable.Define(paramSymbol); err != nil {
+				a.error(param.Name.Pos(), err.Error())
+			}
+		}
+		for _, ret := range e.Returns {
+			a.validateTypeAnnotation(ret)
+		}
+		if e.Body != nil {
+			// Set currentFunc to a synthetic FunctionDecl so return
+			// checking validates against the literal's return types.
+			savedFunc := a.currentFunc
+			a.currentFunc = &ast.FunctionDecl{
+				Token:      e.Token,
+				Parameters: e.Parameters,
+				Returns:    e.Returns,
+			}
+			a.analyzeBlock(e.Body)
+			a.currentFunc = savedFunc
+		}
+		return &TypeInfo{Kind: TypeKindUnknown}
 	case *ast.ArrowLambda:
 		// Analyze arrow lambda body — parameters must be in scope
 		a.symbolTable.EnterScope()

@@ -8,7 +8,7 @@ import "stdlib/json"
 import "stdlib/string"
 import "stdlib/fetch"
 import "io"
-import "strconv"
+import "stdlib/cast"
 import "fmt"
 import "html"
 import "net/url"
@@ -130,7 +130,7 @@ func GetQueryInt(r reference http.Request, key string) (int, error)
     value := r.URL.Query().Get(key)
     if value == ""
         return 0, error("query parameter '{key}' is required")
-    n, err := strconv.Atoi(value)
+    n, err := cast.Atoi(value)
     if err != empty
         return 0, error("query parameter '{key}' must be an integer")
     return n, empty
@@ -142,7 +142,7 @@ func GetQueryIntOr(r reference http.Request, key string, defaultValue int) int
     value := r.URL.Query().Get(key)
     if value == ""
         return defaultValue
-    n, err := strconv.Atoi(value)
+    n, err := cast.Atoi(value)
     if err != empty
         return defaultValue
     return n

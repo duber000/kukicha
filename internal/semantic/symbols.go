@@ -184,6 +184,10 @@ func NewScope(parent *Scope) *Scope {
 
 // Define adds a symbol to the current scope
 func (s *Scope) Define(symbol *Symbol) error {
+	// The blank identifier '_' can be used multiple times in the same scope
+	if symbol.Name == "_" {
+		return nil
+	}
 	if _, exists := s.symbols[symbol.Name]; exists {
 		return fmt.Errorf("identifier '%s' already declared in this scope", symbol.Name)
 	}
