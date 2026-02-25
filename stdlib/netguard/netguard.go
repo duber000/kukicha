@@ -12,184 +12,184 @@ import (
 	"syscall"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:29
 type Guard struct {
 	networks     []*net.IPNet
 	blockPrivate bool
 	mode         string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:35
 func parseCIDRs(cidrs []string) ([]*net.IPNet, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:36
 	nets := make([]*net.IPNet, 0)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:37
 	for _, cidr := range cidrs {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:38
 		network, err := netutil.ParseCIDR(cidr)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:39
 		if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:40
 			return nil, fmt.Errorf("netguard: invalid CIDR %q: %w", cidr, err)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:41
 		nets = append(nets, network)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:42
 	return nets, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:45
 func checkIP(g Guard, ip net.IP) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:46
 	matched := false
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:47
 	for _, n := range g.networks {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:48
 		if netutil.Contains(n, ip) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:49
 			matched = true
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:50
 			break
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:52
 	switch g.mode {
 	case "allow":
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:54
 		return matched
 	case "block":
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:56
 		return !matched
 	default:
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:58
 		return false
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:61
 func NewAllow(cidrs []string) (Guard, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:62
 	nets, err := parseCIDRs(cidrs)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:63
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:64
 		return Guard{}, err
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:65
 	return Guard{networks: nets, mode: "allow"}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:68
 func NewBlock(cidrs []string) (Guard, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:69
 	nets, err := parseCIDRs(cidrs)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:70
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:71
 		return Guard{}, err
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:72
 	return Guard{networks: nets, mode: "block"}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:76
 func NewSSRFGuard() Guard {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:95
 	ssrfCIDRs := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16", "::1/128", "fc00::/7", "fe80::/10", "0.0.0.0/8", "100.64.0.0/10", "192.0.0.0/24", "192.0.2.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "224.0.0.0/4", "240.0.0.0/4"}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:96
 	nets, _ := parseCIDRs(ssrfCIDRs)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:97
 	return Guard{networks: nets, blockPrivate: true, mode: "block"}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:101
 func Check(g Guard, ipStr string) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:102
 	ip := netutil.ParseIP(ipStr)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:103
 	if netutil.IsNil(ip) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:104
 		return false
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:105
 	return checkIP(g, ip)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:110
 func DialContext(g Guard, ctx context.Context, network string, addr string) (net.Conn, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:111
 	host, port, err := net.SplitHostPort(addr)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:112
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:113
 		return nil, fmt.Errorf("netguard: invalid address %q: %w", addr, err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:115
 	ips, lookupErr := net.DefaultResolver.LookupIPAddr(ctx, host)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:116
 	if lookupErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:117
 		return nil, fmt.Errorf("netguard: dns lookup %q: %w", host, lookupErr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:120
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:120
 	dialIP := net.IPAddr{}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:121
 	found := false
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:122
 	for _, ip := range ips {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:123
 		if checkIP(g, ip.IP) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:124
 			dialIP = ip
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:125
 			found = true
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:126
 			break
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:127
 	if !found {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:128
 		return nil, fmt.Errorf("netguard: all resolved IPs for %q are blocked", host)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:131
 	dialer := net.Dialer{Timeout: datetime.Seconds(30)}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:139
 	dialer.Control = func(controlNetwork string, controlAddress string, c syscall.RawConn) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:133
 		connHost, _, _ := net.SplitHostPort(controlAddress)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:134
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:134
 		connIP := net.ParseIP(connHost)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:135
 		if (connIP != nil) && !checkIP(g, connIP) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:136
 			return fmt.Errorf("netguard: connection to %s blocked by policy", connHost)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:137
 		return nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:139
 	dialAddr := net.JoinHostPort(dialIP.IP.String(), port)
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:140
 	return dialer.DialContext(ctx, network, dialAddr)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:143
 func HTTPTransport(g Guard) *http.Transport {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:144
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:144
 	t := http.Transport{}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:147
 	t.DialContext = func(dialCtx context.Context, dialNetwork string, dialAddr string) (net.Conn, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:146
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:146
 		return DialContext(g, dialCtx, dialNetwork, dialAddr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:147
 	return &t
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:150
 func HTTPClient(g Guard) *http.Client {
-//line /Users/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/netguard/netguard.kuki:151
 	return &http.Client{Transport: HTTPTransport(g)}
 }

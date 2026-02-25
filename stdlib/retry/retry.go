@@ -4,69 +4,69 @@ package retry
 
 import "time"
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:19
 type Config struct {
 	MaxAttempts  int
 	InitialDelay int
 	Strategy     int
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:25
 func New() Config {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:26
 	return Config{MaxAttempts: 3, InitialDelay: 1000, Strategy: 1}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:29
 func Attempts(cfg Config, maxAttempts int) Config {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:30
 	cfg.MaxAttempts = maxAttempts
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:31
 	return cfg
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:34
 func Delay(cfg Config, delayMs int) Config {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:35
 	cfg.InitialDelay = delayMs
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:36
 	return cfg
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:39
 func Linear(cfg Config) Config {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:40
 	cfg.Strategy = 0
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:41
 	return cfg
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:45
 func Sleep(cfg Config, attempt int) {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:46
 	delay := calculateDelay(cfg, attempt)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:47
 	time.Sleep((time.Duration(delay) * time.Millisecond))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:50
 func calculateDelay(cfg Config, attempt int) int {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:51
 	if cfg.Strategy == 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:52
 		return cfg.InitialDelay
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:55
 	multiplier := 1
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:56
 	i := 0
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:57
 	for i < attempt {
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:58
 		multiplier = (multiplier * 2)
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:59
 		i = (i + 1)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:61
 	return (cfg.InitialDelay * multiplier)
 }

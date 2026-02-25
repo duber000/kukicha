@@ -14,19 +14,19 @@ import (
 	"net/http"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:14
 type TextHandler func(string)
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:17
 type StatusHandler func(StatusUpdate)
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:20
 type Agent struct {
 	Card   *a2a.AgentCard
 	Client *a2aclient.Client
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:25
 type Request struct {
 	agent            Agent
 	text             string
@@ -37,7 +37,7 @@ type Request struct {
 	retryDelayMs     int
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:35
 type Task struct {
 	ID        string
 	ContextID string
@@ -46,13 +46,13 @@ type Task struct {
 	Artifacts []Artifact
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:43
 type Artifact struct {
 	Name string
 	Text string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:48
 type StatusUpdate struct {
 	TaskID  string
 	State   string
@@ -60,380 +60,380 @@ type StatusUpdate struct {
 	Final   bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:55
 type Skill struct {
 	Name        string
 	Description string
 	Examples    []string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:61
 func Discover(url string) (Agent, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:62
 	bg := ctxpkg.Background()
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:63
 	card, err_1 := agentcard.DefaultResolver.Resolve(ctxpkg.Value(bg), url)
 	if err_1 != nil {
 		err_1 = fmt.Errorf("a2a discover: %w", err_1)
 		return *new(Agent), err_1
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:64
 	client, err_2 := a2aclient.NewFromCard(ctxpkg.Value(bg), card)
 	if err_2 != nil {
 		err_2 = fmt.Errorf("a2a client: %w", err_2)
 		return *new(Agent), err_2
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:65
 	return Agent{Card: card, Client: client}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:68
 func DiscoverGuarded(url string, httpClient *http.Client) (Agent, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:69
 	bg := ctxpkg.Background()
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:70
 	resolver := agentcard.NewResolver(httpClient)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:71
 	card, err_3 := resolver.Resolve(ctxpkg.Value(bg), url)
 	if err_3 != nil {
 		err_3 = fmt.Errorf("a2a discover: %w", err_3)
 		return *new(Agent), err_3
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:72
 	client, err_4 := a2aclient.NewFromCard(ctxpkg.Value(bg), card, a2aclient.WithJSONRPCTransport(httpClient))
 	if err_4 != nil {
 		err_4 = fmt.Errorf("a2a client: %w", err_4)
 		return *new(Agent), err_4
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:73
 	return Agent{Card: card, Client: client}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:76
 func New(agent Agent) Request {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:77
 	return Request{agent: agent}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:80
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:80
 func Text(req Request, text string) Request {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:81
 	req.text = text
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:82
 	return req
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:85
 func Context(req Request, id string) Request {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:86
 	req.contextID = id
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:87
 	return req
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:90
 func OnText(req Request, handler TextHandler) Request {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:91
 	req.onText = handler
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:92
 	return req
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:95
 func OnStatus(req Request, handler StatusHandler) Request {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:96
 	req.onStatus = handler
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:97
 	return req
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:102
 func Retry(req Request, maxAttempts int, delayMs int) Request {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:103
 	req.retryMaxAttempts = maxAttempts
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:104
 	req.retryDelayMs = delayMs
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:105
 	return req
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:108
 func Close(agent Agent) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:109
 	return agent.Client.Destroy()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:112
 func Skills(agent Agent) []Skill {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:113
 	skills := make([]Skill, len(agent.Card.Skills))
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:114
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:114
 	for i, s := range agent.Card.Skills {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:115
 		skills[i] = Skill{Name: s.Name, Description: s.Description, Examples: s.Examples}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:116
 	return skills
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:120
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:120
 func Send(req Request) (Task, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:121
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:121
 	if req.retryMaxAttempts <= 1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:122
 		return sendRequest(req.agent, req.text, req.contextID)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:124
 	delayMs := req.retryDelayMs
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:125
 	if delayMs <= 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:126
 		delayMs = 1000
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:127
 	cfg := retry.Config{MaxAttempts: req.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:128
 	attempt := 0
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:129
 	lastErr := errors.New("no attempts made")
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:130
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:130
 	for attempt < cfg.MaxAttempts {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:131
 		task, err := sendRequest(req.agent, req.text, req.contextID)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:132
 		if err == nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:133
 			return task, nil
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:134
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:134
 		lastErr = err
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:135
 		retry.Sleep(cfg, attempt)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:136
 		attempt = (attempt + 1)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:137
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:137
 	return *new(Task), lastErr
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:140
 func Stream(req Request) (Task, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:141
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:141
 	return streamRequest(req.agent, req.text, req.contextID, req.onText, req.onStatus)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:144
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:144
 func Ask(agent Agent, text string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:145
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:145
 	task, err_5 := sendRequest(agent, text, "")
 	if err_5 != nil {
 		err_5 = fmt.Errorf("a2a ask: %w", err_5)
 		return "", err_5
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:146
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:146
 	return task.Text, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:149
 func GetTask(agent Agent, taskID string) (Task, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:150
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:150
 	bg := ctxpkg.Background()
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:151
 	params := a2a.TaskQueryParams{ID: a2a.TaskID(taskID)}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:152
 	t, err_6 := agent.Client.GetTask(ctxpkg.Value(bg), &params)
 	if err_6 != nil {
 		err_6 = fmt.Errorf("a2a get task: %w", err_6)
 		return *new(Task), err_6
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:153
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:153
 	return taskFromA2A(t), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:156
 func Cancel(agent Agent, taskID string) (Task, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:157
 	bg := ctxpkg.Background()
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:158
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:158
 	params := a2a.TaskIDParams{ID: a2a.TaskID(taskID)}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:159
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:159
 	t, err_7 := agent.Client.CancelTask(ctxpkg.Value(bg), &params)
 	if err_7 != nil {
 		err_7 = fmt.Errorf("a2a cancel: %w", err_7)
 		return *new(Task), err_7
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:160
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:160
 	return taskFromA2A(t), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:163
 func sendRequest(agent Agent, text string, contextID string) (Task, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:164
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:164
 	bg := ctxpkg.Background()
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:165
 	msg := a2a.NewMessage(a2a.MessageRoleUser, a2a.TextPart{Text: text})
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:166
 	if contextID != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:167
 		msg.ContextID = contextID
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:168
 	params := a2a.MessageSendParams{Message: msg}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:169
 	resp, err_8 := agent.Client.SendMessage(ctxpkg.Value(bg), &params)
 	if err_8 != nil {
 		err_8 = fmt.Errorf("a2a send: %w", err_8)
 		return *new(Task), err_8
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:170
 	return resultToTask(resp), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:173
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:173
 func streamRequest(agent Agent, text string, contextID string, onText TextHandler, onStatus StatusHandler) (Task, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:174
 	bg := ctxpkg.Background()
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:175
 	msg := a2a.NewMessage(a2a.MessageRoleUser, a2a.TextPart{Text: text})
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:176
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:176
 	if contextID != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:177
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:177
 		msg.ContextID = contextID
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:179
 	result := *new(Task)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:180
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:180
 	params := a2a.MessageSendParams{Message: msg}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:181
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:181
 	for event, err := range agent.Client.SendStreamingMessage(ctxpkg.Value(bg), &params) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:182
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:182
 		if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:183
 			return result, errors.New(fmt.Sprintf("a2a stream: %v", err))
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:184
 		switch e := event.(type) {
 		case *a2a.TaskStatusUpdateEvent:
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:186
 			if onStatus != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:187
 				statusMsg := ""
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:188
 				if e.Status.Message != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:189
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:189
 					statusMsg = extractPartsText(e.Status.Message.Parts)
 				}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:190
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:190
 				onStatus(StatusUpdate{TaskID: string(e.TaskID), State: string(e.Status.State), Message: statusMsg, Final: e.Final})
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:191
 			result.ID = string(e.TaskID)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:192
 			result.ContextID = e.ContextID
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:193
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:193
 			result.State = string(e.Status.State)
 		case *a2a.TaskArtifactUpdateEvent:
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:195
 			if e.Artifact != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:196
 				artText := extractPartsText(e.Artifact.Parts)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:197
 				if (onText != nil) && (artText != "") {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:198
 					onText(artText)
 				}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:199
 				result.Artifacts = append(result.Artifacts, Artifact{Name: e.Artifact.Name, Text: artText})
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:200
 			result.ID = string(e.TaskID)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:201
 			result.ContextID = e.ContextID
 		case *a2a.Task:
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:203
 			result = taskFromA2A(e)
 		case *a2a.Message:
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:205
 			msgText := extractPartsText(e.Parts)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:206
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:206
 			if (onText != nil) && (msgText != "") {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:207
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:207
 				onText(msgText)
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:208
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:208
 			result.Text = msgText
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:209
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:209
 	return result, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:212
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:212
 func resultToTask(result a2a.SendMessageResult) Task {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:213
 	switch r := result.(type) {
 	case *a2a.Task:
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:215
 		return taskFromA2A(r)
 	case *a2a.Message:
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:217
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:217
 		return Task{ID: string(r.TaskID), ContextID: r.ContextID, Text: extractPartsText(r.Parts)}
 	default:
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:219
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:219
 		return *new(Task)
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:222
 func taskFromA2A(t *a2a.Task) Task {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:223
 	result := Task{ID: string(t.ID), ContextID: t.ContextID, State: string(t.Status.State)}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:225
 	for _, art := range t.Artifacts {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:226
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:226
 		artText := extractPartsText(art.Parts)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:227
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:227
 		result.Artifacts = append(result.Artifacts, Artifact{Name: art.Name, Text: artText})
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:229
 	texts := []string{}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:230
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:230
 	if t.Status.Message != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:231
 		msg := extractPartsText(t.Status.Message.Parts)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:232
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:232
 		if msg != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:233
 			texts = append(texts, msg)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:234
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:234
 	for _, art := range result.Artifacts {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:235
 		if art.Text != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:236
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:236
 			texts = append(texts, art.Text)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:237
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:237
 	result.Text = kukistring.Join(texts, "\n")
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:239
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:239
 	return result
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:242
 func extractPartsText(parts []a2a.Part) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:243
 	texts := []string{}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:244
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:244
 	for _, p := range parts {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:245
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:245
 		switch tp := p.(type) {
 		case a2a.TextPart:
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:247
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:247
 			texts = append(texts, tp.Text)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:248
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a.kuki:248
 	return kukistring.Join(texts, "")
 }

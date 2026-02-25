@@ -6,15 +6,18 @@ func main()
     evens := numbers |> slice.Filter(func(n int) bool
         return n % 2 equals 0
     )
-    
+    print(evens)
+
     # Test 2: Map with closure
     doubled := numbers |> slice.Map(func(n int) int
         return n * 2
     )
-    
+    print(doubled)
+
     # Test 3: Multiple statements in closure
     processed := numbers |> slice.Map(func(n int) int
         squared := n * n
         adjusted := squared + 1
         return adjusted
     )
+    print(processed)

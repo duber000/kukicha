@@ -117,15 +117,22 @@ func (g *Generator) isStdlibJSON() bool {
 	return strings.Contains(g.sourceFile, "stdlib/json/") || strings.Contains(g.sourceFile, "stdlib\\json\\")
 }
 
-// inferSliceTypeParameters infers type parameters for stdlib/slice functions like GroupBy
-// GroupBy needs two type parameters: T (element type) and K (key type, must be comparable)
+// inferSliceTypeParameters infers type parameters for stdlib/slice functions.
+// GroupBy gets [T any, K comparable]; a curated set of other functions get [T any].
+//
+// Functions are excluded from generic treatment when they either:
+//   - return `empty` as a value of type T (which becomes nil — invalid for unconstrained generics), or
+//   - use T as a map key (requires comparable), or
+//   - delegate to Go stdlib functions that require comparable (slices.Contains, slices.Index).
+//
+// The excluded functions (Get, FirstOne, LastOne, Find, FindLast, Pop, Shift, Unique,
+// Contains, IndexOf) retain []any signatures until the codegen can emit proper zero
+// values for generic type parameters.
 func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
 	var typeParams []*TypeParameter
 
-	// Special handling for GroupBy: func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of any
+	// GroupBy has two type parameters: T (element) and K (comparable map key)
 	if decl.Name.Value == "GroupBy" {
-		// GroupBy returns map[K][]T where K is the key type and T is the element type
-		// The function signature uses placeholders: "any" for T, "any2" for K
 		typeParams = append(typeParams, &TypeParameter{
 			Name:        "T",
 			Placeholder: "any",
@@ -135,6 +142,58 @@ func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypePara
 			Name:        "K",
 			Placeholder: "any2",
 			Constraint:  "comparable",
+		})
+		return typeParams
+	}
+
+	// Allowlist: functions that are safe to parameterise with [T any].
+	// These never return `empty` as a value of type T, never use T as a map key,
+	// and do not delegate to comparable-constrained Go stdlib helpers.
+	genericSafe := map[string]bool{
+		"Filter":     true,
+		"Map":        true,
+		"First":      true,
+		"Last":       true,
+		"Drop":       true,
+		"DropLast":   true,
+		"Reverse":    true,
+		"Chunk":      true,
+		"IsEmpty":    true,
+		"IsNotEmpty": true,
+		"Concat":     true,
+		"GetOr":      true,
+		"FirstOr":    true,
+		"LastOr":     true,
+		"FindOr":     true,
+		"FindIndex":  true,
+		"FindLastOr": true,
+	}
+	if !genericSafe[decl.Name.Value] {
+		return typeParams
+	}
+
+	// If the signature references the "any" placeholder, emit [T any] and substitute
+	// "any" → T throughout parameters and return types.
+	usesAny := false
+	for _, param := range decl.Parameters {
+		if g.typeContainsPlaceholder(param.Type, "any") {
+			usesAny = true
+			break
+		}
+	}
+	if !usesAny {
+		for _, ret := range decl.Returns {
+			if g.typeContainsPlaceholder(ret, "any") {
+				usesAny = true
+				break
+			}
+		}
+	}
+	if usesAny {
+		typeParams = append(typeParams, &TypeParameter{
+			Name:        "T",
+			Placeholder: "any",
+			Constraint:  "any",
 		})
 	}
 

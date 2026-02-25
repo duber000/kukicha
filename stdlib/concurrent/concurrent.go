@@ -4,58 +4,58 @@ package concurrent
 
 import "sync"
 
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:10
 func Parallel(tasks ...func()) {
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:11
 	wg := sync.WaitGroup{}
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:12
 	wg.Add(len(tasks))
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:13
 	for _, task := range tasks {
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:14
 		t := task
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:15
 		go func() {
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:16
 			t()
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:17
 			wg.Done()
 		}()
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:19
 	wg.Wait()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:24
 func ParallelWithLimit(limit int, tasks ...func()) {
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:25
 	wg := sync.WaitGroup{}
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:26
 	semaphore := make(chan int, limit)
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:27
 	wg.Add(len(tasks))
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:28
 	for _, task := range tasks {
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:29
 		semaphore <- 1
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:30
 		t := task
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:31
 		go func() {
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:32
 			t()
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:33
 			<-semaphore
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:34
 			wg.Done()
 		}()
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:36
 	wg.Wait()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:42
 func Go(fn func()) {
-//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:43
 	go fn()
 }
