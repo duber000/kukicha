@@ -357,6 +357,8 @@ Typical workflow for new syntax:
 4. **Codegen** (`internal/codegen/`) - Generate corresponding Go code
 5. **Tests** - Add tests in each modified package
 
+See **[`internal/CLAUDE.md`](internal/CLAUDE.md)** for the full compiler reference.
+
 ## Stdlib Packages
 
 See **[`stdlib/CLAUDE.md`](stdlib/CLAUDE.md)** for the full package reference, API details, and common usage patterns.
