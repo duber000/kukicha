@@ -754,6 +754,39 @@ func TestExample(t reference testing.T)
 	}
 }
 
+func TestStringInterpolationInSwitchAddsFmtImport(t *testing.T) {
+	input := `func main()
+    v := 1
+    switch v
+        when 1
+            panic "bad {v}"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "fmt.Sprintf") {
+		t.Errorf("expected fmt.Sprintf in switch body interpolation, got: %s", output)
+	}
+
+	if !strings.Contains(output, `"fmt"`) {
+		t.Errorf("expected fmt import for switch body interpolation, got: %s", output)
+	}
+}
+
 func TestReferenceType(t *testing.T) {
 	input := `type Person
     Name string

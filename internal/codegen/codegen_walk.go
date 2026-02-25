@@ -405,6 +405,73 @@ func (g *Generator) stmtHasNonPrintfInterpolation(stmt ast.Statement) bool {
 		if s.Body != nil && g.blockHasNonPrintfInterpolation(s.Body) {
 			return true
 		}
+	case *ast.ElseStmt:
+		if s.Body != nil && g.blockHasNonPrintfInterpolation(s.Body) {
+			return true
+		}
+	case *ast.SwitchStmt:
+		if s.Expression != nil && g.exprHasNonPrintfInterpolation(s.Expression) {
+			return true
+		}
+		for _, c := range s.Cases {
+			for _, v := range c.Values {
+				if g.exprHasNonPrintfInterpolation(v) {
+					return true
+				}
+			}
+			if c.Body != nil && g.blockHasNonPrintfInterpolation(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil && g.blockHasNonPrintfInterpolation(s.Otherwise.Body) {
+			return true
+		}
+	case *ast.TypeSwitchStmt:
+		if g.exprHasNonPrintfInterpolation(s.Expression) {
+			return true
+		}
+		for _, c := range s.Cases {
+			if c.Body != nil && g.blockHasNonPrintfInterpolation(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil && g.blockHasNonPrintfInterpolation(s.Otherwise.Body) {
+			return true
+		}
+	case *ast.SelectStmt:
+		for _, c := range s.Cases {
+			if c.Recv != nil {
+				if g.exprHasNonPrintfInterpolation(c.Recv.Channel) {
+					return true
+				}
+			}
+			if c.Send != nil {
+				if g.exprHasNonPrintfInterpolation(c.Send.Channel) || g.exprHasNonPrintfInterpolation(c.Send.Value) {
+					return true
+				}
+			}
+			if c.Body != nil && g.blockHasNonPrintfInterpolation(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil && g.blockHasNonPrintfInterpolation(s.Otherwise.Body) {
+			return true
+		}
+	case *ast.DeferStmt:
+		if s.Call != nil && g.exprHasNonPrintfInterpolation(s.Call) {
+			return true
+		}
+	case *ast.GoStmt:
+		if s.Call != nil && g.exprHasNonPrintfInterpolation(s.Call) {
+			return true
+		}
+		if s.Block != nil && g.blockHasNonPrintfInterpolation(s.Block) {
+			return true
+		}
+	case *ast.SendStmt:
+		if g.exprHasNonPrintfInterpolation(s.Value) || g.exprHasNonPrintfInterpolation(s.Channel) {
+			return true
+		}
 	}
 	return false
 }
@@ -432,7 +499,15 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 				return true
 			}
 		}
+		for _, na := range e.NamedArguments {
+			if g.exprHasNonPrintfInterpolation(na.Value) {
+				return true
+			}
+		}
 	case *ast.MethodCallExpr:
+		if g.exprHasNonPrintfInterpolation(e.Object) {
+			return true
+		}
 		// For printf-style methods, skip argument 0 (the format string) — it is
 		// rendered inline via %v substitution, not via fmt.Sprintf.
 		startIdx := 0
@@ -444,10 +519,71 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 				return true
 			}
 		}
+		for _, na := range e.NamedArguments {
+			if g.exprHasNonPrintfInterpolation(na.Value) {
+				return true
+			}
+		}
 	case *ast.PipeExpr:
 		return g.exprHasNonPrintfInterpolation(e.Left) || g.exprHasNonPrintfInterpolation(e.Right)
 	case *ast.ErrorExpr:
 		return g.exprHasNonPrintfInterpolation(e.Message)
+	case *ast.PanicExpr:
+		return g.exprHasNonPrintfInterpolation(e.Message)
+	case *ast.ReturnExpr:
+		for _, v := range e.Values {
+			if g.exprHasNonPrintfInterpolation(v) {
+				return true
+			}
+		}
+	case *ast.MakeExpr:
+		for _, arg := range e.Args {
+			if g.exprHasNonPrintfInterpolation(arg) {
+				return true
+			}
+		}
+	case *ast.CloseExpr:
+		return g.exprHasNonPrintfInterpolation(e.Channel)
+	case *ast.ReceiveExpr:
+		return g.exprHasNonPrintfInterpolation(e.Channel)
+	case *ast.IndexExpr:
+		return g.exprHasNonPrintfInterpolation(e.Left) || g.exprHasNonPrintfInterpolation(e.Index)
+	case *ast.SliceExpr:
+		if g.exprHasNonPrintfInterpolation(e.Left) {
+			return true
+		}
+		if e.Start != nil && g.exprHasNonPrintfInterpolation(e.Start) {
+			return true
+		}
+		if e.End != nil && g.exprHasNonPrintfInterpolation(e.End) {
+			return true
+		}
+	case *ast.TypeCastExpr:
+		return g.exprHasNonPrintfInterpolation(e.Expression)
+	case *ast.TypeAssertionExpr:
+		return g.exprHasNonPrintfInterpolation(e.Expression)
+	case *ast.AddressOfExpr:
+		return g.exprHasNonPrintfInterpolation(e.Operand)
+	case *ast.DerefExpr:
+		return g.exprHasNonPrintfInterpolation(e.Operand)
+	case *ast.StructLiteralExpr:
+		for _, f := range e.Fields {
+			if g.exprHasNonPrintfInterpolation(f.Value) {
+				return true
+			}
+		}
+	case *ast.ListLiteralExpr:
+		for _, elem := range e.Elements {
+			if g.exprHasNonPrintfInterpolation(elem) {
+				return true
+			}
+		}
+	case *ast.MapLiteralExpr:
+		for _, pair := range e.Pairs {
+			if g.exprHasNonPrintfInterpolation(pair.Key) || g.exprHasNonPrintfInterpolation(pair.Value) {
+				return true
+			}
+		}
 	case *ast.FunctionLiteral:
 		if e.Body != nil {
 			return g.blockHasNonPrintfInterpolation(e.Body)
