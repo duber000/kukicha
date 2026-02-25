@@ -15,22 +15,18 @@ import (
 	"net/url"
 )
 
+//line /home/user/kukicha/stdlib/http/http.kuki:19
+func WithCSRF(handler http.Handler) http.Handler {
 //line /home/user/kukicha/stdlib/http/http.kuki:20
-func WithCSRF(handler any) any {
-//line /home/user/kukicha/stdlib/http/http.kuki:21
 	protection := http.NewCrossOriginProtection()
-//line /home/user/kukicha/stdlib/http/http.kuki:22
-	h := handler.(http.Handler)
-//line /home/user/kukicha/stdlib/http/http.kuki:23
-	return protection.Handler(h)
+//line /home/user/kukicha/stdlib/http/http.kuki:21
+	return protection.Handler(handler)
 }
 
-//line /home/user/kukicha/stdlib/http/http.kuki:28
-func Serve(addr string, handler any) error {
-//line /home/user/kukicha/stdlib/http/http.kuki:29
-	h := handler.(http.Handler)
-//line /home/user/kukicha/stdlib/http/http.kuki:30
-	return http.ListenAndServe(addr, h)
+//line /home/user/kukicha/stdlib/http/http.kuki:25
+func Serve(addr string, handler http.Handler) error {
+//line /home/user/kukicha/stdlib/http/http.kuki:26
+	return http.ListenAndServe(addr, handler)
 }
 
 //line /home/user/kukicha/stdlib/http/http.kuki:38
@@ -409,21 +405,19 @@ func MethodNotAllowed(w http.ResponseWriter, allowed ...string) {
 	w.WriteHeader(405)
 }
 
-//line /home/user/kukicha/stdlib/http/http.kuki:325
-func SecureHeaders(handler any) any {
-//line /home/user/kukicha/stdlib/http/http.kuki:326
-	h := handler.(http.Handler)
-//line /home/user/kukicha/stdlib/http/http.kuki:327
+//line /home/user/kukicha/stdlib/http/http.kuki:321
+func SecureHeaders(handler http.Handler) http.Handler {
+//line /home/user/kukicha/stdlib/http/http.kuki:322
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//line /home/user/kukicha/stdlib/http/http.kuki:328
+//line /home/user/kukicha/stdlib/http/http.kuki:323
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-//line /home/user/kukicha/stdlib/http/http.kuki:329
+//line /home/user/kukicha/stdlib/http/http.kuki:324
 		w.Header().Set("X-Frame-Options", "DENY")
-//line /home/user/kukicha/stdlib/http/http.kuki:330
+//line /home/user/kukicha/stdlib/http/http.kuki:325
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-//line /home/user/kukicha/stdlib/http/http.kuki:331
+//line /home/user/kukicha/stdlib/http/http.kuki:326
 		w.Header().Set("Content-Security-Policy", "default-src 'self'")
-//line /home/user/kukicha/stdlib/http/http.kuki:332
-		h.ServeHTTP(w, r)
+//line /home/user/kukicha/stdlib/http/http.kuki:327
+		handler.ServeHTTP(w, r)
 	})
 }

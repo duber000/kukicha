@@ -2041,3 +2041,35 @@ func TestSelectStatementCodegen(t *testing.T) {
 		t.Errorf("expected default branch, got: %s", output)
 	}
 }
+
+func TestExternalInterfaceTypeInFunctionSignature(t *testing.T) {
+	input := `import "net/http"
+
+func Wrap(handler http.Handler) http.Handler
+    return handler
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func Wrap(handler http.Handler) http.Handler") {
+		t.Errorf("expected http.Handler in function signature, got: %s", output)
+	}
+
+	if !strings.Contains(output, "return handler") {
+		t.Errorf("expected return handler, got: %s", output)
+	}
+}
