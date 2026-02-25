@@ -787,6 +787,36 @@ func TestStringInterpolationInSwitchAddsFmtImport(t *testing.T) {
 	}
 }
 
+func TestStringInterpolationInOnErrBlockAddsFmtImport(t *testing.T) {
+	input := `func main()
+    data, err := os.ReadFile("foo.txt")
+    _ = data
+    _ = err
+    result := string(data) onerr
+        panic "read failed: {error}"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, genErr := gen.Generate()
+	if genErr != nil {
+		t.Fatalf("codegen error: %v", genErr)
+	}
+
+	if !strings.Contains(output, `"fmt"`) {
+		t.Errorf("expected fmt import for onerr block interpolation, got: %s", output)
+	}
+}
+
 func TestReferenceType(t *testing.T) {
 	input := `type Person
     Name string

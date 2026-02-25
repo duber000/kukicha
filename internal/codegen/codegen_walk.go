@@ -595,6 +595,10 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 		if e.Block != nil && g.blockHasNonPrintfInterpolation(e.Block) {
 			return true
 		}
+	case *ast.BlockExpr:
+		if e.Body != nil {
+			return g.blockHasNonPrintfInterpolation(e.Body)
+		}
 	}
 	return false
 }
