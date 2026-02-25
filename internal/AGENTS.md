@@ -1,6 +1,6 @@
-# internal/CLAUDE.md
+# internal/AGENTS.md
 
-Compiler internals reference. Read this when working in `internal/`. For language syntax and build commands see the root `CLAUDE.md`.
+Compiler internals reference. Read this when working in `internal/`. For language syntax and build commands see the root `AGENTS.md`.
 
 ## Pipeline Overview
 
