@@ -301,12 +301,13 @@ Follow these steps in order. Skipping step 3 is how the stdlib `.go` files end u
 1. Bump the version constant in `internal/version/version.go`.
 2. Update the version references in `README.md` (the `go install` snippet and the **Status** section at the bottom).
 3. Run `make generate && make build` to regenerate all stdlib `.go` files (including `*_test.go`) with the new version header and rebuild the compiler with the updated files embedded.
-4. Commit everything — source `.kuki` files, regenerated `.go` and `*_test.go` files, and doc/version updates — in a single commit.
-5. Tag and push:
+4. Run `make test` to confirm everything passes before tagging.
+5. Commit the regenerated `.go`/`*_test.go` files and doc/version updates in a single commit. (The `.kuki` sources are inputs, not outputs — only stage them if you changed them.)
+6. Tag and push:
 
 ```bash
 git tag v0.0.X
-git push && git push --tags
+git push --follow-tags
 ```
 
 ## Questions?
