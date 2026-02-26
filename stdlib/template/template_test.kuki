@@ -1,0 +1,41 @@
+# Tests for Kukicha Standard Library - Template Package
+
+petiole template_test
+
+import "stdlib/template"
+import "stdlib/string"
+import "testing"
+
+# Test RenderSimple and Execute produce expected output
+func TestRenderSimple(t reference testing.T)
+    result, err := template.RenderSimple("Hello {{.Name}}", map of string to any{"Name": "Ari"})
+    if err != empty
+        t.Fatalf("RenderSimple failed: {err}")
+    if result not equals "Hello Ari"
+        t.Errorf("Expected greeting, got {result}")
+
+    td := template.New()
+    td = template.WithContent(td, "Greetings {{.Name}}!")
+    td = template.Data(td, map of string to any{"Name": "Eve"})
+    final, err2 := template.Execute(td)
+    if err2 != empty
+        t.Fatalf("Execute failed: {err2}")
+    if final not equals "Greetings Eve!"
+        t.Errorf("Template pipeline produced wrong output")
+
+# Test HTMLRenderSimple escapes content
+func TestHTMLRenderSimple(t reference testing.T)
+    result, err := template.HTMLRenderSimple("<b>{{.Value}}</b>", map of string to any{"Value": "<script>"})
+    if err != empty
+        t.Fatalf("HTMLRenderSimple failed: {err}")
+    if not string.Contains(result, "&lt;script&gt;")
+        t.Errorf("Expected escaped content, got {result}")
+
+# Test Must panics on error
+func TestMustPanics(t reference testing.T)
+    defer func()
+        if recover() equals empty
+            t.Error("Expected Must to panic when err is not empty")
+        return
+    }()
+    template.Must("", error "boom")

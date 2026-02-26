@@ -1,0 +1,52 @@
+# Tests for Kukicha Standard Library - LLM Package
+
+petiole llm_test
+
+import "stdlib/llm"
+import "testing"
+
+func makeToolCall() llm.ToolCall
+    return llm.ToolCall{
+        ID: "call-1",
+        Type: "function",
+        Function: llm.ToolCallFunction{
+            Name: "do_thing",
+            Arguments: "{}",
+        },
+    }
+
+# Test GetContent and tool call helpers with populated choices
+func TestGetContentAndToolCalls(t reference testing.T)
+    completion := llm.Completion{
+        Choices: list of llm.Choice{
+            {
+                Message: llm.ResponseMessage{
+                    Role: "assistant",
+                    Content: "response text",
+                    ToolCalls: list of llm.ToolCall{makeToolCall()},
+                },
+            },
+        },
+    }
+
+    if llm.GetContent(completion) not equals "response text"
+        t.Errorf("GetContent should return the assistant response")
+
+    calls := llm.GetToolCalls(completion)
+    if len(calls) not equals 1
+        t.Fatalf("Expected one tool call, got {len(calls)}")
+    if calls[0].Function.Name not equals "do_thing"
+        t.Errorf("Tool call name mismatch")
+
+    if not llm.HasToolCalls(completion)
+        t.Errorf("HasToolCalls should return true when tool calls exist")
+
+# Test helpers handle empty completions
+func TestGetContentEmptyCompletion(t reference testing.T)
+    emptyComp := llm.Completion{}
+    if llm.GetContent(emptyComp) not equals ""
+        t.Errorf("Expected empty content for zero choices")
+    if len(llm.GetToolCalls(emptyComp)) not equals 0
+        t.Errorf("Expected no tool calls for empty completion")
+    if llm.HasToolCalls(emptyComp)
+        t.Errorf("HasToolCalls should be false when there are no choices")

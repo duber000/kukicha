@@ -1,0 +1,41 @@
+# Tests for Kukicha Standard Library - Net Package
+
+petiole net_test
+
+import "stdlib/net"
+import "testing"
+
+# Test IP parsing and CIDR operations
+func TestIPAndCIDRHelpers(t reference testing.T)
+    ip := net.ParseIP("10.0.0.1")
+    if net.IsNil(ip)
+        t.Fatalf("ParseIP should return valid IP")
+    if not net.IsPrivate(ip)
+        t.Errorf("10.0.0.1 should be private")
+
+    loop := net.ParseIP("127.0.0.1")
+    if not net.IsLoopback(loop)
+        t.Errorf("Loopback detection failed")
+
+    multicast := net.ParseIP("224.0.0.1")
+    if not net.IsMulticast(multicast)
+        t.Errorf("Multicast detection failed")
+
+    cidr, err := net.ParseCIDR("192.0.2.0/24")
+    if err != empty
+        t.Fatalf("ParseCIDR failed: {err}")
+    if not net.Contains(cidr, net.ParseIP("192.0.2.5"))
+        t.Errorf("CIDR should contain 192.0.2.5")
+
+    host, port, splitErr := net.SplitHostPort("example.com:8080")
+    if splitErr != empty
+        t.Fatalf("SplitHostPort failed: {splitErr}")
+    if host not equals "example.com" or port not equals "8080"
+        t.Errorf("SplitHostPort returned wrong parts")
+
+    joined := net.JoinHostPort("example.com", "80")
+    if joined not equals "example.com:80"
+        t.Errorf("JoinHostPort returned '{joined}'")
+
+    if net.IPString(multicast) not equals "224.0.0.1"
+        t.Errorf("IPString returned wrong value")

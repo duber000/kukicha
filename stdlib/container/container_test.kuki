@@ -1,0 +1,173 @@
+# Container Package Tests
+
+petiole container_test
+
+import "stdlib/container"
+import "testing"
+
+# Test basic types and structures
+func TestBasicTypes(t reference testing.T)
+    # Test that we can create basic types
+    engine := empty container.Engine
+    config := empty container.Config
+    containerInfo := empty container.ContainerInfo
+    imageInfo := empty container.ImageInfo
+    buildOutput := empty container.BuildOutput
+    auth := empty container.Auth
+    event := empty container.ContainerEvent
+    
+    # Verify types exist and can be instantiated
+    if engine == empty
+        t.Error("Expected engine to be non-empty")
+    if config == empty
+        t.Error("Expected config to be non-empty")
+    if containerInfo == empty
+        t.Error("Expected containerInfo to be non-empty")
+    if imageInfo == empty
+        t.Error("Expected imageInfo to be non-empty")
+    if buildOutput == empty
+        t.Error("Expected buildOutput to be non-empty")
+    if auth == empty
+        t.Error("Expected auth to be non-empty")
+    if event == empty
+        t.Error("Expected event to be non-empty")
+
+# Test config builder pattern
+func TestConfigBuilder(t reference testing.T)
+    # Test configuration builder
+    cfg := container.New()
+    cfg = container.Host(cfg, "unix:///var/run/docker.sock")
+    cfg = container.APIVersion(cfg, "1.41")
+    
+    # Verify the config has the expected values
+    if cfg.host != "unix:///var/run/docker.sock"
+        t.Error("Expected cfg.host to be 'unix:///var/run/docker.sock'")
+    if cfg.apiVersion != "1.41"
+        t.Error("Expected cfg.apiVersion to be '1.41'")
+
+# Test Auth functions
+func TestAuthFunctions(t reference testing.T)
+    # Test Login function
+    auth := container.Login("username", "password", "registry.example.com")
+    if auth.username != "username"
+        t.Error("Expected auth.username to be 'username'")
+    if auth.password != "password"
+        t.Error("Expected auth.password to be 'password'")
+    if auth.serverAddress != "registry.example.com"
+        t.Error("Expected auth.serverAddress to be 'registry.example.com'")
+    
+    # Test AuthEncode function
+    encoded := container.AuthEncode(auth)
+    if encoded == ""
+        t.Error("Expected encoded to be non-empty")
+    if len(encoded) == 0
+        t.Error("Expected encoded length to be > 0")
+
+# Test accessor functions
+func TestAccessorFunctions(t reference testing.T)
+    # Test ContainerInfo accessors
+    info := container.ContainerInfo{
+        id: "container123",
+        image: "ubuntu:latest",
+        status: "running",
+        state: "running",
+        names: list of string{"mycontainer"}
+    }
+    
+    if container.ContainerID(info) != "container123"
+        t.Error("Expected ContainerID to return 'container123'")
+    if container.ContainerImage(info) != "ubuntu:latest"
+        t.Error("Expected ContainerImage to return 'ubuntu:latest'")
+    if container.ContainerStatus(info) != "running"
+        t.Error("Expected ContainerStatus to return 'running'")
+    if container.ContainerState(info) != "running"
+        t.Error("Expected ContainerState to return 'running'")
+    if len(container.ContainerNames(info)) != 1
+        t.Error("Expected ContainerNames length to be 1")
+    if container.ContainerNames(info)[0] != "mycontainer"
+        t.Error("Expected ContainerNames[0] to be 'mycontainer'")
+    
+    # Test ImageInfo accessors
+    img := container.ImageInfo{
+        id: "image123",
+        tags: list of string{"ubuntu:latest", "ubuntu:22.04"},
+        size: 1024
+    }
+    
+    if container.ImageID(img) != "image123"
+        t.Error("Expected ImageID to return 'image123'")
+    if len(container.ImageTags(img)) != 2
+        t.Error("Expected ImageTags length to be 2")
+    if container.ImageSize(img) != 1024
+        t.Error("Expected ImageSize to return 1024")
+    
+    # Test BuildOutput accessors
+    build := container.BuildOutput{
+        imageID: "build123",
+        output: "Build completed successfully"
+    }
+    
+    if container.BuildImageID(build) != "build123"
+        t.Error("Expected BuildImageID to return 'build123'")
+    if container.BuildLog(build) != "Build completed successfully"
+        t.Error("Expected BuildLog to return 'Build completed successfully'")
+    
+    # Test ContainerEvent accessors
+    event := container.ContainerEvent{
+        id: "event123",
+        resource: "container",
+        action: "start",
+        actor: "mycontainer",
+        time: "2023-01-01T00:00:00Z"
+    }
+    
+    if container.EventID(event) != "event123"
+        t.Error("Expected EventID to return 'event123'")
+    if container.EventResource(event) != "container"
+        t.Error("Expected EventResource to return 'container'")
+    if container.EventAction(event) != "start"
+        t.Error("Expected EventAction to return 'start'")
+    if container.EventActor(event) != "mycontainer"
+        t.Error("Expected EventActor to return 'mycontainer'")
+    if container.EventTime(event) != "2023-01-01T00:00:00Z"
+        t.Error("Expected EventTime to return '2023-01-01T00:00:00Z'")
+
+# Test that functions exist and have correct signatures
+func TestFunctionSignatures(t reference testing.T)
+    # These tests verify that the functions exist and have the right signatures
+    # We can't test actual Docker functionality without a running Docker daemon
+    
+    if container.Close == empty
+        t.Error("Expected Close function to exist")
+    if container.ListContainers == empty
+        t.Error("Expected ListContainers function to exist")
+    if container.ListImages == empty
+        t.Error("Expected ListImages function to exist")
+    if container.Stop == empty
+        t.Error("Expected Stop function to exist")
+    if container.Remove == empty
+        t.Error("Expected Remove function to exist")
+    if container.Logs == empty
+        t.Error("Expected Logs function to exist")
+    if container.LogsTail == empty
+        t.Error("Expected LogsTail function to exist")
+    if container.Run == empty
+        t.Error("Expected Run function to exist")
+    if container.Inspect == empty
+        t.Error("Expected Inspect function to exist")
+    if container.Exec == empty
+        t.Error("Expected Exec function to exist")
+    if container.Wait == empty
+        t.Error("Expected Wait function to exist")
+    if container.WaitCtx == empty
+        t.Error("Expected WaitCtx function to exist")
+    if container.Events == empty
+        t.Error("Expected Events function to exist")
+    if container.EventsCtx == empty
+        t.Error("Expected EventsCtx function to exist")
+    if container.Pull == empty
+        t.Error("Expected Pull function to exist")
+    if container.PullAuth == empty
+        t.Error("Expected PullAuth function to exist")
+    if container.LoginFromConfig == empty
+        t.Error("Expected LoginFromConfig function to exist")

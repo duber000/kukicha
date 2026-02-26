@@ -1,0 +1,122 @@
+# Ctx Package Tests
+
+import "stdlib/ctx"
+import "stdlib/test"
+import "time"
+
+# Test Background function
+test BackgroundFunction
+    h := ctx.Background()
+    test.AssertNotEmpty(h)
+    test.AssertEqual(h.cancel, empty)
+    test.AssertFalse(ctx.Done(h))
+    test.AssertEqual(ctx.Err(h), empty)
+
+# Test WithTimeout function
+test WithTimeoutFunction
+    parent := ctx.Background()
+    h := ctx.WithTimeout(parent, 1)  # 1 second timeout
+    
+    test.AssertNotEmpty(h)
+    test.AssertNotEmpty(h.cancel)
+    test.AssertFalse(ctx.Done(h))
+    
+    # Context should not be done immediately
+    test.AssertFalse(ctx.Done(h))
+    
+    # Cancel the context
+    canceled := ctx.Cancel(h)
+    test.AssertTrue(canceled)
+    
+    # After cancellation, context should be done
+    test.AssertTrue(ctx.Done(h))
+    test.AssertNotEmpty(ctx.Err(h))
+
+# Test WithTimeoutMs function
+test WithTimeoutMsFunction
+    parent := ctx.Background()
+    h := ctx.WithTimeoutMs(parent, 100)  # 100ms timeout
+    
+    test.AssertNotEmpty(h)
+    test.AssertNotEmpty(h.cancel)
+    test.AssertFalse(ctx.Done(h))
+    
+    # Cancel the context
+    canceled := ctx.Cancel(h)
+    test.AssertTrue(canceled)
+    test.AssertTrue(ctx.Done(h))
+
+# Test WithDeadlineUnix function
+test WithDeadlineUnixFunction
+    parent := ctx.Background()
+    deadline := time.Now().Unix() + 10  # 10 seconds from now
+    h := ctx.WithDeadlineUnix(parent, deadline)
+    
+    test.AssertNotEmpty(h)
+    test.AssertNotEmpty(h.cancel)
+    test.AssertFalse(ctx.Done(h))
+    
+    # Cancel the context
+    canceled := ctx.Cancel(h)
+    test.AssertTrue(canceled)
+    test.AssertTrue(ctx.Done(h))
+
+# Test Cancel function with no cancel function
+test CancelNoCancelFunction
+    h := ctx.Background()
+    canceled := ctx.Cancel(h)
+    test.AssertFalse(canceled)  # Should return false since no cancel function
+
+# Test Done function
+test DoneFunction
+    h := ctx.Background()
+    test.AssertFalse(ctx.Done(h))
+    
+    # Test with empty handle
+    emptyHandle := empty ctx.Handle
+    test.AssertFalse(ctx.Done(emptyHandle))
+
+# Test Err function
+test ErrFunction
+    h := ctx.Background()
+    test.AssertEqual(ctx.Err(h), empty)
+    
+    # Test with empty handle
+    emptyHandle := empty ctx.Handle
+    test.AssertEqual(ctx.Err(emptyHandle), empty)
+
+# Test Value function
+test ValueFunction
+    h := ctx.Background()
+    goCtx := ctx.Value(h)
+    test.AssertNotEmpty(goCtx)
+    
+    # Test with empty handle
+    emptyHandle := empty ctx.Handle
+    goCtx2 := ctx.Value(emptyHandle)
+    test.AssertNotEmpty(goCtx2)
+
+# Test context timeout actually works
+test ContextTimeoutActuallyWorks
+    h := ctx.WithTimeout(ctx.Background(), 1)  # 1 second timeout
+    
+    # Wait a bit to ensure timeout would fire
+    time.Sleep(1500 * time.Millisecond)
+    
+    # Context should be done due to timeout
+    test.AssertTrue(ctx.Done(h))
+    test.AssertNotEmpty(ctx.Err(h))
+
+# Test context cancellation propagation
+test ContextCancellationPropagation
+    parent := ctx.WithTimeout(ctx.Background(), 5)
+    child := ctx.WithTimeout(parent, 10)
+    
+    # Cancel parent
+    ctx.Cancel(parent)
+    
+    # Child should also be canceled
+    test.AssertTrue(ctx.Done(child))
+    test.AssertNotEmpty(ctx.Err(child))
+
+print("Ctx tests completed")

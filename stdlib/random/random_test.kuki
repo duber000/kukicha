@@ -1,0 +1,20 @@
+# Tests for Kukicha Standard Library - Random Package
+
+petiole random_test
+
+import "stdlib/random"
+import "testing"
+
+# Test string generators respect requested length
+func TestRandomStringLength(t reference testing.T)
+    s := random.String(10)
+    if len(s) not equals 10
+        t.Errorf("Expected random string length 10, got {len(s)}")
+
+    zero := random.String(0)
+    if zero not equals ""
+        t.Errorf("Expected empty string when length 0, got '{zero}'")
+
+    alpha := random.Alphanumeric(5)
+    if len(alpha) not equals 5
+        t.Errorf("Expected alphanumeric length 5, got {len(alpha)}")

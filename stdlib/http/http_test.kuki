@@ -1,0 +1,108 @@
+# Tests for Kukicha Standard Library - HTTP Package
+
+petiole http_test
+
+import "stdlib/http"
+import "stdlib/string"
+import "testing"
+import "net/http"
+import "net/http/httptest"
+import "net/url"
+
+# Test JSON/Text helpers set the right headers, status, and body
+func TestResponseHelpers(t reference testing.T)
+    jsonRec := httptest.NewRecorder()
+    err := http.JSON(reference of jsonRec, map of string to any{"status": "ok"})
+    if err != empty
+        t.Fatalf("JSON helper failed: {err}")
+    resp := jsonRec.Result()
+    if resp.StatusCode not equals 200
+        t.Errorf("Expected 200, got {resp.StatusCode}")
+    if resp.Header.Get("Content-Type") not equals "application/json"
+        t.Errorf("Expected JSON content type, got {resp.Header.Get(\"Content-Type\")}")
+
+    textRec := httptest.NewRecorder()
+    err2 := http.TextStatus(reference of textRec, "bye", 201)
+    if err2 != empty
+        t.Fatalf("TextStatus failed: {err2}")
+    if textRec.Result().StatusCode not equals 201
+        t.Errorf("Expected 201 status, got {textRec.Result().StatusCode}")
+    if textRec.Header().Get("Content-Type") not equals "text/plain; charset=utf-8"
+        t.Errorf("Expected text/plain header")
+
+    htmlRec := httptest.NewRecorder()
+    err3 := http.SafeHTML(reference of htmlRec, "<script>x</script>")
+    if err3 != empty
+        t.Fatalf("SafeHTML failed: {err3}")
+    if htmlRec.Header().Get("Content-Type") not equals "text/html; charset=utf-8"
+        t.Errorf("Expected html content type")
+    body := htmlRec.Body.String()
+    if string.Contains(body, "<") or string.Contains(body, ">")
+        t.Errorf("SafeHTML should escape content")
+
+# Test SafeURL builds encoded URLs and respects query/path parameters
+func TestSafeURL(t reference testing.T)
+    safe, err := http.SafeURL("/items/{id}", map of string to string{"id": "user/123"}, map of string to string{"q": "kuki"})
+    if err != empty
+        t.Fatalf("SafeURL failed: {err}")
+    if _, parseErr := url.ParseRequestURI(safe); parseErr != empty
+        t.Errorf("SafeURL should return valid URL, parse error {parseErr}")
+
+# Test request helpers parse parameters and booleans
+func TestRequestHelpers(t reference testing.T)
+    req, _ := http.NewRequest("GET", "https://example.com/search?page=3&verbose=1", empty)
+    if http.GetQueryParam(req, "page") not equals "3"
+        t.Errorf("GetQueryParam returned wrong page")
+    if http.GetQueryParamOr(req, "missing", "5") not equals "5"
+        t.Errorf("GetQueryParamOr should fallback to default")
+
+    page, err := http.GetQueryInt(req, "page")
+    if err != empty
+        t.Fatalf("GetQueryInt failed: {err}")
+    if page not equals 3
+        t.Errorf("Expected page 3, got {page}")
+    if http.GetQueryIntOr(req, "missing", 7) not equals 7
+        t.Errorf("GetQueryIntOr default mismatch")
+
+    verbose, err2 := http.GetQueryBool(req, "verbose")
+    if err2 != empty
+        t.Fatalf("GetQueryBool failed: {err2}")
+    if not verbose
+        t.Errorf("Expected verbose true")
+    if not http.GetQueryBoolOr(req, "missing", true)
+        t.Errorf("GetQueryBoolOr should return default when missing")
+
+# Test SafeRedirect enforces allowed hosts
+func TestSafeRedirect(t reference testing.T)
+    rec := httptest.NewRecorder()
+    req, _ := http.NewRequest("GET", "https://example.com", empty)
+    err := http.SafeRedirect(reference of rec, req, "https://example.com/home", "example.com")
+    if err != empty
+        t.Fatalf("SafeRedirect failed: {err}")
+    if rec.Result().Header.Get("Location") not equals "https://example.com/home"
+        t.Errorf("Expected location header to match redirect target")
+
+    rec2 := httptest.NewRecorder()
+    err2 := http.SafeRedirect(reference of rec2, req, "https://evil.com", "example.com")
+    if err2 equals empty
+        t.Fatalf("SafeRedirect should return error for blocked host")
+
+# Test Method helpers and secure headers
+func TestMethodAndSecurityHelpers(t reference testing.T)
+    req := httptest.NewRequest("POST", "/", empty)
+    if not http.IsPost(req)
+        t.Errorf("Expected IsPost true")
+    if http.IsGet(req)
+        t.Errorf("Expected IsGet false when method is POST")
+
+    rec := httptest.NewRecorder()
+    http.SetSecureHeaders(reference of rec)
+    if rec.Header().Get("X-Content-Type-Options") not equals "nosniff"
+        t.Errorf("Expected secure headers to be set")
+
+    rec2 := httptest.NewRecorder()
+    http.MethodNotAllowed(reference of rec2, "GET", "POST")
+    if rec2.Result().StatusCode not equals 405
+        t.Errorf("Expected 405 for MethodNotAllowed")
+    if rec2.Header().Get("Allow") not equals "GET, POST"
+        t.Errorf("Allow header should list provided methods")

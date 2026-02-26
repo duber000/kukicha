@@ -1,0 +1,105 @@
+# Tests for Kukicha Standard Library - Iterator Package
+
+petiole iterator_test
+
+import "stdlib/iterator"
+import "stdlib/string"
+import "testing"
+import "iter"
+
+func seqFromStrings(items list of string) iter.Seq
+    return func(yield func(any) bool)
+        for _, item in items
+            if not yield(item)
+                return
+        return
+
+func collect(seq iter.Seq) list of any
+    result := make(list of any, 0)
+    for val in seq
+        result = append(result, val)
+    return result
+
+# Test Filter, Map, and FlatMap
+func TestFilterMapFlatMap(t reference testing.T)
+    base := seqFromStrings(list of string{"apple", "banana", "cherry"})
+    filtered := iterator.Filter(base, func(item any) bool
+        return item not equals "banana"
+    )
+    mapped := iterator.Map(filtered, func(item any) any
+        return string.ToUpper(item as string)
+    )
+    flat := iterator.FlatMap(mapped, func(item any) iter.Seq
+        return seqFromStrings(list of string{item as string, "x"})
+    )
+
+    values := collect(flat)
+    if len(values) not equals 4
+        t.Fatalf("Expected 4 values, got {len(values)}")
+    if values[0] not equals "APPLE"
+        t.Errorf("Expected first mapped value to be APPLE")
+
+# Test Take, Skip, and Enumerate
+func TestTakeSkipEnumerate(t reference testing.T)
+    base := seqFromStrings(list of string{"a", "b", "c", "d"})
+    taken := iterator.Take(base, 2)
+    takenVals := collect(taken)
+    if len(takenVals) not equals 2
+        t.Errorf("Take returned wrong count")
+
+    base2 := seqFromStrings(list of string{"a", "b", "c"})
+    skipped := iterator.Skip(base2, 1)
+    skippedVals := collect(skipped)
+    if len(skippedVals) not equals 2
+        t.Errorf("Skip returned wrong count")
+
+    enumerated := iterator.Enumerate(seqFromStrings(list of string{"x", "y"}))
+    results := make(list of string, 0)
+    for index, item in enumerated
+        if index not equals 0 and index not equals 1
+            t.Errorf("Enumerate produced invalid index {index}")
+        results = append(results, item as string)
+    if len(results) not equals 2
+        t.Errorf("Enumerate returned wrong count")
+
+# Test Chunk, Zip, Collect, Any, All, Find
+func TestChunkZipCollectAnyAllFind(t reference testing.T)
+    base := seqFromStrings(list of string{"a", "b", "c", "d"})
+    chunks := iterator.Chunk(base, 2)
+    chunked := make(list of any, 0)
+    for chunk in chunks
+        chunked = append(chunked, chunk)
+    if len(chunked) not equals 2
+        t.Errorf("Chunk should produce two chunks")
+
+    seq1 := seqFromStrings(list of string{"a", "b"})
+    seq2 := seqFromStrings(list of string{"1", "2"})
+    zipped := iterator.Zip(seq1, seq2)
+    pairs := make(list of string, 0)
+    for first, second in zipped
+        pairs = append(pairs, string.Join(list of string{first as string, second as string}, "-"))
+    if pairs[0] not equals "a-1"
+        t.Errorf("Zip produced wrong first pair")
+
+    base2 := seqFromStrings(list of string{"ok", "fine"})
+    collected := iterator.Collect(base2)
+    if len(collected) not equals 2
+        t.Errorf("Collect returned wrong count")
+
+    base3 := seqFromStrings(list of string{"one", "two"})
+    if not iterator.Any(base3, func(value any) bool
+        return value as string equals "two"
+    )
+        t.Errorf("Any should detect existing value")
+
+    base4 := seqFromStrings(list of string{"a", "b"})
+    if not iterator.All(base4, func(value any) bool
+        return len(value as string) > 0
+    )
+        t.Errorf("All should return true when predicate holds")
+
+    found, ok := iterator.Find(seqFromStrings(list of string{"alpha", "beta"}), func(value any) bool
+        return string.HasPrefix(value as string, "b")
+    )
+    if not ok or found not equals "beta"
+        t.Errorf("Find should locate items meeting predicate")

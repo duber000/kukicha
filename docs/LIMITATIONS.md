@@ -1,34 +1,13 @@
 # Kukicha Language Limitations
 
-Known gaps between Kukicha syntax and Go patterns. These are compiler limitations, not stdlib coverage issues — all stdlib packages are pure Kukicha.
+Known gaps between Kukicha syntax and Go patterns. 
 
-## ~~1. Variadic Slice Spreading~~ (RESOLVED)
-
-**Status:** Fixed. The `many` keyword now supports spreading dynamically-built slices into variadic parameters. The semantic analyzer correctly validates that a `list of T` argument is compatible with a variadic `T` parameter.
-
-```kukicha
-# Static spread — always worked
-args := list of int{1, 2, 3}
-result := Sum(many args)
-
-# Dynamic spread — NOW WORKS
-opts := list of client.Opt{client.FromEnv}
-if host != empty
-    opts = append(opts, client.WithHost(host))
-cli := client.NewClientWithOpts(many opts)
-```
-
-## ~~2. Assigning Closures to Struct Fields~~ (RESOLVED)
-
-**Status:** Fixed. Function literals can be assigned to struct fields. The semantic analyzer now properly analyzes `FunctionLiteral` expressions, validating parameter types, return types, and the closure body.
-
-```kukicha
-type Handler
-    name string
-    process func(string) string
-
-h := Handler{name: "test"}
-h.process = func(s string) string
-    return "processed: " + s
-result := h.process("hello")
-```
+1. empty is a reserved keyword — can't be used as a
+  variable name - same as error
+2. Non-generic slice functions (Unique, Contains,
+  IndexOf, Get, FirstOne, LastOne, Find, Pop, Shift) take
+   []any literally, not []T — must pass list of any{...}
+  at call sites
+3. Float literals lose precision in codegen — avoid
+  small tolerances like 0.000000001; use simple range
+  checks (x < 3.14 or x > 3.15) instead

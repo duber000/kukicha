@@ -1,0 +1,67 @@
+# Tests for Kukicha Standard Library - Parse Package
+
+petiole parse_test
+
+import "stdlib/parse"
+import "stdlib/string"
+import "testing"
+
+# Test Json returns the raw bytes for a JSON string
+func TestJson(t reference testing.T)
+    payload := "{\"status\":\"ok\"}"
+
+    result, err := parse.Json(payload)
+    if err != empty
+        t.Fatalf("Json failed: {err}")
+    if string(result) != payload
+        t.Errorf("expected payload {payload}, got {string(result)}")
+
+# Test JsonLines skips blank lines and trims whitespace
+func TestJsonLines(t reference testing.T)
+    ndjson := "{\"a\":1}\n\n {\"b\":2}\n"
+
+    lines, err := parse.JsonLines(ndjson)
+    if err != empty
+        t.Fatalf("JsonLines failed: {err}")
+    if len(lines) != 2
+        t.Fatalf("expected 2 lines, got {len(lines)}")
+    if lines[0] != "{\"a\":1}"
+        t.Errorf("expected first line to be trimmed")
+
+# Test Csv and CsvWithHeader parse records and headers
+func TestCsvWithHeader(t reference testing.T)
+    csv := "name,age\nalice,30\nbob,25"
+
+    records, err := parse.Csv(csv)
+    if err != empty
+        t.Fatalf("Csv failed: {err}")
+    if len(records) != 3
+        t.Fatalf("expected 3 rows, got {len(records)}")
+
+    headerRows, err2 := parse.CsvWithHeader(csv)
+    if err2 != empty
+        t.Fatalf("CsvWithHeader failed: {err2}")
+    if len(headerRows) != 2
+        t.Fatalf("expected 2 data rows, got {len(headerRows)}")
+    if headerRows[0]["name"] != "alice"
+        t.Errorf("expected first row to map name to alice")
+
+# Test YamlPretty emits YAML that contains the expected key
+func TestYamlPretty(t reference testing.T)
+    data := map of string to any{"user": map of string to any{"name": "sam"}}
+
+    pretty, err := parse.YamlPretty(data)
+    if err != empty
+        t.Fatalf("YamlPretty failed: {err}")
+    if string.Contains(string(pretty), "user") equals false
+        t.Errorf("expected yaml preview to mention user")
+
+# Test Yaml returns the raw bytes for a YAML string
+func TestYaml(t reference testing.T)
+    payload := "user: alice\nemail: test@example.com"
+
+    result, err := parse.Yaml(payload)
+    if err != empty
+        t.Fatalf("Yaml failed: {err}")
+    if string(result) != payload
+        t.Errorf("expected yaml payload to round trip")

@@ -25,18 +25,18 @@ import (
 	"time"
 )
 
-//line /home/user/kukicha/stdlib/container/container.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:43
 type Engine struct {
 	cli *client.Client
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:47
 type Config struct {
 	host       string
 	apiVersion string
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:52
 type ContainerInfo struct {
 	id     string
 	image  string
@@ -45,55 +45,55 @@ type ContainerInfo struct {
 	names  []string
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:60
 type ImageInfo struct {
 	id   string
 	tags []string
 	size int64
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:66
 type BuildOutput struct {
 	imageID string
 	output  string
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:71
 type Auth struct {
 	username      string
 	password      string
 	serverAddress string
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:77
 type pullStatusMsg struct {
 	Status string `json:"status"`
 	ID     string `json:"id"`
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:82
 type buildStreamMsg struct {
 	Stream string         `json:"stream"`
 	Aux    buildStreamAux `json:"aux"`
 	Error  string         `json:"error"`
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:88
 type buildStreamAux struct {
 	ID string `json:"ID"`
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:92
 type dockerAuthEntry struct {
 	Auth string `json:"auth"`
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:96
 type dockerConfig struct {
 	Auths map[string]dockerAuthEntry `json:"auths"`
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:100
 type ContainerEvent struct {
 	id       string
 	resource string
@@ -102,1260 +102,1260 @@ type ContainerEvent struct {
 	time     string
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:108
 func New() Config {
-//line /home/user/kukicha/stdlib/container/container.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:109
 	return Config{}
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:112
 func Host(cfg Config, host string) Config {
-//line /home/user/kukicha/stdlib/container/container.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:113
 	cfg.host = host
-//line /home/user/kukicha/stdlib/container/container.kuki:114
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:114
 	return cfg
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:117
 func APIVersion(cfg Config, version string) Config {
-//line /home/user/kukicha/stdlib/container/container.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:118
 	cfg.apiVersion = version
-//line /home/user/kukicha/stdlib/container/container.kuki:119
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:119
 	return cfg
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:122
 func Close(engine Engine) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:123
 	return engine.cli.Close()
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:126
 func ListContainers(engine Engine) ([]ContainerInfo, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:127
 	bg := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:128
 	containers, err := engine.cli.ContainerList(ctxpkg.Value(bg), dockercontainer.ListOptions{All: true})
-//line /home/user/kukicha/stdlib/container/container.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:129
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:130
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:130
 		return nil, kukierrors.Wrap(err, "container list")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:131
 	result := make([]ContainerInfo, len(containers))
-//line /home/user/kukicha/stdlib/container/container.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:132
 	for i, c := range containers {
-//line /home/user/kukicha/stdlib/container/container.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:139
 		result[i] = ContainerInfo{id: c.ID, image: c.Image, status: c.Status, state: c.State, names: c.Names}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:140
 	return result, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:143
 func ListImages(engine Engine) ([]ImageInfo, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:144
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:144
 	bg := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:145
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:145
 	images, err := engine.cli.ImageList(ctxpkg.Value(bg), dockerimage.ListOptions{All: true})
-//line /home/user/kukicha/stdlib/container/container.kuki:146
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:146
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:147
 		return nil, kukierrors.Wrap(err, "container list images")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:148
 	result := make([]ImageInfo, len(images))
-//line /home/user/kukicha/stdlib/container/container.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:149
 	for i, img := range images {
-//line /home/user/kukicha/stdlib/container/container.kuki:154
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:154
 		result[i] = ImageInfo{id: img.ID, tags: img.RepoTags, size: img.Size}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:155
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:155
 	return result, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:158
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:158
 func Stop(engine Engine, containerID string) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:159
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:159
 	bg := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:160
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:160
 	err := engine.cli.ContainerStop(ctxpkg.Value(bg), containerID, dockercontainer.StopOptions{})
-//line /home/user/kukicha/stdlib/container/container.kuki:161
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:161
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:162
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:162
 		return kukierrors.Wrap(err, "container stop")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:163
 	return nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:166
 func Remove(engine Engine, containerID string) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:167
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:167
 	bg := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:168
 	err := engine.cli.ContainerRemove(ctxpkg.Value(bg), containerID, dockercontainer.RemoveOptions{})
-//line /home/user/kukicha/stdlib/container/container.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:169
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:170
 		return kukierrors.Wrap(err, "container remove")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:171
 	return nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:174
 func Login(username string, password string, server string) Auth {
-//line /home/user/kukicha/stdlib/container/container.kuki:175
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:175
 	return Auth{username: username, password: password, serverAddress: server}
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:178
 func AuthEncode(auth Auth) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:183
 	authJSON, _ := json.Marshal(map[string]string{"username": auth.username, "password": auth.password, "serveraddress": auth.serverAddress})
-//line /home/user/kukicha/stdlib/container/container.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:184
 	return base64.URLEncoding.EncodeToString(authJSON)
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:187
 func ContainerID(c ContainerInfo) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:188
 	return c.id
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:191
 func ContainerImage(c ContainerInfo) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:192
 	return c.image
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:195
 func ContainerStatus(c ContainerInfo) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:196
 	return c.status
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:199
 func ContainerState(c ContainerInfo) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:200
 	return c.state
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:203
 func ContainerNames(c ContainerInfo) []string {
-//line /home/user/kukicha/stdlib/container/container.kuki:204
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:204
 	return c.names
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:207
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:207
 func ImageID(img ImageInfo) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:208
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:208
 	return img.id
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:211
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:211
 func ImageTags(img ImageInfo) []string {
-//line /home/user/kukicha/stdlib/container/container.kuki:212
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:212
 	return img.tags
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:215
 func ImageSize(img ImageInfo) int64 {
-//line /home/user/kukicha/stdlib/container/container.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:216
 	return img.size
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:219
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:219
 func BuildImageID(b BuildOutput) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:220
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:220
 	return b.imageID
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:223
 func BuildLog(b BuildOutput) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:224
 	return b.output
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:227
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:227
 func EventID(event ContainerEvent) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:228
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:228
 	return event.id
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:231
 func EventResource(event ContainerEvent) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:232
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:232
 	return event.resource
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:235
 func EventAction(event ContainerEvent) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:236
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:236
 	return event.action
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:239
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:239
 func EventActor(event ContainerEvent) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:240
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:240
 	return event.actor
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:243
 func EventTime(event ContainerEvent) string {
-//line /home/user/kukicha/stdlib/container/container.kuki:244
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:244
 	return event.time
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:250
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:250
 func containerLogs(cli *client.Client, containerID string, tail string) (string, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:251
 	bg := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:252
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:252
 	opts := dockercontainer.LogsOptions{ShowStdout: true, ShowStderr: true}
-//line /home/user/kukicha/stdlib/container/container.kuki:253
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:253
 	if tail != "" {
-//line /home/user/kukicha/stdlib/container/container.kuki:254
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:254
 		opts.Tail = tail
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:255
 	reader, err := cli.ContainerLogs(ctxpkg.Value(bg), containerID, opts)
-//line /home/user/kukicha/stdlib/container/container.kuki:256
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:256
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:257
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:257
 		return "", kukierrors.Wrap(err, "container logs")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:258
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:258
 	defer reader.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:259
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:259
 	stdout := bytes.Buffer{}
-//line /home/user/kukicha/stdlib/container/container.kuki:260
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:260
 	stderr := bytes.Buffer{}
-//line /home/user/kukicha/stdlib/container/container.kuki:261
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:261
 	_, copyErr := stdcopy.StdCopy(&stdout, &stderr, reader)
-//line /home/user/kukicha/stdlib/container/container.kuki:262
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:262
 	if copyErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:263
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:263
 		raw, readErr := io.ReadAll(reader)
-//line /home/user/kukicha/stdlib/container/container.kuki:264
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:264
 		if readErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:265
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:265
 			return "", kukierrors.Wrap(copyErr, "container logs")
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:266
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:266
 		return string(raw), nil
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:267
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:267
 	combined := stdout.String()
-//line /home/user/kukicha/stdlib/container/container.kuki:268
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:268
 	if stderr.Len() > 0 {
-//line /home/user/kukicha/stdlib/container/container.kuki:269
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:269
 		combined = (combined + stderr.String())
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:270
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:270
 	return combined, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:273
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:273
 func Logs(engine Engine, containerID string) (string, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:274
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:274
 	return containerLogs(engine.cli, containerID, "")
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:277
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:277
 func LogsTail(engine Engine, containerID string, lines int64) (string, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:278
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:278
 	return containerLogs(engine.cli, containerID, fmt.Sprintf("%d", lines))
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:281
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:281
 func Run(engine Engine, img string, cmd []string) (string, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:282
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:282
 	bg := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:286
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:286
 	resp, err := engine.cli.ContainerCreate(ctxpkg.Value(bg), &dockercontainer.Config{Image: img, Cmd: cmd}, nil, nil, nil, "")
-//line /home/user/kukicha/stdlib/container/container.kuki:287
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:287
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:288
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:288
 		return "", kukierrors.Wrap(err, "container run create")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:289
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:289
 	startErr := engine.cli.ContainerStart(ctxpkg.Value(bg), resp.ID, dockercontainer.StartOptions{})
-//line /home/user/kukicha/stdlib/container/container.kuki:290
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:290
 	if startErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:291
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:291
 		return "", kukierrors.Wrap(startErr, "container run start")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:292
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:292
 	return resp.ID, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:295
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:295
 func Inspect(engine Engine, containerID string) (ContainerInfo, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:296
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:296
 	bg := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:297
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:297
 	info, err := engine.cli.ContainerInspect(ctxpkg.Value(bg), containerID)
-//line /home/user/kukicha/stdlib/container/container.kuki:298
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:298
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:299
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:299
 		return ContainerInfo{}, kukierrors.Wrap(err, "container inspect")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:300
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:300
 	names := make([]string, 0)
-//line /home/user/kukicha/stdlib/container/container.kuki:301
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:301
 	if info.Name != "" {
-//line /home/user/kukicha/stdlib/container/container.kuki:302
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:302
 		names = append(names, kukistring.TrimPrefix(info.Name, "/"))
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:303
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:303
 	status := ""
-//line /home/user/kukicha/stdlib/container/container.kuki:304
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:304
 	state := ""
-//line /home/user/kukicha/stdlib/container/container.kuki:305
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:305
 	if info.State != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:306
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:306
 		status = info.State.Status
-//line /home/user/kukicha/stdlib/container/container.kuki:307
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:307
 		state = info.State.Status
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:308
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:308
 	return ContainerInfo{id: info.ID, image: info.Config.Image, status: status, state: state, names: names}, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:318
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:318
 func Exec(engine Engine, containerID string, cmd []string, handles ...ctxpkg.Handle) (string, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:319
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:319
 	ctx := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:320
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:320
 	if len(handles) > 0 {
-//line /home/user/kukicha/stdlib/container/container.kuki:321
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:321
 		ctx = handles[0]
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:326
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:326
 	createResp, err := engine.cli.ContainerExecCreate(ctxpkg.Value(ctx), containerID, dockertypes.ExecConfig{Cmd: cmd, AttachStdout: true, AttachStderr: true})
-//line /home/user/kukicha/stdlib/container/container.kuki:327
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:327
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:328
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:328
 		return "", kukierrors.Wrap(err, "container exec create")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:329
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:329
 	attachResp, attachErr := engine.cli.ContainerExecAttach(ctxpkg.Value(ctx), createResp.ID, dockertypes.ExecStartCheck{})
-//line /home/user/kukicha/stdlib/container/container.kuki:330
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:330
 	if attachErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:331
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:331
 		return "", kukierrors.Wrap(attachErr, "container exec attach")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:332
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:332
 	defer attachResp.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:333
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:333
 	stdout := bytes.Buffer{}
-//line /home/user/kukicha/stdlib/container/container.kuki:334
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:334
 	stderr := bytes.Buffer{}
-//line /home/user/kukicha/stdlib/container/container.kuki:335
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:335
 	_, copyErr := stdcopy.StdCopy(&stdout, &stderr, attachResp.Reader)
-//line /home/user/kukicha/stdlib/container/container.kuki:336
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:336
 	if copyErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:337
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:337
 		raw, readErr := io.ReadAll(attachResp.Reader)
-//line /home/user/kukicha/stdlib/container/container.kuki:338
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:338
 		if readErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:339
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:339
 			return "", kukierrors.Wrap(copyErr, "container exec read")
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:340
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:340
 		return string(raw), nil
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:341
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:341
 	inspectResult, inspectErr := engine.cli.ContainerExecInspect(ctxpkg.Value(ctx), createResp.ID)
-//line /home/user/kukicha/stdlib/container/container.kuki:342
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:342
 	if inspectErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:343
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:343
 		return "", kukierrors.Wrap(inspectErr, "container exec inspect")
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:344
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:344
 	combined := stdout.String()
-//line /home/user/kukicha/stdlib/container/container.kuki:345
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:345
 	if stderr.Len() > 0 {
-//line /home/user/kukicha/stdlib/container/container.kuki:346
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:346
 		combined = (combined + stderr.String())
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:347
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:347
 	if inspectResult.ExitCode != 0 {
-//line /home/user/kukicha/stdlib/container/container.kuki:348
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:348
 		return combined, errors.New(fmt.Sprintf("container exec exit %v", inspectResult.ExitCode))
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:349
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:349
 	return combined, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:355
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:355
 func Wait(engine Engine, containerID string, timeoutSeconds int64) (int64, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:356
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:356
 	h := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:357
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:357
 	if timeoutSeconds > 0 {
-//line /home/user/kukicha/stdlib/container/container.kuki:358
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:358
 		h = ctxpkg.WithTimeout(h, timeoutSeconds)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:359
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:359
 	defer ctxpkg.Cancel(h)
-//line /home/user/kukicha/stdlib/container/container.kuki:360
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:360
 	goCtx := ctxpkg.Value(h)
-//line /home/user/kukicha/stdlib/container/container.kuki:361
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:361
 	waitCh, errCh := engine.cli.ContainerWait(goCtx, containerID, dockercontainer.WaitConditionNotRunning)
-//line /home/user/kukicha/stdlib/container/container.kuki:362
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:362
 	select {
 	case err := <-errCh:
-//line /home/user/kukicha/stdlib/container/container.kuki:364
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:364
 		if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:365
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:365
 			return -1, fmt.Errorf("container wait: %w", err)
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:366
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:366
 		return -1, errors.New("container wait: unknown wait error")
 	case res := <-waitCh:
-//line /home/user/kukicha/stdlib/container/container.kuki:368
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:368
 		return res.StatusCode, nil
 	}
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:371
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:371
 func WaitCtx(engine Engine, h ctxpkg.Handle, containerID string) (int64, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:372
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:372
 	goCtx := ctxpkg.Value(h)
-//line /home/user/kukicha/stdlib/container/container.kuki:373
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:373
 	waitCh, errCh := engine.cli.ContainerWait(goCtx, containerID, dockercontainer.WaitConditionNotRunning)
-//line /home/user/kukicha/stdlib/container/container.kuki:374
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:374
 	select {
 	case err := <-errCh:
-//line /home/user/kukicha/stdlib/container/container.kuki:376
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:376
 		if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:377
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:377
 			return -1, fmt.Errorf("container wait: %w", err)
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:378
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:378
 		return -1, errors.New("container wait: unknown wait error")
 	case res := <-waitCh:
-//line /home/user/kukicha/stdlib/container/container.kuki:380
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:380
 		return res.StatusCode, nil
 	}
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:385
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:385
 func convertEvent(msg dockerevents.Message) ContainerEvent {
-//line /home/user/kukicha/stdlib/container/container.kuki:386
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:386
 	ts := time.Unix(msg.Time, 0).UTC().Format(time.RFC3339)
-//line /home/user/kukicha/stdlib/container/container.kuki:387
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:387
 	actor := msg.Actor.ID
-//line /home/user/kukicha/stdlib/container/container.kuki:388
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:388
 	name, ok := msg.Actor.Attributes["name"]
-//line /home/user/kukicha/stdlib/container/container.kuki:389
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:389
 	if ok && (name != "") {
-//line /home/user/kukicha/stdlib/container/container.kuki:390
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:390
 		actor = name
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:391
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:391
 	return ContainerEvent{id: msg.ID, resource: string(msg.Type), action: string(msg.Action), actor: actor, time: ts}
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:400
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:400
 func eventsWithContext(engine Engine, h ctxpkg.Handle) ([]ContainerEvent, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:401
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:401
 	goCtx := ctxpkg.Value(h)
-//line /home/user/kukicha/stdlib/container/container.kuki:402
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:402
 	msgCh, errCh := engine.cli.Events(goCtx, dockertypes.EventsOptions{})
-//line /home/user/kukicha/stdlib/container/container.kuki:403
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:403
 	events := make([]ContainerEvent, 0)
-//line /home/user/kukicha/stdlib/container/container.kuki:404
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:404
 	for {
-//line /home/user/kukicha/stdlib/container/container.kuki:405
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:405
 		select {
 		case <-goCtx.Done():
-//line /home/user/kukicha/stdlib/container/container.kuki:407
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:407
 			return events, nil
 		case err := <-errCh:
-//line /home/user/kukicha/stdlib/container/container.kuki:409
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:409
 			if (err == nil) || (goCtx.Err() != nil) {
-//line /home/user/kukicha/stdlib/container/container.kuki:410
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:410
 				return events, nil
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:411
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:411
 			return events, fmt.Errorf("container events: %w", err)
 		case msg, ok := <-msgCh:
-//line /home/user/kukicha/stdlib/container/container.kuki:413
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:413
 			if !ok {
-//line /home/user/kukicha/stdlib/container/container.kuki:414
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:414
 				return events, nil
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:415
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:415
 			events = append(events, convertEvent(msg))
 		}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:416
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:416
 	return events, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:420
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:420
 func Events(engine Engine, timeoutSeconds int64) ([]ContainerEvent, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:421
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:421
 	if timeoutSeconds <= 0 {
-//line /home/user/kukicha/stdlib/container/container.kuki:422
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:422
 		timeoutSeconds = 15
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:423
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:423
 	h := ctxpkg.WithTimeout(ctxpkg.Background(), timeoutSeconds)
-//line /home/user/kukicha/stdlib/container/container.kuki:424
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:424
 	defer ctxpkg.Cancel(h)
-//line /home/user/kukicha/stdlib/container/container.kuki:425
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:425
 	return eventsWithContext(engine, h)
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:428
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:428
 func EventsCtx(engine Engine, h ctxpkg.Handle) ([]ContainerEvent, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:429
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:429
 	return eventsWithContext(engine, h)
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:435
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:435
 func Pull(engine Engine, ref string, handles ...ctxpkg.Handle) (string, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:436
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:436
 	bg := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:437
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:437
 	if len(handles) > 0 {
-//line /home/user/kukicha/stdlib/container/container.kuki:438
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:438
 		bg = handles[0]
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:439
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:439
 	reader, err := engine.cli.ImagePull(ctxpkg.Value(bg), ref, dockerimage.PullOptions{})
-//line /home/user/kukicha/stdlib/container/container.kuki:440
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:440
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:441
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:441
 		return "", fmt.Errorf("container pull: %w", err)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:442
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:442
 	defer reader.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:443
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:443
 	digest := ""
-//line /home/user/kukicha/stdlib/container/container.kuki:444
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:444
 	scanner := bufio.NewScanner(reader)
-//line /home/user/kukicha/stdlib/container/container.kuki:445
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:445
 	for scanner.Scan() {
-//line /home/user/kukicha/stdlib/container/container.kuki:446
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:446
 		msg := pullStatusMsg{}
-//line /home/user/kukicha/stdlib/container/container.kuki:447
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:447
 		unmarshalErr := json.Unmarshal(scanner.Bytes(), &msg)
-//line /home/user/kukicha/stdlib/container/container.kuki:448
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:448
 		if unmarshalErr == nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:449
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:449
 			if kukistring.HasPrefix(msg.Status, "Digest:") {
-//line /home/user/kukicha/stdlib/container/container.kuki:450
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:450
 				digest = kukistring.TrimPrefix(msg.Status, "Digest: ")
 			}
 		}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:451
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:451
 	if digest == "" {
-//line /home/user/kukicha/stdlib/container/container.kuki:452
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:452
 		digest = ref
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:453
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:453
 	return digest, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:456
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:456
 func PullAuth(engine Engine, ref string, auth Auth) (string, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:461
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:461
 	authJSON, jsonErr := json.Marshal(map[string]string{"username": auth.username, "password": auth.password, "serveraddress": auth.serverAddress})
-//line /home/user/kukicha/stdlib/container/container.kuki:462
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:462
 	if jsonErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:463
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:463
 		return "", fmt.Errorf("container pull auth: %w", jsonErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:464
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:464
 	encoded := base64.URLEncoding.EncodeToString(authJSON)
-//line /home/user/kukicha/stdlib/container/container.kuki:467
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:467
 	reader, err := engine.cli.ImagePull(ctxpkg.Value(ctxpkg.Background()), ref, dockerimage.PullOptions{RegistryAuth: encoded})
-//line /home/user/kukicha/stdlib/container/container.kuki:468
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:468
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:469
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:469
 		return "", fmt.Errorf("container pull: %w", err)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:470
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:470
 	defer reader.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:471
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:471
 	digest := ""
-//line /home/user/kukicha/stdlib/container/container.kuki:472
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:472
 	scanner := bufio.NewScanner(reader)
-//line /home/user/kukicha/stdlib/container/container.kuki:473
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:473
 	for scanner.Scan() {
-//line /home/user/kukicha/stdlib/container/container.kuki:474
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:474
 		msg := pullStatusMsg{}
-//line /home/user/kukicha/stdlib/container/container.kuki:475
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:475
 		unmarshalErr := json.Unmarshal(scanner.Bytes(), &msg)
-//line /home/user/kukicha/stdlib/container/container.kuki:476
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:476
 		if unmarshalErr == nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:477
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:477
 			if kukistring.HasPrefix(msg.Status, "Digest:") {
-//line /home/user/kukicha/stdlib/container/container.kuki:478
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:478
 				digest = kukistring.TrimPrefix(msg.Status, "Digest: ")
 			}
 		}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:479
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:479
 	if digest == "" {
-//line /home/user/kukicha/stdlib/container/container.kuki:480
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:480
 		digest = ref
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:481
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:481
 	return digest, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:486
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:486
 func loadDockerAuth(serverAddress string) (string, string, string, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:487
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:487
 	home, homeErr := os.UserHomeDir()
-//line /home/user/kukicha/stdlib/container/container.kuki:488
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:488
 	if homeErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:489
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:489
 		return "", "", "", fmt.Errorf("container auth: %w", homeErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:490
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:490
 	configPath := filepath.Join(home, ".docker", "config.json")
-//line /home/user/kukicha/stdlib/container/container.kuki:491
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:491
 	data, readErr := os.ReadFile(configPath)
-//line /home/user/kukicha/stdlib/container/container.kuki:492
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:492
 	if readErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:493
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:493
 		return "", "", "", fmt.Errorf("container auth: %w", readErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:494
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:494
 	config := dockerConfig{}
-//line /home/user/kukicha/stdlib/container/container.kuki:495
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:495
 	unmarshalErr := json.Unmarshal(data, &config)
-//line /home/user/kukicha/stdlib/container/container.kuki:496
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:496
 	if unmarshalErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:497
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:497
 		return "", "", "", fmt.Errorf("container auth parse: %w", unmarshalErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:498
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:498
 	authEntry, ok := config.Auths[serverAddress]
-//line /home/user/kukicha/stdlib/container/container.kuki:499
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:499
 	if !ok {
-//line /home/user/kukicha/stdlib/container/container.kuki:505
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:505
 		variations := []string{("https://" + serverAddress), ("http://" + serverAddress), kukistring.TrimPrefix(serverAddress, "https://"), kukistring.TrimPrefix(serverAddress, "http://")}
-//line /home/user/kukicha/stdlib/container/container.kuki:506
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:506
 		for _, v := range variations {
-//line /home/user/kukicha/stdlib/container/container.kuki:507
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:507
 			a, found := config.Auths[v]
-//line /home/user/kukicha/stdlib/container/container.kuki:508
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:508
 			if found {
-//line /home/user/kukicha/stdlib/container/container.kuki:509
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:509
 				authEntry = a
-//line /home/user/kukicha/stdlib/container/container.kuki:510
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:510
 				ok = true
-//line /home/user/kukicha/stdlib/container/container.kuki:511
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:511
 				break
 			}
 		}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:512
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:512
 	if !ok {
-//line /home/user/kukicha/stdlib/container/container.kuki:513
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:513
 		return "", "", "", fmt.Errorf("container auth: no credentials found for %s", serverAddress)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:514
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:514
 	if authEntry.Auth == "" {
-//line /home/user/kukicha/stdlib/container/container.kuki:515
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:515
 		return "", "", "", fmt.Errorf("container auth: empty credentials for %s", serverAddress)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:516
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:516
 	decoded, decodeErr := base64.StdEncoding.DecodeString(authEntry.Auth)
-//line /home/user/kukicha/stdlib/container/container.kuki:517
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:517
 	if decodeErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:518
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:518
 		return "", "", "", fmt.Errorf("container auth decode: %w", decodeErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:519
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:519
 	parts := kukistring.SplitN(string(decoded), ":", 2)
-//line /home/user/kukicha/stdlib/container/container.kuki:520
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:520
 	if len(parts) != 2 {
-//line /home/user/kukicha/stdlib/container/container.kuki:521
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:521
 		return "", "", "", fmt.Errorf("container auth: invalid credential format for %s", serverAddress)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:522
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:522
 	return parts[0], parts[1], serverAddress, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:525
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:525
 func LoginFromConfig(server string) (Auth, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:526
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:526
 	username, password, addr, err := loadDockerAuth(server)
-//line /home/user/kukicha/stdlib/container/container.kuki:527
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:527
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:528
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:528
 		return Auth{}, err
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:529
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:529
 	return Auth{username: username, password: password, serverAddress: addr}, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:536
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:536
 func newClient(host string) (*client.Client, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:537
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:537
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
-//line /home/user/kukicha/stdlib/container/container.kuki:538
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:538
 	if host != "" {
-//line /home/user/kukicha/stdlib/container/container.kuki:539
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:539
 		opts = append(opts, client.WithHost(host))
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:540
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:540
 	cli, err := client.NewClientWithOpts(opts...)
-//line /home/user/kukicha/stdlib/container/container.kuki:541
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:541
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:542
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:542
 		return nil, fmt.Errorf("container connect: %w", err)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:543
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:543
 	return cli, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:546
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:546
 func Connect() (Engine, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:551
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:551
 	socketPaths := []string{fmt.Sprintf("/run/user/%d/podman/podman.sock", os.Getuid()), "/var/run/docker.sock", "/run/podman/podman.sock"}
-//line /home/user/kukicha/stdlib/container/container.kuki:552
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:552
 	host := ""
-//line /home/user/kukicha/stdlib/container/container.kuki:553
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:553
 	for _, p := range socketPaths {
-//line /home/user/kukicha/stdlib/container/container.kuki:554
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:554
 		_, statErr := os.Stat(p)
-//line /home/user/kukicha/stdlib/container/container.kuki:555
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:555
 		if statErr == nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:556
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:556
 			host = ("unix://" + p)
-//line /home/user/kukicha/stdlib/container/container.kuki:557
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:557
 			break
 		}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:558
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:558
 	cli, err := newClient(host)
-//line /home/user/kukicha/stdlib/container/container.kuki:559
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:559
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:560
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:560
 		return Engine{}, err
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:561
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:561
 	return Engine{cli: cli}, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:564
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:564
 func ConnectRemote(host string) (Engine, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:565
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:565
 	cli, err := newClient(host)
-//line /home/user/kukicha/stdlib/container/container.kuki:566
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:566
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:567
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:567
 		return Engine{}, err
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:568
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:568
 	return Engine{cli: cli}, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:571
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:571
 func Open(cfg Config) (Engine, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:572
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:572
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
-//line /home/user/kukicha/stdlib/container/container.kuki:573
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:573
 	if cfg.host != "" {
-//line /home/user/kukicha/stdlib/container/container.kuki:574
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:574
 		opts = append(opts, client.WithHost(cfg.host))
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:575
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:575
 	if cfg.apiVersion != "" {
-//line /home/user/kukicha/stdlib/container/container.kuki:576
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:576
 		opts = append(opts, client.WithVersion(cfg.apiVersion))
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:577
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:577
 	cli, err := client.NewClientWithOpts(opts...)
-//line /home/user/kukicha/stdlib/container/container.kuki:578
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:578
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:579
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:579
 		return Engine{}, fmt.Errorf("container open: %w", err)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:580
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:580
 	return Engine{cli: cli}, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:584
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:584
 func buildImage(cli *client.Client, contextPath string, tag string) (string, string, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:585
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:585
 	buf := bytes.Buffer{}
-//line /home/user/kukicha/stdlib/container/container.kuki:586
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:586
 	tw := tar.NewWriter(&buf)
-//line /home/user/kukicha/stdlib/container/container.kuki:587
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:587
 	absContextPath, absErr := filepath.Abs(contextPath)
-//line /home/user/kukicha/stdlib/container/container.kuki:588
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:588
 	if absErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:589
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:589
 		return "", "", fmt.Errorf("container build: %w", absErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:619
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:619
 	walkErr := filepath.WalkDir(absContextPath, func(walkPath string, d os.DirEntry, err error) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:591
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:591
 		if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:592
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:592
 			return err
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:593
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:593
 		if d.IsDir() && (d.Name() == ".git") {
-//line /home/user/kukicha/stdlib/container/container.kuki:594
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:594
 			return filepath.SkipDir
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:596
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:596
 		if d.Type() == os.ModeSymlink {
-//line /home/user/kukicha/stdlib/container/container.kuki:597
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:597
 			return nil
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:598
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:598
 		relPath, relErr := filepath.Rel(absContextPath, walkPath)
-//line /home/user/kukicha/stdlib/container/container.kuki:599
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:599
 		if relErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:600
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:600
 			return relErr
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:601
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:601
 		if d.IsDir() {
-//line /home/user/kukicha/stdlib/container/container.kuki:602
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:602
 			return nil
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:603
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:603
 		info, infoErr := d.Info()
-//line /home/user/kukicha/stdlib/container/container.kuki:604
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:604
 		if infoErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:605
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:605
 			return infoErr
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:606
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:606
 		header, headerErr := tar.FileInfoHeader(info, "")
-//line /home/user/kukicha/stdlib/container/container.kuki:607
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:607
 		if headerErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:608
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:608
 			return headerErr
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:609
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:609
 		header.Name = relPath
-//line /home/user/kukicha/stdlib/container/container.kuki:610
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:610
 		writeErr := tw.WriteHeader(header)
-//line /home/user/kukicha/stdlib/container/container.kuki:611
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:611
 		if writeErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:612
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:612
 			return writeErr
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:613
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:613
 		f, openErr := os.Open(walkPath)
-//line /home/user/kukicha/stdlib/container/container.kuki:614
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:614
 		if openErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:615
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:615
 			return openErr
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:616
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:616
 		defer f.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:617
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:617
 		_, copyErr := io.Copy(tw, f)
-//line /home/user/kukicha/stdlib/container/container.kuki:618
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:618
 		return copyErr
 	})
-//line /home/user/kukicha/stdlib/container/container.kuki:620
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:620
 	if walkErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:621
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:621
 		return "", "", fmt.Errorf("container build context: %w", walkErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:622
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:622
 	closeErr := tw.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:623
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:623
 	if closeErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:624
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:624
 		return "", "", fmt.Errorf("container build tar: %w", closeErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:629
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:629
 	buildOpts := dockertypes.ImageBuildOptions{Tags: []string{tag}, Remove: true, Dockerfile: "Dockerfile"}
-//line /home/user/kukicha/stdlib/container/container.kuki:630
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:630
 	resp, buildErr := cli.ImageBuild(ctxpkg.Value(ctxpkg.Background()), &buf, buildOpts)
-//line /home/user/kukicha/stdlib/container/container.kuki:631
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:631
 	if buildErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:632
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:632
 		return "", "", fmt.Errorf("container build: %w", buildErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:633
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:633
 	defer resp.Body.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:634
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:634
 	output := bytes.Buffer{}
-//line /home/user/kukicha/stdlib/container/container.kuki:635
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:635
 	imageID := ""
-//line /home/user/kukicha/stdlib/container/container.kuki:636
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:636
 	scanner := bufio.NewScanner(resp.Body)
-//line /home/user/kukicha/stdlib/container/container.kuki:637
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:637
 	for scanner.Scan() {
-//line /home/user/kukicha/stdlib/container/container.kuki:638
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:638
 		line := scanner.Text()
-//line /home/user/kukicha/stdlib/container/container.kuki:639
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:639
 		output.WriteString(line)
-//line /home/user/kukicha/stdlib/container/container.kuki:640
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:640
 		output.WriteString("\n")
-//line /home/user/kukicha/stdlib/container/container.kuki:641
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:641
 		msg := buildStreamMsg{}
-//line /home/user/kukicha/stdlib/container/container.kuki:642
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:642
 		unmarshalErr := json.Unmarshal(scanner.Bytes(), &msg)
-//line /home/user/kukicha/stdlib/container/container.kuki:643
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:643
 		if unmarshalErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:644
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:644
 			continue
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:645
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:645
 		if msg.Error != "" {
-//line /home/user/kukicha/stdlib/container/container.kuki:646
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:646
 			return "", output.String(), fmt.Errorf("container build: %s", msg.Error)
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:647
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:647
 		if msg.Aux.ID != "" {
-//line /home/user/kukicha/stdlib/container/container.kuki:648
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:648
 			imageID = msg.Aux.ID
 		}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:649
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:649
 	scanErr := scanner.Err()
-//line /home/user/kukicha/stdlib/container/container.kuki:650
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:650
 	if scanErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:651
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:651
 		return "", output.String(), fmt.Errorf("container build stream: %w", scanErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:652
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:652
 	return imageID, output.String(), nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:655
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:655
 func Build(engine Engine, path string, tag string) (BuildOutput, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:656
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:656
 	imageID, output, err := buildImage(engine.cli, path, tag)
-//line /home/user/kukicha/stdlib/container/container.kuki:657
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:657
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:658
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:658
 		return BuildOutput{}, err
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:659
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:659
 	return BuildOutput{imageID: imageID, output: output}, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:662
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:662
 func extractTar(reader io.Reader, destPath string) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:663
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:663
 	tr := tar.NewReader(reader)
-//line /home/user/kukicha/stdlib/container/container.kuki:664
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:664
 	cleanDest := filepath.Clean(destPath)
-//line /home/user/kukicha/stdlib/container/container.kuki:665
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:665
 	for {
-//line /home/user/kukicha/stdlib/container/container.kuki:666
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:666
 		header, err := tr.Next()
-//line /home/user/kukicha/stdlib/container/container.kuki:667
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:667
 		if err == io.EOF {
-//line /home/user/kukicha/stdlib/container/container.kuki:668
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:668
 			break
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:669
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:669
 		if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:670
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:670
 			return err
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:671
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:671
 		cleanName := filepath.Clean(header.Name)
-//line /home/user/kukicha/stdlib/container/container.kuki:672
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:672
 		target := filepath.Join(destPath, cleanName)
-//line /home/user/kukicha/stdlib/container/container.kuki:673
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:673
 		sepStr := fmt.Sprintf("%c", filepath.Separator)
-//line /home/user/kukicha/stdlib/container/container.kuki:674
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:674
 		if !kukistring.HasPrefix(target, (cleanDest+sepStr)) && (filepath.Clean(target) != cleanDest) {
-//line /home/user/kukicha/stdlib/container/container.kuki:675
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:675
 			return fmt.Errorf("invalid archive path: %s", header.Name)
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:676
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:676
 		switch header.Typeflag {
 		case tar.TypeDir:
-//line /home/user/kukicha/stdlib/container/container.kuki:678
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:678
 			mkdirErr := os.MkdirAll(target, os.FileMode(header.Mode))
-//line /home/user/kukicha/stdlib/container/container.kuki:679
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:679
 			if mkdirErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:680
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:680
 				return mkdirErr
 			}
 		case tar.TypeReg:
-//line /home/user/kukicha/stdlib/container/container.kuki:682
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:682
 			parentErr := os.MkdirAll(filepath.Dir(target), 493)
-//line /home/user/kukicha/stdlib/container/container.kuki:683
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:683
 			if parentErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:684
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:684
 				return parentErr
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:685
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:685
 			f, openErr := os.OpenFile(target, ((os.O_CREATE | os.O_WRONLY) | os.O_TRUNC), os.FileMode(header.Mode))
-//line /home/user/kukicha/stdlib/container/container.kuki:686
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:686
 			if openErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:687
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:687
 				return openErr
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:688
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:688
 			_, copyErr := io.Copy(f, tr)
-//line /home/user/kukicha/stdlib/container/container.kuki:689
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:689
 			if copyErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:690
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:690
 				f.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:691
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:691
 				return copyErr
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:692
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:692
 			closeErr := f.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:693
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:693
 			if closeErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:694
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:694
 				return closeErr
 			}
 		case tar.TypeSymlink, tar.TypeLink:
-//line /home/user/kukicha/stdlib/container/container.kuki:696
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:696
 			return fmt.Errorf("archive contains unsupported link entry: %s", header.Name)
 		default:
-//line /home/user/kukicha/stdlib/container/container.kuki:698
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:698
 			return fmt.Errorf("archive contains unsupported entry type %d: %s", header.Typeflag, header.Name)
 		}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:699
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:699
 	return nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:702
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:702
 func createTarFromPath(sourcePath string) (io.Reader, error) {
-//line /home/user/kukicha/stdlib/container/container.kuki:703
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:703
 	absSourcePath, absErr := filepath.Abs(sourcePath)
-//line /home/user/kukicha/stdlib/container/container.kuki:704
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:704
 	if absErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:705
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:705
 		return nil, fmt.Errorf("container copy to abs path: %w", absErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:707
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:707
 	info, statErr := os.Lstat(absSourcePath)
-//line /home/user/kukicha/stdlib/container/container.kuki:708
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:708
 	if statErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:709
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:709
 		return nil, fmt.Errorf("container copy to stat: %w", statErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:710
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:710
 	if info.Mode().Type() == os.ModeSymlink {
-//line /home/user/kukicha/stdlib/container/container.kuki:711
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:711
 		return nil, fmt.Errorf("container copy to: source path is a symlink: %s", absSourcePath)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:712
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:712
 	buf := bytes.Buffer{}
-//line /home/user/kukicha/stdlib/container/container.kuki:713
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:713
 	tw := tar.NewWriter(&buf)
-//line /home/user/kukicha/stdlib/container/container.kuki:714
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:714
 	if info.IsDir() {
-//line /home/user/kukicha/stdlib/container/container.kuki:748
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:748
 		walkErr := filepath.WalkDir(absSourcePath, func(walkPath string, d os.DirEntry, err error) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:716
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:716
 			if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:717
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:717
 				return err
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:719
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:719
 			if d.Type() == os.ModeSymlink {
-//line /home/user/kukicha/stdlib/container/container.kuki:720
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:720
 				return nil
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:721
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:721
 			fi, fiErr := d.Info()
-//line /home/user/kukicha/stdlib/container/container.kuki:722
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:722
 			if fiErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:723
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:723
 				return fiErr
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:725
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:725
 			if fi.Mode().Type() == os.ModeSymlink {
-//line /home/user/kukicha/stdlib/container/container.kuki:726
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:726
 				return nil
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:727
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:727
 			header, headerErr := tar.FileInfoHeader(fi, "")
-//line /home/user/kukicha/stdlib/container/container.kuki:728
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:728
 			if headerErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:729
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:729
 				return headerErr
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:730
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:730
 			rel, relErr := filepath.Rel(filepath.Dir(absSourcePath), walkPath)
-//line /home/user/kukicha/stdlib/container/container.kuki:731
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:731
 			if relErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:732
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:732
 				return relErr
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:733
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:733
 			header.Name = filepath.ToSlash(rel)
-//line /home/user/kukicha/stdlib/container/container.kuki:734
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:734
 			if fi.IsDir() {
-//line /home/user/kukicha/stdlib/container/container.kuki:735
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:735
 				header.Name = (header.Name + "/")
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:736
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:736
 			writeErr := tw.WriteHeader(header)
-//line /home/user/kukicha/stdlib/container/container.kuki:737
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:737
 			if writeErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:738
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:738
 				return writeErr
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:739
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:739
 			if fi.Mode().IsRegular() {
-//line /home/user/kukicha/stdlib/container/container.kuki:740
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:740
 				f, openErr := os.Open(walkPath)
-//line /home/user/kukicha/stdlib/container/container.kuki:741
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:741
 				if openErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:742
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:742
 					return openErr
 				}
-//line /home/user/kukicha/stdlib/container/container.kuki:743
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:743
 				defer f.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:744
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:744
 				_, copyErr := io.Copy(tw, f)
-//line /home/user/kukicha/stdlib/container/container.kuki:745
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:745
 				if copyErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:746
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:746
 					return copyErr
 				}
 			}
-//line /home/user/kukicha/stdlib/container/container.kuki:747
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:747
 			return nil
 		})
-//line /home/user/kukicha/stdlib/container/container.kuki:749
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:749
 		if walkErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:750
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:750
 			return nil, fmt.Errorf("container copy to walk: %w", walkErr)
 		}
 	} else {
-//line /home/user/kukicha/stdlib/container/container.kuki:752
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:752
 		header, headerErr := tar.FileInfoHeader(info, "")
-//line /home/user/kukicha/stdlib/container/container.kuki:753
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:753
 		if headerErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:754
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:754
 			return nil, fmt.Errorf("container copy to header: %w", headerErr)
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:755
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:755
 		header.Name = filepath.ToSlash(filepath.Base(absSourcePath))
-//line /home/user/kukicha/stdlib/container/container.kuki:756
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:756
 		writeErr := tw.WriteHeader(header)
-//line /home/user/kukicha/stdlib/container/container.kuki:757
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:757
 		if writeErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:758
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:758
 			return nil, fmt.Errorf("container copy to write header: %w", writeErr)
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:759
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:759
 		f, openErr := os.Open(absSourcePath)
-//line /home/user/kukicha/stdlib/container/container.kuki:760
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:760
 		if openErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:761
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:761
 			return nil, fmt.Errorf("container copy to open: %w", openErr)
 		}
-//line /home/user/kukicha/stdlib/container/container.kuki:762
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:762
 		defer f.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:763
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:763
 		_, copyErr := io.Copy(tw, f)
-//line /home/user/kukicha/stdlib/container/container.kuki:764
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:764
 		if copyErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:765
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:765
 			return nil, fmt.Errorf("container copy to write file: %w", copyErr)
 		}
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:766
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:766
 	closeErr := tw.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:767
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:767
 	if closeErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:768
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:768
 		return nil, fmt.Errorf("container copy to close tar: %w", closeErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:769
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:769
 	return &buf, nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:773
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:773
 func CopyFrom(engine Engine, containerID string, sourcePath string, destPath string, handles ...ctxpkg.Handle) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:774
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:774
 	ctx := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:775
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:775
 	if len(handles) > 0 {
-//line /home/user/kukicha/stdlib/container/container.kuki:776
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:776
 		ctx = handles[0]
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:777
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:777
 	return copyFromWithContext(engine, ctx, containerID, sourcePath, destPath)
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:780
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:780
 func copyFromWithContext(engine Engine, ctx ctxpkg.Handle, containerID string, sourcePath string, destPath string) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:781
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:781
 	reader, _, err := engine.cli.CopyFromContainer(ctxpkg.Value(ctx), containerID, sourcePath)
-//line /home/user/kukicha/stdlib/container/container.kuki:782
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:782
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:783
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:783
 		return fmt.Errorf("container copy from: %w", err)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:784
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:784
 	defer reader.Close()
-//line /home/user/kukicha/stdlib/container/container.kuki:785
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:785
 	mkdirErr := os.MkdirAll(destPath, 493)
-//line /home/user/kukicha/stdlib/container/container.kuki:786
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:786
 	if mkdirErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:787
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:787
 		return fmt.Errorf("container copy from mkdir: %w", mkdirErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:788
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:788
 	extractErr := extractTar(reader, destPath)
-//line /home/user/kukicha/stdlib/container/container.kuki:789
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:789
 	if extractErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:790
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:790
 		return fmt.Errorf("container copy from extract: %w", extractErr)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:791
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:791
 	return nil
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:795
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:795
 func CopyTo(engine Engine, containerID string, sourcePath string, destPath string, handles ...ctxpkg.Handle) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:796
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:796
 	ctx := ctxpkg.Background()
-//line /home/user/kukicha/stdlib/container/container.kuki:797
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:797
 	if len(handles) > 0 {
-//line /home/user/kukicha/stdlib/container/container.kuki:798
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:798
 		ctx = handles[0]
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:799
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:799
 	return copyToWithContext(engine, ctx, containerID, sourcePath, destPath)
 }
 
-//line /home/user/kukicha/stdlib/container/container.kuki:802
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:802
 func copyToWithContext(engine Engine, ctx ctxpkg.Handle, containerID string, sourcePath string, destPath string) error {
-//line /home/user/kukicha/stdlib/container/container.kuki:803
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:803
 	archive, archiveErr := createTarFromPath(sourcePath)
-//line /home/user/kukicha/stdlib/container/container.kuki:804
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:804
 	if archiveErr != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:805
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:805
 		return archiveErr
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:806
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:806
 	copyOpts := dockercontainer.CopyToContainerOptions{AllowOverwriteDirWithFile: true}
-//line /home/user/kukicha/stdlib/container/container.kuki:807
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:807
 	err := engine.cli.CopyToContainer(ctxpkg.Value(ctx), containerID, destPath, archive, copyOpts)
-//line /home/user/kukicha/stdlib/container/container.kuki:808
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:808
 	if err != nil {
-//line /home/user/kukicha/stdlib/container/container.kuki:809
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:809
 		return fmt.Errorf("container copy to: %w", err)
 	}
-//line /home/user/kukicha/stdlib/container/container.kuki:810
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:810
 	return nil
 }

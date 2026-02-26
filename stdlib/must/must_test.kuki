@@ -1,0 +1,73 @@
+# Tests for Kukicha Standard Library - Must Package
+
+petiole must_test
+
+import "stdlib/must"
+import "stdlib/env"
+import "os"
+import "testing"
+
+func expectPanic(t reference testing.T, fn func())
+    defer func()
+        if recover() equals empty
+            t.Error("Expected panic")
+        return
+    }()
+    fn()
+
+# Test Do returns the value when no error and panics when error present
+func TestDoHelpers(t reference testing.T)
+    value := must.Do("ok", empty)
+    if value not equals "ok"
+        t.Errorf("Do should return value when err empty")
+
+    expectPanic(t, func()
+        must.Do(empty, error "boom")
+    )
+
+# Test Ok helpers panic when error is provided
+func TestOkHelpers(t reference testing.T)
+    must.Ok(empty)
+    must.OkMsg(empty, "fine")
+
+    expectPanic(t, func()
+        must.Ok(error "err")
+    )
+    expectPanic(t, func()
+        must.OkMsg(error "err", "fail")
+    )
+
+# Test environment helpers use os env
+func TestEnvHelpers(t reference testing.T)
+    os.Setenv("MUST_TEST", "value")
+    defer os.Unsetenv("MUST_TEST")
+
+    if must.Env("MUST_TEST") not equals "value"
+        t.Errorf("Env should return set value")
+
+    if must.EnvOr("MUST_TEST", "default") not equals "value"
+        t.Errorf("EnvOr should prefer actual env")
+
+    os.Unsetenv("MUST_TEST")
+    if must.EnvOr("MUST_TEST", "default") not equals "default"
+        t.Errorf("EnvOr should fall back to default when env missing")
+
+# Test assertion helpers panic on invalid conditions
+func TestAssertionHelpers(t reference testing.T)
+    must.True(true, "ok")
+    must.False(false, "ok")
+    must.NotEmpty("x", "name")
+    must.NotNil("value", "value")
+
+    expectPanic(t, func()
+        must.True(false, "fail")
+    )
+    expectPanic(t, func()
+        must.False(true, "fail")
+    )
+    expectPanic(t, func()
+        must.NotEmpty("", "name")
+    )
+    expectPanic(t, func()
+        must.NotNil(empty, "value")
+    )

@@ -16,22 +16,25 @@ author: "github.com/tluker/kukicha"
 
 AI writes code faster than humans can review it.
 
-But AI-generated Python and R is full of:
+Modern Python has great tools — type hints, mypy, uv, pydantic.
+But they're all **opt-in**. AI-generated code routinely skips them:
 
-- Type errors that only appear at **runtime**
-- Forgotten exception handling (`except:` or none at all)
-- `None` / `NULL` / `NA` confusion that crashes in production
-- Scripts that work locally but are painful to deploy
+- Type hints omitted or incomplete — errors found at runtime, not review time
+- Exception handling forgotten or too broad (`except Exception:`)
+- No enforcement that the "right" tools are used
+- Scripts that work locally but need packaging expertise to deploy
 
 > Studies show **2.74×** more security vulnerabilities in AI-generated code
 > than human-written code.
+
+The problem isn't that Python *can't* be safe. It's that nothing *forces* it.
 
 <!-- end_slide -->
 
 ## The Python Pain
 
 ```python
-# What AI generates — valid Python, but hard to audit
+# What AI actually generates — valid Python, but how do you audit it?
 def process(items, opts={}):
     if not items:
         raise ValueError("no items")
@@ -41,9 +44,11 @@ def process(items, opts={}):
     return {"count": len(items)}
 ```
 
-No type hints. No compile-time errors. `opts={}` is a notorious footgun.
+<!-- pause -->
 
-Runs fine in tests. Crashes in production with the wrong input.
+Yes — a human would write `items: list[User]`, use pydantic, avoid `opts={}`.
+
+But AI doesn't always follow best practices. And Python doesn't **require** it.
 
 <!-- end_slide -->
 
@@ -60,9 +65,10 @@ process <- function(items, opts = list()) {
 }
 ```
 
-No path from analysis script to deployed service. Error handling is optional.
+R has improved — `{box}` for modules, `{targets}` for pipelines, Posit Connect for hosting.
 
-"Works on my machine" means "works in RStudio on my machine."
+But there's still no path from analysis script to **standalone deployed binary**.
+Error handling remains optional. Types remain advisory at best.
 
 <!-- end_slide -->
 
@@ -88,13 +94,13 @@ Compiles to a **single binary** — no Python environment, no R installation nee
 
 <!-- pause -->
 
-**Runtime errors** — Python finds type mistakes when the code runs.
-Kukicha finds them when it compiles.
+**Enforcement, not convention** — mypy and type hints are great, but optional.
+Kukicha **requires** explicit types. AI can't skip them.
 
 <!-- pause -->
 
-**Deployment** — Python needs pip, venv, requirements.txt, often Docker.
-Kukicha ships as one binary.
+**Deployment** — `uv` has made Python packaging much better. But you still
+need a Python runtime on the target. Kukicha ships as one static binary.
 
 <!-- pause -->
 
@@ -103,8 +109,8 @@ than equivalent Python for CPU-bound work.
 
 <!-- pause -->
 
-**Parallelism** — Python's GIL prevents true multi-core code.
-Kukicha has goroutines — real threads, real cores.
+**Parallelism** — Python 3.13+ has experimental free-threading (no GIL).
+Kukicha has goroutines today — stable, production-ready, on every core.
 
 <!-- end_slide -->
 
@@ -112,17 +118,18 @@ Kukicha has goroutines — real threads, real cores.
 
 <!-- pause -->
 
-**No production path** — R is brilliant for analysis. Shipping R to production
-means Shiny, Plumber, or a lot of pain.
-
-<!-- pause -->
-
-**Package hell** — `renv` and `packrat` help. They don't solve the problem.
+**Production gap** — R has gotten better — Plumber APIs, Posit Connect hosting,
+`{targets}` pipelines. But deploying R still means installing R.
 Kukicha builds one binary that runs anywhere.
 
 <!-- pause -->
 
-**Performance** — R is slow for non-vectorized code.
+**Reproducibility** — `renv` is solid for locking dependencies.
+But a single binary with zero runtime dependencies is a different level.
+
+<!-- pause -->
+
+**Performance** — R is fast for vectorized operations. For everything else,
 Kukicha compiles to native Go.
 
 <!-- pause -->
@@ -728,8 +735,8 @@ except Exception as e:
 
 try:
     port = get_port()
-except:
-    port = 8080   # bare except: bad practice, but common in AI-generated code
+except Exception:
+    port = 8080
 
 try:
     result = compute()
@@ -737,7 +744,8 @@ except Exception as e:
     raise RuntimeError(f"compute failed: {e}")
 ```
 
-Easy to catch too broadly. Easy to forget. The bare `except:` footgun is real.
+Even well-written Python: 3 operations = 9 lines of error handling.
+Each one is a decision point. Each one can be written differently.
 
 <!-- end_slide -->
 
@@ -1290,15 +1298,13 @@ func main()
 ```
 Python script works locally.
     ↓
-pip freeze > requirements.txt
+uv sync (much better than pip freeze!)
     ↓
-"Works on my machine"
+Docker image — still needs Python runtime (~100 MB with uv, slim base)
     ↓
-Docker image (500 MB) to carry the Python runtime
+Or: PyInstaller / Nuitka (bundles runtime, ~50-80 MB, platform-specific)
     ↓
-venv conflicts on the server
-    ↓
-"Which Python version did you use?"
+Works — but you're carrying a runtime either way
 ```
 
 <!-- pause -->
@@ -1307,7 +1313,7 @@ Kukicha:
 
 ```
 kukicha build app.kuki
-./app        ← one binary, no runtime, runs anywhere
+./app        ← one static binary (~10 MB), no runtime, cross-compiles
 ```
 
 <!-- end_slide -->
@@ -1317,15 +1323,13 @@ kukicha build app.kuki
 ```
 R analysis script works in RStudio.
     ↓
-Plumber or Shiny to expose it as a service
+Plumber API or Shiny app to expose it
     ↓
-renv to capture package versions
+renv to lock package versions (works well now)
     ↓
-Need R installed on the server
+Posit Connect — great if your org pays for it
     ↓
-R package compilation on Linux  ← nightmare
-    ↓
-"Have you tried Posit Connect?"
+Self-hosting: still need R + compiled packages on the server
 ```
 
 <!-- pause -->

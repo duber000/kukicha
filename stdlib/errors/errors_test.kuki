@@ -1,0 +1,28 @@
+# Tests for Kukicha Standard Library - Errors Package
+
+petiole errors_test
+
+import "stdlib/errors"
+import "errors" as goerrors
+import "testing"
+
+# Test Wrap, Is, Unwrap helpers
+func TestWrapAndIs(t reference testing.T)
+    base := goerrors.New("base")
+    wrapped := errors.Wrap(base, "context")
+    if not errors.Is(wrapped, base)
+        t.Errorf("Wrap/Is failed to identify base error")
+
+    unwrapped := errors.Unwrap(wrapped)
+    if unwrapped not equals base
+        t.Errorf("Unwrap did not return base error")
+
+# Test Join aggregates errors
+func TestJoin(t reference testing.T)
+    aErr := goerrors.New("a")
+    bErr := goerrors.New("b")
+    e := errors.Join(aErr, bErr)
+    if e equals empty
+        t.Fatalf("Join should return aggregated error")
+    if not errors.Is(e, goerrors.New("a"))
+        t.Errorf("Join should preserve original errors")

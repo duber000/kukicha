@@ -1,0 +1,32 @@
+# Tests for Kukicha Standard Library - Obs Package
+
+petiole obs_test
+
+import "stdlib/obs"
+import "testing"
+
+# Test logger builder utilities
+func TestLoggerFields(t reference testing.T)
+    logger := obs.New("svc", "env")
+    logger = obs.Component(logger, "api")
+    logger = obs.WithCorrelation(logger, "cid")
+
+    if logger.service not equals "svc"
+        t.Errorf("Service should remain set")
+    if logger.environment not equals "env"
+        t.Errorf("Environment should remain set")
+    if logger.correlationID not equals "cid"
+        t.Errorf("Correlation ID should be applied")
+
+# Test correlation IDs have expected length
+func TestCorrelationID(t reference testing.T)
+    id := obs.NewCorrelationID()
+    if len(id) not equals 16
+        t.Errorf("Correlation IDs should be 16 chars long")
+
+# Test timers don't panic when stopped/failing
+func TestTimerStopFail(t reference testing.T)
+    logger := obs.New("svc", "env")
+    timer := obs.Start(logger, "op")
+    obs.Stop(timer, map of string to any{})
+    obs.Fail(timer, "error", map of string to any{})

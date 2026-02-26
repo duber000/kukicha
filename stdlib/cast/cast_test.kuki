@@ -1,0 +1,51 @@
+# Tests for Kukicha Standard Library - Cast Package
+
+petiole cast_test
+
+import "stdlib/cast"
+import "encoding/json"
+import "testing"
+
+# Test Atoi and ParseFloat wrappers
+func TestBasicParsers(t reference testing.T)
+    n, err := cast.Atoi("123")
+    if err != empty
+        t.Fatalf("Atoi failed: {err}")
+    if n not equals 123
+        t.Errorf("Expected 123, got {n}")
+
+    f, err2 := cast.ParseFloat("3.14", 64)
+    if err2 != empty
+        t.Fatalf("ParseFloat failed: {err2}")
+    if f == 0.0
+        t.Errorf("ParseFloat returned zero for valid input")
+
+# Test SmartInt conversions
+func TestSmartInt(t reference testing.T)
+    if val, err := cast.SmartInt(5); err != empty or val not equals 5
+        t.Fatalf("SmartInt failed for int")
+    if val, err := cast.SmartInt("7"); err != empty or val not equals 7
+        t.Fatalf("SmartInt failed for string")
+    if val, err := cast.SmartInt(json.Number("9")); err != empty or val not equals 9
+        t.Fatalf("SmartInt failed for json.Number")
+    if val, err := cast.SmartInt(true); err != empty or val not equals 1
+        t.Fatalf("SmartInt failed for bool")
+
+# Test SmartFloat64 conversions
+func TestSmartFloat64(t reference testing.T)
+    if val, err := cast.SmartFloat64(1.5); err != empty or val not equals 1.5
+        t.Fatalf("SmartFloat64 failed for float64")
+    if val, err := cast.SmartFloat64("2.5"); err != empty or val == 0.0
+        t.Fatalf("SmartFloat64 failed for string")
+
+# Test SmartBool and SmartString
+func TestSmartBoolAndString(t reference testing.T)
+    if val, err := cast.SmartBool("true"); err != empty or not val
+        t.Fatalf("SmartBool failed for string true")
+    if val, err := cast.SmartBool(0); err != empty or val
+        t.Fatalf("SmartBool failed for int zero")
+
+    if str, err := cast.SmartString(10); err != empty or str not equals "10"
+        t.Fatalf("SmartString should convert int to string")
+    if str, err := cast.SmartString(empty); err != empty or str not equals ""
+        t.Fatalf("SmartString should handle empty value")

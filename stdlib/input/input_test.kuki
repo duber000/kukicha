@@ -1,0 +1,34 @@
+# Tests for Kukicha Standard Library - Input Package
+
+petiole input_test
+
+import "stdlib/input"
+import "bytes"
+import "os"
+import "testing"
+
+func withTempStdin(data string, fn func())
+    old := os.Stdin
+    defer func()
+        os.Stdin = old
+    }()
+    os.Stdin = bytes.NewBufferString(data)
+    fn()
+
+# Test ReadLine reads trimmed input
+func TestReadLine(t reference testing.T)
+    withTempStdin("  hello  \n", func()
+        line, err := input.ReadLine("")
+        if err != empty
+            t.Fatalf("ReadLine failed: {err}")
+        if line not equals "hello"
+            t.Errorf("Expected trimmed input, got '{line}'")
+    )
+
+# Test Prompt returns trimmed input and panics on error
+func TestPrompt(t reference testing.T)
+    withTempStdin("world\n", func()
+        value := input.Prompt(">")
+        if value not equals "world"
+            t.Errorf("Prompt returned '{value}'")
+    )

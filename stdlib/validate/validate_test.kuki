@@ -1,0 +1,55 @@
+# Tests for Kukicha Standard Library - Validate Package
+
+petiole validate_test
+
+import "stdlib/validate"
+import "testing"
+
+# Test string validators pass and fail as expected
+func TestStringValidators(t reference testing.T)
+    if _, err := validate.NotEmpty("text"); err != empty
+        t.Fatalf("NotEmpty should succeed for non-empty string")
+    if _, err := validate.NotEmpty("   "); err == empty
+        t.Fatalf("NotEmpty should fail for whitespace-only strings")
+
+    if _, err := validate.Email("user@example.com"); err != empty
+        t.Fatalf("Email validation failed for valid address")
+    if _, err := validate.Email("bad-email"); err == empty
+        t.Fatalf("Email should reject invalid addresses")
+
+    if _, err := validate.URL("https://example.com"); err != empty
+        t.Fatalf("Valid URL should pass")
+    if _, err := validate.URL("://bad"); err == empty
+        t.Fatalf("Invalid URL should fail")
+
+    if _, err := validate.MinLength("hello", 3); err != empty
+        t.Fatalf("MinLength should succeed when length sufficient")
+    if _, err := validate.MinLength("hi", 3); err == empty
+        t.Fatalf("MinLength should fail when too short")
+
+    if _, err := validate.MaxLength("hi", 5); err != empty
+        t.Fatalf("MaxLength should accept short string")
+    if _, err := validate.MaxLength("longer", 3); err == empty
+        t.Fatalf("MaxLength should fail when string too long")
+
+# Test number validators
+func TestNumberValidators(t reference testing.T)
+    if _, err := validate.InRange(5, 1, 10); err != empty
+        t.Fatalf("InRange should accept value inside range")
+    if _, err := validate.InRange(-1, 0, 5); err == empty
+        t.Fatalf("InRange should reject values outside range")
+
+    if _, err := validate.Positive(1); err != empty
+        t.Fatalf("Positive should accept positives")
+    if _, err := validate.Positive(0); err == empty
+        t.Fatalf("Positive should reject zero")
+
+    if _, err := validate.Negative(-1); err != empty
+        t.Fatalf("Negative should accept negatives")
+    if _, err := validate.Negative(0); err == empty
+        t.Fatalf("Negative should reject zero")
+
+    if _, err := validate.NonZero(2); err != empty
+        t.Fatalf("NonZero should accept non-zero values")
+    if _, err := validate.NonZero(0); err == empty
+        t.Fatalf("NonZero should reject zero")

@@ -1,0 +1,25 @@
+# Tests for Kukicha Standard Library - Retry Package
+
+petiole retry_test
+
+import "stdlib/retry"
+import "testing"
+
+# Test calculateDelay uses exponential backoff by default
+func TestCalculateDelayExponential(t reference testing.T)
+    cfg := retry.New()
+    cfg = retry.Delay(cfg, 100)
+
+    delay := calculateDelay(cfg, 3)
+    if delay not equals 800
+        t.Errorf("Expected exponential delay 800 for attempt 3, got {delay}")
+
+# Test calculateDelay respects linear strategy
+func TestCalculateDelayLinear(t reference testing.T)
+    cfg := retry.New()
+    cfg = retry.Delay(cfg, 250)
+    cfg = retry.Linear(cfg)
+
+    delay := calculateDelay(cfg, 5)
+    if delay not equals 250
+        t.Errorf("Expected linear delay 250, got {delay}")
