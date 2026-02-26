@@ -6,10 +6,10 @@
 
 KUKICHA := ./kukicha
 KUKI_SOURCES := $(wildcard stdlib/*/*.kuki)
-# Exclude test files from generation
 KUKI_MAIN := $(filter-out %_test.kuki,$(KUKI_SOURCES))
+KUKI_TESTS := $(filter %_test.kuki,$(KUKI_SOURCES))
 
-.PHONY: all build lsp generate genstdlibregistry test check-generate clean install-lsp install-hooks zed-test
+.PHONY: all build lsp generate generate-tests genstdlibregistry test check-generate check-test-staleness clean install-lsp install-hooks zed-test
 
 all: build lsp
 
@@ -26,7 +26,7 @@ genstdlibregistry:
 # Runs genstdlibregistry first so the semantic registry stays in sync,
 # then rebuilds the compiler with the fresh registry, then transpiles stdlib.
 # Ignores go build errors (stdlib packages aren't standalone binaries).
-generate: genstdlibregistry build
+generate: genstdlibregistry build generate-tests
 	@for f in $(KUKI_MAIN); do \
 		echo "Transpiling $$f ..."; \
 		out=$$($(KUKICHA) build "$$f" 2>&1); rc=$$?; \
@@ -35,8 +35,36 @@ generate: genstdlibregistry build
 	done
 	@echo "Done. Generated .go files from $(words $(KUKI_MAIN)) .kuki sources."
 
+# Regenerate _test.go files from _test.kuki sources.
+generate-tests: build
+	@for f in $(KUKI_TESTS); do \
+		echo "Transpiling $$f ..."; \
+		out=$$($(KUKICHA) build "$$f" 2>&1); rc=$$?; \
+		echo "$$out" | grep -v "^Warning: go build" || true; \
+		if [ $$rc -ne 0 ]; then echo "ERROR: Failed to transpile $$f"; exit 1; fi; \
+	done
+	@echo "Done. Generated .go test files from $(words $(KUKI_TESTS)) _test.kuki sources."
+
+# Check that _test.go files are not older than their _test.kuki sources.
+check-test-staleness:
+	@stale=0; \
+	for kuki in $(KUKI_TESTS); do \
+		gofile=$${kuki%.kuki}.go; \
+		if [ ! -f "$$gofile" ]; then \
+			echo "STALE: $$gofile does not exist (run 'make generate')"; \
+			stale=1; \
+		elif [ "$$kuki" -nt "$$gofile" ]; then \
+			echo "STALE: $$gofile is older than $$kuki (run 'make generate')"; \
+			stale=1; \
+		fi; \
+	done; \
+	if [ "$$stale" -eq 1 ]; then \
+		echo "Run 'make generate' to regenerate test files."; \
+		exit 1; \
+	fi
+
 # Run all tests
-test:
+test: check-test-staleness
 	go test ./...
 
 # Check that generated .go files are up to date (for CI)
