@@ -195,11 +195,32 @@ The stdlib is written in Kukicha (`.kuki` files) and transpiled to Go. The gener
 ### Build sequence
 
 ```bash
-make generate   # transpile all stdlib/*.kuki → *.go, rebuild compiler
+make generate   # transpile all stdlib/*.kuki → *.go (including *_test.kuki → *_test.go), rebuild compiler
 make build      # re-embed the updated .go files into the kukicha binary
 ```
 
 `make generate` already rebuilds the compiler internally (it needs a working binary to transpile), but that intermediate binary doesn't yet contain the newly generated `.go` files. The final `make build` is what bakes them in.
+
+`make generate` also calls `generate-tests` to regenerate `*_test.go` files from `*_test.kuki` sources. You can regenerate only the test files without touching the main stdlib:
+
+```bash
+make generate-tests   # transpile stdlib/*_test.kuki → *_test.go only
+```
+
+### Staleness check
+
+`make test` checks that every `*_test.go` is up to date with its `*_test.kuki` source before running the test suite. If any test file is missing or has an older timestamp than its source, the build fails immediately:
+
+```
+STALE: stdlib/files/files_test.go is older than stdlib/files/files_test.kuki (run 'make generate')
+Run 'make generate' to regenerate test files.
+```
+
+To check staleness without running tests:
+
+```bash
+make check-test-staleness
+```
 
 ### When to run `make genstdlibregistry`
 
@@ -215,9 +236,10 @@ You do **not** need it when:
 ### Adding a new stdlib package
 
 1. Create `stdlib/<pkg>/<pkg>.kuki` with a `petiole <pkg>` declaration
-2. Run `make generate && make build`
-3. Run `kukicha check stdlib/<pkg>/<pkg>.kuki` to validate
-4. Add the package to `stdlib/AGENTS.md` so AI agents know it exists
+2. Optionally create `stdlib/<pkg>/<pkg>_test.kuki` with a `petiole <pkg>_test` declaration for tests
+3. Run `make generate && make build`
+4. Run `kukicha check stdlib/<pkg>/<pkg>.kuki` to validate
+5. Add the package to `stdlib/AGENTS.md` so AI agents know it exists
 
 ### Documentation (`docs/`)
 
@@ -278,8 +300,8 @@ Follow these steps in order. Skipping step 3 is how the stdlib `.go` files end u
 
 1. Bump the version constant in `internal/version/version.go`.
 2. Update the version references in `README.md` (the `go install` snippet and the **Status** section at the bottom).
-3. Run `make generate && make build` to regenerate all stdlib `.go` files with the new version header and rebuild the compiler with the updated files embedded.
-4. Commit everything — source `.kuki` files, regenerated `.go` files, and doc/version updates — in a single commit.
+3. Run `make generate && make build` to regenerate all stdlib `.go` files (including `*_test.go`) with the new version header and rebuild the compiler with the updated files embedded.
+4. Commit everything — source `.kuki` files, regenerated `.go` and `*_test.go` files, and doc/version updates — in a single commit.
 5. Tag and push:
 
 ```bash
