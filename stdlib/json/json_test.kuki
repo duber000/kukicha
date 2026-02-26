@@ -1,0 +1,169 @@
+# Tests for Kukicha Standard Library - JSON Package
+
+petiole json_test
+
+import "stdlib/json"
+import "bytes"
+import "testing"
+
+# Simple struct used across tests
+type Person
+    Name string as "name"
+    Age int as "age"
+
+# Test Marshal produces valid JSON bytes
+func TestMarshal(t reference testing.T)
+    p := Person{Name: "Alice", Age: 30}
+
+    data, err := json.Marshal(p)
+    if err != empty
+        t.Fatalf("Marshal failed: {err}")
+    if len(data) == 0
+        t.Error("Expected non-empty JSON bytes")
+
+    # Marshaling again should be deterministic
+    data2, err2 := json.Marshal(p)
+    if err2 != empty
+        t.Fatalf("Second Marshal failed: {err2}")
+    if len(data) != len(data2)
+        t.Error("Expected Marshal to be deterministic")
+
+# Test Unmarshal parses JSON bytes into a struct
+func TestUnmarshal(t reference testing.T)
+    p := Person{Name: "Bob", Age: 25}
+
+    data, marshalErr := json.Marshal(p)
+    if marshalErr != empty
+        t.Fatalf("Marshal failed: {marshalErr}")
+
+    result := empty Person
+    unmarshalErr := json.Unmarshal(data, reference of result)
+    if unmarshalErr != empty
+        t.Fatalf("Unmarshal failed: {unmarshalErr}")
+
+    if result.Name != "Bob"
+        t.Errorf("Expected Name 'Bob', got '{result.Name}'")
+    if result.Age != 25
+        t.Errorf("Expected Age 25, got {result.Age}")
+
+# Test Marshal/Unmarshal round-trip preserves data
+func TestMarshalUnmarshalRoundTrip(t reference testing.T)
+    original := Person{Name: "Charlie", Age: 42}
+
+    data, err := json.Marshal(original)
+    if err != empty
+        t.Fatalf("Marshal failed: {err}")
+
+    restored := empty Person
+    err2 := json.Unmarshal(data, reference of restored)
+    if err2 != empty
+        t.Fatalf("Unmarshal failed: {err2}")
+
+    if restored.Name != original.Name
+        t.Errorf("Expected Name '{original.Name}', got '{restored.Name}'")
+    if restored.Age != original.Age
+        t.Errorf("Expected Age {original.Age}, got {restored.Age}")
+
+# Test MarshalPretty produces indented output
+func TestMarshalPretty(t reference testing.T)
+    p := Person{Name: "Dan", Age: 28}
+
+    compact, err := json.Marshal(p)
+    if err != empty
+        t.Fatalf("Marshal failed: {err}")
+
+    pretty, err2 := json.MarshalPretty(p)
+    if err2 != empty
+        t.Fatalf("MarshalPretty failed: {err2}")
+
+    if len(pretty) == 0
+        t.Error("Expected non-empty pretty JSON bytes")
+
+    # Pretty-printed output should be longer than compact
+    if len(pretty) <= len(compact)
+        t.Errorf("Expected pretty JSON (len={len(pretty)}) to be longer than compact (len={len(compact)})")
+
+# Test MarshalWrite writes JSON to an io.Writer
+func TestMarshalWrite(t reference testing.T)
+    p := Person{Name: "Eve", Age: 22}
+
+    buf := bytes.Buffer{}
+    err := json.MarshalWrite(reference of buf, p)
+    if err != empty
+        t.Fatalf("MarshalWrite failed: {err}")
+    if buf.Len() == 0
+        t.Error("Expected non-empty buffer after MarshalWrite")
+
+# Test UnmarshalRead reads JSON from an io.Reader
+func TestUnmarshalRead(t reference testing.T)
+    p := Person{Name: "Frank", Age: 35}
+
+    # Write JSON into a buffer
+    buf := bytes.Buffer{}
+    writeErr := json.MarshalWrite(reference of buf, p)
+    if writeErr != empty
+        t.Fatalf("MarshalWrite failed: {writeErr}")
+
+    # Read it back
+    result := empty Person
+    readErr := json.UnmarshalRead(reference of buf, reference of result)
+    if readErr != empty
+        t.Fatalf("UnmarshalRead failed: {readErr}")
+    if result.Name != "Frank"
+        t.Errorf("Expected Name 'Frank', got '{result.Name}'")
+    if result.Age != 35
+        t.Errorf("Expected Age 35, got {result.Age}")
+
+# Test NewEncoder and Encode write JSON to a buffer
+func TestEncode(t reference testing.T)
+    p := Person{Name: "Grace", Age: 29}
+
+    buf := bytes.Buffer{}
+    enc := json.NewEncoder(reference of buf)
+    err := json.Encode(enc, p)
+    if err != empty
+        t.Fatalf("Encode failed: {err}")
+    if buf.Len() == 0
+        t.Error("Expected non-empty buffer after Encode")
+
+# Test NewDecoder and Decode read JSON from a buffer
+func TestDecode(t reference testing.T)
+    p := Person{Name: "Hank", Age: 40}
+
+    # Encode into buffer
+    buf := bytes.Buffer{}
+    enc := json.NewEncoder(reference of buf)
+    encErr := json.Encode(enc, p)
+    if encErr != empty
+        t.Fatalf("Encode failed: {encErr}")
+
+    # Decode from buffer
+    result := empty Person
+    dec := json.NewDecoder(reference of buf)
+    decErr := json.Decode(dec, reference of result)
+    if decErr != empty
+        t.Fatalf("Decode failed: {decErr}")
+    if result.Name != "Hank"
+        t.Errorf("Expected Name 'Hank', got '{result.Name}'")
+    if result.Age != 40
+        t.Errorf("Expected Age 40, got {result.Age}")
+
+# Test WithIndent sets pretty-printing on encoder
+func TestWithIndent(t reference testing.T)
+    p := Person{Name: "Iris", Age: 33}
+
+    buf := bytes.Buffer{}
+    enc := json.NewEncoder(reference of buf) |> json.WithIndent("  ")
+    err := json.Encode(enc, p)
+    if err != empty
+        t.Fatalf("Encode with indent failed: {err}")
+    if buf.Len() == 0
+        t.Error("Expected non-empty buffer after Encode with indent")
+
+# Test Unmarshal with invalid JSON returns an error
+func TestUnmarshalInvalidJSON(t reference testing.T)
+    invalid := "not valid json" as list of byte
+    result := empty Person
+    err := json.Unmarshal(invalid, reference of result)
+    if err == empty
+        t.Error("Expected error for invalid JSON input")

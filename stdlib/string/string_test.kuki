@@ -1,0 +1,266 @@
+# Tests for Kukicha Standard Library - String Package
+
+petiole string_test
+
+import "stdlib/string"
+import "testing"
+
+# Test ToUpper and ToLower
+func TestToUpperToLower(t reference testing.T)
+    if string.ToUpper("hello") != "HELLO"
+        t.Error("Expected ToUpper('hello') = 'HELLO'")
+    if string.ToUpper("Hello World") != "HELLO WORLD"
+        t.Error("Expected ToUpper('Hello World') = 'HELLO WORLD'")
+    if string.ToUpper("") != ""
+        t.Error("Expected ToUpper('') = ''")
+
+    if string.ToLower("HELLO") != "hello"
+        t.Error("Expected ToLower('HELLO') = 'hello'")
+    if string.ToLower("Hello World") != "hello world"
+        t.Error("Expected ToLower('Hello World') = 'hello world'")
+    if string.ToLower("") != ""
+        t.Error("Expected ToLower('') = ''")
+
+# Test Trim functions
+func TestTrimFunctions(t reference testing.T)
+    if string.Trim("  hello  ", " ") != "hello"
+        t.Error("Expected Trim to remove leading and trailing spaces")
+    if string.Trim("xxhelloxx", "x") != "hello"
+        t.Error("Expected Trim to remove 'x' from both ends")
+
+    if string.TrimSpace("  hello  ") != "hello"
+        t.Error("Expected TrimSpace to remove whitespace")
+    if string.TrimSpace("\t hello \n") != "hello"
+        t.Error("Expected TrimSpace to remove tabs and newlines")
+
+    if string.TrimPrefix("hello world", "hello ") != "world"
+        t.Error("Expected TrimPrefix to remove prefix")
+    if string.TrimPrefix("hello world", "xyz") != "hello world"
+        t.Error("Expected TrimPrefix to return original when prefix not present")
+    if string.TrimPrefix("hello world", "") != "hello world"
+        t.Error("Expected TrimPrefix with empty prefix to return original")
+
+    if string.TrimSuffix("hello world", " world") != "hello"
+        t.Error("Expected TrimSuffix to remove suffix")
+    if string.TrimSuffix("hello world", "xyz") != "hello world"
+        t.Error("Expected TrimSuffix to return original when suffix not present")
+
+    if string.TrimLeft("xxhello", "x") != "hello"
+        t.Error("Expected TrimLeft to remove leading 'x' chars")
+    if string.TrimRight("helloxx", "x") != "hello"
+        t.Error("Expected TrimRight to remove trailing 'x' chars")
+
+# Test Split and Join
+func TestSplitJoin(t reference testing.T)
+    parts := string.Split("a,b,c", ",")
+    if len(parts) != 3
+        t.Errorf("Expected 3 parts, got {len(parts)}")
+    if parts[0] != "a"
+        t.Error("Expected first part 'a'")
+    if parts[1] != "b"
+        t.Error("Expected second part 'b'")
+    if parts[2] != "c"
+        t.Error("Expected third part 'c'")
+
+    joined := string.Join(parts, "-")
+    if joined != "a-b-c"
+        t.Errorf("Expected 'a-b-c', got '{joined}'")
+
+    # Split on empty string gives individual characters
+    chars := string.Split("abc", "")
+    if len(chars) != 3
+        t.Errorf("Expected 3 chars, got {len(chars)}")
+
+    # Join with empty separator
+    back := string.Join(chars, "")
+    if back != "abc"
+        t.Errorf("Expected 'abc', got '{back}'")
+
+# Test SplitN
+func TestSplitN(t reference testing.T)
+    parts := string.SplitN("a:b:c:d", ":", 2)
+    if len(parts) != 2
+        t.Errorf("Expected 2 parts, got {len(parts)}")
+    if parts[0] != "a"
+        t.Error("Expected first part 'a'")
+    if parts[1] != "b:c:d"
+        t.Errorf("Expected second part 'b:c:d', got '{parts[1]}'")
+
+# Test Fields splits on whitespace
+func TestFields(t reference testing.T)
+    parts := string.Fields("  hello   world  ")
+    if len(parts) != 2
+        t.Errorf("Expected 2 fields, got {len(parts)}")
+    if parts[0] != "hello"
+        t.Error("Expected first field 'hello'")
+    if parts[1] != "world"
+        t.Error("Expected second field 'world'")
+
+    # Empty string returns empty slice
+    none := string.Fields("")
+    if len(none) != 0
+        t.Error("Expected Fields('') to return empty slice")
+
+# Test Contains, HasPrefix, HasSuffix
+func TestSearchFunctions(t reference testing.T)
+    s := "hello world"
+
+    if not string.Contains(s, "world")
+        t.Error("Expected Contains to return true for 'world'")
+    if not string.Contains(s, "hello")
+        t.Error("Expected Contains to return true for 'hello'")
+    if string.Contains(s, "xyz")
+        t.Error("Expected Contains to return false for 'xyz'")
+    if not string.Contains(s, "")
+        t.Error("Expected Contains to return true for empty substring")
+
+    if not string.HasPrefix(s, "hello")
+        t.Error("Expected HasPrefix to return true for 'hello'")
+    if string.HasPrefix(s, "world")
+        t.Error("Expected HasPrefix to return false for 'world'")
+
+    if not string.HasSuffix(s, "world")
+        t.Error("Expected HasSuffix to return true for 'world'")
+    if string.HasSuffix(s, "hello")
+        t.Error("Expected HasSuffix to return false for 'hello'")
+
+# Test Index and LastIndex
+func TestIndexFunctions(t reference testing.T)
+    if string.Index("hello world", "world") != 6
+        t.Error("Expected Index to return 6")
+    if string.Index("hello world", "hello") != 0
+        t.Error("Expected Index to return 0")
+    if string.Index("hello world", "xyz") != -1
+        t.Error("Expected Index to return -1 for missing substring")
+
+    if string.LastIndex("abcabc", "abc") != 3
+        t.Error("Expected LastIndex to return 3")
+    if string.LastIndex("abcabc", "xyz") != -1
+        t.Error("Expected LastIndex to return -1 for missing substring")
+
+# Test Count
+func TestCount(t reference testing.T)
+    got := string.Count("hello", "l")
+    if got != 2
+        t.Errorf("Expected Count('hello', 'l') = 2, got {got}")
+    if string.Count("hello", "ll") != 1
+        t.Error("Expected Count to return 1 for 'll'")
+    if string.Count("hello", "x") != 0
+        t.Error("Expected Count to return 0 for missing char")
+
+# Test Replace and ReplaceAll
+func TestReplaceFunctions(t reference testing.T)
+    if string.ReplaceAll("aabbcc", "b", "x") != "aaxxcc"
+        t.Error("Expected ReplaceAll to replace all occurrences")
+    if string.ReplaceAll("hello", "x", "y") != "hello"
+        t.Error("Expected ReplaceAll to return original when substring not found")
+
+    if string.Replace("aabbcc", "b", "x", 1) != "aaxbcc"
+        t.Error("Expected Replace to replace only first occurrence")
+    if string.Replace("aabbcc", "b", "x", -1) != "aaxxcc"
+        t.Error("Expected Replace with n=-1 to replace all")
+
+# Test Repeat
+func TestRepeat(t reference testing.T)
+    if string.Repeat("ab", 3) != "ababab"
+        t.Error("Expected Repeat to repeat string 3 times")
+    if string.Repeat("x", 1) != "x"
+        t.Error("Expected Repeat with count=1 to return original")
+    if string.Repeat("x", 0) != ""
+        t.Error("Expected Repeat with count=0 to return empty")
+
+# Test PadRight and PadLeft
+func TestPadFunctions(t reference testing.T)
+    if string.PadRight("hi", 5, " ") != "hi   "
+        got := string.PadRight("hi", 5, " ")
+        t.Errorf("Expected PadRight('hi', 5) = 'hi   ', got '{got}'")
+    if string.PadRight("hello", 3, " ") != "hello"
+        t.Error("Expected PadRight to return original when longer than width")
+    if string.PadRight("hi", 5, "-") != "hi---"
+        got := string.PadRight("hi", 5, "-")
+        t.Errorf("Expected PadRight with custom char = 'hi---', got '{got}'")
+
+    if string.PadLeft("hi", 5, " ") != "   hi"
+        got := string.PadLeft("hi", 5, " ")
+        t.Errorf("Expected PadLeft('hi', 5) = '   hi', got '{got}'")
+    if string.PadLeft("hello", 3, " ") != "hello"
+        t.Error("Expected PadLeft to return original when longer than width")
+    if string.PadLeft("hi", 5, "-") != "---hi"
+        got := string.PadLeft("hi", 5, "-")
+        t.Errorf("Expected PadLeft with custom char = '---hi', got '{got}'")
+
+# Test EqualFold (case-insensitive comparison)
+func TestEqualFold(t reference testing.T)
+    if not string.EqualFold("Hello", "hello")
+        t.Error("Expected EqualFold('Hello', 'hello') = true")
+    if not string.EqualFold("WORLD", "world")
+        t.Error("Expected EqualFold('WORLD', 'world') = true")
+    if string.EqualFold("hello", "world")
+        t.Error("Expected EqualFold('hello', 'world') = false")
+    if not string.EqualFold("", "")
+        t.Error("Expected EqualFold('', '') = true")
+
+# Test Len
+func TestLen(t reference testing.T)
+    if string.Len("hello") != 5
+        t.Error("Expected Len('hello') = 5")
+    if string.Len("") != 0
+        t.Error("Expected Len('') = 0")
+    if string.Len("a") != 1
+        t.Error("Expected Len('a') = 1")
+
+# Test IsEmpty and IsBlank
+func TestIsEmptyIsBlank(t reference testing.T)
+    if not string.IsEmpty("")
+        t.Error("Expected IsEmpty('') = true")
+    if string.IsEmpty("hello")
+        t.Error("Expected IsEmpty('hello') = false")
+    if string.IsEmpty(" ")
+        t.Error("Expected IsEmpty(' ') = false (contains space)")
+
+    if not string.IsBlank("")
+        t.Error("Expected IsBlank('') = true")
+    if not string.IsBlank("   ")
+        t.Error("Expected IsBlank('   ') = true")
+    if not string.IsBlank("\t\n")
+        t.Error("Expected IsBlank('\\t\\n') = true")
+    if string.IsBlank("hello")
+        t.Error("Expected IsBlank('hello') = false")
+    if string.IsBlank(" x ")
+        t.Error("Expected IsBlank(' x ') = false")
+
+# Test Lines splits by newline
+func TestLines(t reference testing.T)
+    lines := string.Lines("line1\nline2\nline3")
+    if len(lines) != 3
+        t.Errorf("Expected 3 lines, got {len(lines)}")
+    if lines[0] != "line1"
+        t.Errorf("Expected first line 'line1', got '{lines[0]}'")
+    if lines[2] != "line3"
+        t.Errorf("Expected third line 'line3', got '{lines[2]}'")
+
+    # Single line with no newline
+    single := string.Lines("hello")
+    if len(single) != 1
+        t.Errorf("Expected 1 line, got {len(single)}")
+    if single[0] != "hello"
+        t.Error("Expected line 'hello'")
+
+# Test Concat concatenates a slice of strings
+func TestConcat(t reference testing.T)
+    parts := list of string{"hello", " ", "world"}
+    result := string.Concat(parts)
+    if result != "hello world"
+        t.Errorf("Expected 'hello world', got '{result}'")
+
+    # Empty slice returns empty string
+    noParts := list of string{}
+    emptyResult := string.Concat(noParts)
+    if emptyResult != ""
+        t.Error("Expected Concat of empty slice to return ''")
+
+    # Single element
+    single := list of string{"alone"}
+    singleResult := string.Concat(single)
+    if singleResult != "alone"
+        t.Errorf("Expected 'alone', got '{singleResult}'")

@@ -1,0 +1,399 @@
+# Tests for Kukicha Standard Library - Slice Package
+
+petiole slice_test
+
+import "stdlib/slice"
+import "testing"
+
+# Test First returns the first n elements
+func TestFirst(t reference testing.T)
+    items := list of string{"a", "b", "c", "d", "e"}
+
+    result := slice.First(items, 3)
+    if len(result) != 3
+        t.Errorf("Expected 3 elements, got {len(result)}")
+    if result[0] != "a"
+        t.Error("Expected first element 'a'")
+    if result[2] != "c"
+        t.Error("Expected third element 'c'")
+
+    # n > length returns whole slice
+    all := slice.First(items, 10)
+    if len(all) != 5
+        t.Errorf("Expected 5 elements, got {len(all)}")
+
+    # n <= 0 returns empty slice
+    none := slice.First(items, 0)
+    if len(none) != 0
+        t.Error("Expected empty slice for n=0")
+
+# Test Last returns the last n elements
+func TestLast(t reference testing.T)
+    items := list of string{"a", "b", "c", "d", "e"}
+
+    result := slice.Last(items, 2)
+    if len(result) != 2
+        t.Errorf("Expected 2 elements, got {len(result)}")
+    if result[0] != "d"
+        t.Error("Expected first element 'd'")
+    if result[1] != "e"
+        t.Error("Expected second element 'e'")
+
+    # n > length returns whole slice
+    all := slice.Last(items, 10)
+    if len(all) != 5
+        t.Errorf("Expected 5 elements, got {len(all)}")
+
+    # n <= 0 returns empty slice
+    none := slice.Last(items, 0)
+    if len(none) != 0
+        t.Error("Expected empty slice for n=0")
+
+# Test Drop removes the first n elements
+func TestDrop(t reference testing.T)
+    items := list of string{"a", "b", "c", "d", "e"}
+
+    result := slice.Drop(items, 2)
+    if len(result) != 3
+        t.Errorf("Expected 3 elements, got {len(result)}")
+    if result[0] != "c"
+        t.Error("Expected first element 'c'")
+
+    # n >= length returns empty slice
+    none := slice.Drop(items, 10)
+    if len(none) != 0
+        t.Error("Expected empty slice when n >= length")
+
+    # n <= 0 returns whole slice
+    all := slice.Drop(items, 0)
+    if len(all) != 5
+        t.Errorf("Expected 5 elements, got {len(all)}")
+
+# Test DropLast removes the last n elements
+func TestDropLast(t reference testing.T)
+    items := list of string{"a", "b", "c", "d", "e"}
+
+    result := slice.DropLast(items, 2)
+    if len(result) != 3
+        t.Errorf("Expected 3 elements, got {len(result)}")
+    if result[2] != "c"
+        t.Error("Expected last element 'c'")
+
+    # n >= length returns empty slice
+    none := slice.DropLast(items, 10)
+    if len(none) != 0
+        t.Error("Expected empty slice when n >= length")
+
+    # n <= 0 returns whole slice
+    all := slice.DropLast(items, 0)
+    if len(all) != 5
+        t.Errorf("Expected 5 elements, got {len(all)}")
+
+# Test Reverse returns a reversed copy without modifying the original
+func TestReverse(t reference testing.T)
+    items := list of string{"a", "b", "c"}
+
+    result := slice.Reverse(items)
+    if len(result) != 3
+        t.Errorf("Expected 3 elements, got {len(result)}")
+    if result[0] != "c"
+        t.Error("Expected first element 'c'")
+    if result[1] != "b"
+        t.Error("Expected second element 'b'")
+    if result[2] != "a"
+        t.Error("Expected third element 'a'")
+
+    # Original slice should not be modified
+    if items[0] != "a"
+        t.Error("Reverse should not modify the original slice")
+
+# Test Unique removes duplicates while preserving order
+func TestUnique(t reference testing.T)
+    items := list of any{"a", "b", "a", "c", "b", "d"}
+
+    result := slice.Unique(items)
+    if len(result) != 4
+        t.Errorf("Expected 4 elements, got {len(result)}")
+    if result[0] != "a"
+        t.Error("Expected first element 'a'")
+    if result[1] != "b"
+        t.Error("Expected second element 'b'")
+    if result[2] != "c"
+        t.Error("Expected third element 'c'")
+    if result[3] != "d"
+        t.Error("Expected fourth element 'd'")
+
+# Test Contains checks for element presence
+func TestContains(t reference testing.T)
+    items := list of any{"apple", "banana", "cherry"}
+
+    if not slice.Contains(items, "banana")
+        t.Error("Expected Contains to return true for 'banana'")
+    if slice.Contains(items, "grape")
+        t.Error("Expected Contains to return false for 'grape'")
+
+# Test IndexOf returns the index of an element
+func TestIndexOf(t reference testing.T)
+    items := list of any{"a", "b", "c"}
+
+    if slice.IndexOf(items, "b") != 1
+        t.Error("Expected IndexOf 'b' to return 1")
+    if slice.IndexOf(items, "a") != 0
+        t.Error("Expected IndexOf 'a' to return 0")
+    if slice.IndexOf(items, "z") != -1
+        t.Error("Expected IndexOf 'z' to return -1")
+
+# Test IsEmpty and IsNotEmpty
+func TestIsEmptyIsNotEmpty(t reference testing.T)
+    emptySlice := list of string{}
+    items := list of string{"a"}
+
+    if not slice.IsEmpty(emptySlice)
+        t.Error("Expected IsEmpty to return true for empty slice")
+    if slice.IsEmpty(items)
+        t.Error("Expected IsEmpty to return false for non-empty slice")
+    if slice.IsNotEmpty(emptySlice)
+        t.Error("Expected IsNotEmpty to return false for empty slice")
+    if not slice.IsNotEmpty(items)
+        t.Error("Expected IsNotEmpty to return true for non-empty slice")
+
+# Test Get with valid indices, negative indexing, and error cases
+func TestGet(t reference testing.T)
+    items := list of any{"a", "b", "c"}
+
+    val, err := slice.Get(items, 1)
+    if err != empty
+        t.Fatalf("Expected no error for index 1, got {err}")
+    if val != "b"
+        t.Error("Expected element 'b' at index 1")
+
+    # Negative indexing: -1 is last element
+    last, err2 := slice.Get(items, -1)
+    if err2 != empty
+        t.Fatalf("Expected no error for index -1, got {err2}")
+    if last != "c"
+        t.Error("Expected last element 'c' at index -1")
+
+    # Out of bounds returns error
+    _, outErr := slice.Get(items, 10)
+    if outErr == empty
+        t.Error("Expected error for out-of-bounds index")
+
+    # Empty slice returns error
+    emptySlice := list of any{}
+    _, emptyErr := slice.Get(emptySlice, 0)
+    if emptyErr == empty
+        t.Error("Expected error when getting from empty slice")
+
+# Test GetOr returns a default value on out-of-bounds access
+func TestGetOr(t reference testing.T)
+    items := list of string{"a", "b", "c"}
+
+    val := slice.GetOr(items, 1, "default")
+    if val != "b"
+        t.Error("Expected element 'b'")
+
+    defaultVal := slice.GetOr(items, 10, "default")
+    if defaultVal != "default"
+        t.Error("Expected default value for out-of-bounds index")
+
+    # Negative indexing
+    last := slice.GetOr(items, -1, "default")
+    if last != "c"
+        t.Error("Expected last element 'c' at index -1")
+
+    # Empty slice returns default
+    emptySlice := list of string{}
+    d := slice.GetOr(emptySlice, 0, "default")
+    if d != "default"
+        t.Error("Expected default value for empty slice")
+
+# Test FirstOr and LastOr return defaults for empty slices
+func TestFirstOrLastOr(t reference testing.T)
+    items := list of string{"x", "y", "z"}
+    emptySlice := list of string{}
+
+    first := slice.FirstOr(items, "default")
+    if first != "x"
+        t.Error("Expected first element 'x'")
+
+    firstDefault := slice.FirstOr(emptySlice, "default")
+    if firstDefault != "default"
+        t.Error("Expected default for empty slice")
+
+    last := slice.LastOr(items, "default")
+    if last != "z"
+        t.Error("Expected last element 'z'")
+
+    lastDefault := slice.LastOr(emptySlice, "default")
+    if lastDefault != "default"
+        t.Error("Expected default for empty slice")
+
+# Test FirstOne and LastOne return errors for empty slices
+func TestFirstOneLastOne(t reference testing.T)
+    items := list of any{"x", "y", "z"}
+    emptySlice := list of any{}
+
+    first, err := slice.FirstOne(items)
+    if err != empty
+        t.Fatalf("Expected no error, got {err}")
+    if first != "x"
+        t.Error("Expected first element 'x'")
+
+    _, firstErr := slice.FirstOne(emptySlice)
+    if firstErr == empty
+        t.Error("Expected error for empty slice in FirstOne")
+
+    last, err2 := slice.LastOne(items)
+    if err2 != empty
+        t.Fatalf("Expected no error, got {err2}")
+    if last != "z"
+        t.Error("Expected last element 'z'")
+
+    _, lastErr := slice.LastOne(emptySlice)
+    if lastErr == empty
+        t.Error("Expected error for empty slice in LastOne")
+
+# Test Filter keeps only elements that satisfy the predicate
+func TestFilter(t reference testing.T)
+    items := list of string{"apple", "banana", "avocado", "cherry"}
+
+    # "banana" and "cherry" both have 6 chars
+    result := items |> slice.Filter((s string) => len(s) == 6)
+    if len(result) != 2
+        t.Errorf("Expected 2 elements, got {len(result)}")
+
+    # All elements filtered out
+    none := items |> slice.Filter((s string) => len(s) > 100)
+    if len(none) != 0
+        t.Errorf("Expected 0 elements, got {len(none)}")
+
+# Test Map transforms each element
+func TestMap(t reference testing.T)
+    items := list of int{1, 2, 3}
+
+    result := items |> slice.Map((n int) => n * 2)
+    if len(result) != 3
+        t.Errorf("Expected 3 elements, got {len(result)}")
+    if result[0] != 2
+        t.Errorf("Expected first element 2, got {result[0]}")
+    if result[1] != 4
+        t.Errorf("Expected second element 4, got {result[1]}")
+    if result[2] != 6
+        t.Errorf("Expected third element 6, got {result[2]}")
+
+# Test FindIndex returns the index of the first matching element
+func TestFindIndex(t reference testing.T)
+    items := list of int{10, 20, 30, 40}
+
+    idx := items |> slice.FindIndex((n int) => n > 25)
+    if idx != 2
+        t.Errorf("Expected index 2, got {idx}")
+
+    notFound := items |> slice.FindIndex((n int) => n > 100)
+    if notFound != -1
+        t.Errorf("Expected -1 for no match, got {notFound}")
+
+# Test Find returns the first matching element
+func TestFind(t reference testing.T)
+    items := list of any{"apple", "banana", "cherry"}
+
+    val, err := slice.Find(items, (v any) => v == "banana")
+    if err != empty
+        t.Fatalf("Expected no error, got {err}")
+    if val != "banana"
+        t.Errorf("Expected 'banana', got '{val}'")
+
+    _, notFoundErr := slice.Find(items, (v any) => v == "grape")
+    if notFoundErr == empty
+        t.Error("Expected error when no element matches")
+
+# Test FindOr returns a default when no element matches
+func TestFindOr(t reference testing.T)
+    items := list of string{"apple", "banana", "cherry"}
+
+    val := items |> slice.FindOr((s string) => len(s) == 6, "none")
+    if val != "banana"
+        t.Errorf("Expected 'banana', got '{val}'")
+
+    def := items |> slice.FindOr((s string) => len(s) > 100, "none")
+    if def != "none"
+        t.Errorf("Expected default 'none', got '{def}'")
+
+# Test Pop removes and returns the last element
+func TestPop(t reference testing.T)
+    items := list of any{"a", "b", "c"}
+
+    last, rest, err := slice.Pop(items)
+    if err != empty
+        t.Fatalf("Expected no error, got {err}")
+    if last != "c"
+        t.Errorf("Expected popped element 'c', got '{last}'")
+    if len(rest) != 2
+        t.Errorf("Expected 2 remaining elements, got {len(rest)}")
+    if rest[0] != "a"
+        t.Error("Expected first remaining element 'a'")
+
+    # Pop from empty slice returns error
+    emptySlice := list of any{}
+    _, _, emptyErr := slice.Pop(emptySlice)
+    if emptyErr == empty
+        t.Error("Expected error when popping from empty slice")
+
+# Test Shift removes and returns the first element
+func TestShift(t reference testing.T)
+    items := list of any{"a", "b", "c"}
+
+    first, rest, err := slice.Shift(items)
+    if err != empty
+        t.Fatalf("Expected no error, got {err}")
+    if first != "a"
+        t.Errorf("Expected shifted element 'a', got '{first}'")
+    if len(rest) != 2
+        t.Errorf("Expected 2 remaining elements, got {len(rest)}")
+    if rest[0] != "b"
+        t.Error("Expected first remaining element 'b'")
+
+    # Shift from empty slice returns error
+    emptySlice := list of any{}
+    _, _, emptyErr := slice.Shift(emptySlice)
+    if emptyErr == empty
+        t.Error("Expected error when shifting from empty slice")
+
+# Test Concat combines multiple slices into one
+func TestConcat(t reference testing.T)
+    a := list of string{"a", "b"}
+    b := list of string{"c", "d"}
+    c := list of string{"e"}
+
+    allSlices := make(list of list of string, 0)
+    allSlices = append(allSlices, a)
+    allSlices = append(allSlices, b)
+    allSlices = append(allSlices, c)
+
+    result := slice.Concat(allSlices)
+    if len(result) != 5
+        t.Errorf("Expected 5 elements, got {len(result)}")
+    if result[0] != "a"
+        t.Error("Expected first element 'a'")
+    if result[4] != "e"
+        t.Error("Expected last element 'e'")
+
+# Test Chunk splits slice into chunks of the given size
+func TestChunk(t reference testing.T)
+    items := list of int{1, 2, 3, 4, 5}
+
+    chunks := slice.Chunk(items, 2)
+    if len(chunks) != 3
+        t.Errorf("Expected 3 chunks, got {len(chunks)}")
+    if len(chunks[0]) != 2
+        t.Errorf("Expected first chunk of size 2, got {len(chunks[0])}")
+    if len(chunks[1]) != 2
+        t.Errorf("Expected second chunk of size 2, got {len(chunks[1])}")
+    if len(chunks[2]) != 1
+        t.Errorf("Expected last chunk of size 1, got {len(chunks[2])}")
+
+    # size <= 0 returns empty
+    none := slice.Chunk(items, 0)
+    if len(none) != 0
+        t.Error("Expected empty result for size 0")
