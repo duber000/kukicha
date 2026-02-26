@@ -27,14 +27,34 @@ func main() {
 		os.Exit(1)
 	}
 
-	// pkgName -> funcName -> returnCount
-	// We track by pkgName so duplicate function names in different packages
-	// are handled correctly. If the same qualified name appears twice (shouldn't
-	// happen in valid Kukicha), we keep the larger return count.
-	registry := map[string]int{}
-	hadErrors := false
+	registry, scanErrs := scanRegistry(matches)
+	if len(scanErrs) > 0 {
+		for _, e := range scanErrs {
+			fmt.Fprintln(os.Stderr, e)
+		}
+		fmt.Fprintln(os.Stderr, "aborting: stdlib scan had errors; registry not updated")
+		os.Exit(1)
+	}
 
-	for _, path := range matches {
+	formatted := formatRegistry(registry)
+
+	outPath := filepath.Join("internal", "semantic", "stdlib_registry_gen.go")
+	if err := os.WriteFile(outPath, formatted, 0o644); err != nil {
+		fmt.Fprintf(os.Stderr, "write %s: %v\n", outPath, err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Generated %s with %d entries.\n", outPath, len(registry))
+}
+
+// scanRegistry reads and parses all .kuki files in paths, returning a map of
+// qualified function name → return count. Skips _test.kuki files, unexported
+// functions, methods, and void functions. Returns accumulated errors.
+func scanRegistry(paths []string) (map[string]int, []error) {
+	registry := map[string]int{}
+	var errs []error
+
+	for _, path := range paths {
 		base := filepath.Base(path)
 		if strings.HasSuffix(base, "_test.kuki") {
 			continue
@@ -42,24 +62,21 @@ func main() {
 
 		src, err := os.ReadFile(path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "read %s: %v\n", path, err)
-			hadErrors = true
+			errs = append(errs, fmt.Errorf("read %s: %v", path, err))
 			continue
 		}
 
 		p, err := parser.New(string(src), path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "lex %s: %v\n", path, err)
-			hadErrors = true
+			errs = append(errs, fmt.Errorf("lex %s: %v", path, err))
 			continue
 		}
 
 		prog, parseErrs := p.Parse()
 		if len(parseErrs) > 0 {
 			for _, e := range parseErrs {
-				fmt.Fprintf(os.Stderr, "parse error %s: %v\n", path, e)
+				errs = append(errs, fmt.Errorf("parse error %s: %v", path, e))
 			}
-			hadErrors = true
 		}
 		if prog == nil || prog.PetioleDecl == nil {
 			continue
@@ -98,7 +115,12 @@ func main() {
 		}
 	}
 
-	// Build sorted entries for stable, diff-friendly output.
+	return registry, errs
+}
+
+// formatRegistry generates the Go source code for stdlib_registry_gen.go from
+// the given registry map. Returns gofmt'd source.
+func formatRegistry(registry map[string]int) []byte {
 	entries := make([]string, 0, len(registry))
 	for k, v := range registry {
 		entries = append(entries, fmt.Sprintf("\t%q: %d,", k, v))
@@ -123,21 +145,8 @@ var generatedStdlibRegistry = map[string]int{
 
 	formatted, fmtErr := format.Source([]byte(src))
 	if fmtErr != nil {
-		fmt.Fprintf(os.Stderr, "gofmt error: %v\n", fmtErr)
 		// Fall back to unformatted — still valid Go.
-		formatted = []byte(src)
+		return []byte(src)
 	}
-
-	if hadErrors {
-		fmt.Fprintln(os.Stderr, "aborting: stdlib scan had errors; registry not updated")
-		os.Exit(1)
-	}
-
-	outPath := filepath.Join("internal", "semantic", "stdlib_registry_gen.go")
-	if err := os.WriteFile(outPath, formatted, 0o644); err != nil {
-		fmt.Fprintf(os.Stderr, "write %s: %v\n", outPath, err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Generated %s with %d entries.\n", outPath, len(registry))
+	return formatted
 }
