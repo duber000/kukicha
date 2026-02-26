@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
@@ -251,9 +252,21 @@ func buildCommand(filename string, targetFlag string) {
 		}
 	}
 
+	// Determine the output binary name. When cross-compiling for Windows
+	// (GOOS=windows), append .exe so the binary is recognised as executable.
+	binaryName := strings.TrimSuffix(filepath.Base(absFile), ".kuki")
+	targetOS := os.Getenv("GOOS")
+	if targetOS == "" {
+		targetOS = runtime.GOOS
+	}
+	if targetOS == "windows" {
+		binaryName += ".exe"
+	}
+	binaryPath := filepath.Join(projectDir, binaryName)
+
 	// Run go build on the generated file. Use -mod=mod so go.sum is updated
 	// automatically when stdlib transitive dependencies are not yet listed.
-	cmd := exec.Command("go", "build", "-mod=mod", outputFile)
+	cmd := exec.Command("go", "build", "-mod=mod", "-o", binaryPath, outputFile)
 	cmd.Dir = projectDir
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
@@ -268,8 +281,6 @@ func buildCommand(filename string, targetFlag string) {
 		os.Exit(1)
 	}
 
-	// Get the binary name
-	binaryName := strings.TrimSuffix(filepath.Base(absFile), ".kuki")
 	fmt.Printf("Successfully built binary: %s\n", binaryName)
 }
 

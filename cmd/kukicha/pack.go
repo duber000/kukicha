@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"unicode"
 
@@ -112,6 +113,13 @@ func packCommand(filename string, outputDir string) {
 
 	// Build binary into scripts/
 	binaryName := toSnakeCase(skill.Name.Value)
+	targetOS := os.Getenv("GOOS")
+	if targetOS == "" {
+		targetOS = runtime.GOOS
+	}
+	if targetOS == "windows" {
+		binaryName += ".exe"
+	}
 	binaryPath := filepath.Join(scriptsDir, binaryName)
 	cmd := exec.Command("go", "build", "-o", binaryPath, goFile)
 	cmd.Dir = projectDir
