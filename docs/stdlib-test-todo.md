@@ -29,6 +29,10 @@ See **stdlib/CLAUDE.md § Testing Stdlib Packages** for the full convention.
 | `parse` | fixed, passes |
 | `validate` | fixed, passes |
 | `container` | fixed, passes |
+| `concurrent` | fixed, passes |
+| `errors` | fixed, passes |
+| `net` | fixed, passes |
+| `retry` | fixed, passes |
 
 **Reference implementations:** datetime, math, slice, string. When in doubt, look at one of them.
 **Recently fixed:** All other packages in this list have been systematically refactored per the patterns below.
@@ -37,12 +41,14 @@ See **stdlib/CLAUDE.md § Testing Stdlib Packages** for the full convention.
 
 ## Broken syntax — full rewrite needed
 
+**Status:** 4 packages still need fixing (input, llm, must, template)
+
 These files have parse errors and cannot compile at all.
 Rewrite each as `func TestXxx(t reference testing.T)` with table-driven cases.
 
 ### Common issues found across these files
 
-**`test <name>` block syntax** (ctx, encoding, env)
+**`test <name>` block syntax** (original issue — now fixed)
 The files use an unimplemented `test Name` block form (originally written for a future test-DSL feature). Replace every `test FooBar` block with a standard test function:
 ```kukicha
 # WRONG — unimplemented syntax
@@ -57,7 +63,7 @@ func TestBackground(t reference testing.T)
 ```
 Also add a missing `petiole <pkg>_test` declaration at the top if absent.
 
-**Multi-return in `if` condition** (cast, validate)
+**Multi-return in `if` condition** (original issue — now fixed in cast, validate, net)
 `if val, err := f(); condition` is not valid Kukicha — split onto two lines:
 ```kukicha
 # WRONG
@@ -85,7 +91,7 @@ defer func()
 # (functions that are supposed to panic are hard to unit-test; skip or document)
 ```
 
-**`for _, item in list`** (maps — `containsValue` helper)
+**`for _, item in list`** (original issue — now fixed in maps)
 Kukicha for-in doesn't expose an index variable. Drop the `_,`:
 ```kukicha
 # WRONG
@@ -99,7 +105,7 @@ for item in list
 If the compiler rejects `list of Foo{Foo{field: val}, ...}`, use the element type
 explicitly: `list of FooCase{FooCase{...}, FooCase{...}}`.
 
-**Private field access** (ctx accesses `h.cancel`; obs accesses `logger.service`)
+**Private field access** (original issue — now fixed in ctx, obs, a2a)
 Tests must only use public API — remove assertions on unexported fields and test
 the observable behaviour instead (e.g. call the function and check its return value).
 
@@ -120,12 +126,7 @@ the observable behaviour instead (e.g. call the function and check its return va
 
 These parse correctly but fail type checking.
 
-| Package | Error | Fix |
-|---------|-------|-----|
-| `net` | line 24: `assignment mismatch: 2 variables but 3 values` | `SplitHostPort` returns `(host, port, error)` — use `host, port, err := netutil.SplitHostPort(...)` and add `onerr` |
-| `retry` | `undefined identifier 'calculateDelay'` | `calculateDelay` is a private implementation detail — remove those calls and test the public `retry.New()`/`retry.Sleep()` API instead |
-
-**Status:** Both packages have `.kuki` files but haven't been transpiled yet (no `.go` files exist).
+*(All packages in this section have been fixed and moved to "Already done ✓" above)*
 
 ---
 
@@ -133,17 +134,13 @@ These parse correctly but fail type checking.
 
 These pass `kukicha check` but fail `go build` or `go test`.
 
-| Package | Error | Fix |
-|---------|-------|-----|
-| `concurrent` | `comparison of function Parallel == nil is always false` | Don't compare function values to `nil` — call the functions and check results instead |
+*(All packages in this section have been fixed and moved to "Already done ✓" above)*
 
 ---
 
 ## Test logic bugs — compile OK but assertions fail
 
-| Package | Failing test | Issue |
-|---------|-------------|-------|
-| `errors` | `TestJoin` | `errors.Join` preserves errors but the assertion checks the wrong condition — fix the expected value or the assertion logic |
+*(All packages in this section have been fixed and moved to "Already done ✓" above)*
 
 ---
 
