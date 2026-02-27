@@ -7,7 +7,7 @@ func Keys(m map[any]any) []any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:9
 	keys := make([]any, 0, len(m))
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:10
-	for _, k := range m {
+	for k, _ := range m {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:11
 		keys = append(keys, k)
 	}
@@ -31,7 +31,7 @@ func Values(m map[any]any) []any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:23
 func Contains(m map[any]any, key any) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:24
-	for _, k := range m {
+	for k, _ := range m {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:25
 		if k == key {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:26
