@@ -2073,3 +2073,199 @@ func Wrap(handler http.Handler) http.Handler
 		t.Errorf("expected return handler, got: %s", output)
 	}
 }
+
+func TestSliceUniqueGenerics(t *testing.T) {
+	input := `petiole slice
+
+func Unique(items list of any2) list of any2
+    if len(items) == 0
+        return items
+
+    seen := make(map of any2 to bool)
+    result := make(list of any2, 0)
+
+    for item in items
+        if not seen[item]
+            seen[item] = true
+            result = append(result, item)
+
+    return result
+`
+
+	p, err := parser.New(input, "stdlib/slice/slice.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	gen.SetSourceFile("stdlib/slice/slice.kuki")
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func Unique[K comparable]") {
+		t.Errorf("expected Unique[K comparable], got: %s", output)
+	}
+	if !strings.Contains(output, "(items []K) []K") {
+		t.Errorf("expected (items []K) []K parameter types, got: %s", output)
+	}
+	if !strings.Contains(output, "map[K]bool") {
+		t.Errorf("expected map[K]bool for seen map, got: %s", output)
+	}
+}
+
+func TestSliceContainsGenerics(t *testing.T) {
+	input := `petiole slice
+
+import "slices"
+
+func Contains(items list of any2, value any2) bool
+    return slices.Contains(items, value)
+`
+
+	p, err := parser.New(input, "stdlib/slice/slice.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	gen.SetSourceFile("stdlib/slice/slice.kuki")
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func Contains[K comparable]") {
+		t.Errorf("expected Contains[K comparable], got: %s", output)
+	}
+	if !strings.Contains(output, "(items []K, value K) bool") {
+		t.Errorf("expected (items []K, value K) bool, got: %s", output)
+	}
+}
+
+func TestSliceGetGenerics(t *testing.T) {
+	input := `petiole slice
+
+func Get(items list of any, index int) (any, error)
+    length := len(items)
+    if length == 0
+        return empty, error("slice is empty")
+    return items[index], empty
+`
+
+	p, err := parser.New(input, "stdlib/slice/slice.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	gen.SetSourceFile("stdlib/slice/slice.kuki")
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func Get[T any]") {
+		t.Errorf("expected Get[T any], got: %s", output)
+	}
+	if !strings.Contains(output, "(items []T, index int) (T, error)") {
+		t.Errorf("expected (items []T, index int) (T, error), got: %s", output)
+	}
+	// empty in T position should be *new(T), not nil
+	if !strings.Contains(output, "return *new(T),") {
+		t.Errorf("expected *new(T) for empty in generic T position, got: %s", output)
+	}
+	// empty in error position should be nil
+	if !strings.Contains(output, "return items[index], nil") {
+		t.Errorf("expected nil for empty in error position, got: %s", output)
+	}
+}
+
+func TestSlicePopGenerics(t *testing.T) {
+	input := `petiole slice
+
+func Pop(items list of any) (any, list of any, error)
+    if len(items) == 0
+        return empty, items, error("cannot pop from empty slice")
+    return items[len(items) - 1], items[:len(items) - 1], empty
+`
+
+	p, err := parser.New(input, "stdlib/slice/slice.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	gen.SetSourceFile("stdlib/slice/slice.kuki")
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func Pop[T any]") {
+		t.Errorf("expected Pop[T any], got: %s", output)
+	}
+	if !strings.Contains(output, "(items []T) (T, []T, error)") {
+		t.Errorf("expected (items []T) (T, []T, error), got: %s", output)
+	}
+	// empty in T position should be *new(T)
+	if !strings.Contains(output, "return *new(T), items,") {
+		t.Errorf("expected *new(T) in first return position, got: %s", output)
+	}
+	// empty in error position should be nil
+	if !strings.Contains(output, "nil\n") {
+		t.Errorf("expected nil for empty in error position, got: %s", output)
+	}
+}
+
+func TestFloatLiteralPrecision(t *testing.T) {
+	input := `func Check(x float64) bool
+    return x < 0.000000001
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	// Should preserve the original literal, not truncate to 0.000000
+	if !strings.Contains(output, "0.000000001") {
+		t.Errorf("expected float literal 0.000000001 to be preserved, got: %s", output)
+	}
+	// Should NOT contain the old %f output
+	if strings.Contains(output, "0.000000 ") {
+		t.Errorf("float literal was truncated to 0.000000, precision was lost: %s", output)
+	}
+}

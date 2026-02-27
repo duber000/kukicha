@@ -3,6 +3,7 @@ package codegen
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
@@ -33,7 +34,10 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		}
 		return fmt.Sprintf("%d", e.Value)
 	case *ast.FloatLiteral:
-		return fmt.Sprintf("%f", e.Value)
+		if e.Token.Lexeme != "" {
+			return e.Token.Lexeme
+		}
+		return strconv.FormatFloat(e.Value, 'g', -1, 64)
 	case *ast.RuneLiteral:
 		return fmt.Sprintf("'%s'", g.escapeRune(e.Value))
 	case *ast.StringLiteral:

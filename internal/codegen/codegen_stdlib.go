@@ -133,62 +133,18 @@ func (g *Generator) isStdlibJSON() bool {
 }
 
 // inferSliceTypeParameters infers type parameters for stdlib/slice functions.
-// GroupBy gets [T any, K comparable]; a curated set of other functions get [T any].
+// Scans the function signature for placeholder types and emits the corresponding
+// Go generic type parameters:
+//   - "any"  placeholder → [T any]       (unconstrained element type)
+//   - "any2" placeholder → [K comparable] (comparable type, e.g., map keys)
 //
-// Functions are excluded from generic treatment when they either:
-//   - return `empty` as a value of type T (which becomes nil — invalid for unconstrained generics), or
-//   - use T as a map key (requires comparable), or
-//   - delegate to Go stdlib functions that require comparable (slices.Contains, slices.Index).
-//
-// The excluded functions (Get, FirstOne, LastOne, Find, FindLast, Pop, Shift, Unique,
-// Contains, IndexOf) retain []any signatures until the codegen can emit proper zero
-// values for generic type parameters.
+// Functions using both placeholders get [T any, K comparable] (e.g., GroupBy).
+// Functions returning `empty` for a generic type position are handled by
+// generateReturnStmt, which emits *new(T) instead of nil.
 func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
 	var typeParams []*TypeParameter
 
-	// GroupBy has two type parameters: T (element) and K (comparable map key)
-	if decl.Name.Value == "GroupBy" {
-		typeParams = append(typeParams, &TypeParameter{
-			Name:        "T",
-			Placeholder: "any",
-			Constraint:  "any",
-		})
-		typeParams = append(typeParams, &TypeParameter{
-			Name:        "K",
-			Placeholder: "any2",
-			Constraint:  "comparable",
-		})
-		return typeParams
-	}
-
-	// Allowlist: functions that are safe to parameterise with [T any].
-	// These never return `empty` as a value of type T, never use T as a map key,
-	// and do not delegate to comparable-constrained Go stdlib helpers.
-	genericSafe := map[string]bool{
-		"Filter":     true,
-		"Map":        true,
-		"First":      true,
-		"Last":       true,
-		"Drop":       true,
-		"DropLast":   true,
-		"Reverse":    true,
-		"Chunk":      true,
-		"IsEmpty":    true,
-		"IsNotEmpty": true,
-		"Concat":     true,
-		"GetOr":      true,
-		"FirstOr":    true,
-		"LastOr":     true,
-		"FindOr":     true,
-		"FindIndex":  true,
-		"FindLastOr": true,
-	}
-	if !genericSafe[decl.Name.Value] {
-		return typeParams
-	}
-
-	// If the signature references the "any" placeholder, emit [T any] and substitute
-	// "any" → T throughout parameters and return types.
+	// Scan for "any" placeholder → [T any]
 	usesAny := false
 	for _, param := range decl.Parameters {
 		if g.typeContainsPlaceholder(param.Type, "any") {
@@ -209,6 +165,30 @@ func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypePara
 			Name:        "T",
 			Placeholder: "any",
 			Constraint:  "any",
+		})
+	}
+
+	// Scan for "any2" placeholder → [K comparable]
+	usesAny2 := false
+	for _, param := range decl.Parameters {
+		if g.typeContainsPlaceholder(param.Type, "any2") {
+			usesAny2 = true
+			break
+		}
+	}
+	if !usesAny2 {
+		for _, ret := range decl.Returns {
+			if g.typeContainsPlaceholder(ret, "any2") {
+				usesAny2 = true
+				break
+			}
+		}
+	}
+	if usesAny2 {
+		typeParams = append(typeParams, &TypeParameter{
+			Name:        "K",
+			Placeholder: "any2",
+			Constraint:  "comparable",
 		})
 	}
 

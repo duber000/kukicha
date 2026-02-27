@@ -177,6 +177,18 @@ func (g *Generator) generateReturnStmt(stmt *ast.ReturnStmt) {
 
 	values := make([]string, len(stmt.Values))
 	for i, val := range stmt.Values {
+		// In generic stdlib context, bare `empty` must become *new(T) (not nil)
+		// when the return type at this position is a generic type parameter.
+		// nil is invalid for unconstrained generics (T could be int, string, etc.).
+		if emptyExpr, ok := val.(*ast.EmptyExpr); ok && emptyExpr.Type == nil && g.placeholderMap != nil {
+			if i < len(g.currentReturnTypes) {
+				if tp := g.returnTypeToPlaceholder(g.currentReturnTypes[i]); tp != "" {
+					values[i] = fmt.Sprintf("*new(%s)", tp)
+					continue
+				}
+			}
+		}
+
 		valStr := g.exprToString(val)
 
 		// Apply type coercion if we have matching return types
@@ -189,6 +201,26 @@ func (g *Generator) generateReturnStmt(stmt *ast.ReturnStmt) {
 	}
 
 	g.writeLine(fmt.Sprintf("return %s", strings.Join(values, ", ")))
+}
+
+// returnTypeToPlaceholder checks if a return type directly matches a placeholder
+// in the current placeholderMap (e.g., "any" → "T", "any2" → "K").
+// Returns the Go type parameter name if matched, or "" otherwise.
+func (g *Generator) returnTypeToPlaceholder(typeAnn ast.TypeAnnotation) string {
+	if g.placeholderMap == nil {
+		return ""
+	}
+	switch t := typeAnn.(type) {
+	case *ast.PrimitiveType:
+		if tp, ok := g.placeholderMap[t.Name]; ok {
+			return tp
+		}
+	case *ast.NamedType:
+		if tp, ok := g.placeholderMap[t.Name]; ok {
+			return tp
+		}
+	}
+	return ""
 }
 
 // coerceReturnValue wraps a return value in a type conversion if needed
