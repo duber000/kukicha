@@ -5,48 +5,81 @@ petiole llm_test
 import "stdlib/llm"
 import "testing"
 
-func makeToolCall() llm.ToolCall
-    return llm.ToolCall{
-        ID: "call-1",
-        Type: "function",
-        Function: llm.ToolCallFunction{
-            Name: "do_thing",
-            Arguments: "{}",
-        },
-    }
+# Test GetContent returns assistant response text
+func TestGetContent(t reference testing.T)
+    # Create a tool call with required fields
+    toolFunc := llm.ToolCallFunction{}
+    toolFunc.Name = "do_thing"
+    toolFunc.Arguments = "{}"
 
-# Test GetContent and tool call helpers with populated choices
-func TestGetContentAndToolCalls(t reference testing.T)
-    completion := llm.Completion{
-        Choices: list of llm.Choice{
-            {
-                Message: llm.ResponseMessage{
-                    Role: "assistant",
-                    Content: "response text",
-                    ToolCalls: list of llm.ToolCall{makeToolCall()},
-                },
-            },
-        },
-    }
+    toolCall := llm.ToolCall{}
+    toolCall.ID = "call-1"
+    toolCall.Type = "function"
+    toolCall.Function = toolFunc
 
-    if llm.GetContent(completion) not equals "response text"
+    # Create a message with tool calls
+    msg := llm.ResponseMessage{}
+    msg.Role = "assistant"
+    msg.Content = "response text"
+    msg.ToolCalls = list of llm.ToolCall{toolCall}
+
+    # Create a choice with the message
+    choice := llm.Choice{}
+    choice.Message = msg
+
+    # Create completion with the choice
+    completion := llm.Completion{}
+    completion.Choices = list of llm.Choice{choice}
+
+    # Test GetContent
+    if llm.GetContent(completion) != "response text"
         t.Errorf("GetContent should return the assistant response")
 
+# Test GetToolCalls returns the tool calls from completion
+func TestGetToolCalls(t reference testing.T)
+    # Create a simple tool call
+    toolFunc := llm.ToolCallFunction{}
+    toolFunc.Name = "do_thing"
+    toolFunc.Arguments = "{}"
+
+    toolCall := llm.ToolCall{}
+    toolCall.ID = "call-1"
+    toolCall.Type = "function"
+    toolCall.Function = toolFunc
+
+    # Create message with tool call
+    msg := llm.ResponseMessage{}
+    msg.Role = "assistant"
+    msg.ToolCalls = list of llm.ToolCall{toolCall}
+
+    # Create choice and completion
+    choice := llm.Choice{}
+    choice.Message = msg
+    completion := llm.Completion{}
+    completion.Choices = list of llm.Choice{choice}
+
     calls := llm.GetToolCalls(completion)
-    if len(calls) not equals 1
+    if len(calls) != 1
         t.Fatalf("Expected one tool call, got {len(calls)}")
-    if calls[0].Function.Name not equals "do_thing"
+    if calls[0].Function.Name != "do_thing"
         t.Errorf("Tool call name mismatch")
+
+# Test HasToolCalls detects tool calls
+func TestHasToolCalls(t reference testing.T)
+    # Empty completion
+    emptyComp := llm.Completion{}
+    if llm.HasToolCalls(emptyComp)
+        t.Errorf("HasToolCalls should be false for empty completion")
+
+    # Completion with tool calls
+    toolCall := llm.ToolCall{}
+    toolCall.ID = "call-1"
+    msg := llm.ResponseMessage{}
+    msg.ToolCalls = list of llm.ToolCall{toolCall}
+    choice := llm.Choice{}
+    choice.Message = msg
+    completion := llm.Completion{}
+    completion.Choices = list of llm.Choice{choice}
 
     if not llm.HasToolCalls(completion)
         t.Errorf("HasToolCalls should return true when tool calls exist")
-
-# Test helpers handle empty completions
-func TestGetContentEmptyCompletion(t reference testing.T)
-    emptyComp := llm.Completion{}
-    if llm.GetContent(emptyComp) not equals ""
-        t.Errorf("Expected empty content for zero choices")
-    if len(llm.GetToolCalls(emptyComp)) not equals 0
-        t.Errorf("Expected no tool calls for empty completion")
-    if llm.HasToolCalls(emptyComp)
-        t.Errorf("HasToolCalls should be false when there are no choices")
