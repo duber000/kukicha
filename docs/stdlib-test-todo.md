@@ -33,6 +33,10 @@ See **stdlib/CLAUDE.md § Testing Stdlib Packages** for the full convention.
 | `errors` | fixed, passes |
 | `net` | fixed, passes |
 | `retry` | fixed, passes |
+| `input` | fixed, passes |
+| `llm` | fixed, passes |
+| `must` | fixed, passes |
+| `template` | fixed, passes |
 
 **Reference implementations:** datetime, math, slice, string. When in doubt, look at one of them.
 **Recently fixed:** All other packages in this list have been systematically refactored per the patterns below.
@@ -41,10 +45,9 @@ See **stdlib/CLAUDE.md § Testing Stdlib Packages** for the full convention.
 
 ## Broken syntax — full rewrite needed
 
-**Status:** 4 packages still need fixing (input, llm, must, template)
+**Status:** ✅ All fixed! (input, llm, must, template now pass)
 
-These files have parse errors and cannot compile at all.
-Rewrite each as `func TestXxx(t reference testing.T)` with table-driven cases.
+*Previously, these files had parse errors and could not compile. All have been refactored.*
 
 ### Common issues found across these files
 
@@ -111,14 +114,9 @@ the observable behaviour instead (e.g. call the function and check its return va
 
 ---
 
-### Per-package notes — still to fix
+### Per-package notes — all previously broken packages are now fixed
 
-| Package | First error | What to do |
-|---------|-------------|------------|
-| `input` | `defer func()` closure | Remove panic-recovery tests; test `input.Line` by injecting a fake stdin reader via `os.Pipe()` and a goroutine, or skip interactive tests with `t.Skip` |
-| `llm` | Struct literal in `list of` | Fix struct-literal-in-list syntax; consider mocking the HTTP call with `httptest.NewServer` |
-| `must` | `defer func()` closure | Remove panic-recovery pattern; use `test.AssertEqual` on the non-panicking paths; document that panic paths are intentionally untested |
-| `template` | `defer func()` closure | Remove panic-recovery; test `template.Execute` and `template.HTMLRenderSimple` with concrete inputs and `test.AssertEqual` |
+*(All packages in "Broken syntax" section have been successfully refactored and now pass tests)*
 
 ---
 
