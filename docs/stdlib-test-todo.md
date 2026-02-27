@@ -16,8 +16,22 @@ See **stdlib/CLAUDE.md § Testing Stdlib Packages** for the full convention.
 | `math`     | table-driven, passes |
 | `slice`    | table-driven, passes |
 | `string`   | table-driven, passes |
+| `a2a` | fixed, passes |
+| `cast` | fixed, passes |
+| `ctx` | fixed, passes |
+| `encoding` | fixed, passes |
+| `env` | fixed, passes |
+| `http` | fixed, passes |
+| `iterator` | fixed, passes |
+| `maps` | fixed, passes |
+| `mcp` | fixed, passes |
+| `obs` | fixed, passes |
+| `parse` | fixed, passes |
+| `validate` | fixed, passes |
+| `container` | fixed, passes |
 
-These are the reference implementations. When in doubt, look at one of them.
+**Reference implementations:** datetime, math, slice, string. When in doubt, look at one of them.
+**Recently fixed:** All other packages in this list have been systematically refactored per the patterns below.
 
 ---
 
@@ -91,22 +105,14 @@ the observable behaviour instead (e.g. call the function and check its return va
 
 ---
 
-### Per-package notes
+### Per-package notes — still to fix
 
 | Package | First error | What to do |
 |---------|-------------|------------|
-| `cast` | `expected indented block` on multi-return `if` | Split multi-return conditions onto two lines; add table-driven cases |
-| `ctx` | Missing `petiole`; `test Name` blocks | Add `petiole ctx_test`; replace `test X` blocks with `func TestX`; remove private-field assertions (`h.cancel`) |
-| `encoding` | Missing `petiole`; `test Name` blocks | Add `petiole encoding_test`; replace `test X` blocks with `func TestX` |
-| `env` | `test Name` blocks | Replace `test X` blocks with `func TestX` |
-| `http` | `expected indented block` (multi-return `if`) | Split multi-return conditions; keep the `httptest.NewRecorder()` infrastructure |
 | `input` | `defer func()` closure | Remove panic-recovery tests; test `input.Line` by injecting a fake stdin reader via `os.Pipe()` and a goroutine, or skip interactive tests with `t.Skip` |
 | `llm` | Struct literal in `list of` | Fix struct-literal-in-list syntax; consider mocking the HTTP call with `httptest.NewServer` |
-| `maps` | `for _, item in list` | Change `for _, item in list` → `for item in list` in the `containsValue` helper |
-| `mcp` | Struct literal in `list of` | Fix struct-literal-in-list syntax |
 | `must` | `defer func()` closure | Remove panic-recovery pattern; use `test.AssertEqual` on the non-panicking paths; document that panic paths are intentionally untested |
 | `template` | `defer func()` closure | Remove panic-recovery; test `template.Execute` and `template.HTMLRenderSimple` with concrete inputs and `test.AssertEqual` |
-| `validate` | `expected indented block` (multi-return `if`) | Split multi-return conditions onto two lines |
 
 ---
 
@@ -119,6 +125,8 @@ These parse correctly but fail type checking.
 | `net` | line 24: `assignment mismatch: 2 variables but 3 values` | `SplitHostPort` returns `(host, port, error)` — use `host, port, err := netutil.SplitHostPort(...)` and add `onerr` |
 | `retry` | `undefined identifier 'calculateDelay'` | `calculateDelay` is a private implementation detail — remove those calls and test the public `retry.New()`/`retry.Sleep()` API instead |
 
+**Status:** Both packages have `.kuki` files but haven't been transpiled yet (no `.go` files exist).
+
 ---
 
 ## Go compile errors — logic/API mismatches
@@ -127,11 +135,7 @@ These pass `kukicha check` but fail `go build` or `go test`.
 
 | Package | Error | Fix |
 |---------|-------|-----|
-| `a2a` | Value types compared with `nil`; private fields accessed | Use `empty` only for pointer/interface types; test the public builder API (`a2a.New(...)`) without inspecting private fields |
 | `concurrent` | `comparison of function Parallel == nil is always false` | Don't compare function values to `nil` — call the functions and check results instead |
-| `obs` | `logger.service undefined` (unexported field) | Test via public API: call `obs.New(...)` and check log output rather than inspecting struct fields |
-| `parse` | `"fmt" imported and not used` in generated `.go` | The `.kuki` source imports `fmt` but never uses it — remove the import |
-| `iterator` | `function type must have no type parameters` | The generated code produces invalid generic function types; inspect the generated `.go` and adjust the `.kuki` signatures so the generics emit correctly |
 
 ---
 
