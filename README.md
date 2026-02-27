@@ -113,14 +113,14 @@ Kukicha uses plain English for every operator:
 ### Install
 
 ```bash
-go install github.com/duber000/kukicha/cmd/kukicha@v0.0.9
+go install github.com/duber000/kukicha/cmd/kukicha@v0.0.10
 kukicha version
 ```
 
 Or download a release binary for your OS/arch from [GitHub Releases](https://github.com/duber000/kukicha/releases):
 
 ```bash
-VERSION=v0.0.9
+VERSION=v0.0.10
 OS=linux   # or darwin, windows
 ARCH=amd64 # or arm64
 curl -L -o kukicha.tar.gz \
