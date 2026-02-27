@@ -3,120 +3,152 @@
 package parse_test
 
 import (
-	"fmt"
 	"github.com/duber000/kukicha/stdlib/parse"
 	kukistring "github.com/duber000/kukicha/stdlib/string"
+	"github.com/duber000/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:10
-func TestJson(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:11
-	payload := "{\"status\":\"ok\"}"
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:13
-	result, err := parse.Json(payload)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:14
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:15
-		t.Fatalf("Json failed: %v", err)
-	}
+type JsonCase struct {
+	name    string
+	payload string
+	want    string
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:16
-	if string(result) != payload {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:17
-		t.Errorf("expected payload %v, got %v", payload, string(result))
-	}
-}
-
+func TestJson(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:19
+	cases := []JsonCase{JsonCase{name: "basic json", payload: "{\"status\":\"ok\"}", want: "{\"status\":\"ok\"}"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:20
-func TestJsonLines(t *testing.T) {
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:21
-	ndjson := "{\"a\":1}\n\n {\"b\":2}\n"
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:22
+			result, err := parse.Json(tc.payload)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:23
-	lines, err := parse.JsonLines(ndjson)
+			test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:24
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:25
-		t.Fatalf("JsonLines failed: %v", err)
+			test.AssertEqual(t, string(result), tc.want)
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:26
-	if len(lines) != 2 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:27
-		t.Fatalf("expected 2 lines, got %v", len(lines))
-	}
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:28
-	if lines[0] != "{\"a\":1}" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:29
-		t.Errorf("expected first line to be trimmed")
-	}
+type JsonLinesCase struct {
+	name      string
+	ndjson    string
+	wantCount int
+	firstLine string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:32
-func TestCsvWithHeader(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:33
-	csv := "name,age\nalice,30\nbob,25"
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:35
-	records, err := parse.Csv(csv)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:36
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:37
-		t.Fatalf("Csv failed: %v", err)
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:38
-	if len(records) != 3 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:39
-		t.Fatalf("expected 3 rows, got %v", len(records))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:41
-	headerRows, err2 := parse.CsvWithHeader(csv)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:34
+func TestJsonLines(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:42
-	if err2 != nil {
+	cases := []JsonLinesCase{JsonLinesCase{name: "basic ndjson", ndjson: "{\"a\":1}\n\n {\"b\":2}\n", wantCount: 2, firstLine: "{\"a\":1}"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:43
-		t.Fatalf("CsvWithHeader failed: %v", err2)
-	}
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:44
-	if len(headerRows) != 2 {
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:45
-		t.Fatalf("expected 2 data rows, got %v", len(headerRows))
-	}
+			lines, err := parse.JsonLines(tc.ndjson)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:46
-	if headerRows[0]["name"] != "alice" {
+			test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:47
-		t.Errorf("expected first row to map name to alice")
+			test.AssertEqual(t, len(lines), tc.wantCount)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:48
+			if len(lines) > 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:49
+				test.AssertEqual(t, lines[0], tc.firstLine)
+			}
+		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:50
-func TestYamlPretty(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:51
-	data := map[string]any{"user": map[string]any{"name": "sam"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:53
-	pretty, err := parse.YamlPretty(data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:54
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:55
-		t.Fatalf("YamlPretty failed: %v", err)
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:56
-	if kukistring.Contains(string(pretty), "user") == false {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:57
-		t.Errorf("expected yaml preview to mention user")
-	}
+type CsvCase struct {
+	name           string
+	csv            string
+	wantRecords    int
+	wantHeaderRows int
+	firstRowName   string
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:60
-func TestYaml(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:61
-	payload := "user: alice\nemail: test@example.com"
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:63
-	result, err := parse.Yaml(payload)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:64
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:65
-		t.Fatalf("Yaml failed: %v", err)
+func TestCsvWithHeader(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:69
+	cases := []CsvCase{CsvCase{name: "basic csv", csv: "name,age\nalice,30\nbob,25", wantRecords: 3, wantHeaderRows: 2, firstRowName: "alice"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:70
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:71
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:72
+			records, err := parse.Csv(tc.csv)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:73
+			test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:74
+			test.AssertEqual(t, len(records), tc.wantRecords)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:76
+			headerRows, err2 := parse.CsvWithHeader(tc.csv)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:77
+			test.AssertNoError(t, err2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:78
+			test.AssertEqual(t, len(headerRows), tc.wantHeaderRows)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:79
+			if len(headerRows) > 0 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:80
+				test.AssertEqual(t, headerRows[0]["name"], tc.firstRowName)
+			}
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:66
-	if string(result) != payload {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:67
-		t.Errorf("expected yaml payload to round trip")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:84
+type YamlPrettyCase struct {
+	name     string
+	data     map[string]any
+	contains string
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:89
+func TestYamlPretty(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:96
+	cases := []YamlPrettyCase{YamlPrettyCase{name: "basic map", data: map[string]any{"user": map[string]any{"name": "sam"}}, contains: "user"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:97
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:98
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:99
+			pretty, err := parse.YamlPretty(tc.data)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:100
+			test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:101
+			test.AssertTrue(t, kukistring.Contains(string(pretty), tc.contains))
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:105
+type JsonYamlCase struct {
+	name    string
+	payload string
+	want    string
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:110
+func TestYaml(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:117
+	cases := []JsonYamlCase{JsonYamlCase{name: "basic yaml", payload: "user: alice\nemail: test@example.com", want: "user: alice\nemail: test@example.com"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:118
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:119
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:120
+			result, err := parse.Yaml(tc.payload)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:121
+			test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse_test.kuki:122
+			test.AssertEqual(t, string(result), tc.want)
+		})
 	}
 }

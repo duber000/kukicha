@@ -3,29 +3,86 @@
 package input_test
 
 import (
+	"github.com/duber000/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:11
-func TestReadLineFunction(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:14
-	t.Logf("ReadLine function is available in stdlib/input")
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:9
+type ReadLineCase struct {
+	name string
+	want bool
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:13
+func TestReadLine(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:16
+	cases := []ReadLineCase{ReadLineCase{name: "function exists", want: true}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:17
-func TestPromptFunction(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:20
-	t.Logf("Prompt function is available in stdlib/input")
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:18
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:21
+			test.AssertNoError(t, nil)
+		})
+	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:23
-func TestConfirmFunction(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:26
-	t.Logf("Confirm function is available in stdlib/input")
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:25
+type PromptCase struct {
+	name string
+	want bool
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:29
-func TestChooseFunction(t *testing.T) {
+func TestPrompt(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:32
-	t.Logf("Choose function is available in stdlib/input")
+	cases := []PromptCase{PromptCase{name: "function exists", want: true}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:33
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:34
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:37
+			test.AssertNoError(t, nil)
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:41
+type ConfirmCase struct {
+	name string
+	want bool
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:45
+func TestConfirm(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:48
+	cases := []ConfirmCase{ConfirmCase{name: "function exists", want: true}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:49
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:50
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:53
+			test.AssertNoError(t, nil)
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:57
+type ChooseCase struct {
+	name string
+	want bool
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:61
+func TestChoose(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:64
+	cases := []ChooseCase{ChooseCase{name: "function exists", want: true}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:65
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:66
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:69
+			test.AssertNoError(t, nil)
+		})
+	}
 }

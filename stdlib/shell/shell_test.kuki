@@ -3,92 +3,130 @@
 petiole shell_test
 
 import "stdlib/shell"
+import "stdlib/test"
 import "stdlib/string"
 import "testing"
 
-# Test basic command execution
+# --- TestExecute ---
+type ExecuteCase
+    name string
+
 func TestExecute(t reference testing.T)
-    cmd := shell.New("echo", "hello world")
-    result := shell.Execute(cmd)
+    cases := list of ExecuteCase{
+        ExecuteCase{name: "basic"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cmd := shell.New("echo", "hello world")
+            result := shell.Execute(cmd)
 
-    if not shell.Success(result)
-        errStr := shell.GetError(result) as string
-        t.Errorf("shell.Execute failed: {errStr}")
+            test.AssertTrue(t, shell.Success(result))
 
-    output := shell.GetOutput(result) as string
-    expected := "hello world\n"
-    if output != expected
-        t.Error("Expected 'hello world\\n', got different output")
+            output := shell.GetOutput(result) as string
+            expected := "hello world\n"
+            test.AssertEqual(t, output, expected)
+        )
 
-# Test command with working directory
+# --- TestExecuteWithDir ---
+type ExecuteWithDirCase
+    name string
+
 func TestExecuteWithDir(t reference testing.T)
-    cmd := shell.New("pwd") |> shell.Dir("/tmp")
-    result := shell.Execute(cmd)
+    cases := list of ExecuteWithDirCase{
+        ExecuteWithDirCase{name: "with dir"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cmd := shell.New("pwd") |> shell.Dir("/tmp")
+            result := shell.Execute(cmd)
 
-    if not shell.Success(result)
-        errStr := shell.GetError(result) as string
-        t.Errorf("shell.Execute with Dir failed: {errStr}")
+            test.AssertTrue(t, shell.Success(result))
 
-    output := shell.GetOutput(result) as string
-    if not string.Contains(output, "tmp")
-        t.Error("Expected output to contain 'tmp'")
+            output := shell.GetOutput(result) as string
+            test.AssertTrue(t, string.Contains(output, "tmp"))
+        )
 
-# Test command with environment variable
+# --- TestExecuteWithEnv ---
+type ExecuteWithEnvCase
+    name string
+
 func TestExecuteWithEnv(t reference testing.T)
-    cmd := shell.New("sh", "-c", "echo $TEST_VAR") |> shell.Env("TEST_VAR", "hello")
-    result := shell.Execute(cmd)
+    cases := list of ExecuteWithEnvCase{
+        ExecuteWithEnvCase{name: "with env"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cmd := shell.New("sh", "-c", "echo $TEST_VAR") |> shell.Env("TEST_VAR", "hello")
+            result := shell.Execute(cmd)
 
-    if not shell.Success(result)
-        errStr := shell.GetError(result) as string
-        t.Errorf("shell.Execute with Env failed: {errStr}")
+            test.AssertTrue(t, shell.Success(result))
 
-    output := shell.GetOutput(result) as string
-    if not string.Contains(output, "hello")
-        t.Error("Expected output to contain 'hello'")
+            output := shell.GetOutput(result) as string
+            test.AssertTrue(t, string.Contains(output, "hello"))
+        )
 
-# Test failed command
+# --- TestExecuteFailed ---
+type ExecuteFailedCase
+    name string
+
 func TestExecuteFailed(t reference testing.T)
-    cmd := shell.New("false")
-    result := shell.Execute(cmd)
+    cases := list of ExecuteFailedCase{
+        ExecuteFailedCase{name: "failed"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cmd := shell.New("false")
+            result := shell.Execute(cmd)
 
-    if shell.Success(result)
-        t.Error("Expected 'false' command to fail")
+            test.AssertFalse(t, shell.Success(result))
 
-    exitCode := shell.ExitCode(result)
-    if exitCode == 0
-        t.Errorf("Expected non-zero exit code, got {exitCode}")
+            exitCode := shell.ExitCode(result)
+            if exitCode == 0
+                t.Errorf("Expected non-zero exit code, got {exitCode}")
+        )
 
-# Test Which
+# --- TestWhich ---
+type WhichCase
+    name string
+
 func TestWhich(t reference testing.T)
-    if not shell.Which("ls")
-        t.Error("Expected 'ls' to be found")
+    cases := list of WhichCase{
+        WhichCase{name: "which"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            test.AssertTrue(t, shell.Which("ls"))
+            test.AssertFalse(t, shell.Which("nonexistent-command-xyz"))
+        )
 
-    if shell.Which("nonexistent-command-xyz")
-        t.Error("Did not expect to find nonexistent-command-xyz")
+# --- TestEnv ---
+type EnvCase
+    name string
 
-# Test Environment helpers
 func TestEnv(t reference testing.T)
-    key := "KUKICHA_TEST_VAR"
-    val := "test_value"
+    cases := list of EnvCase{
+        EnvCase{name: "env operations"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            key := "KUKICHA_TEST_VAR"
+            val := "test_value"
 
-    err := shell.Setenv(key, val)
-    if err != empty
-        t.Fatalf("Setenv failed: {err}")
+            err := shell.Setenv(key, val)
+            test.AssertNoError(t, err)
 
-    got := shell.Getenv(key)
-    if got != val
-        t.Errorf("Expected {val}, got {got}")
+            got := shell.Getenv(key)
+            test.AssertEqual(t, got, val)
 
-    found := false
-    envs := shell.Environ()
-    for e in envs
-        if e == "{key}={val}"
-            found = true
-            break
+            found := false
+            envs := shell.Environ()
+            for e in envs
+                if e == "{key}={val}"
+                    found = true
+                    break
 
-    if not found
-        t.Error("Expected to find variable in Environ()")
+            test.AssertTrue(t, found)
 
-    shell.Unsetenv(key)
-    if shell.Getenv(key) != ""
-        t.Error("Expected variable to be unset")
+            shell.Unsetenv(key)
+            test.AssertEqual(t, shell.Getenv(key), "")
+        )

@@ -7,23 +7,47 @@ petiole kube_test
 import "testing"
 import "stdlib/kube"
 
-# TestNewConfig verifies the builder creates a Config
+# --- TestNewConfig ---
+type NewConfigCase
+    name string
+
 func TestNewConfig(t reference testing.T)
-    cfg := kube.New()
-    # Builder should not panic and should return a Config
-    cfg = cfg |> kube.Kubeconfig("/tmp/test-kubeconfig")
-    cfg = cfg |> kube.Context("test-context")
+    cases := list of NewConfigCase{
+        NewConfigCase{name: "builder"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cfg := kube.New()
+            cfg = cfg |> kube.Kubeconfig("/tmp/test-kubeconfig")
+            cfg = cfg |> kube.Context("test-context")
+            _ = cfg
+        )
 
-# TestInCluster verifies the InCluster builder method
+# --- TestInCluster ---
+type InClusterCase
+    name string
+
 func TestInCluster(t reference testing.T)
-    cfg := kube.New() |> kube.InCluster()
-    # Should not panic - just sets the flag
-    _ = cfg
+    cases := list of InClusterCase{
+        InClusterCase{name: "in cluster"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cfg := kube.New() |> kube.InCluster()
+            _ = cfg
+        )
 
-# TestNamespace verifies Namespace scoping returns a new Cluster
+# --- TestNamespace ---
+type NamespaceCase
+    name string
+
 func TestNamespace(t reference testing.T)
-    # Create a zero-value cluster to test namespace scoping
-    c := kube.Cluster{}
-    scoped := kube.Namespace(c, "production")
-    # Should not panic - namespace is set on the copy
-    _ = scoped
+    cases := list of NamespaceCase{
+        NamespaceCase{name: "namespace scoping"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            c := kube.Cluster{}
+            scoped := kube.Namespace(c, "production")
+            _ = scoped
+        )

@@ -3,61 +3,112 @@
 package template_test
 
 import (
-	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"github.com/duber000/kukicha/stdlib/template"
+	"github.com/duber000/kukicha/stdlib/test"
 	"testing"
 )
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:10
+type RenderSimpleCase struct {
+	name     string
+	template string
+	data     map[string]any
+	want     string
+	wantErr  bool
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:17
 func TestRenderSimple(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:11
-	result, err := template.RenderSimple("Hello {{.Name}}", map[string]any{"Name": "Ari"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:12
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:13
-		t.Fatalf("RenderSimple failed: %v", err)
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:14
-	if result != "Hello Ari" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:15
-		t.Errorf("Expected greeting, got %v", result)
-	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:18
-func TestExecute(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:19
-	td := template.New()
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:20
-	td = template.WithContent(td, "Greetings {{.Name}}!")
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:21
-	td = template.Data(td, map[string]any{"Name": "Eve"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:22
-	final, err := template.Execute(td)
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:23
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:24
-		t.Fatalf("Execute failed: %v", err)
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:25
-	if final != "Greetings Eve!" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:26
-		t.Errorf("Template pipeline produced wrong output")
-	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:29
-func TestHTMLRenderSimple(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:30
-	result, err := template.HTMLRenderSimple("<b>{{.Value}}</b>", map[string]any{"Value": "<script>"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:31
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:32
-		t.Fatalf("HTMLRenderSimple failed: %v", err)
-	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:33
-	if !kukistring.Contains(result, "&lt;script&gt;") {
+	cases := []RenderSimpleCase{RenderSimpleCase{name: "renders template with data", template: "Hello {{.Name}}", data: map[string]any{"Name": "Ari"}, want: "Hello Ari", wantErr: false}, RenderSimpleCase{name: "renders empty template", template: "", data: map[string]any{}, want: "", wantErr: false}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:34
-		t.Errorf("Expected escaped content, got %v", result)
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:35
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:36
+			result, err := template.RenderSimple(tc.template, tc.data)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:37
+			if tc.wantErr {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:38
+				test.AssertError(t, err)
+			} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:40
+				test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:41
+				test.AssertEqual(t, result, tc.want)
+			}
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:45
+type ExecuteCase struct {
+	name     string
+	template string
+	data     map[string]any
+	want     string
+	wantErr  bool
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:52
+func TestExecute(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:68
+	cases := []ExecuteCase{ExecuteCase{name: "renders template via builder", template: "Greetings {{.Name}}!", data: map[string]any{"Name": "Eve"}, want: "Greetings Eve!", wantErr: false}, ExecuteCase{name: "empty template", template: "", data: map[string]any{}, want: "", wantErr: false}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:69
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:70
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:71
+			td := template.New()
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:72
+			td = template.WithContent(td, tc.template)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:73
+			td = template.Data(td, tc.data)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:74
+			final, err := template.Execute(td)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:75
+			if tc.wantErr {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:76
+				test.AssertError(t, err)
+			} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:78
+				test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:79
+				test.AssertEqual(t, final, tc.want)
+			}
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:83
+type HTMLRenderSimpleCase struct {
+	name     string
+	template string
+	data     map[string]any
+	want     string
+	wantErr  bool
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:90
+func TestHTMLRenderSimple(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:106
+	cases := []HTMLRenderSimpleCase{HTMLRenderSimpleCase{name: "escapes HTML content", template: "<b>{{.Value}}</b>", data: map[string]any{"Value": "<script>"}, want: "<b>&lt;script&gt;</b>", wantErr: false}, HTMLRenderSimpleCase{name: "renders plain text", template: "Hello {{.Name}}", data: map[string]any{"Name": "World"}, want: "Hello World", wantErr: false}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:107
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:108
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:109
+			result, err := template.HTMLRenderSimple(tc.template, tc.data)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:110
+			if tc.wantErr {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:111
+				test.AssertError(t, err)
+			} else {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:113
+				test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template_test.kuki:114
+				test.AssertEqual(t, result, tc.want)
+			}
+		})
 	}
 }

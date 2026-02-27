@@ -1,126 +1,111 @@
 # Encoding Package Tests
 
+petiole encoding_test
+
 import "stdlib/encoding"
 import "stdlib/test"
+import "testing"
 
 # Test Base64 encoding/decoding
-test Base64Encoding
+func TestBase64Encoding(t reference testing.T)
     original := "Hello, World!" as list of byte
-    
-    # Test standard base64
+
     encoded := encoding.Base64Encode(original)
-    test.AssertNotEmpty(encoded)
-    test.AssertEqual(encoded, "SGVsbG8sIFdvcmxkIQ==")
-    
+    test.AssertNotEmpty(t, encoded)
+    test.AssertEqual(t, encoded, "SGVsbG8sIFdvcmxkIQ==")
+
     decoded := encoding.Base64Decode(encoded) onerr panic "base64 decode failed"
-    test.AssertEqual(decoded, original)
+    test.AssertEqual(t, decoded, original)
 
 # Test Base64URL encoding/decoding
-test Base64URLEncoding
+func TestBase64URLEncoding(t reference testing.T)
     original := "Hello, World!" as list of byte
-    
-    # Test URL-safe base64
+
     encoded := encoding.Base64URLEncode(original)
-    test.AssertNotEmpty(encoded)
-    test.AssertEqual(encoded, "SGVsbG8sIFdvcmxkIQ==")
-    
+    test.AssertNotEmpty(t, encoded)
+    test.AssertEqual(t, encoded, "SGVsbG8sIFdvcmxkIQ==")
+
     decoded := encoding.Base64URLDecode(encoded) onerr panic "base64url decode failed"
-    test.AssertEqual(decoded, original)
+    test.AssertEqual(t, decoded, original)
 
 # Test Base64Raw encoding
-test Base64RawEncoding
+func TestBase64RawEncoding(t reference testing.T)
     original := "Hello, World!" as list of byte
-    
-    # Test raw standard base64 (no padding)
+
     encoded := encoding.Base64RawEncode(original)
-    test.AssertNotEmpty(encoded)
-    test.AssertEqual(encoded, "SGVsbG8sIFdvcmxkIQ")
+    test.AssertNotEmpty(t, encoded)
+    test.AssertEqual(t, encoded, "SGVsbG8sIFdvcmxkIQ")
 
 # Test Base64RawURL encoding
-test Base64RawURLEncoding
+func TestBase64RawURLEncoding(t reference testing.T)
     original := "Hello, World!" as list of byte
-    
-    # Test raw URL-safe base64 (no padding)
+
     encoded := encoding.Base64RawURLEncode(original)
-    test.AssertNotEmpty(encoded)
-    test.AssertEqual(encoded, "SGVsbG8sIFdvcmxkIQ")
+    test.AssertNotEmpty(t, encoded)
+    test.AssertEqual(t, encoded, "SGVsbG8sIFdvcmxkIQ")
 
 # Test Hex encoding/decoding
-test HexEncoding
+func TestHexEncoding(t reference testing.T)
     original := "Hello" as list of byte
-    
-    # Test hex encoding
+
     encoded := encoding.HexEncode(original)
-    test.AssertNotEmpty(encoded)
-    test.AssertEqual(encoded, "48656c6c6f")
-    
-    # Test hex decoding
+    test.AssertNotEmpty(t, encoded)
+    test.AssertEqual(t, encoded, "48656c6c6f")
+
     decoded := encoding.HexDecode(encoded) onerr panic "hex decode failed"
-    test.AssertEqual(decoded, original)
+    test.AssertEqual(t, decoded, original)
 
 # Test empty input
-test EmptyInput
+func TestEmptyInput(t reference testing.T)
     emptyBytes := empty list of byte
-    
-    # Base64
+
     encoded := encoding.Base64Encode(emptyBytes)
-    test.AssertEqual(encoded, "")
-    
+    test.AssertEqual(t, encoded, "")
+
     decoded := encoding.Base64Decode("") onerr panic "empty base64 decode failed"
-    test.AssertEqual(len(decoded), 0)
-    
-    # Hex
+    test.AssertEqual(t, len(decoded), 0)
+
     hexEncoded := encoding.HexEncode(emptyBytes)
-    test.AssertEqual(hexEncoded, "")
-    
+    test.AssertEqual(t, hexEncoded, "")
+
     hexDecoded := encoding.HexDecode("") onerr panic "empty hex decode failed"
-    test.AssertEqual(len(hexDecoded), 0)
+    test.AssertEqual(t, len(hexDecoded), 0)
 
 # Test error cases
-test ErrorCases
-    # Test invalid base64
+func TestErrorCases(t reference testing.T)
     _, err := encoding.Base64Decode("invalid!base64")
-    test.AssertNotEmpty(err)
-    
-    # Test invalid hex (odd length)
+    test.AssertNotEmpty(t, err)
+
     _, err2 := encoding.HexDecode("abc")
-    test.AssertNotEmpty(err2)
-    
-    # Test invalid hex characters
+    test.AssertNotEmpty(t, err2)
+
     _, err3 := encoding.HexDecode("abcdefg")
-    test.AssertNotEmpty(err3)
+    test.AssertNotEmpty(t, err3)
 
 # Test round-trip encoding/decoding
-test RoundTrip
+func TestRoundTrip(t reference testing.T)
     testData := list of byte{0, 1, 2, 3, 254, 255}
-    
-    # Base64 round-trip
+
     b64Encoded := encoding.Base64Encode(testData)
     b64Decoded := encoding.Base64Decode(b64Encoded) onerr panic "base64 round-trip failed"
-    test.AssertEqual(b64Decoded, testData)
-    
-    # Base64URL round-trip
+    test.AssertEqual(t, b64Decoded, testData)
+
     b64urlEncoded := encoding.Base64URLEncode(testData)
     b64urlDecoded := encoding.Base64URLDecode(b64urlEncoded) onerr panic "base64url round-trip failed"
-    test.AssertEqual(b64urlDecoded, testData)
-    
-    # Hex round-trip
+    test.AssertEqual(t, b64urlDecoded, testData)
+
     hexEncoded := encoding.HexEncode(testData)
     hexDecoded := encoding.HexDecode(hexEncoded) onerr panic "hex round-trip failed"
-    test.AssertEqual(hexDecoded, testData)
+    test.AssertEqual(t, hexDecoded, testData)
 
 # Test special characters
-test SpecialCharacters
+func TestSpecialCharacters(t reference testing.T)
     special := "!@#$%^&*()" as list of byte
-    
-    # Base64
+
     b64Encoded := encoding.Base64Encode(special)
     b64Decoded := encoding.Base64Decode(b64Encoded) onerr panic "special chars base64 failed"
-    test.AssertEqual(b64Decoded, special)
-    
-    # Hex
+    test.AssertEqual(t, b64Decoded, special)
+
     hexEncoded := encoding.HexEncode(special)
     hexDecoded := encoding.HexDecode(hexEncoded) onerr panic "special chars hex failed"
-    test.AssertEqual(hexDecoded, special)
-
-print("Encoding tests completed")
+    test.AssertEqual(t, hexDecoded, special)

@@ -3,26 +3,39 @@
 petiole netguard_test
 
 import "stdlib/netguard"
+import "stdlib/test"
 import "testing"
 
-# Test Allow and Block guards
+# --- TestAllowBlockGuards ---
+type GuardCase
+    name string
+
 func TestAllowBlockGuards(t reference testing.T)
-    allowGuard, err := netguard.NewAllow(list of string{"192.0.2.0/24"})
-    if err != empty
-        t.Fatalf("NewAllow failed: {err}")
-    if not netguard.Check(allowGuard, "192.0.2.1")
-        t.Errorf("Allow guard should permit addresses inside CIDR")
-    if netguard.Check(allowGuard, "198.51.100.1")
-        t.Errorf("Allow guard should deny addresses outside CIDR")
+    cases := list of GuardCase{
+        GuardCase{name: "allow and block"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            allowGuard, err := netguard.NewAllow(list of string{"192.0.2.0/24"})
+            test.AssertNoError(t, err)
+            test.AssertTrue(t, netguard.Check(allowGuard, "192.0.2.1"))
+            test.AssertFalse(t, netguard.Check(allowGuard, "198.51.100.1"))
 
-    blockGuard, err2 := netguard.NewBlock(list of string{"203.0.113.0/24"})
-    if err2 != empty
-        t.Fatalf("NewBlock failed: {err2}")
-    if netguard.Check(blockGuard, "203.0.113.1")
-        t.Errorf("Block guard should block listed CIDR")
+            blockGuard, err2 := netguard.NewBlock(list of string{"203.0.113.0/24"})
+            test.AssertNoError(t, err2)
+            test.AssertFalse(t, netguard.Check(blockGuard, "203.0.113.1"))
+        )
 
-# Test SSRF guard blocks private IPs
+# --- TestSSRFGuard ---
+type SSRFCase
+    name string
+
 func TestSSRFGuard(t reference testing.T)
-    guard := netguard.NewSSRFGuard()
-    if netguard.Check(guard, "10.0.0.5")
-        t.Errorf("SSRF guard should block private IPs")
+    cases := list of SSRFCase{
+        SSRFCase{name: "ssrf blocks private"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            guard := netguard.NewSSRFGuard()
+            test.AssertFalse(t, netguard.Check(guard, "10.0.0.5"))
+        )

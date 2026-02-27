@@ -3,65 +3,121 @@
 petiole parse_test
 
 import "stdlib/parse"
-import "stdlib/string"
+import "stdlib/test"
+import "stdlib/string" as kukistring
 import "testing"
 
-# Test Json returns the raw bytes for a JSON string
+# --- TestJson ---
+type JsonCase
+    name    string
+    payload string
+    want    string
+
 func TestJson(t reference testing.T)
-    payload := "{\"status\":\"ok\"}"
+    cases := list of JsonCase{
+        JsonCase{name: "basic json", payload: "{\"status\":\"ok\"}", want: "{\"status\":\"ok\"}"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            result, err := parse.Json(tc.payload)
+            test.AssertNoError(t, err)
+            test.AssertEqual(t, result as string, tc.want)
+        )
 
-    result, err := parse.Json(payload)
-    if err != empty
-        t.Fatalf("Json failed: {err}")
-    if string(result) != payload
-        t.Errorf("expected payload {payload}, got {string(result)}")
+# --- TestJsonLines ---
+type JsonLinesCase
+    name      string
+    ndjson    string
+    wantCount int
+    firstLine string
 
-# Test JsonLines skips blank lines and trims whitespace
 func TestJsonLines(t reference testing.T)
-    ndjson := "{\"a\":1}\n\n {\"b\":2}\n"
+    cases := list of JsonLinesCase{
+        JsonLinesCase{
+            name:      "basic ndjson",
+            ndjson:    "{\"a\":1}\n\n {\"b\":2}\n",
+            wantCount: 2,
+            firstLine: "{\"a\":1}",
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            lines, err := parse.JsonLines(tc.ndjson)
+            test.AssertNoError(t, err)
+            test.AssertEqual(t, len(lines), tc.wantCount)
+            if len(lines) > 0
+                test.AssertEqual(t, lines[0], tc.firstLine)
+        )
 
-    lines, err := parse.JsonLines(ndjson)
-    if err != empty
-        t.Fatalf("JsonLines failed: {err}")
-    if len(lines) != 2
-        t.Fatalf("expected 2 lines, got {len(lines)}")
-    if lines[0] != "{\"a\":1}"
-        t.Errorf("expected first line to be trimmed")
+# --- TestCsvWithHeader ---
+type CsvCase
+    name           string
+    csv            string
+    wantRecords    int
+    wantHeaderRows int
+    firstRowName   string
 
-# Test Csv and CsvWithHeader parse records and headers
 func TestCsvWithHeader(t reference testing.T)
-    csv := "name,age\nalice,30\nbob,25"
+    cases := list of CsvCase{
+        CsvCase{
+            name:           "basic csv",
+            csv:            "name,age\nalice,30\nbob,25",
+            wantRecords:    3,
+            wantHeaderRows: 2,
+            firstRowName:   "alice",
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            records, err := parse.Csv(tc.csv)
+            test.AssertNoError(t, err)
+            test.AssertEqual(t, len(records), tc.wantRecords)
 
-    records, err := parse.Csv(csv)
-    if err != empty
-        t.Fatalf("Csv failed: {err}")
-    if len(records) != 3
-        t.Fatalf("expected 3 rows, got {len(records)}")
+            headerRows, err2 := parse.CsvWithHeader(tc.csv)
+            test.AssertNoError(t, err2)
+            test.AssertEqual(t, len(headerRows), tc.wantHeaderRows)
+            if len(headerRows) > 0
+                test.AssertEqual(t, headerRows[0]["name"], tc.firstRowName)
+        )
 
-    headerRows, err2 := parse.CsvWithHeader(csv)
-    if err2 != empty
-        t.Fatalf("CsvWithHeader failed: {err2}")
-    if len(headerRows) != 2
-        t.Fatalf("expected 2 data rows, got {len(headerRows)}")
-    if headerRows[0]["name"] != "alice"
-        t.Errorf("expected first row to map name to alice")
+# --- TestYamlPretty ---
+type YamlPrettyCase
+    name     string
+    data     map of string to any
+    contains string
 
-# Test YamlPretty emits YAML that contains the expected key
 func TestYamlPretty(t reference testing.T)
-    data := map of string to any{"user": map of string to any{"name": "sam"}}
+    cases := list of YamlPrettyCase{
+        YamlPrettyCase{
+            name:     "basic map",
+            data:     map of string to any{"user": map of string to any{"name": "sam"}},
+            contains: "user",
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            pretty, err := parse.YamlPretty(tc.data)
+            test.AssertNoError(t, err)
+            test.AssertTrue(t, kukistring.Contains(pretty as string, tc.contains))
+        )
 
-    pretty, err := parse.YamlPretty(data)
-    if err != empty
-        t.Fatalf("YamlPretty failed: {err}")
-    if string.Contains(string(pretty), "user") equals false
-        t.Errorf("expected yaml preview to mention user")
+# --- TestYaml ---
+type JsonYamlCase
+    name    string
+    payload string
+    want    string
 
-# Test Yaml returns the raw bytes for a YAML string
 func TestYaml(t reference testing.T)
-    payload := "user: alice\nemail: test@example.com"
-
-    result, err := parse.Yaml(payload)
-    if err != empty
-        t.Fatalf("Yaml failed: {err}")
-    if string(result) != payload
-        t.Errorf("expected yaml payload to round trip")
+    cases := list of JsonYamlCase{
+        JsonYamlCase{
+            name:    "basic yaml",
+            payload: "user: alice\nemail: test@example.com",
+            want:    "user: alice\nemail: test@example.com",
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            result, err := parse.Yaml(tc.payload)
+            test.AssertNoError(t, err)
+            test.AssertEqual(t, result as string, tc.want)
+        )

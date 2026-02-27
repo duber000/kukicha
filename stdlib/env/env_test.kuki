@@ -1,7 +1,10 @@
 # Env Package Tests
 
+petiole env_test
+
 import "stdlib/env"
 import "stdlib/test"
+import "testing"
 import "os"
 
 # Setup test environment variables
@@ -25,326 +28,276 @@ func cleanupTestEnv()
     os.Unsetenv("TEST_EMPTY")
 
 # Test Get function
-test GetFunction
+func TestGet(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing variable
+
     value := env.Get("TEST_STRING") onerr panic "get failed"
-    test.AssertEqual(value, "hello")
-    
-    # Test non-existent variable
+    test.AssertEqual(t, value, "hello")
+
     _, err := env.Get("NONEXISTENT")
-    test.AssertNotEmpty(err)
+    test.AssertNotEmpty(t, err)
 
 # Test GetOr function
-test GetOrFunction
+func TestGetOr(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing variable
+
     value := env.GetOr("TEST_STRING", "default")
-    test.AssertEqual(value, "hello")
-    
-    # Test non-existent variable
+    test.AssertEqual(t, value, "hello")
+
     value2 := env.GetOr("NONEXISTENT", "default")
-    test.AssertEqual(value2, "default")
+    test.AssertEqual(t, value2, "default")
 
 # Test GetInt function
-test GetIntFunction
+func TestGetInt(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing valid integer
+
     value := env.GetInt("TEST_INT") onerr panic "get int failed"
-    test.AssertEqual(value, 42)
-    
-    # Test non-existent variable
+    test.AssertEqual(t, value, 42)
+
     _, err := env.GetInt("NONEXISTENT")
-    test.AssertNotEmpty(err)
-    
-    # Test invalid integer
+    test.AssertNotEmpty(t, err)
+
     os.Setenv("TEST_INVALID_INT", "not_a_number")
     defer os.Unsetenv("TEST_INVALID_INT")
     _, err2 := env.GetInt("TEST_INVALID_INT")
-    test.AssertNotEmpty(err2)
+    test.AssertNotEmpty(t, err2)
 
 # Test GetIntOr function
-test GetIntOrFunction
+func TestGetIntOr(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing valid integer
+
     value := env.GetIntOr("TEST_INT", 100) onerr panic "get int or failed"
-    test.AssertEqual(value, 42)
-    
-    # Test non-existent variable
+    test.AssertEqual(t, value, 42)
+
     value2 := env.GetIntOr("NONEXISTENT", 100) onerr panic "get int or failed"
-    test.AssertEqual(value2, 100)
-    
-    # Test invalid integer
+    test.AssertEqual(t, value2, 100)
+
     os.Setenv("TEST_INVALID_INT", "not_a_number")
     defer os.Unsetenv("TEST_INVALID_INT")
     _, err := env.GetIntOr("TEST_INVALID_INT", 100)
-    test.AssertNotEmpty(err)
+    test.AssertNotEmpty(t, err)
 
 # Test GetIntOrDefault function
-test GetIntOrDefaultFunction
+func TestGetIntOrDefault(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing valid integer
+
     value := env.GetIntOrDefault("TEST_INT", 100)
-    test.AssertEqual(value, 42)
-    
-    # Test non-existent variable
+    test.AssertEqual(t, value, 42)
+
     value2 := env.GetIntOrDefault("NONEXISTENT", 100)
-    test.AssertEqual(value2, 100)
-    
-    # Test invalid integer
+    test.AssertEqual(t, value2, 100)
+
     os.Setenv("TEST_INVALID_INT", "not_a_number")
     defer os.Unsetenv("TEST_INVALID_INT")
     value3 := env.GetIntOrDefault("TEST_INVALID_INT", 100)
-    test.AssertEqual(value3, 100)
+    test.AssertEqual(t, value3, 100)
 
 # Test GetBool function
-test GetBoolFunction
+func TestGetBool(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing true boolean
+
     value := env.GetBool("TEST_BOOL_TRUE") onerr panic "get bool failed"
-    test.AssertTrue(value)
-    
-    # Test existing false boolean
+    test.AssertTrue(t, value)
+
     value2 := env.GetBool("TEST_BOOL_FALSE") onerr panic "get bool failed"
-    test.AssertFalse(value2)
-    
-    # Test non-existent variable
+    test.AssertFalse(t, value2)
+
     _, err := env.GetBool("NONEXISTENT")
-    test.AssertNotEmpty(err)
-    
-    # Test invalid boolean
+    test.AssertNotEmpty(t, err)
+
     os.Setenv("TEST_INVALID_BOOL", "invalid")
     defer os.Unsetenv("TEST_INVALID_BOOL")
     _, err2 := env.GetBool("TEST_INVALID_BOOL")
-    test.AssertNotEmpty(err2)
+    test.AssertNotEmpty(t, err2)
 
 # Test GetBoolOr function
-test GetBoolOrFunction
+func TestGetBoolOr(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing true boolean
+
     value := env.GetBoolOr("TEST_BOOL_TRUE", false) onerr panic "get bool or failed"
-    test.AssertTrue(value)
-    
-    # Test non-existent variable
+    test.AssertTrue(t, value)
+
     value2 := env.GetBoolOr("NONEXISTENT", true) onerr panic "get bool or failed"
-    test.AssertTrue(value2)
-    
-    # Test invalid boolean
+    test.AssertTrue(t, value2)
+
     os.Setenv("TEST_INVALID_BOOL", "invalid")
     defer os.Unsetenv("TEST_INVALID_BOOL")
     _, err := env.GetBoolOr("TEST_INVALID_BOOL", false)
-    test.AssertNotEmpty(err)
+    test.AssertNotEmpty(t, err)
 
 # Test GetBoolOrDefault function
-test GetBoolOrDefaultFunction
+func TestGetBoolOrDefault(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing true boolean
+
     value := env.GetBoolOrDefault("TEST_BOOL_TRUE", false)
-    test.AssertTrue(value)
-    
-    # Test non-existent variable
+    test.AssertTrue(t, value)
+
     value2 := env.GetBoolOrDefault("NONEXISTENT", true)
-    test.AssertTrue(value2)
-    
-    # Test invalid boolean
+    test.AssertTrue(t, value2)
+
     os.Setenv("TEST_INVALID_BOOL", "invalid")
     defer os.Unsetenv("TEST_INVALID_BOOL")
     value3 := env.GetBoolOrDefault("TEST_INVALID_BOOL", false)
-    test.AssertFalse(value3)
+    test.AssertFalse(t, value3)
 
 # Test GetFloat function
-test GetFloatFunction
+func TestGetFloat(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing valid float
+
     value := env.GetFloat("TEST_FLOAT") onerr panic "get float failed"
-    test.AssertEqual(value, 3.14)
-    
-    # Test non-existent variable
+    test.AssertEqual(t, value, 3.14)
+
     _, err := env.GetFloat("NONEXISTENT")
-    test.AssertNotEmpty(err)
-    
-    # Test invalid float
+    test.AssertNotEmpty(t, err)
+
     os.Setenv("TEST_INVALID_FLOAT", "not_a_number")
     defer os.Unsetenv("TEST_INVALID_FLOAT")
     _, err2 := env.GetFloat("TEST_INVALID_FLOAT")
-    test.AssertNotEmpty(err2)
+    test.AssertNotEmpty(t, err2)
 
 # Test GetFloatOr function
-test GetFloatOrFunction
+func TestGetFloatOr(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing valid float
+
     value := env.GetFloatOr("TEST_FLOAT", 2.71) onerr panic "get float or failed"
-    test.AssertEqual(value, 3.14)
-    
-    # Test non-existent variable
+    test.AssertEqual(t, value, 3.14)
+
     value2 := env.GetFloatOr("NONEXISTENT", 2.71) onerr panic "get float or failed"
-    test.AssertEqual(value2, 2.71)
-    
-    # Test invalid float
+    test.AssertEqual(t, value2, 2.71)
+
     os.Setenv("TEST_INVALID_FLOAT", "not_a_number")
     defer os.Unsetenv("TEST_INVALID_FLOAT")
     _, err := env.GetFloatOr("TEST_INVALID_FLOAT", 2.71)
-    test.AssertNotEmpty(err)
+    test.AssertNotEmpty(t, err)
 
 # Test GetList function
-test GetListFunction
+func TestGetList(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing list
+
     value := env.GetList("TEST_LIST", ",") onerr panic "get list failed"
-    test.AssertEqual(len(value), 3)
-    test.AssertEqual(value[0], "a")
-    test.AssertEqual(value[1], "b")
-    test.AssertEqual(value[2], "c")
-    
-    # Test non-existent variable
+    test.AssertEqual(t, len(value), 3)
+    test.AssertEqual(t, value[0], "a")
+    test.AssertEqual(t, value[1], "b")
+    test.AssertEqual(t, value[2], "c")
+
     _, err := env.GetList("NONEXISTENT", ",")
-    test.AssertNotEmpty(err)
+    test.AssertNotEmpty(t, err)
 
 # Test GetListOr function
-test GetListOrFunction
+func TestGetListOr(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test existing list
+
     value := env.GetListOr("TEST_LIST", ",", list of string{"default"})
-    test.AssertEqual(len(value), 3)
-    test.AssertEqual(value[0], "a")
-    
-    # Test non-existent variable
+    test.AssertEqual(t, len(value), 3)
+    test.AssertEqual(t, value[0], "a")
+
     value2 := env.GetListOr("NONEXISTENT", ",", list of string{"default"})
-    test.AssertEqual(len(value2), 1)
-    test.AssertEqual(value2[0], "default")
+    test.AssertEqual(t, len(value2), 1)
+    test.AssertEqual(t, value2[0], "default")
 
 # Test Set and Unset functions
-test SetUnsetFunctions
-    # Test setting a new variable
+func TestSetUnset(t reference testing.T)
     err := env.Set("TEST_NEW_VAR", "new_value")
-    test.AssertEqual(err, empty)
+    test.AssertEqual(t, err, empty)
     value := os.Getenv("TEST_NEW_VAR")
-    test.AssertEqual(value, "new_value")
-    
-    # Clean up
+    test.AssertEqual(t, value, "new_value")
+
     env.Unset("TEST_NEW_VAR") onerr panic "unset failed"
     value2 := os.Getenv("TEST_NEW_VAR")
-    test.AssertEqual(value2, "")
+    test.AssertEqual(t, value2, "")
 
 # Test IsSet and IsSetAndNotEmpty functions
-test IsSetFunctions
+func TestIsSet(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
-    # Test IsSet with existing variable
-    test.AssertTrue(env.IsSet("TEST_STRING"))
-    
-    # Test IsSet with non-existent variable
-    test.AssertFalse(env.IsSet("NONEXISTENT"))
-    
-    # Test IsSetAndNotEmpty with existing non-empty variable
-    test.AssertTrue(env.IsSetAndNotEmpty("TEST_STRING"))
-    
-    # Test IsSetAndNotEmpty with existing empty variable
-    test.AssertFalse(env.IsSetAndNotEmpty("TEST_EMPTY"))
-    
-    # Test IsSetAndNotEmpty with non-existent variable
-    test.AssertFalse(env.IsSetAndNotEmpty("NONEXISTENT"))
+
+    test.AssertTrue(t, env.IsSet("TEST_STRING"))
+
+    test.AssertFalse(t, env.IsSet("NONEXISTENT"))
+
+    test.AssertTrue(t, env.IsSetAndNotEmpty("TEST_STRING"))
+
+    test.AssertFalse(t, env.IsSetAndNotEmpty("TEST_EMPTY"))
+
+    test.AssertFalse(t, env.IsSetAndNotEmpty("NONEXISTENT"))
 
 # Test All function
-test AllFunction
+func TestAll(t reference testing.T)
     setupTestEnv()
     defer cleanupTestEnv()
-    
+
     all := env.All()
-    test.AssertNotEmpty(all)
-    test.AssertTrue(len(all) >= 7)  # At least our test variables
-    
-    # Check that our test variables are in the map
-    test.AssertEqual(all["TEST_STRING"], "hello")
-    test.AssertEqual(all["TEST_INT"], "42")
+    test.AssertNotEmpty(t, all)
+    test.AssertTrue(t, len(all) >= 7)
+
+    test.AssertEqual(t, all["TEST_STRING"], "hello")
+    test.AssertEqual(t, all["TEST_INT"], "42")
 
 # Test ParseBool function
-test ParseBoolFunction
-    # Test true values
+func TestParseBool(t reference testing.T)
     value, err := env.ParseBool("true")
-    test.AssertEqual(err, empty)
-    test.AssertTrue(value)
-    
+    test.AssertEqual(t, err, empty)
+    test.AssertTrue(t, value)
+
     value2, err2 := env.ParseBool("1")
-    test.AssertEqual(err2, empty)
-    test.AssertTrue(value2)
-    
+    test.AssertEqual(t, err2, empty)
+    test.AssertTrue(t, value2)
+
     value3, err3 := env.ParseBool("yes")
-    test.AssertEqual(err3, empty)
-    test.AssertTrue(value3)
-    
+    test.AssertEqual(t, err3, empty)
+    test.AssertTrue(t, value3)
+
     value4, err4 := env.ParseBool("on")
-    test.AssertEqual(err4, empty)
-    test.AssertTrue(value4)
-    
-    # Test false values
+    test.AssertEqual(t, err4, empty)
+    test.AssertTrue(t, value4)
+
     value5, err5 := env.ParseBool("false")
-    test.AssertEqual(err5, empty)
-    test.AssertFalse(value5)
-    
+    test.AssertEqual(t, err5, empty)
+    test.AssertFalse(t, value5)
+
     value6, err6 := env.ParseBool("0")
-    test.AssertEqual(err6, empty)
-    test.AssertFalse(value6)
-    
+    test.AssertEqual(t, err6, empty)
+    test.AssertFalse(t, value6)
+
     value7, err7 := env.ParseBool("no")
-    test.AssertEqual(err7, empty)
-    test.AssertFalse(value7)
-    
+    test.AssertEqual(t, err7, empty)
+    test.AssertFalse(t, value7)
+
     value8, err8 := env.ParseBool("off")
-    test.AssertEqual(err8, empty)
-    test.AssertFalse(value8)
-    
-    # Test case insensitivity
+    test.AssertEqual(t, err8, empty)
+    test.AssertFalse(t, value8)
+
     value9, err9 := env.ParseBool("TRUE")
-    test.AssertEqual(err9, empty)
-    test.AssertTrue(value9)
-    
-    # Test invalid value
+    test.AssertEqual(t, err9, empty)
+    test.AssertTrue(t, value9)
+
     _, err10 := env.ParseBool("invalid")
-    test.AssertNotEmpty(err10)
+    test.AssertNotEmpty(t, err10)
 
 # Test SplitAndTrim function
-test SplitAndTrimFunction
-    # Test normal case
+func TestSplitAndTrim(t reference testing.T)
     result := env.SplitAndTrim("a, b,  c", ",")
-    test.AssertEqual(len(result), 3)
-    test.AssertEqual(result[0], "a")
-    test.AssertEqual(result[1], "b")
-    test.AssertEqual(result[2], "c")
-    
-    # Test with empty parts
-    result2 := env.SplitAndTrim("a,, b,  ", ",")
-    test.AssertEqual(len(result2), 2)
-    test.AssertEqual(result2[0], "a")
-    test.AssertEqual(result2[1], "b")
-    
-    # Test empty input
-    result3 := env.SplitAndTrim("", ",")
-    test.AssertEqual(len(result3), 0)
+    test.AssertEqual(t, len(result), 3)
+    test.AssertEqual(t, result[0], "a")
+    test.AssertEqual(t, result[1], "b")
+    test.AssertEqual(t, result[2], "c")
 
-print("Env tests completed")
+    result2 := env.SplitAndTrim("a,, b,  ", ",")
+    test.AssertEqual(t, len(result2), 2)
+    test.AssertEqual(t, result2[0], "a")
+    test.AssertEqual(t, result2[1], "b")
+
+    result3 := env.SplitAndTrim("", ",")
+    test.AssertEqual(t, len(result3), 0)

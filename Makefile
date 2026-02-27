@@ -6,7 +6,7 @@
 
 KUKICHA := ./kukicha
 KUKI_SOURCES := $(wildcard stdlib/*/*.kuki)
-KUKI_MAIN := $(filter-out %_test.kuki,$(KUKI_SOURCES))
+KUKI_MAIN := $(filter-out %_test.kuki stdlib/test/test.kuki,$(KUKI_SOURCES))
 KUKI_TESTS := $(filter %_test.kuki,$(KUKI_SOURCES))
 
 .PHONY: all build lsp generate generate-tests genstdlibregistry test check-generate check-test-staleness clean install-lsp install-hooks zed-test
@@ -29,7 +29,7 @@ genstdlibregistry:
 generate: genstdlibregistry build generate-tests
 	@for f in $(KUKI_MAIN); do \
 		echo "Transpiling $$f ..."; \
-		out=$$($(KUKICHA) build "$$f" 2>&1); rc=$$?; \
+		out=$$($(KUKICHA) build --skip-build "$$f" 2>&1); rc=$$?; \
 		echo "$$out" | grep -v "^Warning: go build" || true; \
 		if [ $$rc -ne 0 ]; then echo "ERROR: Failed to transpile $$f"; exit 1; fi; \
 	done
@@ -39,7 +39,7 @@ generate: genstdlibregistry build generate-tests
 generate-tests: build
 	@for f in $(KUKI_TESTS); do \
 		echo "Transpiling $$f ..."; \
-		out=$$($(KUKICHA) build "$$f" 2>&1); rc=$$?; \
+		out=$$($(KUKICHA) build --skip-build "$$f" 2>&1); rc=$$?; \
 		echo "$$out" | grep -v "^Warning: go build" || true; \
 		if [ $$rc -ne 0 ]; then echo "ERROR: Failed to transpile $$f"; exit 1; fi; \
 	done

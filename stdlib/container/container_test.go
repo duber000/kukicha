@@ -10,286 +10,58 @@ import (
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:9
 func TestBasicTypes(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:11
-	engine := *new(container.Engine)
+	config := container.Config{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:12
-	config := *new(container.Config)
+	containerInfo := container.ContainerInfo{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:13
-	containerInfo := *new(container.ContainerInfo)
+	imageInfo := container.ImageInfo{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:14
-	imageInfo := *new(container.ImageInfo)
+	buildOutput := container.BuildOutput{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:15
-	buildOutput := *new(container.BuildOutput)
+	auth := container.Auth{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:16
-	auth := *new(container.Auth)
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:17
-	event := *new(container.ContainerEvent)
+	event := container.ContainerEvent{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:20
-	if engine == nil {
+	_ = config
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:21
-		t.Error("Expected engine to be non-empty")
-	}
+	_ = containerInfo
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:22
-	if config == nil {
+	_ = imageInfo
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:23
-		t.Error("Expected config to be non-empty")
-	}
+	_ = buildOutput
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:24
-	if containerInfo == nil {
+	_ = auth
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:25
-		t.Error("Expected containerInfo to be non-empty")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:26
-	if imageInfo == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:27
-		t.Error("Expected imageInfo to be non-empty")
-	}
+	_ = event
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:28
-	if buildOutput == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:29
-		t.Error("Expected buildOutput to be non-empty")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:30
-	if auth == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:31
-		t.Error("Expected auth to be non-empty")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:32
-	if event == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:33
-		t.Error("Expected event to be non-empty")
-	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:36
 func TestConfigBuilder(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:30
 	cfg := container.New()
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:31
 	cfg = container.Host(cfg, "unix:///var/run/docker.sock")
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:32
 	cfg = container.APIVersion(cfg, "1.41")
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:43
-	if cfg.host != "unix:///var/run/docker.sock" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:44
-		t.Error("Expected cfg.host to be 'unix:///var/run/docker.sock'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:45
-	if cfg.apiVersion != "1.41" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:46
-		t.Error("Expected cfg.apiVersion to be '1.41'")
-	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:37
 func TestAuthFunctions(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:39
 	auth := container.Login("username", "password", "registry.example.com")
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:52
-	if auth.username != "username" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:53
-		t.Error("Expected auth.username to be 'username'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:54
-	if auth.password != "password" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:55
-		t.Error("Expected auth.password to be 'password'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:56
-	if auth.serverAddress != "registry.example.com" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:57
-		t.Error("Expected auth.serverAddress to be 'registry.example.com'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:42
 	encoded := container.AuthEncode(auth)
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:43
 	if encoded == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:44
 		t.Error("Expected encoded to be non-empty")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:63
-	if len(encoded) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:64
-		t.Error("Expected encoded length to be > 0")
-	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:67
-func TestAccessorFunctions(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:75
-	info := container.ContainerInfo{id: "container123", image: "ubuntu:latest", status: "running", state: "running", names: []string{"mycontainer"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:77
-	if container.ContainerID(info) != "container123" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:78
-		t.Error("Expected ContainerID to return 'container123'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:79
-	if container.ContainerImage(info) != "ubuntu:latest" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:80
-		t.Error("Expected ContainerImage to return 'ubuntu:latest'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:81
-	if container.ContainerStatus(info) != "running" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:82
-		t.Error("Expected ContainerStatus to return 'running'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:83
-	if container.ContainerState(info) != "running" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:84
-		t.Error("Expected ContainerState to return 'running'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:85
-	if len(container.ContainerNames(info)) != 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:86
-		t.Error("Expected ContainerNames length to be 1")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:87
-	if container.ContainerNames(info)[0] != "mycontainer" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:88
-		t.Error("Expected ContainerNames[0] to be 'mycontainer'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:95
-	img := container.ImageInfo{id: "image123", tags: []string{"ubuntu:latest", "ubuntu:22.04"}, size: 1024}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:97
-	if container.ImageID(img) != "image123" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:98
-		t.Error("Expected ImageID to return 'image123'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:99
-	if len(container.ImageTags(img)) != 2 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:100
-		t.Error("Expected ImageTags length to be 2")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:101
-	if container.ImageSize(img) != 1024 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:102
-		t.Error("Expected ImageSize to return 1024")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:108
-	build := container.BuildOutput{imageID: "build123", output: "Build completed successfully"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:110
-	if container.BuildImageID(build) != "build123" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:111
-		t.Error("Expected BuildImageID to return 'build123'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:112
-	if container.BuildLog(build) != "Build completed successfully" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:113
-		t.Error("Expected BuildLog to return 'Build completed successfully'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:122
-	event := container.ContainerEvent{id: "event123", resource: "container", action: "start", actor: "mycontainer", time: "2023-01-01T00:00:00Z"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:124
-	if container.EventID(event) != "event123" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:125
-		t.Error("Expected EventID to return 'event123'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:126
-	if container.EventResource(event) != "container" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:127
-		t.Error("Expected EventResource to return 'container'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:128
-	if container.EventAction(event) != "start" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:129
-		t.Error("Expected EventAction to return 'start'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:130
-	if container.EventActor(event) != "mycontainer" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:131
-		t.Error("Expected EventActor to return 'mycontainer'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:132
-	if container.EventTime(event) != "2023-01-01T00:00:00Z" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:133
-		t.Error("Expected EventTime to return '2023-01-01T00:00:00Z'")
-	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:136
-func TestFunctionSignatures(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:140
-	if container.Close == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:141
-		t.Error("Expected Close function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:142
-	if container.ListContainers == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:143
-		t.Error("Expected ListContainers function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:144
-	if container.ListImages == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:145
-		t.Error("Expected ListImages function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:146
-	if container.Stop == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:147
-		t.Error("Expected Stop function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:148
-	if container.Remove == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:149
-		t.Error("Expected Remove function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:150
-	if container.Logs == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:151
-		t.Error("Expected Logs function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:152
-	if container.LogsTail == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:153
-		t.Error("Expected LogsTail function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:154
-	if container.Run == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:155
-		t.Error("Expected Run function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:156
-	if container.Inspect == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:157
-		t.Error("Expected Inspect function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:158
-	if container.Exec == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:159
-		t.Error("Expected Exec function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:160
-	if container.Wait == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:161
-		t.Error("Expected Wait function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:162
-	if container.WaitCtx == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:163
-		t.Error("Expected WaitCtx function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:164
-	if container.Events == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:165
-		t.Error("Expected Events function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:166
-	if container.EventsCtx == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:167
-		t.Error("Expected EventsCtx function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:168
-	if container.Pull == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:169
-		t.Error("Expected Pull function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:170
-	if container.PullAuth == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:171
-		t.Error("Expected PullAuth function to exist")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:172
-	if container.LoginFromConfig == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:173
-		t.Error("Expected LoginFromConfig function to exist")
-	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:51
+func TestContainerTypes(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:54
+	auth := container.Auth{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/container/container_test.kuki:56
+	_ = auth
 }

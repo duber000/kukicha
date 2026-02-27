@@ -3,6 +3,7 @@
 petiole fetch_test
 
 import "testing"
+import "stdlib/test"
 import "stdlib/fetch"
 import "net/http"
 import "net/http/httptest"
@@ -10,38 +11,43 @@ import "encoding/json"
 import "fmt"
 
 type TestData
-    Message string json:"message"
-    Count int json:"count"
+    Message string as "message"
+    Count   int    as "count"
 
 type PostData
-    Name string json:"name"
-    Value int json:"value"
+    Name  string as "name"
+    Value int    as "value"
 
-# TestGet verifies that fetch.Get can make a basic HTTP GET request
+# --- TestGet ---
+type GetCase
+    name string
+
 func TestGet(t reference testing.T)
-    # Create a test server
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
         w.WriteHeader(http.StatusOK)
         w.Write("Hello, World!" as list of byte)
     ))
     defer server.Close()
 
-    # Test fetch.Get
-    resp, err := fetch.Get(server.URL)
-    if err != empty
-        t.Fatalf("fetch.Get failed: {err}")
+    cases := list of GetCase{
+        GetCase{name: "basic get"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            resp, err := fetch.Get(server.URL)
+            test.AssertNoError(t, err)
+            test.AssertEqual(t, resp.StatusCode, http.StatusOK)
+            resp.Body.Close()
+        )
 
-    if resp.StatusCode != http.StatusOK
-        t.Errorf("Expected status 200, got {resp.StatusCode}")
+# --- TestJson ---
+type JsonCase
+    name string
 
-    resp.Body.Close()
-
-# TestJson verifies that fetch.Json can parse typed JSON responses
 func TestJson(t reference testing.T)
     testData := TestData{Message: "test", Count: 42}
     jsonBytes, _ := json.Marshal(testData)
 
-    # Create a test server
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
         w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(http.StatusOK)
@@ -49,22 +55,25 @@ func TestJson(t reference testing.T)
     ))
     defer server.Close()
 
-    # Test fetch.Get |> fetch.Json pipeline
-    resp, err := fetch.Get(server.URL)
-    if err != empty
-        t.Fatalf("fetch.Get failed: {err}")
+    cases := list of JsonCase{
+        JsonCase{name: "parse object"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            resp, err := fetch.Get(server.URL)
+            test.AssertNoError(t, err)
+            data, jsonErr := fetch.Json(resp, empty TestData)
+            test.AssertNoError(t, jsonErr)
+            test.AssertEqual(t, data.Message, "test")
+            test.AssertEqual(t, data.Count, 42)
+        )
 
-    data, jsonErr := fetch.Json(resp, empty TestData)
-    if jsonErr != empty
-        t.Fatalf("fetch.Json failed: {jsonErr}")
+# --- TestJsonArray ---
+type JsonArrayCase
+    name string
 
-    if data.Message != "test" or data.Count != 42
-        t.Errorf("Unexpected parsed data: {data}")
-
-# TestJsonArray verifies that fetch.Json supports top-level JSON arrays
 func TestJsonArray(t reference testing.T)
     jsonBytes := "[{\"message\":\"a\",\"count\":1},{\"message\":\"b\",\"count\":2}]" as list of byte
-
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
         w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(http.StatusOK)
@@ -72,26 +81,30 @@ func TestJsonArray(t reference testing.T)
     ))
     defer server.Close()
 
-    resp, err := fetch.Get(server.URL)
-    if err != empty
-        t.Fatalf("fetch.Get failed: {err}")
+    cases := list of JsonArrayCase{
+        JsonArrayCase{name: "parse array"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            resp, err := fetch.Get(server.URL)
+            test.AssertNoError(t, err)
+            data, jsonErr := fetch.Json(resp, empty list of TestData)
+            test.AssertNoError(t, jsonErr)
+            test.AssertEqual(t, len(data), 2)
+            test.AssertEqual(t, data[0].Message, "a")
+            test.AssertEqual(t, data[1].Count, 2)
+        )
 
-    data, jsonErr := fetch.Json(resp, empty list of TestData)
-    if jsonErr != empty
-        t.Fatalf("fetch.Json failed for array payload: {jsonErr}")
-    if len(data) != 2 or data[0].Message != "a" or data[1].Count != 2
-        t.Errorf("Unexpected parsed array data: {data}")
+# --- TestDecode ---
+type DecodeCase
+    name string
 
-# TestDecode verifies that fetch.Decode can unmarshal directly into typed targets
 func TestDecode(t reference testing.T)
     testData := list of TestData{
         TestData{Message: "typed", Count: 7},
         TestData{Message: "decode", Count: 9},
     }
-    jsonBytes, marshalErr := json.Marshal(testData)
-    if marshalErr != empty
-        t.Fatalf("json.Marshal failed: {marshalErr}")
-
+    jsonBytes, _ := json.Marshal(testData)
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
         w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(http.StatusOK)
@@ -99,243 +112,282 @@ func TestDecode(t reference testing.T)
     ))
     defer server.Close()
 
-    resp, err := fetch.Get(server.URL)
-    if err != empty
-        t.Fatalf("fetch.Get failed: {err}")
+    cases := list of DecodeCase{
+        DecodeCase{name: "decode into reference"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            resp, err := fetch.Get(server.URL)
+            test.AssertNoError(t, err)
+            decoded := empty list of TestData
+            decodeErr := fetch.Decode(resp, reference of decoded)
+            test.AssertNoError(t, decodeErr)
+            test.AssertEqual(t, len(decoded), 2)
+            test.AssertEqual(t, decoded[0].Message, "typed")
+            test.AssertEqual(t, decoded[1].Count, 9)
+        )
 
-    decoded := empty list of TestData
-    decodeErr := fetch.Decode(resp, reference of decoded)
-    if decodeErr != empty
-        t.Fatalf("fetch.Decode failed: {decodeErr}")
+# --- TestURLTemplate ---
+type URLTemplateCase
+    name    string
+    tmpl    string
+    args    map of string to string
+    want    string
+    wantErr bool
 
-    if len(decoded) != 2
-        t.Fatalf("Expected 2 decoded items, got {len(decoded)}")
-    if decoded[0].Message != "typed" or decoded[1].Count != 9
-        t.Errorf("Decoded data mismatch: {decoded}")
-
-# TestURLTemplate verifies safe path placeholder expansion
 func TestURLTemplate(t reference testing.T)
     tmpl := fmt.Sprintf("https://api.example.com/users/%cusername%c/repos/%crepo%c", 123, 125, 123, 125)
-    builtURL, err := fetch.URLTemplate(tmpl, map of string to string{"username": "acme/dev team", "repo": "hello world"})
-    if err != empty
-        t.Fatalf("URLTemplate failed: {err}")
+    
+    cases := list of URLTemplateCase{
+        URLTemplateCase{
+            name: "success with encoding",
+            tmpl: tmpl,
+            args: map of string to string{"username": "acme/dev team", "repo": "hello world"},
+            want: "https://api.example.com/users/acme%2Fdev%20team/repos/hello%20world",
+            wantErr: false,
+        },
+        URLTemplateCase{
+            name: "missing placeholder",
+            tmpl: tmpl,
+            args: map of string to string{"username": "golang"},
+            want: "",
+            wantErr: true,
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            builtURL, err := fetch.URLTemplate(tc.tmpl, tc.args)
+            if tc.wantErr
+                test.AssertError(t, err)
+            else
+                test.AssertNoError(t, err)
+                test.AssertEqual(t, builtURL, tc.want)
+        )
 
-    expected := "https://api.example.com/users/acme%2Fdev%20team/repos/hello%20world"
-    if builtURL != expected
-        t.Errorf("Expected URL '{expected}', got '{builtURL}'")
+# --- TestURLWithQuery ---
+type URLWithQueryCase
+    name    string
+    url     string
+    query   map of string to string
+    want1   string
+    want2   string
 
-# TestURLTemplateMissingPlaceholder verifies unresolved placeholders error
-func TestURLTemplateMissingPlaceholder(t reference testing.T)
-    tmpl := fmt.Sprintf("https://api.example.com/users/%cusername%c/repos/%crepo%c", 123, 125, 123, 125)
-    _, err := fetch.URLTemplate(tmpl, map of string to string{"username": "golang"})
-    if err == empty
-        t.Fatal("Expected error for unresolved URL template placeholder")
-
-# TestURLWithQuery verifies safe query encoding
 func TestURLWithQuery(t reference testing.T)
-    builtURL, err := fetch.URLWithQuery("https://api.example.com/search", map of string to string{"q": "go lang", "sort": "stars desc"})
-    if err != empty
-        t.Fatalf("URLWithQuery failed: {err}")
+    cases := list of URLWithQueryCase{
+        URLWithQueryCase{
+            name: "encode multiple params",
+            url: "https://api.example.com/search",
+            query: map of string to string{"q": "go lang", "sort": "stars desc"},
+            want1: "https://api.example.com/search?q=go+lang&sort=stars+desc",
+            want2: "https://api.example.com/search?sort=stars+desc&q=go+lang",
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            builtURL, err := fetch.URLWithQuery(tc.url, tc.query)
+            test.AssertNoError(t, err)
+            if builtURL != tc.want1 and builtURL != tc.want2
+                t.Errorf("Unexpected query URL: {builtURL}")
+        )
 
-    if builtURL != "https://api.example.com/search?q=go+lang&sort=stars+desc" and builtURL != "https://api.example.com/search?sort=stars+desc&q=go+lang"
-        t.Errorf("Unexpected query URL: {builtURL}")
+# --- TestText ---
+type TextCase
+    name string
 
-# TestText verifies that fetch.Text can read response body as string
 func TestText(t reference testing.T)
     expectedText := "Hello, Kukicha!"
-
-    # Create a test server
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
         w.WriteHeader(http.StatusOK)
         w.Write(expectedText as list of byte)
     ))
     defer server.Close()
 
-    # Test fetch.Get |> fetch.Text pipeline
-    resp, err := fetch.Get(server.URL)
-    if err != empty
-        t.Fatalf("fetch.Get failed: {err}")
+    cases := list of TextCase{
+        TextCase{name: "read as text"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            resp, err := fetch.Get(server.URL)
+            test.AssertNoError(t, err)
+            text, textErr := fetch.Text(resp)
+            test.AssertNoError(t, textErr)
+            test.AssertEqual(t, text, expectedText)
+        )
 
-    text, textErr := fetch.Text(resp)
-    if textErr != empty
-        t.Fatalf("fetch.Text failed: {textErr}")
+# --- TestPost ---
+type PostCase
+    name string
 
-    if text != expectedText
-        t.Errorf("Expected text '{expectedText}', got '{text}'")
-
-# TestPost verifies that fetch.Post can send JSON data
 func TestPost(t reference testing.T)
-    # Create a test server that echoes the received data
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        if r.Method != "POST"
-            t.Errorf("Expected POST request, got {r.Method}")
+        test.AssertEqual(t, r.Method, "POST")
         w.WriteHeader(http.StatusCreated)
         w.Write("created" as list of byte)
     ))
     defer server.Close()
 
-    # Test fetch.Post
-    postData := PostData{Name: "test", Value: 123}
-    resp, err := fetch.Post(postData, server.URL)
-    if err != empty
-        t.Fatalf("fetch.Post failed: {err}")
+    cases := list of PostCase{
+        PostCase{name: "post object"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            postData := PostData{Name: "test", Value: 123}
+            resp, err := fetch.Post(postData, server.URL)
+            test.AssertNoError(t, err)
+            test.AssertEqual(t, resp.StatusCode, http.StatusCreated)
+            resp.Body.Close()
+        )
 
-    if resp.StatusCode != http.StatusCreated
-        t.Errorf("Expected status 201, got {resp.StatusCode}")
+# --- TestCheckStatus ---
+type CheckStatusCase
+    name string
+    code int
+    wantErr bool
 
-    resp.Body.Close()
-
-# TestCheckStatus verifies status code checking
 func TestCheckStatus(t reference testing.T)
-    # Test success case (200)
-    server200 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        w.WriteHeader(http.StatusOK)
-        w.Write("success" as list of byte)
-    ))
-    defer server200.Close()
-
-    resp, err := fetch.Get(server200.URL)
-    if err != empty
-        t.Fatalf("fetch.Get failed: {err}")
-
-    checkedResp, checkErr := fetch.CheckStatus(resp)
-    if checkErr != empty
-        t.Errorf("CheckStatus failed for 200: {checkErr}")
-    if checkedResp == empty
-        t.Error("Expected non-nil response")
-    checkedResp.Body.Close()
-
-    # Test failure case (404)
-    server404 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        w.WriteHeader(http.StatusNotFound)
-        w.Write("not found" as list of byte)
-    ))
-    defer server404.Close()
-
-    resp404, err404 := fetch.Get(server404.URL)
-    if err404 != empty
-        t.Fatalf("fetch.Get failed: {err404}")
-
-    _, checkErr404 := fetch.CheckStatus(resp404)
-    if checkErr404 == empty
-        t.Error("Expected error for 404 status")
-
-# TestRequestBuilder verifies the request builder pattern
-func TestRequestBuilder(t reference testing.T)
-    # Create a test server
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        # Check custom header
-        auth := r.Header.Get("Authorization")
-        if auth != "Bearer test-token"
-            t.Errorf("Expected Authorization header, got '{auth}'")
+        if r.URL.Path == "/ok"
+            w.WriteHeader(http.StatusOK)
+        else
+            w.WriteHeader(http.StatusNotFound)
+    ))
+    defer server.Close()
+
+    cases := list of CheckStatusCase{
+        CheckStatusCase{name: "success status", code: 200, wantErr: false},
+        CheckStatusCase{name: "error status", code: 404, wantErr: true},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            path := "/ok"
+            if tc.wantErr
+                path = "/notfound"
+            resp, err := fetch.Get(server.URL + path)
+            test.AssertNoError(t, err)
+            
+            checkedResp, checkErr := fetch.CheckStatus(resp)
+            if tc.wantErr
+                test.AssertError(t, checkErr)
+            else
+                test.AssertNoError(t, checkErr)
+                if checkedResp == empty
+                    t.Error("Expected non-nil response")
+                checkedResp.Body.Close()
+        )
+
+# --- TestRequestBuilder ---
+type RequestBuilderCase
+    name string
+
+func TestRequestBuilder(t reference testing.T)
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+        test.AssertEqual(t, r.Header.Get("Authorization"), "Bearer test-token")
         w.WriteHeader(http.StatusOK)
         w.Write("authorized" as list of byte)
     ))
     defer server.Close()
 
-    # Test request builder
-    req := fetch.New(server.URL) |> fetch.Header("Authorization", "Bearer test-token")
+    cases := list of RequestBuilderCase{
+        RequestBuilderCase{name: "builder properties"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            req := fetch.New(server.URL) |> fetch.Header("Authorization", "Bearer test-token")
+            resp, err := fetch.Do(req)
+            test.AssertNoError(t, err)
+            test.AssertEqual(t, resp.StatusCode, http.StatusOK)
+            resp.Body.Close()
+        )
 
-    resp, err := fetch.Do(req)
-    if err != empty
-        t.Fatalf("fetch.Do failed: {err}")
+# --- TestAuthHelpers ---
+type AuthHelpersCase
+    name string
 
-    if resp.StatusCode != http.StatusOK
-        t.Errorf("Expected status 200, got {resp.StatusCode}")
-
-    resp.Body.Close()
-
-# TestAuthHelpers verifies Bearer and Basic auth helpers
 func TestAuthHelpers(t reference testing.T)
-    # Test Bearer Auth
-    serverBearer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        auth := r.Header.Get("Authorization")
-        if auth != "Bearer my-token"
-            t.Errorf("Expected Bearer token, got '{auth}'")
-        w.WriteHeader(http.StatusOK)
-    ))
-    defer serverBearer.Close()
+    cases := list of AuthHelpersCase{
+        AuthHelpersCase{name: "auth headers"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            serverBearer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+                test.AssertEqual(t, r.Header.Get("Authorization"), "Bearer my-token")
+                w.WriteHeader(http.StatusOK)
+            ))
+            defer serverBearer.Close()
 
-    reqBearer := fetch.New(serverBearer.URL) |> fetch.BearerAuth("my-token")
-    respBearer, errBearer := fetch.Do(reqBearer)
-    if errBearer != empty
-        t.Fatalf("BearerAuth request failed: {errBearer}")
-    respBearer.Body.Close()
+            reqBearer := fetch.New(serverBearer.URL) |> fetch.BearerAuth("my-token")
+            respBearer, errBearer := fetch.Do(reqBearer)
+            test.AssertNoError(t, errBearer)
+            respBearer.Body.Close()
 
-    # Test Basic Auth
-    serverBasic := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        auth := r.Header.Get("Authorization")
-        # "user:pass" base64 encoded is "dXNlcjpwYXNz"
-        expected := "Basic dXNlcjpwYXNz"
-        if auth != expected
-            t.Errorf("Expected Basic auth '{expected}', got '{auth}'")
-        w.WriteHeader(http.StatusOK)
-    ))
-    defer serverBasic.Close()
+            serverBasic := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
+                test.AssertEqual(t, r.Header.Get("Authorization"), "Basic dXNlcjpwYXNz")
+                w.WriteHeader(http.StatusOK)
+            ))
+            defer serverBasic.Close()
 
-    reqBasic := fetch.New(serverBasic.URL) |> fetch.BasicAuth("user", "pass")
-    respBasic, errBasic := fetch.Do(reqBasic)
-    if errBasic != empty
-        t.Fatalf("BasicAuth request failed: {errBasic}")
-    respBasic.Body.Close()
+            reqBasic := fetch.New(serverBasic.URL) |> fetch.BasicAuth("user", "pass")
+            respBasic, errBasic := fetch.Do(reqBasic)
+            test.AssertNoError(t, errBasic)
+            respBasic.Body.Close()
+        )
 
-# TestFormData verifies form data submission
+# --- TestFormData ---
+type FormDataCase
+    name string
+
 func TestFormData(t reference testing.T)
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
-        contentType := r.Header.Get("Content-Type")
-        if contentType != "application/x-www-form-urlencoded"
-            t.Errorf("Expected form content type, got '{contentType}'")
-
+        test.AssertEqual(t, r.Header.Get("Content-Type"), "application/x-www-form-urlencoded")
         r.ParseForm()
-        val := r.Form.Get("key")
-        if val != "value"
-            t.Errorf("Expected form value 'value', got '{val}'")
-
+        test.AssertEqual(t, r.Form.Get("key"), "value")
         w.WriteHeader(http.StatusOK)
     ))
     defer server.Close()
 
-    data := map of string to string{"key": "value"}
-    req := fetch.New(server.URL) |> fetch.FormData(data) |> fetch.Method("POST")
-    resp, err := fetch.Do(req)
-    if err != empty
-        t.Fatalf("FormData request failed: {err}")
-    resp.Body.Close()
+    cases := list of FormDataCase{
+        FormDataCase{name: "post form data"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            data := map of string to string{"key": "value"}
+            req := fetch.New(server.URL) |> fetch.FormData(data) |> fetch.Method("POST")
+            resp, err := fetch.Do(req)
+            test.AssertNoError(t, err)
+            resp.Body.Close()
+        )
 
-# TestSession verifies session cookie persistence
+# --- TestSession ---
+type SessionCase
+    name string
+
 func TestSession(t reference testing.T)
-    # Server that sets a cookie on first request and checks it on second
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r reference http.Request)
         cookie, err := r.Cookie("session_id")
         if err == empty
-            # Cookie present
-            if cookie.Value != "12345"
-                t.Errorf("Expected cookie value 12345, got {cookie.Value}")
+            test.AssertEqual(t, cookie.Value, "12345")
             w.WriteHeader(http.StatusOK)
             w.Write("logged in" as list of byte)
         else
-            # No cookie, set it
             http.SetCookie(w, reference of http.Cookie{Name: "session_id", Value: "12345"})
             w.WriteHeader(http.StatusOK)
             w.Write("cookie set" as list of byte)
     ))
     defer server.Close()
 
-    session := fetch.NewSession()
+    cases := list of SessionCase{
+        SessionCase{name: "persist cookies"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            session := fetch.NewSession()
+            resp1, err1 := fetch.SessionGet(session, server.URL)
+            test.AssertNoError(t, err1)
+            resp1.Body.Close()
 
-    # First request: gets cookie
-    resp1, err1 := fetch.SessionGet(session, server.URL)
-    if err1 != empty
-        t.Fatalf("First session request failed: {err1}")
-    resp1.Body.Close()
-
-    # Second request: sends cookie
-    resp2, err2 := fetch.SessionGet(session, server.URL)
-    if err2 != empty
-        t.Fatalf("Second session request failed: {err2}")
-
-    text, errText := fetch.Text(resp2)
-    if errText != empty
-        t.Fatalf("Text read failed: {errText}")
-    if text != "logged in"
-        t.Errorf("Expected 'logged in', got '{text}'")
+            resp2, err2 := fetch.SessionGet(session, server.URL)
+            test.AssertNoError(t, err2)
+            text, errText := fetch.Text(resp2)
+            test.AssertNoError(t, errText)
+            test.AssertEqual(t, text, "logged in")
+        )

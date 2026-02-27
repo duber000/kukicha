@@ -5,30 +5,65 @@
 petiole pg_test
 
 import "testing"
+import "stdlib/test"
 import "stdlib/pg"
 
-# TestNewConfig verifies the builder creates a Config with the URL
+# --- TestNewConfig ---
+type NewConfigCase
+    name string
+
 func TestNewConfig(t reference testing.T)
-    cfg := pg.New("postgres://user:pass@localhost/testdb")
-    # Builder should not panic and should return a Config
-    # Further builder calls should chain
-    cfg = cfg |> pg.MaxConns(10) |> pg.MinConns(2)
-    # No assertion needed beyond successful construction
+    cases := list of NewConfigCase{
+        NewConfigCase{name: "builder methods"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cfg := pg.New("postgres://user:pass@localhost/testdb")
+            cfg = cfg |> pg.MaxConns(10) |> pg.MinConns(2)
+            _ = cfg
+        )
 
-# TestMaxConns verifies MaxConns chaining
+# --- TestMaxConns ---
+type MaxConnsCase
+    name string
+
 func TestMaxConns(t reference testing.T)
-    cfg := pg.New("postgres://localhost/test") |> pg.MaxConns(20)
-    # Should not panic
-    cfg = cfg |> pg.MinConns(5)
+    cases := list of MaxConnsCase{
+        MaxConnsCase{name: "max conns"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cfg := pg.New("postgres://localhost/test") |> pg.MaxConns(20)
+            cfg = cfg |> pg.MinConns(5)
+            _ = cfg
+        )
 
-# TestMaxConnLifetime verifies lifetime chaining
+# --- TestMaxConnLifetime ---
+type LifetimeCase
+    name string
+
 func TestMaxConnLifetime(t reference testing.T)
-    cfg := pg.New("postgres://localhost/test") |> pg.MaxConnLifetime(3600000000000)
-    cfg = cfg |> pg.MaxConnIdleTime(600000000000)
+    cases := list of LifetimeCase{
+        LifetimeCase{name: "lifetime"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cfg := pg.New("postgres://localhost/test") |> pg.MaxConnLifetime(3600000000000)
+            cfg = cfg |> pg.MaxConnIdleTime(600000000000)
+            _ = cfg
+        )
 
-# TestRowsAffected verifies RowsAffected returns zero for a zero Result
+# --- TestRowsAffected ---
+type RowsAffectedCase
+    name string
+
 func TestRowsAffected(t reference testing.T)
-    r := pg.Result{}
-    count := pg.RowsAffected(r)
-    if count != 0
-        t.Errorf("Expected 0 rows affected, got {count}")
+    cases := list of RowsAffectedCase{
+        RowsAffectedCase{name: "zero result"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            r := pg.Result{}
+            count := pg.RowsAffected(r)
+            test.AssertEqual(t, count, 0 as int64)
+        )

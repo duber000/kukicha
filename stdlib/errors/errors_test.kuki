@@ -4,27 +4,75 @@ petiole errors_test
 
 import "stdlib/errors"
 import "errors" as goerrors
+import "stdlib/test"
 import "testing"
 
-# Test Wrap, Is, Unwrap helpers
+# --- TestWrapAndIs ---
+type WrapCase
+    name string
+    baseMsg string
+    wrapMsg string
+    wantEqual bool
+
 func TestWrapAndIs(t reference testing.T)
-    base := goerrors.New("base")
-    wrapped := errors.Wrap(base, "context")
-    if not errors.Is(wrapped, base)
-        t.Errorf("Wrap/Is failed to identify base error")
+    cases := list of WrapCase{
+        WrapCase{
+            name: "wraps and identifies base error",
+            baseMsg: "base",
+            wrapMsg: "context",
+            wantEqual: true,
+        },
+        WrapCase{
+            name: "does not match different error",
+            baseMsg: "base",
+            wrapMsg: "context",
+            wantEqual: false,
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            base := goerrors.New(tc.baseMsg)
+            wrapped := errors.Wrap(base, tc.wrapMsg)
+            if tc.wantEqual
+                test.AssertTrue(t, errors.Is(wrapped, base))
+            else
+                test.AssertFalse(t, errors.Is(wrapped, goerrors.New("different")))
+                
+            unwrapped := errors.Unwrap(wrapped)
+            if tc.wantEqual
+                test.AssertEqual(t, unwrapped.Error(), tc.baseMsg)
+            else
+                test.AssertNotEmpty(t, unwrapped)
+        )
 
-    unwrapped := errors.Unwrap(wrapped)
-    if unwrapped not equals base
-        t.Errorf("Unwrap did not return base error")
+# --- TestJoin ---
+type JoinCase
+    name string
+    errs list of error
+    wantNil bool
 
-# Test Join aggregates errors
 func TestJoin(t reference testing.T)
-    aErr := goerrors.New("a")
-    bErr := goerrors.New("b")
-    e := errors.Join(aErr, bErr)
-    if e equals empty
-        t.Fatalf("Join should return aggregated error")
-    # Verify the joined error is not nil and contains error information
-    errStr := e.Error()
-    if len(errStr) equals 0
-        t.Errorf("Joined error should have error message")
+    cases := list of JoinCase{
+        JoinCase{
+            name: "joins multiple errors",
+            errs: list of error{goerrors.New("a"), goerrors.New("b")},
+            wantNil: false,
+        },
+        JoinCase{
+            name: "returns nil for empty list",
+            errs: list of error{},
+            wantNil: true,
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            e := errors.Join(many tc.errs)
+            if tc.wantNil
+                test.AssertNoError(t, e)
+            else
+                test.AssertError(t, e)
+                test.AssertNoError(t, empty)
+                errStr := e.Error()
+                test.AssertNotEmpty(t, errStr)
+                test.AssertTrue(t, len(errStr) > 0)
+        )

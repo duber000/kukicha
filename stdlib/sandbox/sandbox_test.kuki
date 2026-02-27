@@ -3,50 +3,48 @@
 petiole sandbox_test
 
 import "stdlib/sandbox"
+import "stdlib/test"
 import "os"
 import "testing"
 
-# Test Sandbox read/write/existence helpers
+# --- TestSandboxFileOperations ---
+type SandboxCase
+    name string
+
 func TestSandboxFileOperations(t reference testing.T)
-    dir, err := os.MkdirTemp("", "sandbox-test")
-    if err != empty
-        t.Fatalf("Failed to create temp dir: {err}")
-    defer os.RemoveAll(dir)
+    cases := list of SandboxCase{
+        SandboxCase{name: "file operations"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            dir, err := os.MkdirTemp("", "sandbox-test")
+            test.AssertNoError(t, err)
+            defer os.RemoveAll(dir)
 
-    box, err2 := sandbox.New(dir)
-    if err2 != empty
-        t.Fatalf("Failed to open sandbox: {err2}")
-    defer sandbox.Close(box)
+            box, err2 := sandbox.New(dir)
+            test.AssertNoError(t, err2)
+            defer sandbox.Close(box)
 
-    writeErr := sandbox.WriteString(box, "data", "notes.txt")
-    if writeErr != empty
-        t.Fatalf("WriteString failed: {writeErr}")
-    if not sandbox.Exists(box, "notes.txt")
-        t.Fatalf("File should exist after write")
+            writeErr := sandbox.WriteString(box, "data", "notes.txt")
+            test.AssertNoError(t, writeErr)
+            test.AssertTrue(t, sandbox.Exists(box, "notes.txt"))
 
-    content, readErr := sandbox.ReadString(box, "notes.txt")
-    if readErr != empty
-        t.Fatalf("ReadString failed: {readErr}")
-    if content not equals "data"
-        t.Errorf("Expected 'data', got '{content}'")
+            content, readErr := sandbox.ReadString(box, "notes.txt")
+            test.AssertNoError(t, readErr)
+            test.AssertEqual(t, content, "data")
 
-    if not sandbox.IsFile(box, "notes.txt")
-        t.Errorf("notes.txt should be a file")
+            test.AssertTrue(t, sandbox.IsFile(box, "notes.txt"))
 
-    mkdirErr := sandbox.MkDir(box, "subdir")
-    if mkdirErr != empty
-        t.Fatalf("MkDir failed: {mkdirErr}")
-    if not sandbox.IsDir(box, "subdir")
-        t.Errorf("subdir should report as directory")
+            mkdirErr := sandbox.MkDir(box, "subdir")
+            test.AssertNoError(t, mkdirErr)
+            test.AssertTrue(t, sandbox.IsDir(box, "subdir"))
 
-    names, listErr := sandbox.List(box, ".")
-    if listErr != empty
-        t.Fatalf("List failed: {listErr}")
-    if len(names) equals 0
-        t.Errorf("List should return at least one entry")
+            names, listErr := sandbox.List(box, ".")
+            test.AssertNoError(t, listErr)
+            if len(names) == 0
+                t.Errorf("List should return at least one entry")
 
-    delErr := sandbox.Delete(box, "notes.txt")
-    if delErr != empty
-        t.Fatalf("Delete failed: {delErr}")
-    if sandbox.Exists(box, "notes.txt")
-        t.Errorf("notes.txt should be removed")
+            delErr := sandbox.Delete(box, "notes.txt")
+            test.AssertNoError(t, delErr)
+            test.AssertFalse(t, sandbox.Exists(box, "notes.txt"))
+        )

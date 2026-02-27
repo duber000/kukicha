@@ -4,30 +4,35 @@ package random_test
 
 import (
 	"github.com/duber000/kukicha/stdlib/random"
+	"github.com/duber000/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:9
-func TestRandomStringLength(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:10
-	s := random.String(10)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:11
-	if len(s) != 10 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:12
-		t.Errorf("Expected random string length 10, got %v", len(s))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:14
-	zero := random.String(0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:15
-	if zero != "" {
+type LengthCase struct {
+	name string
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:13
+func TestRandomStringLength(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:16
-		t.Errorf("Expected empty string when length 0, got '%v'", zero)
-	}
+	cases := []LengthCase{LengthCase{name: "lengths"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:17
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:18
-	alpha := random.Alphanumeric(5)
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:19
-	if len(alpha) != 5 {
+			s := random.String(10)
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:20
-		t.Errorf("Expected alphanumeric length 5, got %v", len(alpha))
+			test.AssertEqual(t, len(s), 10)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:22
+			zero := random.String(0)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:23
+			test.AssertEqual(t, zero, "")
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:25
+			alpha := random.Alphanumeric(5)
+//line /var/home/tluker/repos/go/kukicha/stdlib/random/random_test.kuki:26
+			test.AssertEqual(t, len(alpha), 5)
+		})
 	}
 }

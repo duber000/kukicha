@@ -3,83 +3,94 @@
 petiole llm_test
 
 import "stdlib/llm"
+import "stdlib/test"
 import "testing"
 
-# Test GetContent returns assistant response text
+# --- TestGetContent ---
+type GetContentCase
+    name    string
+    content string
+    want    string
+
 func TestGetContent(t reference testing.T)
-    # Create a tool call with required fields
-    toolFunc := llm.ToolCallFunction{}
-    toolFunc.Name = "do_thing"
-    toolFunc.Arguments = "{}"
+    cases := list of GetContentCase{
+        GetContentCase{name: "basic content", content: "response text", want: "response text"},
+        GetContentCase{name: "empty content", content: "", want: ""},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            msg := llm.ResponseMessage{}
+            msg.Role = "assistant"
+            msg.Content = tc.content
 
-    toolCall := llm.ToolCall{}
-    toolCall.ID = "call-1"
-    toolCall.Type = "function"
-    toolCall.Function = toolFunc
+            choice := llm.Choice{}
+            choice.Message = msg
 
-    # Create a message with tool calls
-    msg := llm.ResponseMessage{}
-    msg.Role = "assistant"
-    msg.Content = "response text"
-    msg.ToolCalls = list of llm.ToolCall{toolCall}
+            completion := llm.Completion{}
+            completion.Choices = list of llm.Choice{choice}
 
-    # Create a choice with the message
-    choice := llm.Choice{}
-    choice.Message = msg
+            test.AssertEqual(t, llm.GetContent(completion), tc.want)
+        )
 
-    # Create completion with the choice
-    completion := llm.Completion{}
-    completion.Choices = list of llm.Choice{choice}
+# --- TestGetToolCalls ---
+type GetToolCallsCase
+    name      string
+    callID    string
+    funcName  string
+    wantCount int
 
-    # Test GetContent
-    if llm.GetContent(completion) != "response text"
-        t.Errorf("GetContent should return the assistant response")
-
-# Test GetToolCalls returns the tool calls from completion
 func TestGetToolCalls(t reference testing.T)
-    # Create a simple tool call
-    toolFunc := llm.ToolCallFunction{}
-    toolFunc.Name = "do_thing"
-    toolFunc.Arguments = "{}"
+    cases := list of GetToolCallsCase{
+        GetToolCallsCase{name: "one tool call", callID: "call-1", funcName: "do_thing", wantCount: 1},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            toolFunc := llm.ToolCallFunction{}
+            toolFunc.Name = tc.funcName
+            toolFunc.Arguments = "{}"
 
-    toolCall := llm.ToolCall{}
-    toolCall.ID = "call-1"
-    toolCall.Type = "function"
-    toolCall.Function = toolFunc
+            toolCall := llm.ToolCall{}
+            toolCall.ID = tc.callID
+            toolCall.Type = "function"
+            toolCall.Function = toolFunc
 
-    # Create message with tool call
-    msg := llm.ResponseMessage{}
-    msg.Role = "assistant"
-    msg.ToolCalls = list of llm.ToolCall{toolCall}
+            msg := llm.ResponseMessage{}
+            msg.Role = "assistant"
+            msg.ToolCalls = list of llm.ToolCall{toolCall}
 
-    # Create choice and completion
-    choice := llm.Choice{}
-    choice.Message = msg
-    completion := llm.Completion{}
-    completion.Choices = list of llm.Choice{choice}
+            choice := llm.Choice{}
+            choice.Message = msg
+            completion := llm.Completion{}
+            completion.Choices = list of llm.Choice{choice}
 
-    calls := llm.GetToolCalls(completion)
-    if len(calls) != 1
-        t.Fatalf("Expected one tool call, got {len(calls)}")
-    if calls[0].Function.Name != "do_thing"
-        t.Errorf("Tool call name mismatch")
+            calls := llm.GetToolCalls(completion)
+            test.AssertEqual(t, len(calls), tc.wantCount)
+            if len(calls) > 0
+                test.AssertEqual(t, calls[0].Function.Name, tc.funcName)
+        )
 
-# Test HasToolCalls detects tool calls
+# --- TestHasToolCalls ---
+type HasToolCallsCase
+    name     string
+    hasCalls bool
+    want     bool
+
 func TestHasToolCalls(t reference testing.T)
-    # Empty completion
-    emptyComp := llm.Completion{}
-    if llm.HasToolCalls(emptyComp)
-        t.Errorf("HasToolCalls should be false for empty completion")
+    cases := list of HasToolCallsCase{
+        HasToolCallsCase{name: "no calls", hasCalls: false, want: false},
+        HasToolCallsCase{name: "has calls", hasCalls: true, want: true},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            completion := llm.Completion{}
+            if tc.hasCalls
+                toolCall := llm.ToolCall{}
+                toolCall.ID = "call-1"
+                msg := llm.ResponseMessage{}
+                msg.ToolCalls = list of llm.ToolCall{toolCall}
+                choice := llm.Choice{}
+                choice.Message = msg
+                completion.Choices = list of llm.Choice{choice}
 
-    # Completion with tool calls
-    toolCall := llm.ToolCall{}
-    toolCall.ID = "call-1"
-    msg := llm.ResponseMessage{}
-    msg.ToolCalls = list of llm.ToolCall{toolCall}
-    choice := llm.Choice{}
-    choice.Message = msg
-    completion := llm.Completion{}
-    completion.Choices = list of llm.Choice{choice}
-
-    if not llm.HasToolCalls(completion)
-        t.Errorf("HasToolCalls should return true when tool calls exist")
+            test.AssertEqual(t, llm.HasToolCalls(completion), tc.want)
+        )

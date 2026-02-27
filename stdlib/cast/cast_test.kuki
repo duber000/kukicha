@@ -11,7 +11,7 @@ func TestBasicParsers(t reference testing.T)
     n, err := cast.Atoi("123")
     if err != empty
         t.Fatalf("Atoi failed: {err}")
-    if n not equals 123
+    if n != 123
         t.Errorf("Expected 123, got {n}")
 
     f, err2 := cast.ParseFloat("3.14", 64)
@@ -22,30 +22,40 @@ func TestBasicParsers(t reference testing.T)
 
 # Test SmartInt conversions
 func TestSmartInt(t reference testing.T)
-    if val, err := cast.SmartInt(5); err != empty or val not equals 5
-        t.Fatalf("SmartInt failed for int")
-    if val, err := cast.SmartInt("7"); err != empty or val not equals 7
-        t.Fatalf("SmartInt failed for string")
-    if val, err := cast.SmartInt(json.Number("9")); err != empty or val not equals 9
-        t.Fatalf("SmartInt failed for json.Number")
-    if val, err := cast.SmartInt(true); err != empty or val not equals 1
-        t.Fatalf("SmartInt failed for bool")
+    val, err := cast.SmartInt(5)
+    if err != empty or val != 5
+        t.Fatalf("SmartInt failed for int: {err}")
+    val2, err2 := cast.SmartInt("7")
+    if err2 != empty or val2 != 7
+        t.Fatalf("SmartInt failed for string: {err2}")
+    val3, err3 := cast.SmartInt(json.Number("9"))
+    if err3 != empty or val3 != 9
+        t.Fatalf("SmartInt failed for json.Number: {err3}")
+    val4, err4 := cast.SmartInt(true)
+    if err4 != empty or val4 != 1
+        t.Fatalf("SmartInt failed for bool: {err4}")
 
 # Test SmartFloat64 conversions
 func TestSmartFloat64(t reference testing.T)
-    if val, err := cast.SmartFloat64(1.5); err != empty or val not equals 1.5
-        t.Fatalf("SmartFloat64 failed for float64")
-    if val, err := cast.SmartFloat64("2.5"); err != empty or val == 0.0
-        t.Fatalf("SmartFloat64 failed for string")
+    val, err := cast.SmartFloat64(1.5)
+    if err != empty or val != 1.5
+        t.Fatalf("SmartFloat64 failed for float64: {err}")
+    val2, err2 := cast.SmartFloat64("2.5")
+    if err2 != empty or val2 == 0.0
+        t.Fatalf("SmartFloat64 failed for string: {err2}")
 
 # Test SmartBool and SmartString
 func TestSmartBoolAndString(t reference testing.T)
-    if val, err := cast.SmartBool("true"); err != empty or not val
-        t.Fatalf("SmartBool failed for string true")
-    if val, err := cast.SmartBool(0); err != empty or val
-        t.Fatalf("SmartBool failed for int zero")
+    val, err := cast.SmartBool("true")
+    if err != empty or not val
+        t.Fatalf("SmartBool failed for string true: {err}")
+    val2, err2 := cast.SmartBool(0)
+    if err2 != empty or val2
+        t.Fatalf("SmartBool failed for int zero: {err2}")
 
-    if str, err := cast.SmartString(10); err != empty or str not equals "10"
-        t.Fatalf("SmartString should convert int to string")
-    if str, err := cast.SmartString(empty); err != empty or str not equals ""
-        t.Fatalf("SmartString should handle empty value")
+    str, err3 := cast.SmartString(10)
+    if err3 != empty or str != "10"
+        t.Fatalf("SmartString should convert int to string: {err3}")
+    str2, err4 := cast.SmartString(empty)
+    if err4 != empty or str2 != ""
+        t.Fatalf("SmartString should handle empty value: {err4}")

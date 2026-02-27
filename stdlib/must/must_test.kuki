@@ -4,42 +4,114 @@ petiole must_test
 
 import "stdlib/must"
 import "os"
+import "stdlib/string"
+import "stdlib/test"
 import "testing"
 
-# Test Do returns the value when no error
-func TestDoWithoutError(t reference testing.T)
-    value := must.Do("ok", empty)
-    if value != "ok"
-        t.Errorf("Do should return value when err empty")
+# --- TestDoWithoutError ---
+type DoCase
+    name string
+    value string
+    err error
+    want string
 
-# Test Ok succeeds when error is empty
-func TestOkWithoutError(t reference testing.T)
-    must.Ok(empty)
-    must.OkMsg(empty, "fine")
-    # No panic = success
-    t.Logf("Ok and OkMsg succeeded with empty error")
+func TestDo(t reference testing.T)
+    cases := list of DoCase{
+        DoCase{
+            name: "returns value when no error",
+            value: "ok",
+            err: empty,
+            want: "ok",
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := must.Do(tc.value, tc.err)
+            test.AssertEqual(t, got, tc.want)
+        )
 
-# Test environment helpers use os env
+# --- TestOk ---
+type OkCase
+    name string
+    err error
+    wantPanic bool
+
+func TestOk(t reference testing.T)
+    cases := list of OkCase{
+        OkCase{
+            name: "succeeds when error empty",
+            err: empty,
+            wantPanic: false,
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            must.Ok(tc.err)
+            test.AssertNoError(t, tc.err)
+        )
+
+# --- TestEnvHelpers ---
+type EnvCase
+    name string
+    envKey string
+    envValue string
+    want string
+
 func TestEnvHelpers(t reference testing.T)
-    os.Setenv("MUST_TEST", "value")
-    value := must.Env("MUST_TEST")
-    if value != "value"
-        t.Errorf("Env should return set value")
+    cases := list of EnvCase{
+        EnvCase{
+            name: "returns set env value",
+            envKey: "MUST_TEST",
+            envValue: "value",
+            want: "value",
+        },
+        EnvCase{
+            name: "returns default when env missing",
+            envKey: "MISSING_TEST",
+            envValue: "",
+            want: "default",
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            if len(tc.envValue) > 0
+                os.Setenv(tc.envKey, tc.envValue)
+            
+            if tc.want == "default"
+                got := must.EnvOr(tc.envKey, "default")
+                test.AssertEqual(t, got, "default")
+                os.Unsetenv(tc.envKey)
+                gotDefault := must.EnvOr(tc.envKey, "default")
+                test.AssertEqual(t, gotDefault, "default")
+            else
+                got := must.Env(tc.envKey)
+                test.AssertEqual(t, got, tc.want)
+                gotOr := must.EnvOr(tc.envKey, "default")
+                test.AssertEqual(t, gotOr, tc.want)
+        )
 
-    valueOr := must.EnvOr("MUST_TEST", "default")
-    if valueOr != "value"
-        t.Errorf("EnvOr should prefer actual env")
+# --- TestAssertionHelpers ---
+type AssertionCase
+    name string
+    condition bool
+    wantPanic bool
 
-    os.Unsetenv("MUST_TEST")
-    defaultValue := must.EnvOr("MUST_TEST", "default")
-    if defaultValue != "default"
-        t.Errorf("EnvOr should fall back to default when env missing")
-
-# Test assertion helpers succeed on valid conditions
 func TestAssertionHelpers(t reference testing.T)
-    must.True(true, "ok")
-    must.False(false, "ok")
-    must.NotEmpty("x", "name")
-    must.NotNil("value", "value")
-    # No panic = success
-    t.Logf("All assertion helpers succeeded with valid conditions")
+    cases := list of AssertionCase{
+        AssertionCase{name: "True succeeds on true", condition: true, wantPanic: false},
+        AssertionCase{name: "False succeeds on false", condition: false, wantPanic: false},
+        AssertionCase{name: "NotEmpty succeeds on non-empty", condition: true, wantPanic: false},
+        AssertionCase{name: "NotNil succeeds on non-nil", condition: true, wantPanic: false},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            if string.Contains(tc.name, "True")
+                must.True(tc.condition, "message")
+            else if string.Contains(tc.name, "False")
+                must.False(tc.condition, "message")
+            else if string.Contains(tc.name, "Empty")
+                must.NotEmpty("x", "name")
+            else if string.Contains(tc.name, "Nil")
+                must.NotNil("value", "value")
+            test.AssertNoError(t, empty)
+        )

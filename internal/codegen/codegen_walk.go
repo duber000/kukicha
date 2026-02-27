@@ -485,7 +485,11 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 	}
 	switch e := expr.(type) {
 	case *ast.StringLiteral:
-		return e.Interpolated
+		if !e.Interpolated {
+			return false
+		}
+		_, args := g.parseStringInterpolation(e.Value)
+		return len(args) > 0
 	case *ast.BinaryExpr:
 		return g.exprHasNonPrintfInterpolation(e.Left) || g.exprHasNonPrintfInterpolation(e.Right)
 	case *ast.UnaryExpr:

@@ -3,32 +3,113 @@
 petiole template_test
 
 import "stdlib/template"
-import "stdlib/string"
+import "stdlib/test"
 import "testing"
 
-# Test RenderSimple renders template with data
+# --- TestRenderSimple ---
+type RenderSimpleCase
+    name string
+    template string
+    data map of string to any
+    want string
+    wantErr bool
+
 func TestRenderSimple(t reference testing.T)
-    result, err := template.RenderSimple("Hello {{.Name}}", map of string to any{"Name": "Ari"})
-    if err != empty
-        t.Fatalf("RenderSimple failed: {err}")
-    if result != "Hello Ari"
-        t.Errorf("Expected greeting, got {result}")
+    cases := list of RenderSimpleCase{
+        RenderSimpleCase{
+            name: "renders template with data",
+            template: "Hello {{.Name}}",
+            data: map of string to any{"Name": "Ari"},
+            want: "Hello Ari",
+            wantErr: false,
+        },
+        RenderSimpleCase{
+            name: "renders empty template",
+            template: "",
+            data: map of string to any{},
+            want: "",
+            wantErr: false,
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            result, err := template.RenderSimple(tc.template, tc.data)
+            if tc.wantErr
+                test.AssertError(t, err)
+            else
+                test.AssertNoError(t, err)
+                test.AssertEqual(t, result, tc.want)
+        )
 
-# Test Execute renders template via builder pattern
+# --- TestExecute ---
+type ExecuteCase
+    name string
+    template string
+    data map of string to any
+    want string
+    wantErr bool
+
 func TestExecute(t reference testing.T)
-    td := template.New()
-    td = template.WithContent(td, "Greetings {{.Name}}!")
-    td = template.Data(td, map of string to any{"Name": "Eve"})
-    final, err := template.Execute(td)
-    if err != empty
-        t.Fatalf("Execute failed: {err}")
-    if final != "Greetings Eve!"
-        t.Errorf("Template pipeline produced wrong output")
+    cases := list of ExecuteCase{
+        ExecuteCase{
+            name: "renders template via builder",
+            template: "Greetings {{.Name}}!",
+            data: map of string to any{"Name": "Eve"},
+            want: "Greetings Eve!",
+            wantErr: false,
+        },
+        ExecuteCase{
+            name: "empty template",
+            template: "",
+            data: map of string to any{},
+            want: "",
+            wantErr: false,
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            td := template.New()
+            td = template.WithContent(td, tc.template)
+            td = template.Data(td, tc.data)
+            final, err := template.Execute(td)
+            if tc.wantErr
+                test.AssertError(t, err)
+            else
+                test.AssertNoError(t, err)
+                test.AssertEqual(t, final, tc.want)
+        )
 
-# Test HTMLRenderSimple escapes HTML content
+# --- TestHTMLRenderSimple ---
+type HTMLRenderSimpleCase
+    name string
+    template string
+    data map of string to any
+    want string
+    wantErr bool
+
 func TestHTMLRenderSimple(t reference testing.T)
-    result, err := template.HTMLRenderSimple("<b>{{.Value}}</b>", map of string to any{"Value": "<script>"})
-    if err != empty
-        t.Fatalf("HTMLRenderSimple failed: {err}")
-    if not string.Contains(result, "&lt;script&gt;")
-        t.Errorf("Expected escaped content, got {result}")
+    cases := list of HTMLRenderSimpleCase{
+        HTMLRenderSimpleCase{
+            name: "escapes HTML content",
+            template: "<b>{{.Value}}</b>",
+            data: map of string to any{"Value": "<script>"},
+            want: "<b>&lt;script&gt;</b>",
+            wantErr: false,
+        },
+        HTMLRenderSimpleCase{
+            name: "renders plain text",
+            template: "Hello {{.Name}}",
+            data: map of string to any{"Name": "World"},
+            want: "Hello World",
+            wantErr: false,
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            result, err := template.HTMLRenderSimple(tc.template, tc.data)
+            if tc.wantErr
+                test.AssertError(t, err)
+            else
+                test.AssertNoError(t, err)
+                test.AssertEqual(t, result, tc.want)
+        )

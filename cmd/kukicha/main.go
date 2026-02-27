@@ -32,16 +32,17 @@ func main() {
 		buildFlags := flag.NewFlagSet("build", flag.ContinueOnError)
 		buildFlags.SetOutput(os.Stderr)
 		target := buildFlags.String("target", "", "Compile target")
+		skipBuild := buildFlags.Bool("skip-build", false, "Skip go build step (for test files)")
 		if err := buildFlags.Parse(args); err != nil {
-			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] <file.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] [--skip-build] <file.kuki>")
 			os.Exit(1)
 		}
 		buildArgs := buildFlags.Args()
 		if len(buildArgs) < 1 {
-			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] <file.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] [--skip-build] <file.kuki>")
 			os.Exit(1)
 		}
-		buildCommand(buildArgs[0], *target)
+		buildCommand(buildArgs[0], *target, *skipBuild)
 	case "run":
 		runFlags := flag.NewFlagSet("run", flag.ContinueOnError)
 		runFlags.SetOutput(os.Stderr)
@@ -182,7 +183,7 @@ func rewriteGoErrors(stderr []byte, goFile, kukiFile string) []byte {
 	return []byte(result)
 }
 
-func buildCommand(filename string, targetFlag string) {
+func buildCommand(filename string, targetFlag string, skipBuild bool) {
 	absFile, err := filepath.Abs(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
@@ -266,22 +267,24 @@ func buildCommand(filename string, targetFlag string) {
 
 	// Run go build on the generated file. Use -mod=mod so go.sum is updated
 	// automatically when stdlib transitive dependencies are not yet listed.
-	cmd := exec.Command("go", "build", "-mod=mod", "-o", binaryPath, outputFile)
-	cmd.Dir = projectDir
-	cmd.Env = os.Environ()
-	cmd.Stdout = os.Stdout
-	var stderrBuf bytes.Buffer
-	cmd.Stderr = &stderrBuf
-	err = cmd.Run()
-	if stderrBuf.Len() > 0 {
-		os.Stderr.Write(rewriteGoErrors(stderrBuf.Bytes(), outputFile, absFile))
-	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: go build failed: %v\n", err)
-		os.Exit(1)
-	}
+	if !skipBuild {
+		cmd := exec.Command("go", "build", "-mod=mod", "-o", binaryPath, outputFile)
+		cmd.Dir = projectDir
+		cmd.Env = os.Environ()
+		cmd.Stdout = os.Stdout
+		var stderrBuf bytes.Buffer
+		cmd.Stderr = &stderrBuf
+		err = cmd.Run()
+		if stderrBuf.Len() > 0 {
+			os.Stderr.Write(rewriteGoErrors(stderrBuf.Bytes(), outputFile, absFile))
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: go build failed: %v\n", err)
+			os.Exit(1)
+		}
 
-	fmt.Printf("Successfully built binary: %s\n", binaryName)
+		fmt.Printf("Successfully built binary: %s\n", binaryName)
+	}
 }
 
 func runCommand(filename string, targetFlag string, scriptArgs []string) {

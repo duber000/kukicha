@@ -3,104 +3,86 @@
 petiole cli_test
 
 import "stdlib/cli"
+import "stdlib/test"
 import "testing"
 
-# Helper to create Args with values
-func makeArgs(values map of string to string) cli.Args
-    return cli.NewArgs(values)
+# --- TestGetString ---
+type GetStringCase
+    name  string
+    key   string
+    want  string
 
-# Test GetString helper
 func TestGetString(t reference testing.T)
     values := make(map of string to string)
     values["format"] = "json"
     values["output"] = "result.txt"
     values["input"] = "main.kuki"
+    args := cli.NewArgs(values)
 
-    args := makeArgs(values)
+    cases := list of GetStringCase{
+        GetStringCase{name: "existing key 1", key: "format", want: "json"},
+        GetStringCase{name: "existing key 2", key: "output", want: "result.txt"},
+        GetStringCase{name: "missing key", key: "missing", want: ""},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := cli.GetString(args, tc.key)
+            test.AssertEqual(t, got, tc.want)
+        )
 
-    # Test getting value
-    format := cli.GetString(args, "format")
-    if format != "json"
-        t.Error("Expected format to be 'json'")
+# --- TestGetBool ---
+type GetBoolCase
+    name string
+    key  string
+    want bool
 
-    # Test getting another value
-    output := cli.GetString(args, "output")
-    if output != "result.txt"
-        t.Error("Expected output to be 'result.txt'")
-
-    # Test missing value returns empty string
-    missing := cli.GetString(args, "missing")
-    if missing != ""
-        t.Error("Expected missing value to return empty string")
-
-# Test GetBool helper
 func TestGetBool(t reference testing.T)
     values := make(map of string to string)
     values["verbose"] = "true"
     values["quiet"] = "false"
     values["debug"] = "yes"
     values["enabled"] = "1"
+    args := cli.NewArgs(values)
 
-    args := makeArgs(values)
+    cases := list of GetBoolCase{
+        GetBoolCase{name: "true string", key: "verbose", want: true},
+        GetBoolCase{name: "false string", key: "quiet", want: false},
+        GetBoolCase{name: "yes string", key: "debug", want: true},
+        GetBoolCase{name: "1 string", key: "enabled", want: true},
+        GetBoolCase{name: "missing flag", key: "missing", want: false},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := cli.GetBool(args, tc.key)
+            test.AssertEqual(t, got, tc.want)
+        )
 
-    # Test true value
-    verbose := cli.GetBool(args, "verbose")
-    if not verbose
-        t.Error("Expected verbose to be true")
+# --- TestGetInt ---
+type GetIntCase
+    name    string
+    key     string
+    want    int
+    wantErr bool
 
-    # Test false value
-    quiet := cli.GetBool(args, "quiet")
-    if quiet
-        t.Error("Expected quiet to be false")
-
-    # Test non-standard true value "yes"
-    debug := cli.GetBool(args, "debug")
-    if not debug
-        t.Error("Expected debug to be true")
-
-    # Test non-standard true value "1"
-    enabled := cli.GetBool(args, "enabled")
-    if not enabled
-        t.Error("Expected enabled to be true")
-
-    # Test missing flag returns false
-    missing := cli.GetBool(args, "missing")
-    if missing
-        t.Error("Expected missing flag to return false")
-
-# Test GetInt helper
 func TestGetInt(t reference testing.T)
     values := make(map of string to string)
     values["count"] = "42"
     values["port"] = "8080"
     values["invalid"] = "not-a-number"
+    args := cli.NewArgs(values)
 
-    args := makeArgs(values)
-
-    # Test valid int
-    count, countErr := cli.GetInt(args, "count")
-    if countErr != empty
-        t.Error("Expected no error for count")
-    if count != 42
-        t.Error("Expected count to be 42")
-
-    # Test another valid int
-    port, portErr := cli.GetInt(args, "port")
-    if portErr != empty
-        t.Error("Expected no error for port")
-    if port != 8080
-        t.Error("Expected port to be 8080")
-
-    # Test invalid int returns error
-    invalid, invalidErr := cli.GetInt(args, "invalid")
-    if invalidErr == empty
-        t.Error("Expected error for invalid int")
-    if invalid != 0
-        t.Error("Expected invalid int to return 0")
-
-    # Test missing returns error
-    missing, missingErr := cli.GetInt(args, "missing")
-    if missingErr == empty
-        t.Error("Expected error for missing value")
-    if missing != 0
-        t.Error("Expected missing value to return 0")
+    cases := list of GetIntCase{
+        GetIntCase{name: "valid int 1", key: "count", want: 42, wantErr: false},
+        GetIntCase{name: "valid int 2", key: "port", want: 8080, wantErr: false},
+        GetIntCase{name: "invalid int", key: "invalid", want: 0, wantErr: true},
+        GetIntCase{name: "missing value", key: "missing", want: 0, wantErr: true},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got, err := cli.GetInt(args, tc.key)
+            if tc.wantErr
+                test.AssertError(t, err)
+            else
+                test.AssertNoError(t, err)
+                test.AssertEqual(t, got, tc.want)
+        )

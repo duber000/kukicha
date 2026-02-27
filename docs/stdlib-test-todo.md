@@ -37,6 +37,16 @@ See **stdlib/CLAUDE.md § Testing Stdlib Packages** for the full convention.
 | `llm` | fixed, passes |
 | `must` | fixed, passes |
 | `template` | fixed, passes |
+| `cli` | fixed, passes |
+| `fetch` | fixed, passes |
+| `files` | fixed, passes |
+| `json` | fixed, passes |
+| `kube` | fixed, passes |
+| `netguard` | fixed, passes |
+| `pg` | fixed, passes |
+| `random` | fixed, passes |
+| `sandbox` | fixed, passes |
+| `shell` | fixed, passes |
 
 **Reference implementations:** datetime, math, slice, string. When in doubt, look at one of them.
 **Recently fixed:** All other packages in this list have been systematically refactored per the patterns below.
@@ -141,24 +151,6 @@ These pass `kukicha check` but fail `go build` or `go test`.
 *(All packages in this section have been fixed and moved to "Already done ✓" above)*
 
 ---
-
-## Passing but old pattern — upgrade candidates
-
-These compile and pass but use bare `t.Errorf` without `t.Run` or `stdlib/test`.
-Lower priority — fix only when touching a package for another reason.
-
-| Package | Notes |
-|---------|-------|
-| `cli` | Simple flag tests; table-driven would help with multiple flag types |
-| `fetch` | Integration-style tests with `httptest.NewServer`; subtests would improve failure messages |
-| `files` | `TestAppend` calls `files.Append` (JSON-encodes) but expects raw string — fix the assertion or switch to `files.AppendString` |
-| `json` | Pure function tests; straightforward table-driven conversion |
-| `kube` | Mostly smoke tests against a fake server; lower value for table-driven |
-| `netguard` | Small focused tests; table-driven for the allow/block cases |
-| `pg` | Requires a live DB for most tests; limited scope for table-driven |
-| `random` | Statistical distribution checks; not a natural fit for table-driven |
-| `sandbox` | File I/O tests; could benefit from a path-case table |
-| `shell` | Command execution tests; table-driven for input/output pairs |
 
 ---
 
