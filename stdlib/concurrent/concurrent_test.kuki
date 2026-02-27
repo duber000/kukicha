@@ -5,28 +5,26 @@ petiole concurrent_test
 import "stdlib/concurrent"
 import "testing"
 
-# Test that functions exist and can be called
-func TestFunctionsExist(t reference testing.T)
-    # Test that Parallel function exists
-    if concurrent.Parallel == empty
-        t.Error("Expected Parallel function to exist")
-    
-    # Test that ParallelWithLimit function exists
-    if concurrent.ParallelWithLimit == empty
-        t.Error("Expected ParallelWithLimit function to exist")
-    
-    # Test that Go function exists
-    if concurrent.Go == empty
-        t.Error("Expected Go function to exist")
-
 # Test Parallel with empty task list
 func TestParallelEmpty(t reference testing.T)
     emptyTasks := empty list of func()
     concurrent.Parallel(many emptyTasks)
     # Should complete without error
+    t.Logf("Parallel completed with empty task list")
 
 # Test ParallelWithLimit with empty task list
 func TestParallelWithLimitEmpty(t reference testing.T)
     emptyTasks := empty list of func()
     concurrent.ParallelWithLimit(5, many emptyTasks)
     # Should complete without error
+    t.Logf("ParallelWithLimit completed with empty task list")
+
+# Test Parallel with single task
+func TestParallelSingleTask(t reference testing.T)
+    taskRun := false
+    task := func()
+        taskRun = true
+
+    concurrent.Parallel(task)
+    if not taskRun
+        t.Errorf("Task should have been executed")

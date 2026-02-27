@@ -42,7 +42,7 @@ func TestJoin(t *testing.T) {
 		t.Fatalf("Join should return aggregated error")
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:27
-	if !errors.Is(e, goerrors.New("a")) {
+	if !errors.Is(e, aErr) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:28
 		t.Errorf("Join should preserve original errors")
 	}
