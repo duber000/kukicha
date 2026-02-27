@@ -277,7 +277,7 @@ The human stays **in the loop** without needing to know Go internals.
 
 | Thing | Status |
 |-------|--------|
-| Version | 0.0.9 |
+| Version | 0.0.10 |
 | Go requirement | 1.26+ |
 | License | MIT |
 | LSP support | ✓ (Zed, Neovim, etc.) |

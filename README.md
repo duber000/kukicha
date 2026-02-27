@@ -331,6 +331,6 @@ See [Contributing Guide](docs/contributing.md) for development setup, tests, and
 
 ## Status
 
-**Version:** 0.0.9 — Ready for testing
+**Version:** 0.0.10 — Ready for testing
 **Go:** 1.26+ required
 **License:** See [LICENSE](LICENSE)

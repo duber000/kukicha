@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Kukicha is a beginner-friendly programming language that **transpiles to Go**.
-Current version: **0.0.9**
+Current version: **0.0.10**
 When editing `.kuki` files, write **Kukicha syntax, NOT Go**.
 
 ## Kukicha vs Go Syntax (Common AI Mistakes)
