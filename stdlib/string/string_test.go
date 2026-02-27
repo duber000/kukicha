@@ -3,527 +3,472 @@
 package string_test
 
 import (
+	"fmt"
 	kukistring "github.com/duber000/kukicha/stdlib/string"
+	"github.com/duber000/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:9
-func TestToUpperToLower(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:10
-	if kukistring.ToUpper("hello") != "HELLO" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:11
-		t.Error("Expected ToUpper('hello') = 'HELLO'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:12
-	if kukistring.ToUpper("Hello World") != "HELLO WORLD" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:13
-		t.Error("Expected ToUpper('Hello World') = 'HELLO WORLD'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:14
-	if kukistring.ToUpper("") != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:15
-		t.Error("Expected ToUpper('') = ''")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:17
-	if kukistring.ToLower("HELLO") != "hello" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:18
-		t.Error("Expected ToLower('HELLO') = 'hello'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:19
-	if kukistring.ToLower("Hello World") != "hello world" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:20
-		t.Error("Expected ToLower('Hello World') = 'hello world'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:21
-	if kukistring.ToLower("") != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:22
-		t.Error("Expected ToLower('') = ''")
-	}
+type StringCase struct {
+	name  string
+	input string
+	want  string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:25
-func TestTrimFunctions(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:26
-	if kukistring.Trim("  hello  ", " ") != "hello" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:27
-		t.Error("Expected Trim to remove leading and trailing spaces")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:28
-	if kukistring.Trim("xxhelloxx", "x") != "hello" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:29
-		t.Error("Expected Trim to remove 'x' from both ends")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:16
+func TestToUpperToLower(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:21
+	upperCases := []StringCase{StringCase{name: "all lower", input: "hello", want: "HELLO"}, StringCase{name: "mixed", input: "Hello World", want: "HELLO WORLD"}, StringCase{name: "empty", input: "", want: ""}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:22
+	for _, tc := range upperCases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:23
+		t.Run(fmt.Sprintf("ToUpper/%v", tc.name), func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:24
+			test.AssertEqual(t, kukistring.ToUpper(tc.input), tc.want)
+		})
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:31
-	if kukistring.TrimSpace("  hello  ") != "hello" {
+	lowerCases := []StringCase{StringCase{name: "all upper", input: "HELLO", want: "hello"}, StringCase{name: "mixed", input: "Hello World", want: "hello world"}, StringCase{name: "empty", input: "", want: ""}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:32
-		t.Error("Expected TrimSpace to remove whitespace")
-	}
+	for _, tc := range lowerCases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:33
-	if kukistring.TrimSpace("\t hello \n") != "hello" {
+		t.Run(fmt.Sprintf("ToLower/%v", tc.name), func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:34
-		t.Error("Expected TrimSpace to remove tabs and newlines")
+			test.AssertEqual(t, kukistring.ToLower(tc.input), tc.want)
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:36
-	if kukistring.TrimPrefix("hello world", "hello ") != "world" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:37
-		t.Error("Expected TrimPrefix to remove prefix")
-	}
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:38
-	if kukistring.TrimPrefix("hello world", "xyz") != "hello world" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:39
-		t.Error("Expected TrimPrefix to return original when prefix not present")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:40
-	if kukistring.TrimPrefix("hello world", "") != "hello world" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:41
-		t.Error("Expected TrimPrefix with empty prefix to return original")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:43
-	if kukistring.TrimSuffix("hello world", " world") != "hello" {
+type TrimCase struct {
+	name   string
+	input  string
+	cutset string
+	want   string
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:44
-		t.Error("Expected TrimSuffix to remove suffix")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:45
-	if kukistring.TrimSuffix("hello world", "xyz") != "hello world" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:46
-		t.Error("Expected TrimSuffix to return original when suffix not present")
-	}
+func TestTrimFunctions(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:48
-	if kukistring.TrimLeft("xxhello", "x") != "hello" {
+	trimCases := []TrimCase{TrimCase{name: "spaces", input: "  hello  ", cutset: " ", want: "hello"}, TrimCase{name: "x chars", input: "xxhelloxx", cutset: "x", want: "hello"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:49
-		t.Error("Expected TrimLeft to remove leading 'x' chars")
-	}
+	for _, tc := range trimCases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:50
-	if kukistring.TrimRight("helloxx", "x") != "hello" {
+		t.Run(fmt.Sprintf("Trim/%v", tc.name), func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:51
-		t.Error("Expected TrimRight to remove trailing 'x' chars")
+			test.AssertEqual(t, kukistring.Trim(tc.input, tc.cutset), tc.want)
+		})
 	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:54
-func TestSplitJoin(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:55
-	parts := kukistring.Split("a,b,c", ",")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:56
-	if len(parts) != 3 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:57
-		t.Errorf("Expected 3 parts, got %v", len(parts))
-	}
+	trimSpaceCases := []StringCase{StringCase{name: "spaces", input: "  hello  ", want: "hello"}, StringCase{name: "tabs and newlines", input: "\t hello \n", want: "hello"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:58
-	if parts[0] != "a" {
+	for _, tc := range trimSpaceCases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:59
-		t.Error("Expected first part 'a'")
-	}
+		t.Run(fmt.Sprintf("TrimSpace/%v", tc.name), func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:60
-	if parts[1] != "b" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:61
-		t.Error("Expected second part 'b'")
+			test.AssertEqual(t, kukistring.TrimSpace(tc.input), tc.want)
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:62
-	if parts[2] != "c" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:63
-		t.Error("Expected third part 'c'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:65
-	joined := kukistring.Join(parts, "-")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:66
-	if joined != "a-b-c" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:67
-		t.Errorf("Expected 'a-b-c', got '%v'", joined)
-	}
+	prefixCases := []TrimCase{TrimCase{name: "removes prefix", input: "hello world", cutset: "hello ", want: "world"}, TrimCase{name: "not present", input: "hello world", cutset: "xyz", want: "hello world"}, TrimCase{name: "empty prefix", input: "hello world", cutset: "", want: "hello world"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:68
+	for _, tc := range prefixCases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:69
+		t.Run(fmt.Sprintf("TrimPrefix/%v", tc.name), func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:70
-	chars := kukistring.Split("abc", "")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:71
-	if len(chars) != 3 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:72
-		t.Errorf("Expected 3 chars, got %v", len(chars))
+			test.AssertEqual(t, kukistring.TrimPrefix(tc.input, tc.cutset), tc.want)
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:75
-	back := kukistring.Join(chars, "")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:76
-	if back != "abc" {
+	suffixCases := []TrimCase{TrimCase{name: "removes suffix", input: "hello world", cutset: " world", want: "hello"}, TrimCase{name: "not present", input: "hello world", cutset: "xyz", want: "hello world"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:77
-		t.Errorf("Expected 'abc', got '%v'", back)
+	for _, tc := range suffixCases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:78
+		t.Run(fmt.Sprintf("TrimSuffix/%v", tc.name), func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:79
+			test.AssertEqual(t, kukistring.TrimSuffix(tc.input, tc.cutset), tc.want)
+		})
 	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:80
-func TestSplitN(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:81
-	parts := kukistring.SplitN("a:b:c:d", ":", 2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:82
-	if len(parts) != 2 {
+	t.Run("TrimLeft removes leading x", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:83
-		t.Errorf("Expected 2 parts, got %v", len(parts))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:84
-	if parts[0] != "a" {
+		test.AssertEqual(t, kukistring.TrimLeft("xxhello", "x"), "hello")
+	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:85
-		t.Error("Expected first part 'a'")
-	}
+	t.Run("TrimRight removes trailing x", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:86
-	if parts[1] != "b:c:d" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:87
-		t.Errorf("Expected second part 'b:c:d', got '%v'", parts[1])
-	}
+		test.AssertEqual(t, kukistring.TrimRight("helloxx", "x"), "hello")
+	})
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:90
-func TestFields(t *testing.T) {
+func TestSplitJoin(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:91
-	parts := kukistring.Fields("  hello   world  ")
+	t.Run("split on comma", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:92
-	if len(parts) != 2 {
+		parts := kukistring.Split("a,b,c", ",")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:93
-		t.Errorf("Expected 2 fields, got %v", len(parts))
-	}
+		test.AssertEqual(t, len(parts), 3)
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:94
-	if parts[0] != "hello" {
+		test.AssertEqual(t, parts[0], "a")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:95
-		t.Error("Expected first field 'hello'")
-	}
+		test.AssertEqual(t, parts[1], "b")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:96
-	if parts[1] != "world" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:97
-		t.Error("Expected second field 'world'")
-	}
+		test.AssertEqual(t, parts[2], "c")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:98
+	t.Run("join with dash", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:99
+		parts := kukistring.Split("a,b,c", ",")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:100
-	none := kukistring.Fields("")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:101
-	if len(none) != 0 {
+		test.AssertEqual(t, kukistring.Join(parts, "-"), "a-b-c")
+	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:102
-		t.Error("Expected Fields('') to return empty slice")
-	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:105
-func TestSearchFunctions(t *testing.T) {
+	t.Run("split on empty string", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:103
+		chars := kukistring.Split("abc", "")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:104
+		test.AssertEqual(t, len(chars), 3)
+	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:106
-	s := "hello world"
+	t.Run("join with empty separator", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:107
+		chars := kukistring.Split("abc", "")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:108
-	if !kukistring.Contains(s, "world") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:109
-		t.Error("Expected Contains to return true for 'world'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:110
-	if !kukistring.Contains(s, "hello") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:111
-		t.Error("Expected Contains to return true for 'hello'")
-	}
+		test.AssertEqual(t, kukistring.Join(chars, ""), "abc")
+	})
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:112
-	if kukistring.Contains(s, "xyz") {
+func TestSplitN(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:113
-		t.Error("Expected Contains to return false for 'xyz'")
-	}
+	t.Run("limit to 2 parts", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:114
-	if !kukistring.Contains(s, "") {
+		parts := kukistring.SplitN("a:b:c:d", ":", 2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:115
-		t.Error("Expected Contains to return true for empty substring")
-	}
+		test.AssertEqual(t, len(parts), 2)
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:116
+		test.AssertEqual(t, parts[0], "a")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:117
-	if !kukistring.HasPrefix(s, "hello") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:118
-		t.Error("Expected HasPrefix to return true for 'hello'")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:119
-	if kukistring.HasPrefix(s, "world") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:120
-		t.Error("Expected HasPrefix to return false for 'world'")
-	}
+		test.AssertEqual(t, parts[1], "b:c:d")
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:121
+func TestFields(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:122
-	if !kukistring.HasSuffix(s, "world") {
+	t.Run("splits on whitespace", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:123
-		t.Error("Expected HasSuffix to return true for 'world'")
-	}
+		parts := kukistring.Fields("  hello   world  ")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:124
-	if kukistring.HasSuffix(s, "hello") {
+		test.AssertEqual(t, len(parts), 2)
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:125
-		t.Error("Expected HasSuffix to return false for 'hello'")
-	}
-}
-
+		test.AssertEqual(t, parts[0], "hello")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:126
+		test.AssertEqual(t, parts[1], "world")
+	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:128
-func TestIndexFunctions(t *testing.T) {
+	t.Run("empty string returns empty slice", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:129
-	if kukistring.Index("hello world", "world") != 6 {
+		none := kukistring.Fields("")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:130
-		t.Error("Expected Index to return 6")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:131
-	if kukistring.Index("hello world", "hello") != 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:132
-		t.Error("Expected Index to return 0")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:133
-	if kukistring.Index("hello world", "xyz") != -1 {
+		test.AssertEqual(t, len(none), 0)
+	})
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:134
-		t.Error("Expected Index to return -1 for missing substring")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:136
-	if kukistring.LastIndex("abcabc", "abc") != 3 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:137
-		t.Error("Expected LastIndex to return 3")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:138
-	if kukistring.LastIndex("abcabc", "xyz") != -1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:139
-		t.Error("Expected LastIndex to return -1 for missing substring")
-	}
-}
-
+func TestSearchFunctions(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:135
+	s := "hello world"
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:142
-func TestCount(t *testing.T) {
+	containsCases := []TrimCase{TrimCase{name: "world present", input: s, cutset: "world", want: "true"}, TrimCase{name: "hello present", input: s, cutset: "hello", want: "true"}, TrimCase{name: "xyz absent", input: s, cutset: "xyz", want: "false"}, TrimCase{name: "empty always present", input: s, cutset: "", want: "true"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:143
-	got := kukistring.Count("hello", "l")
+	for _, tc := range containsCases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:144
-	if got != 2 {
+		t.Run(fmt.Sprintf("Contains/%v", tc.name), func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:145
-		t.Errorf("Expected Count('hello', 'l') = 2, got %v", got)
-	}
+			got := kukistring.Contains(tc.input, tc.cutset)
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:146
-	if kukistring.Count("hello", "ll") != 1 {
+			wantBool := (tc.want == "true")
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:147
-		t.Error("Expected Count to return 1 for 'll'")
+			test.AssertEqual(t, got, wantBool)
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:148
-	if kukistring.Count("hello", "x") != 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:149
-		t.Error("Expected Count to return 0 for missing char")
-	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:152
-func TestReplaceFunctions(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:150
+	t.Run("HasPrefix/hello", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:151
+		test.AssertEqual(t, kukistring.HasPrefix(s, "hello"), true)
+	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:153
-	if kukistring.ReplaceAll("aabbcc", "b", "x") != "aaxxcc" {
+	t.Run("HasPrefix/world false", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:154
-		t.Error("Expected ReplaceAll to replace all occurrences")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:155
-	if kukistring.ReplaceAll("hello", "x", "y") != "hello" {
+		test.AssertEqual(t, kukistring.HasPrefix(s, "world"), false)
+	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:156
-		t.Error("Expected ReplaceAll to return original when substring not found")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:158
-	if kukistring.Replace("aabbcc", "b", "x", 1) != "aaxbcc" {
+	t.Run("HasSuffix/world", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:157
+		test.AssertEqual(t, kukistring.HasSuffix(s, "world"), true)
+	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:159
-		t.Error("Expected Replace to replace only first occurrence")
-	}
+	t.Run("HasSuffix/hello false", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:160
-	if kukistring.Replace("aabbcc", "b", "x", -1) != "aaxxcc" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:161
-		t.Error("Expected Replace with n=-1 to replace all")
-	}
+		test.AssertEqual(t, kukistring.HasSuffix(s, "hello"), false)
+	})
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:164
-func TestRepeat(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:165
-	if kukistring.Repeat("ab", 3) != "ababab" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:166
-		t.Error("Expected Repeat to repeat string 3 times")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:167
-	if kukistring.Repeat("x", 1) != "x" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:168
-		t.Error("Expected Repeat with count=1 to return original")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:169
-	if kukistring.Repeat("x", 0) != "" {
+type IndexCase struct {
+	name  string
+	input string
+	sub   string
+	want  int
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:170
-		t.Error("Expected Repeat with count=0 to return empty")
-	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:173
-func TestPadFunctions(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:174
-	if kukistring.PadRight("hi", 5, " ") != "hi   " {
+func TestIndexFunctions(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:175
-		got := kukistring.PadRight("hi", 5, " ")
+	indexCases := []IndexCase{IndexCase{name: "world at 6", input: "hello world", sub: "world", want: 6}, IndexCase{name: "hello at 0", input: "hello world", sub: "hello", want: 0}, IndexCase{name: "xyz not found", input: "hello world", sub: "xyz", want: -1}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:176
-		t.Errorf("Expected PadRight('hi', 5) = 'hi   ', got '%v'", got)
-	}
+	for _, tc := range indexCases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:177
-	if kukistring.PadRight("hello", 3, " ") != "hello" {
+		t.Run(fmt.Sprintf("Index/%v", tc.name), func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:178
-		t.Error("Expected PadRight to return original when longer than width")
+			test.AssertEqual(t, kukistring.Index(tc.input, tc.sub), tc.want)
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:179
-	if kukistring.PadRight("hi", 5, "-") != "hi---" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:180
-		got := kukistring.PadRight("hi", 5, "-")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:181
-		t.Errorf("Expected PadRight with custom char = 'hi---', got '%v'", got)
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:183
-	if kukistring.PadLeft("hi", 5, " ") != "   hi" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:184
-		got := kukistring.PadLeft("hi", 5, " ")
+	lastIndexCases := []IndexCase{IndexCase{name: "last abc at 3", input: "abcabc", sub: "abc", want: 3}, IndexCase{name: "xyz not found", input: "abcabc", sub: "xyz", want: -1}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:185
-		t.Errorf("Expected PadLeft('hi', 5) = '   hi', got '%v'", got)
-	}
+	for _, tc := range lastIndexCases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:186
-	if kukistring.PadLeft("hello", 3, " ") != "hello" {
+		t.Run(fmt.Sprintf("LastIndex/%v", tc.name), func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:187
-		t.Error("Expected PadLeft to return original when longer than width")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:188
-	if kukistring.PadLeft("hi", 5, "-") != "---hi" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:189
-		got := kukistring.PadLeft("hi", 5, "-")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:190
-		t.Errorf("Expected PadLeft with custom char = '---hi', got '%v'", got)
+			test.AssertEqual(t, kukistring.LastIndex(tc.input, tc.sub), tc.want)
+		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:193
-func TestEqualFold(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:194
-	if !kukistring.EqualFold("Hello", "hello") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:195
-		t.Error("Expected EqualFold('Hello', 'hello') = true")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:196
-	if !kukistring.EqualFold("WORLD", "world") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:191
+type CountCase struct {
+	name  string
+	input string
+	sub   string
+	want  int
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:197
-		t.Error("Expected EqualFold('WORLD', 'world') = true")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:198
-	if kukistring.EqualFold("hello", "world") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:199
-		t.Error("Expected EqualFold('hello', 'world') = false")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:200
-	if !kukistring.EqualFold("", "") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:201
-		t.Error("Expected EqualFold('', '') = true")
-	}
-}
-
+func TestCount(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:202
+	cases := []CountCase{CountCase{name: "l appears twice", input: "hello", sub: "l", want: 2}, CountCase{name: "ll appears once", input: "hello", sub: "ll", want: 1}, CountCase{name: "x absent", input: "hello", sub: "x", want: 0}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:203
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:204
-func TestLen(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:205
-	if kukistring.Len("hello") != 5 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:206
-		t.Error("Expected Len('hello') = 5")
+			test.AssertEqual(t, kukistring.Count(tc.input, tc.sub), tc.want)
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:207
-	if kukistring.Len("") != 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:208
-		t.Error("Expected Len('') = 0")
-	}
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:209
-	if kukistring.Len("a") != 1 {
+func TestReplaceFunctions(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:210
-		t.Error("Expected Len('a') = 1")
-	}
-}
-
+	t.Run("ReplaceAll replaces all", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:211
+		test.AssertEqual(t, kukistring.ReplaceAll("aabbcc", "b", "x"), "aaxxcc")
+	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:213
-func TestIsEmptyIsBlank(t *testing.T) {
+	t.Run("ReplaceAll no match", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:214
-	if !kukistring.IsEmpty("") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:215
-		t.Error("Expected IsEmpty('') = true")
-	}
+		test.AssertEqual(t, kukistring.ReplaceAll("hello", "x", "y"), "hello")
+	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:216
-	if kukistring.IsEmpty("hello") {
+	t.Run("Replace first only", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:217
-		t.Error("Expected IsEmpty('hello') = false")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:218
-	if kukistring.IsEmpty(" ") {
+		test.AssertEqual(t, kukistring.Replace("aabbcc", "b", "x", 1), "aaxbcc")
+	})
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:219
-		t.Error("Expected IsEmpty(' ') = false (contains space)")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:221
-	if !kukistring.IsBlank("") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:222
-		t.Error("Expected IsBlank('') = true")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:223
-	if !kukistring.IsBlank("   ") {
+	t.Run("Replace n=-1 replaces all", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:220
+		test.AssertEqual(t, kukistring.Replace("aabbcc", "b", "x", -1), "aaxxcc")
+	})
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:224
-		t.Error("Expected IsBlank('   ') = true")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:225
-	if !kukistring.IsBlank("\t\n") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:226
-		t.Error("Expected IsBlank('\\t\\n') = true")
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:227
-	if kukistring.IsBlank("hello") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:228
-		t.Error("Expected IsBlank('hello') = false")
-	}
+func TestRepeat(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:229
-	if kukistring.IsBlank(" x ") {
+	cases := []StringCase{StringCase{name: "repeat 3 times", input: "ab", want: "ababab"}, StringCase{name: "repeat 1 time", input: "x", want: "x"}, StringCase{name: "repeat 0 times", input: "x", want: ""}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:230
-		t.Error("Expected IsBlank(' x ') = false")
-	}
-}
-
+	counts := []int{3, 1, 0}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:231
+	for i := range len(cases) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:232
+		tc := cases[i]
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:233
-func TestLines(t *testing.T) {
+		n := counts[i]
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:234
-	lines := kukistring.Lines("line1\nline2\nline3")
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:235
-	if len(lines) != 3 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:236
-		t.Errorf("Expected 3 lines, got %v", len(lines))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:237
-	if lines[0] != "line1" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:238
-		t.Errorf("Expected first line 'line1', got '%v'", lines[0])
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:239
-	if lines[2] != "line3" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:240
-		t.Errorf("Expected third line 'line3', got '%v'", lines[2])
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:243
-	single := kukistring.Lines("hello")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:244
-	if len(single) != 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:245
-		t.Errorf("Expected 1 line, got %v", len(single))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:246
-	if single[0] != "hello" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:247
-		t.Error("Expected line 'hello'")
+			test.AssertEqual(t, kukistring.Repeat(tc.input, n), tc.want)
+		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:250
-func TestConcat(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:239
+type PadCase struct {
+	name  string
+	input string
+	width int
+	pad   string
+	want  string
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:246
+func TestPadFunctions(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:251
-	parts := []string{"hello", " ", "world"}
+	rightCases := []PadCase{PadCase{name: "pad with spaces", input: "hi", width: 5, pad: " ", want: "hi   "}, PadCase{name: "already long enough", input: "hello", width: 3, pad: " ", want: "hello"}, PadCase{name: "pad with dash", input: "hi", width: 5, pad: "-", want: "hi---"}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:252
-	result := kukistring.Concat(parts)
+	for _, tc := range rightCases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:253
-	if result != "hello world" {
+		t.Run(fmt.Sprintf("PadRight/%v", tc.name), func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:254
-		t.Errorf("Expected 'hello world', got '%v'", result)
+			test.AssertEqual(t, kukistring.PadRight(tc.input, tc.width, tc.pad), tc.want)
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:257
-	noParts := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:258
-	emptyResult := kukistring.Concat(noParts)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:259
-	if emptyResult != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:260
-		t.Error("Expected Concat of empty slice to return ''")
-	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:261
+	leftCases := []PadCase{PadCase{name: "pad with spaces", input: "hi", width: 5, pad: " ", want: "   hi"}, PadCase{name: "already long enough", input: "hello", width: 3, pad: " ", want: "hello"}, PadCase{name: "pad with dash", input: "hi", width: 5, pad: "-", want: "---hi"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:262
+	for _, tc := range leftCases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:263
-	single := []string{"alone"}
+		t.Run(fmt.Sprintf("PadLeft/%v", tc.name), func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:264
-	singleResult := kukistring.Concat(single)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:265
-	if singleResult != "alone" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:266
-		t.Errorf("Expected 'alone', got '%v'", singleResult)
+			test.AssertEqual(t, kukistring.PadLeft(tc.input, tc.width, tc.pad), tc.want)
+		})
 	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:268
+func TestEqualFold(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:274
+	cases := []TrimCase{TrimCase{name: "same case diff", input: "Hello", cutset: "hello", want: "true"}, TrimCase{name: "all caps", input: "WORLD", cutset: "world", want: "true"}, TrimCase{name: "different strings", input: "hello", cutset: "world", want: "false"}, TrimCase{name: "both empty", input: "", cutset: "", want: "true"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:275
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:276
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:277
+			got := kukistring.EqualFold(tc.input, tc.cutset)
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:278
+			wantBool := (tc.want == "true")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:279
+			test.AssertEqual(t, got, wantBool)
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:283
+func TestLen(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:288
+	cases := []IndexCase{IndexCase{name: "hello is 5", input: "hello", sub: "", want: 5}, IndexCase{name: "empty is 0", input: "", sub: "", want: 0}, IndexCase{name: "single char is 1", input: "a", sub: "", want: 1}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:289
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:290
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:291
+			test.AssertEqual(t, kukistring.Len(tc.input), tc.want)
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:295
+func TestIsEmptyIsBlank(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:296
+	t.Run("IsEmpty/empty string", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:297
+		test.AssertEqual(t, kukistring.IsEmpty(""), true)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:299
+	t.Run("IsEmpty/non-empty", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:300
+		test.AssertEqual(t, kukistring.IsEmpty("hello"), false)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:302
+	t.Run("IsEmpty/space is not empty", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:303
+		test.AssertEqual(t, kukistring.IsEmpty(" "), false)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:305
+	t.Run("IsBlank/empty", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:306
+		test.AssertEqual(t, kukistring.IsBlank(""), true)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:308
+	t.Run("IsBlank/spaces", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:309
+		test.AssertEqual(t, kukistring.IsBlank("   "), true)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:311
+	t.Run("IsBlank/tabs and newlines", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:312
+		test.AssertEqual(t, kukistring.IsBlank("\t\n"), true)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:314
+	t.Run("IsBlank/non-blank", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:315
+		test.AssertEqual(t, kukistring.IsBlank("hello"), false)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:317
+	t.Run("IsBlank/space with char", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:318
+		test.AssertEqual(t, kukistring.IsBlank(" x "), false)
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:322
+func TestLines(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:323
+	t.Run("three lines", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:324
+		lines := kukistring.Lines("line1\nline2\nline3")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:325
+		test.AssertEqual(t, len(lines), 3)
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:326
+		test.AssertEqual(t, lines[0], "line1")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:327
+		test.AssertEqual(t, lines[2], "line3")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:329
+	t.Run("single line no newline", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:330
+		single := kukistring.Lines("hello")
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:331
+		test.AssertEqual(t, len(single), 1)
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:332
+		test.AssertEqual(t, single[0], "hello")
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:336
+func TestConcat(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:337
+	t.Run("joins parts", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:338
+		parts := []string{"hello", " ", "world"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:339
+		test.AssertEqual(t, kukistring.Concat(parts), "hello world")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:341
+	t.Run("empty slice", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:342
+		noParts := []string{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:343
+		test.AssertEqual(t, kukistring.Concat(noParts), "")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:345
+	t.Run("single element", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:346
+		single := []string{"alone"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:347
+		test.AssertEqual(t, kukistring.Concat(single), "alone")
+	})
 }

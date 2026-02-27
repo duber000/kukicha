@@ -319,6 +319,8 @@ func (g *Generator) generateArrowLambda(lambda *ast.ArrowLambda) string {
 			indent:         g.indent + 1,
 			placeholderMap: g.placeholderMap,
 			autoImports:    g.autoImports,
+			pkgAliases:     g.pkgAliases,
+			funcDefaults:   g.funcDefaults,
 			isStdlibIter:   g.isStdlibIter,
 			sourceFile:     g.sourceFile,
 		}

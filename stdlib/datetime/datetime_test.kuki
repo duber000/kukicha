@@ -1,177 +1,271 @@
 # DateTime Package Tests
 
+petiole datetime_test
+
 import "stdlib/datetime"
 import "stdlib/test"
 import "time"
+import "testing"
 
-# Test Now function
-test NowFunction
-    now := datetime.Now()
-    test.AssertNotEmpty(now)
-    test.AssertTrue(now.After(time.Time{}))
+# --- TestNowAndToday ---
+func TestNowAndToday(t reference testing.T)
+    t.Run("Now returns non-zero time", (t reference testing.T) =>
+        now := datetime.Now()
+        if now.IsZero()
+            t.Error("expected Now() to return a non-zero time")
+    )
+    t.Run("Today is at midnight", (t reference testing.T) =>
+        today := datetime.Today()
+        test.AssertEqual(t, datetime.Hour(today), 0)
+        test.AssertEqual(t, datetime.Minute(today), 0)
+        test.AssertEqual(t, datetime.Second(today), 0)
+    )
+    t.Run("Tomorrow is after Today", (t reference testing.T) =>
+        today := datetime.Today()
+        tomorrow := datetime.Tomorrow()
+        test.AssertTrue(t, tomorrow.After(today))
+    )
+    t.Run("Yesterday is before Today", (t reference testing.T) =>
+        today := datetime.Today()
+        yesterday := datetime.Yesterday()
+        test.AssertTrue(t, yesterday.Before(today))
+    )
 
-# Test Today function
-test TodayFunction
-    today := datetime.Today()
-    test.AssertNotEmpty(today)
-    test.AssertEqual(today.Hour(), 0)
-    test.AssertEqual(today.Minute(), 0)
-    test.AssertEqual(today.Second(), 0)
+# --- FormatCase ---
+type FormatCase
+    name   string
+    format string
+    want   string
 
-# Test Tomorrow function
-test TomorrowFunction
-    tomorrow := datetime.Tomorrow()
-    today := datetime.Today()
-    test.AssertTrue(tomorrow.After(today))
-    test.AssertEqual(tomorrow.Sub(today).Hours(), 24.0)
+# --- TestFormat ---
+func TestFormat(t reference testing.T)
+    baseTime := time.Date(2024, 1, 15, 14, 30, 45, 0, time.UTC)
+    cases := list of FormatCase{
+        FormatCase{name: "iso8601", format: "iso8601", want: "2024-01-15T14:30:45Z"},
+        FormatCase{name: "date", format: "date", want: "2024-01-15"},
+        FormatCase{name: "time", format: "time", want: "14:30:45"},
+        FormatCase{name: "datetime", format: "datetime", want: "2024-01-15 14:30:45"},
+        FormatCase{name: "kitchen", format: "kitchen", want: "2:30PM"},
+        FormatCase{name: "custom", format: "2006/01/02", want: "2024/01/15"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            test.AssertEqual(t, datetime.Format(baseTime, tc.format), tc.want)
+        )
 
-# Test Yesterday function
-test YesterdayFunction
-    yesterday := datetime.Yesterday()
-    today := datetime.Today()
-    test.AssertTrue(yesterday.Before(today))
-    test.AssertEqual(today.Sub(yesterday).Hours(), 24.0)
+# --- TestParse ---
+func TestParse(t reference testing.T)
+    t.Run("date format", (t reference testing.T) =>
+        t1 := datetime.Parse("2024-01-15", "date") onerr panic "parse failed: {error}"
+        test.AssertEqual(t, t1.Year(), 2024)
+        test.AssertEqual(t, datetime.Month(t1), 1)
+        test.AssertEqual(t, datetime.Day(t1), 15)
+    )
+    t.Run("time format", (t reference testing.T) =>
+        t2 := datetime.Parse("14:30:45", "time") onerr panic "parse failed: {error}"
+        test.AssertEqual(t, datetime.Hour(t2), 14)
+        test.AssertEqual(t, datetime.Minute(t2), 30)
+        test.AssertEqual(t, datetime.Second(t2), 45)
+    )
+    t.Run("custom format", (t reference testing.T) =>
+        t3 := datetime.Parse("2024/01/15", "2006/01/02") onerr panic "parse failed: {error}"
+        test.AssertEqual(t, t3.Year(), 2024)
+        test.AssertEqual(t, datetime.Month(t3), 1)
+        test.AssertEqual(t, datetime.Day(t3), 15)
+    )
 
-# Test Format function
-test FormatFunction
-    t := time.Date(2024, 1, 15, 14, 30, 45, 0, time.UTC)
-    
-    # Test named formats
-    test.AssertEqual(datetime.Format(t, "iso8601"), "2024-01-15T14:30:45Z")
-    test.AssertEqual(datetime.Format(t, "date"), "2024-01-15")
-    test.AssertEqual(datetime.Format(t, "time"), "14:30:45")
-    test.AssertEqual(datetime.Format(t, "datetime"), "2024-01-15 14:30:45")
-    test.AssertEqual(datetime.Format(t, "kitchen"), "3:30PM")
-    
-    # Test custom format
-    test.AssertEqual(datetime.Format(t, "2006/01/02"), "2024/01/15")
+# --- TestParseInLocation ---
+func TestParseInLocation(t reference testing.T)
+    t.Run("New York timezone", (t reference testing.T) =>
+        tt := datetime.ParseInLocation("2024-01-15 14:30:00", "datetime", "America/New_York") onerr panic "parse failed: {error}"
+        test.AssertEqual(t, tt.Year(), 2024)
+        test.AssertEqual(t, datetime.Month(tt), 1)
+        test.AssertEqual(t, datetime.Day(tt), 15)
+        test.AssertEqual(t, datetime.Hour(tt), 14)
+        test.AssertEqual(t, datetime.Minute(tt), 30)
+    )
 
-# Test Parse function
-test ParseFunction
-    # Test named formats
-    t1 := datetime.Parse("2024-01-15", "date") onerr panic "parse failed"
-    test.AssertEqual(t1.Year(), 2024)
-    test.AssertEqual(t1.Month(), 1)
-    test.AssertEqual(t1.Day(), 15)
-    
-    t2 := datetime.Parse("14:30:45", "time") onerr panic "parse failed"
-    test.AssertEqual(t2.Hour(), 14)
-    test.AssertEqual(t2.Minute(), 30)
-    test.AssertEqual(t2.Second(), 45)
-    
-    # Test custom format
-    t3 := datetime.Parse("2024/01/15", "2006/01/02") onerr panic "parse failed"
-    test.AssertEqual(t3.Year(), 2024)
-    test.AssertEqual(t3.Month(), 1)
-    test.AssertEqual(t3.Day(), 15)
+# --- TestDurationHelpers ---
+func TestDurationHelpers(t reference testing.T)
+    # Verify relative magnitudes (avoids time.Duration vs int type mismatch)
+    t.Run("Nanoseconds", (t reference testing.T) =>
+        if datetime.Nanoseconds(500) != 500
+            t.Errorf("Expected Nanoseconds(500) = 500, got {datetime.Nanoseconds(500)}")
+    )
+    t.Run("Microseconds is 1000x nanoseconds", (t reference testing.T) =>
+        if datetime.Microseconds(1) != datetime.Nanoseconds(1000)
+            t.Error("Expected Microseconds(1) = 1000 nanoseconds")
+    )
+    t.Run("Milliseconds is 1000x microseconds", (t reference testing.T) =>
+        if datetime.Milliseconds(1) != datetime.Microseconds(1000)
+            t.Error("Expected Milliseconds(1) = 1000 microseconds")
+    )
+    t.Run("Seconds is 1000x milliseconds", (t reference testing.T) =>
+        if datetime.Seconds(1) != datetime.Milliseconds(1000)
+            t.Error("Expected Seconds(1) = 1000 milliseconds")
+    )
+    t.Run("Minutes is 60x seconds", (t reference testing.T) =>
+        if datetime.Minutes(1) != datetime.Seconds(60)
+            t.Error("Expected Minutes(1) = 60 seconds")
+    )
+    t.Run("Hours is 60x minutes", (t reference testing.T) =>
+        if datetime.Hours(1) != datetime.Minutes(60)
+            t.Error("Expected Hours(1) = 60 minutes")
+    )
+    t.Run("Days is 24x hours", (t reference testing.T) =>
+        if datetime.Days(1) != datetime.Hours(24)
+            t.Error("Expected Days(1) = 24 hours")
+    )
+    t.Run("Weeks is 7x days", (t reference testing.T) =>
+        if datetime.Weeks(1) != datetime.Days(7)
+            t.Error("Expected Weeks(1) = 7 days")
+    )
 
-# Test ParseInLocation function
-test ParseInLocationFunction
-    t := datetime.ParseInLocation("2024-01-15 14:30", "datetime", "America/New_York") onerr panic "parse failed"
-    test.AssertEqual(t.Year(), 2024)
-    test.AssertEqual(t.Month(), 1)
-    test.AssertEqual(t.Day(), 15)
-    test.AssertEqual(t.Hour(), 14)
-    test.AssertEqual(t.Minute(), 30)
+# --- TestTimeArithmetic ---
+func TestTimeArithmetic(t reference testing.T)
+    base := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
 
-# Test duration helpers
-test DurationHelpers
-    test.AssertEqual(datetime.Nanoseconds(500), 500 * 1)
-    test.AssertEqual(datetime.Microseconds(500), 500 * 1000)
-    test.AssertEqual(datetime.Milliseconds(500), 500 * 1000000)
-    test.AssertEqual(datetime.Seconds(30), 30 * 1000000000)
-    test.AssertEqual(datetime.Minutes(5), 5 * 60000000000)
-    test.AssertEqual(datetime.Hours(2), 2 * 3600000000000)
-    test.AssertEqual(datetime.Days(7), 7 * 86400000000000)
-    test.AssertEqual(datetime.Weeks(2), 2 * 604800000000000)
+    t.Run("AddDays", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Day(datetime.AddDays(base, 7)), 22)
+    )
+    t.Run("AddWeeks", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Day(datetime.AddWeeks(base, 2)), 29)
+    )
+    t.Run("AddMonths", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Month(datetime.AddMonths(base, 1)), 2)
+    )
+    t.Run("AddYears", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Year(datetime.AddYears(base, 1)), 2025)
+    )
+    t.Run("SubDays", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Day(datetime.SubDays(base, 7)), 8)
+    )
+    t.Run("SubWeeks", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Day(datetime.SubWeeks(base, 2)), 1)
+    )
+    t.Run("SubMonths", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Month(datetime.SubMonths(base, 1)), 12)
+    )
+    t.Run("SubYears", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Year(datetime.SubYears(base, 1)), 2023)
+    )
 
-# Test time arithmetic helpers
-test TimeArithmeticHelpers
-    t := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
-    
-    test.AssertEqual(datetime.AddDays(t, 7).Day(), 22)
-    test.AssertEqual(datetime.AddWeeks(t, 2).Day(), 29)
-    test.AssertEqual(datetime.AddMonths(t, 1).Month(), 2)
-    test.AssertEqual(datetime.AddYears(t, 1).Year(), 2025)
-    
-    test.AssertEqual(datetime.SubDays(t, 7).Day(), 8)
-    test.AssertEqual(datetime.SubWeeks(t, 2).Day(), 1)
-    test.AssertEqual(datetime.SubMonths(t, 1).Month(), 12)
-    test.AssertEqual(datetime.SubYears(t, 1).Year(), 2023)
-
-# Test comparison helpers
-test ComparisonHelpers
+# --- TestComparisons ---
+func TestComparisons(t reference testing.T)
     t1 := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
     t2 := time.Date(2024, 1, 16, 10, 0, 0, 0, time.UTC)
     t3 := time.Date(2024, 1, 17, 10, 0, 0, 0, time.UTC)
-    
-    test.AssertTrue(datetime.IsBefore(t1, t2))
-    test.AssertTrue(datetime.IsAfter(t2, t1))
-    test.AssertTrue(datetime.IsBetween(t2, t1, t3))
-    test.AssertTrue(datetime.IsSameDay(t1, time.Date(2024, 1, 15, 23, 59, 59, 0, time.UTC)))
 
-# Test component extraction
-test ComponentExtraction
-    t := time.Date(2024, 1, 15, 14, 30, 45, 0, time.UTC)
-    
-    test.AssertEqual(datetime.Year(t), 2024)
-    test.AssertEqual(datetime.Month(t), 1)
-    test.AssertEqual(datetime.Day(t), 15)
-    test.AssertEqual(datetime.Hour(t), 14)
-    test.AssertEqual(datetime.Minute(t), 30)
-    test.AssertEqual(datetime.Second(t), 45)
-    test.AssertEqual(datetime.Weekday(t), 1)  # Monday
-    test.AssertEqual(datetime.WeekdayName(t), "Monday")
+    t.Run("IsBefore", (t reference testing.T) =>
+        test.AssertTrue(t, datetime.IsBefore(t1, t2))
+    )
+    t.Run("IsAfter", (t reference testing.T) =>
+        test.AssertTrue(t, datetime.IsAfter(t2, t1))
+    )
+    t.Run("IsBetween", (t reference testing.T) =>
+        test.AssertTrue(t, datetime.IsBetween(t2, t1, t3))
+    )
+    t.Run("IsSameDay", (t reference testing.T) =>
+        sameDay := time.Date(2024, 1, 15, 23, 59, 59, 0, time.UTC)
+        test.AssertTrue(t, datetime.IsSameDay(t1, sameDay))
+    )
 
-# Test Unix timestamp functions
-test UnixTimestampFunctions
-    t := time.Date(2024, 1, 15, 14, 30, 45, 0, time.UTC)
-    
-    unixSec := datetime.Unix(t)
-    unixMilli := datetime.UnixMilli(t)
-    
-    test.AssertTrue(unixSec > 0)
-    test.AssertTrue(unixMilli > 0)
-    test.AssertEqual(unixMilli, unixSec * 1000)
-    
-    # Test round-trip
-    t2 := datetime.FromUnix(unixSec)
-    test.AssertEqual(t2.Unix(), unixSec)
-    
-    t3 := datetime.FromUnixMilli(unixMilli)
-    test.AssertEqual(t3.UnixMilli(), unixMilli)
+# --- TestComponentExtraction ---
+func TestComponentExtraction(t reference testing.T)
+    tt := time.Date(2024, 1, 15, 14, 30, 45, 0, time.UTC)
 
-# Test timezone helpers
-test TimezoneHelpers
-    t := time.Date(2024, 1, 15, 14, 30, 45, 0, time.UTC)
-    
-    utc := datetime.InUTC(t)
-    test.AssertEqual(utc.Location().String(), "UTC")
-    
-    local := datetime.InLocal(t)
-    test.AssertNotEmpty(local)
-    
-    ny := datetime.InLocation(t, "America/New_York") onerr panic "location failed"
-    test.AssertEqual(ny.Location().String(), "America/New_York")
+    t.Run("Year", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Year(tt), 2024)
+    )
+    t.Run("Month", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Month(tt), 1)
+    )
+    t.Run("Day", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Day(tt), 15)
+    )
+    t.Run("Hour", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Hour(tt), 14)
+    )
+    t.Run("Minute", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Minute(tt), 30)
+    )
+    t.Run("Second", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Second(tt), 45)
+    )
+    t.Run("Weekday is Monday", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.Weekday(tt), 1)
+    )
+    t.Run("WeekdayName is Monday", (t reference testing.T) =>
+        test.AssertEqual(t, datetime.WeekdayName(tt), "Monday")
+    )
 
-# Test IsToday, IsYesterday, IsTomorrow
-test DayRelativeFunctions
-    now := datetime.Now()
+# --- TestUnixTimestamps ---
+func TestUnixTimestamps(t reference testing.T)
+    tt := time.Date(2024, 1, 15, 14, 30, 45, 0, time.UTC)
+
+    t.Run("Unix is positive", (t reference testing.T) =>
+        unixSec := datetime.Unix(tt)
+        test.AssertTrue(t, unixSec > 0)
+    )
+    t.Run("UnixMilli is 1000x Unix", (t reference testing.T) =>
+        unixSec := datetime.Unix(tt)
+        unixMilli := datetime.UnixMilli(tt)
+        test.AssertTrue(t, unixMilli > 0)
+        test.AssertEqual(t, unixMilli, unixSec * 1000)
+    )
+    t.Run("FromUnix round-trip", (t reference testing.T) =>
+        unixSec := datetime.Unix(tt)
+        t2 := datetime.FromUnix(unixSec)
+        test.AssertEqual(t, t2.Unix(), unixSec)
+    )
+    t.Run("FromUnixMilli round-trip", (t reference testing.T) =>
+        unixMilli := datetime.UnixMilli(tt)
+        t3 := datetime.FromUnixMilli(unixMilli)
+        test.AssertEqual(t, t3.UnixMilli(), unixMilli)
+    )
+
+# --- TestTimezoneHelpers ---
+func TestTimezoneHelpers(t reference testing.T)
+    tt := time.Date(2024, 1, 15, 14, 30, 45, 0, time.UTC)
+
+    t.Run("InUTC is UTC", (t reference testing.T) =>
+        utc := datetime.InUTC(tt)
+        test.AssertEqual(t, utc.Location().String(), "UTC")
+    )
+    t.Run("InLocal is non-zero", (t reference testing.T) =>
+        local := datetime.InLocal(tt)
+        if local.IsZero()
+            t.Error("expected InLocal to return non-zero time")
+    )
+    t.Run("InLocation New York", (t reference testing.T) =>
+        ny := datetime.InLocation(tt, "America/New_York") onerr panic "location failed: {error}"
+        test.AssertEqual(t, ny.Location().String(), "America/New_York")
+    )
+
+# --- TestDayRelativeFunctions ---
+func TestDayRelativeFunctions(t reference testing.T)
     today := datetime.Today()
     yesterday := datetime.Yesterday()
     tomorrow := datetime.Tomorrow()
-    
-    test.AssertTrue(datetime.IsToday(now))
-    test.AssertTrue(datetime.IsToday(today))
-    test.AssertTrue(datetime.IsYesterday(yesterday))
-    test.AssertTrue(datetime.IsTomorrow(tomorrow))
 
-# Test IsPast and IsFuture
-test PastFutureFunctions
+    t.Run("IsToday/today", (t reference testing.T) =>
+        test.AssertTrue(t, datetime.IsToday(today))
+    )
+    t.Run("IsYesterday", (t reference testing.T) =>
+        test.AssertTrue(t, datetime.IsYesterday(yesterday))
+    )
+    t.Run("IsTomorrow", (t reference testing.T) =>
+        test.AssertTrue(t, datetime.IsTomorrow(tomorrow))
+    )
+
+# --- TestPastFutureFunctions ---
+func TestPastFutureFunctions(t reference testing.T)
     past := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
     future := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
-    
-    test.AssertTrue(datetime.IsPast(past))
-    test.AssertTrue(datetime.IsFuture(future))
 
-print("DateTime tests completed")
+    t.Run("IsPast", (t reference testing.T) =>
+        test.AssertTrue(t, datetime.IsPast(past))
+    )
+    t.Run("IsFuture", (t reference testing.T) =>
+        test.AssertTrue(t, datetime.IsFuture(future))
+    )

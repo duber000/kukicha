@@ -3,163 +3,215 @@
 petiole math_test
 
 import "stdlib/math"
+import "stdlib/test"
 import "testing"
 
-# Test Abs returns the absolute value
+# --- FloatCase (single float64 in/out) ---
+type FloatCase
+    name string
+    val  float64
+    want float64
+
+# --- FloatPairCase (two inputs, one output) ---
+type FloatPairCase
+    name string
+    a    float64
+    b    float64
+    want float64
+
+# --- ClampCase ---
+type ClampCase
+    name string
+    val  float64
+    lo   float64
+    hi   float64
+    want float64
+
+# --- TestAbs ---
 func TestAbs(t reference testing.T)
-    if math.Abs(-5.0) != 5.0
-        t.Errorf("Expected Abs(-5.0) = 5.0, got {math.Abs(-5.0)}")
-    if math.Abs(5.0) != 5.0
-        t.Errorf("Expected Abs(5.0) = 5.0, got {math.Abs(5.0)}")
-    if math.Abs(0.0) != 0.0
-        t.Errorf("Expected Abs(0.0) = 0.0, got {math.Abs(0.0)}")
-    if math.Abs(-0.001) != 0.001
-        t.Errorf("Expected Abs(-0.001) = 0.001, got {math.Abs(-0.001)}")
+    cases := list of FloatCase{
+        FloatCase{name: "negative", val: -5.0, want: 5.0},
+        FloatCase{name: "positive", val: 5.0, want: 5.0},
+        FloatCase{name: "zero", val: 0.0, want: 0.0},
+        FloatCase{name: "small negative", val: -0.001, want: 0.001},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Abs(tc.val)
+            test.AssertEqual(t, got, tc.want)
+        )
 
-# Test Round rounds to nearest integer
+# --- TestRound ---
 func TestRound(t reference testing.T)
-    if math.Round(3.7) != 4.0
-        t.Errorf("Expected Round(3.7) = 4.0, got {math.Round(3.7)}")
-    if math.Round(3.2) != 3.0
-        t.Errorf("Expected Round(3.2) = 3.0, got {math.Round(3.2)}")
-    if math.Round(3.5) != 4.0
-        t.Errorf("Expected Round(3.5) = 4.0, got {math.Round(3.5)}")
-    if math.Round(-3.5) != -4.0
-        t.Errorf("Expected Round(-3.5) = -4.0, got {math.Round(-3.5)}")
-    if math.Round(0.0) != 0.0
-        t.Errorf("Expected Round(0.0) = 0.0, got {math.Round(0.0)}")
+    cases := list of FloatCase{
+        FloatCase{name: "round up", val: 3.7, want: 4.0},
+        FloatCase{name: "round down", val: 3.2, want: 3.0},
+        FloatCase{name: "halfway up", val: 3.5, want: 4.0},
+        FloatCase{name: "negative halfway", val: -3.5, want: -4.0},
+        FloatCase{name: "zero", val: 0.0, want: 0.0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Round(tc.val)
+            test.AssertEqual(t, got, tc.want)
+        )
 
-# Test Floor rounds down
+# --- TestFloor ---
 func TestFloor(t reference testing.T)
-    if math.Floor(3.9) != 3.0
-        t.Errorf("Expected Floor(3.9) = 3.0, got {math.Floor(3.9)}")
-    if math.Floor(3.0) != 3.0
-        t.Errorf("Expected Floor(3.0) = 3.0, got {math.Floor(3.0)}")
-    if math.Floor(-1.1) != -2.0
-        t.Errorf("Expected Floor(-1.1) = -2.0, got {math.Floor(-1.1)}")
-    if math.Floor(-1.0) != -1.0
-        t.Errorf("Expected Floor(-1.0) = -1.0, got {math.Floor(-1.0)}")
+    cases := list of FloatCase{
+        FloatCase{name: "fractional", val: 3.9, want: 3.0},
+        FloatCase{name: "whole", val: 3.0, want: 3.0},
+        FloatCase{name: "negative fractional", val: -1.1, want: -2.0},
+        FloatCase{name: "negative whole", val: -1.0, want: -1.0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Floor(tc.val)
+            test.AssertEqual(t, got, tc.want)
+        )
 
-# Test Ceil rounds up
+# --- TestCeil ---
 func TestCeil(t reference testing.T)
-    if math.Ceil(3.1) != 4.0
-        t.Errorf("Expected Ceil(3.1) = 4.0, got {math.Ceil(3.1)}")
-    if math.Ceil(3.0) != 3.0
-        t.Errorf("Expected Ceil(3.0) = 3.0, got {math.Ceil(3.0)}")
-    if math.Ceil(-1.9) != -1.0
-        t.Errorf("Expected Ceil(-1.9) = -1.0, got {math.Ceil(-1.9)}")
-    if math.Ceil(-1.0) != -1.0
-        t.Errorf("Expected Ceil(-1.0) = -1.0, got {math.Ceil(-1.0)}")
+    cases := list of FloatCase{
+        FloatCase{name: "fractional", val: 3.1, want: 4.0},
+        FloatCase{name: "whole", val: 3.0, want: 3.0},
+        FloatCase{name: "negative fractional", val: -1.9, want: -1.0},
+        FloatCase{name: "negative whole", val: -1.0, want: -1.0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Ceil(tc.val)
+            test.AssertEqual(t, got, tc.want)
+        )
 
-# Test Min and Max
-func TestMinMax(t reference testing.T)
-    if math.Min(3.0, 7.0) != 3.0
-        t.Errorf("Expected Min(3.0, 7.0) = 3.0, got {math.Min(3.0, 7.0)}")
-    if math.Min(7.0, 3.0) != 3.0
-        t.Errorf("Expected Min(7.0, 3.0) = 3.0, got {math.Min(7.0, 3.0)}")
-    if math.Min(5.0, 5.0) != 5.0
-        t.Errorf("Expected Min(5.0, 5.0) = 5.0, got {math.Min(5.0, 5.0)}")
-
-    if math.Max(3.0, 7.0) != 7.0
-        t.Errorf("Expected Max(3.0, 7.0) = 7.0, got {math.Max(3.0, 7.0)}")
-    if math.Max(7.0, 3.0) != 7.0
-        t.Errorf("Expected Max(7.0, 3.0) = 7.0, got {math.Max(7.0, 3.0)}")
-    if math.Max(5.0, 5.0) != 5.0
-        t.Errorf("Expected Max(5.0, 5.0) = 5.0, got {math.Max(5.0, 5.0)}")
-
-# Test Pow raises a base to a power
-func TestPow(t reference testing.T)
-    if math.Pow(2.0, 8.0) != 256.0
-        t.Errorf("Expected Pow(2.0, 8.0) = 256.0, got {math.Pow(2.0, 8.0)}")
-    if math.Pow(3.0, 3.0) != 27.0
-        t.Errorf("Expected Pow(3.0, 3.0) = 27.0, got {math.Pow(3.0, 3.0)}")
-    if math.Pow(5.0, 0.0) != 1.0
-        t.Errorf("Expected Pow(5.0, 0.0) = 1.0, got {math.Pow(5.0, 0.0)}")
-    if math.Pow(1.0, 100.0) != 1.0
-        t.Errorf("Expected Pow(1.0, 100.0) = 1.0, got {math.Pow(1.0, 100.0)}")
-
-# Test Sqrt returns the square root
+# --- TestSqrt ---
 func TestSqrt(t reference testing.T)
-    if math.Sqrt(9.0) != 3.0
-        t.Errorf("Expected Sqrt(9.0) = 3.0, got {math.Sqrt(9.0)}")
-    if math.Sqrt(0.0) != 0.0
-        t.Errorf("Expected Sqrt(0.0) = 0.0, got {math.Sqrt(0.0)}")
-    if math.Sqrt(1.0) != 1.0
-        t.Errorf("Expected Sqrt(1.0) = 1.0, got {math.Sqrt(1.0)}")
-    if math.Sqrt(4.0) != 2.0
-        t.Errorf("Expected Sqrt(4.0) = 2.0, got {math.Sqrt(4.0)}")
+    cases := list of FloatCase{
+        FloatCase{name: "nine", val: 9.0, want: 3.0},
+        FloatCase{name: "zero", val: 0.0, want: 0.0},
+        FloatCase{name: "one", val: 1.0, want: 1.0},
+        FloatCase{name: "four", val: 4.0, want: 2.0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Sqrt(tc.val)
+            test.AssertEqual(t, got, tc.want)
+        )
+    # Approximate check for irrational
+    t.Run("sqrt 2 approx", (t reference testing.T) =>
+        result := math.Sqrt(2.0)
+        if result < 1.41 or result > 1.42
+            t.Errorf("Expected Sqrt(2.0) ≈ 1.41421, got {result}")
+    )
 
-    # Verify Sqrt(2) is approximately 1.41421
-    result := math.Sqrt(2.0)
-    if result < 1.41 or result > 1.42
-        t.Errorf("Expected Sqrt(2.0) ≈ 1.41421, got {result}")
+# --- TestMinMax ---
+func TestMinMax(t reference testing.T)
+    cases := list of FloatPairCase{
+        FloatPairCase{name: "min smaller first", a: 3.0, b: 7.0, want: 3.0},
+        FloatPairCase{name: "min larger first", a: 7.0, b: 3.0, want: 3.0},
+        FloatPairCase{name: "min equal", a: 5.0, b: 5.0, want: 5.0},
+    }
+    for tc in cases
+        t.Run("Min/{tc.name}", (t reference testing.T) =>
+            got := math.Min(tc.a, tc.b)
+            test.AssertEqual(t, got, tc.want)
+        )
 
-# Test Log (natural logarithm)
+    maxCases := list of FloatPairCase{
+        FloatPairCase{name: "max smaller first", a: 3.0, b: 7.0, want: 7.0},
+        FloatPairCase{name: "max larger first", a: 7.0, b: 3.0, want: 7.0},
+        FloatPairCase{name: "max equal", a: 5.0, b: 5.0, want: 5.0},
+    }
+    for tc in maxCases
+        t.Run("Max/{tc.name}", (t reference testing.T) =>
+            got := math.Max(tc.a, tc.b)
+            test.AssertEqual(t, got, tc.want)
+        )
+
+# --- TestPow ---
+func TestPow(t reference testing.T)
+    cases := list of FloatPairCase{
+        FloatPairCase{name: "2^8", a: 2.0, b: 8.0, want: 256.0},
+        FloatPairCase{name: "3^3", a: 3.0, b: 3.0, want: 27.0},
+        FloatPairCase{name: "5^0", a: 5.0, b: 0.0, want: 1.0},
+        FloatPairCase{name: "1^100", a: 1.0, b: 100.0, want: 1.0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Pow(tc.a, tc.b)
+            test.AssertEqual(t, got, tc.want)
+        )
+
+# --- TestLog ---
 func TestLog(t reference testing.T)
-    # Log(1) = 0
-    if math.Log(1.0) != 0.0
-        t.Errorf("Expected Log(1.0) = 0.0, got {math.Log(1.0)}")
+    t.Run("log 1 equals 0", (t reference testing.T) =>
+        test.AssertEqual(t, math.Log(1.0), 0.0)
+    )
+    t.Run("log E approx 1", (t reference testing.T) =>
+        e := math.E()
+        result := math.Log(e)
+        if result < 0.99 or result > 1.01
+            t.Errorf("Expected Log(E) ≈ 1.0, got {result}")
+    )
 
-    # Log(E) ≈ 1
-    e := math.E()
-    result := math.Log(e)
-    if result < 0.99 or result > 1.01
-        t.Errorf("Expected Log(E) ≈ 1.0, got {result}")
-
-# Test Log2 (base-2 logarithm)
+# --- TestLog2 ---
 func TestLog2(t reference testing.T)
-    if math.Log2(1.0) != 0.0
-        t.Errorf("Expected Log2(1.0) = 0.0, got {math.Log2(1.0)}")
-    if math.Log2(2.0) != 1.0
-        t.Errorf("Expected Log2(2.0) = 1.0, got {math.Log2(2.0)}")
-    if math.Log2(8.0) != 3.0
-        t.Errorf("Expected Log2(8.0) = 3.0, got {math.Log2(8.0)}")
+    cases := list of FloatCase{
+        FloatCase{name: "log2(1)", val: 1.0, want: 0.0},
+        FloatCase{name: "log2(2)", val: 2.0, want: 1.0},
+        FloatCase{name: "log2(8)", val: 8.0, want: 3.0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Log2(tc.val)
+            test.AssertEqual(t, got, tc.want)
+        )
 
-# Test Log10 (base-10 logarithm)
+# --- TestLog10 ---
 func TestLog10(t reference testing.T)
-    if math.Log10(1.0) != 0.0
-        t.Errorf("Expected Log10(1.0) = 0.0, got {math.Log10(1.0)}")
-    if math.Log10(10.0) != 1.0
-        t.Errorf("Expected Log10(10.0) = 1.0, got {math.Log10(10.0)}")
-    if math.Log10(1000.0) != 3.0
-        t.Errorf("Expected Log10(1000.0) = 3.0, got {math.Log10(1000.0)}")
+    cases := list of FloatCase{
+        FloatCase{name: "log10(1)", val: 1.0, want: 0.0},
+        FloatCase{name: "log10(10)", val: 10.0, want: 1.0},
+        FloatCase{name: "log10(1000)", val: 1000.0, want: 3.0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Log10(tc.val)
+            test.AssertEqual(t, got, tc.want)
+        )
 
-# Test Pi and E constants
+# --- TestConstants ---
 func TestConstants(t reference testing.T)
-    pi := math.Pi()
-    if pi < 3.14 or pi > 3.15
-        t.Errorf("Expected Pi ≈ 3.14159, got {pi}")
+    t.Run("Pi approx", (t reference testing.T) =>
+        pi := math.Pi()
+        if pi < 3.14 or pi > 3.15
+            t.Errorf("Expected Pi ≈ 3.14159, got {pi}")
+    )
+    t.Run("E approx", (t reference testing.T) =>
+        e := math.E()
+        if e < 2.71 or e > 2.72
+            t.Errorf("Expected E ≈ 2.71828, got {e}")
+    )
+    t.Run("Pi and E distinct", (t reference testing.T) =>
+        pi := math.Pi()
+        e := math.E()
+        if pi == e
+            t.Error("Expected Pi and E to be different constants")
+    )
 
-    e := math.E()
-    if e < 2.71 or e > 2.72
-        t.Errorf("Expected E ≈ 2.71828, got {e}")
-
-    # Pi and E are distinct
-    if pi == e
-        t.Error("Expected Pi and E to be different constants")
-
-# Test Clamp restricts a value to [min, max]
+# --- TestClamp ---
 func TestClamp(t reference testing.T)
-    # Value within range is unchanged
-    if math.Clamp(5.0, 0.0, 10.0) != 5.0
-        t.Errorf("Expected Clamp(5.0, 0.0, 10.0) = 5.0, got {math.Clamp(5.0, 0.0, 10.0)}")
-
-    # Value below min is clamped to min
-    if math.Clamp(-5.0, 0.0, 10.0) != 0.0
-        t.Errorf("Expected Clamp(-5.0, 0.0, 10.0) = 0.0, got {math.Clamp(-5.0, 0.0, 10.0)}")
-
-    # Value above max is clamped to max
-    if math.Clamp(15.0, 0.0, 10.0) != 10.0
-        t.Errorf("Expected Clamp(15.0, 0.0, 10.0) = 10.0, got {math.Clamp(15.0, 0.0, 10.0)}")
-
-    # Exact boundary values
-    if math.Clamp(0.0, 0.0, 10.0) != 0.0
-        t.Errorf("Expected Clamp(0.0, 0.0, 10.0) = 0.0, got {math.Clamp(0.0, 0.0, 10.0)}")
-    if math.Clamp(10.0, 0.0, 10.0) != 10.0
-        t.Errorf("Expected Clamp(10.0, 0.0, 10.0) = 10.0, got {math.Clamp(10.0, 0.0, 10.0)}")
-
-    # Negative range
-    if math.Clamp(0.0, -10.0, -1.0) != -1.0
-        t.Errorf("Expected Clamp(0.0, -10.0, -1.0) = -1.0, got {math.Clamp(0.0, -10.0, -1.0)}")
-    if math.Clamp(-20.0, -10.0, -1.0) != -10.0
-        t.Errorf("Expected Clamp(-20.0, -10.0, -1.0) = -10.0, got {math.Clamp(-20.0, -10.0, -1.0)}")
+    cases := list of ClampCase{
+        ClampCase{name: "within range", val: 5.0, lo: 0.0, hi: 10.0, want: 5.0},
+        ClampCase{name: "below min", val: -5.0, lo: 0.0, hi: 10.0, want: 0.0},
+        ClampCase{name: "above max", val: 15.0, lo: 0.0, hi: 10.0, want: 10.0},
+        ClampCase{name: "at lower boundary", val: 0.0, lo: 0.0, hi: 10.0, want: 0.0},
+        ClampCase{name: "at upper boundary", val: 10.0, lo: 0.0, hi: 10.0, want: 10.0},
+        ClampCase{name: "negative range clamped high", val: 0.0, lo: -10.0, hi: -1.0, want: -1.0},
+        ClampCase{name: "negative range clamped low", val: -20.0, lo: -10.0, hi: -1.0, want: -10.0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Clamp(tc.val, tc.lo, tc.hi)
+            test.AssertEqual(t, got, tc.want)
+        )

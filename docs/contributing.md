@@ -92,7 +92,7 @@ Determine which phase(s) need modification:
 
 ### Step 3: Add Tests
 
-Add comprehensive tests in the appropriate `*_test.go` file:
+For **compiler internals** (`internal/`), add tests in the appropriate Go `*_test.go` file:
 
 ```go
 func TestYourNewFeature(t *testing.T) {
@@ -104,6 +104,8 @@ func TestYourNewFeature(t *testing.T) {
     // Test code generation if applicable
 }
 ```
+
+For **stdlib packages**, write tests in `*_test.kuki` using the table-driven pattern (see "Writing stdlib tests" under "Modifying the Standard Library").
 
 ### Step 4: Update Examples
 
@@ -236,10 +238,55 @@ You do **not** need it when:
 ### Adding a new stdlib package
 
 1. Create `stdlib/<pkg>/<pkg>.kuki` with a `petiole <pkg>` declaration
-2. Optionally create `stdlib/<pkg>/<pkg>_test.kuki` with a `petiole <pkg>_test` declaration for tests
+2. Create `stdlib/<pkg>/<pkg>_test.kuki` with table-driven tests (see below)
 3. Run `make generate && make build`
 4. Run `kukicha check stdlib/<pkg>/<pkg>.kuki` to validate
-5. Add the package to `stdlib/AGENTS.md` so AI agents know it exists
+5. Add the package to `stdlib/AGENTS.md` and `stdlib/CLAUDE.md` so AI agents know it exists
+
+### Writing stdlib tests
+
+Every stdlib package needs a `*_test.kuki` file. Use the **table-driven pattern** — it makes failures self-describing (`TestClamp/below_min` instead of a bare error) and keeps the test body minimal:
+
+```kukicha
+petiole mypackage_test
+
+import "stdlib/mypackage"
+import "stdlib/test"
+import "testing"
+
+# --- TestFoo ---
+type FooCase
+    name  string
+    input string
+    want  string
+
+func TestFoo(t reference testing.T)
+    cases := list of FooCase{
+        FooCase{name: "basic",      input: "hello", want: "HELLO"},
+        FooCase{name: "empty",      input: "",      want: ""},
+        FooCase{name: "mixed case", input: "Hello", want: "HELLO"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := mypackage.Foo(tc.input)
+            test.AssertEqual(t, got, tc.want)
+        )
+```
+
+**Conventions:**
+- Case types at file scope, named `<FunctionName>Case`; `name string` is the first field
+- `t.Run(tc.name, (t reference testing.T) => ...)` wraps every assertion body
+- Prefer `test.AssertEqual` / `test.AssertNoError` / `test.AssertError` over bare `t.Errorf`
+- A comment `# --- TestFoo ---` separates each function's table
+- Import `stdlib/test` only in `*_test.kuki` files, never in library code
+
+After writing the test file, regenerate and verify:
+
+```bash
+kukicha check stdlib/<pkg>/<pkg>_test.kuki
+./kukicha build stdlib/<pkg>/<pkg>_test.kuki   # generates _test.go
+go test ./stdlib/<pkg>/...
+```
 
 ### Documentation (`docs/`)
 

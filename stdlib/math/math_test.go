@@ -3,314 +3,271 @@
 package math_test
 
 import (
+	"fmt"
 	"github.com/duber000/kukicha/stdlib/math"
+	"github.com/duber000/kukicha/stdlib/test"
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:9
-func TestAbs(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:10
-	if math.Abs(-5.000000) != 5.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:11
-		t.Errorf("Expected Abs(-5.0) = 5.0, got %v", math.Abs(-5.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:12
-	if math.Abs(5.000000) != 5.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:13
-		t.Errorf("Expected Abs(5.0) = 5.0, got %v", math.Abs(5.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:14
-	if math.Abs(0.000000) != 0.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:15
-		t.Errorf("Expected Abs(0.0) = 0.0, got %v", math.Abs(0.0))
-	}
+type FloatCase struct {
+	name string
+	val  float64
+	want float64
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:16
-	if math.Abs(-0.001000) != 0.001000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:17
-		t.Errorf("Expected Abs(-0.001) = 0.001, got %v", math.Abs(-0.001))
-	}
+type FloatPairCase struct {
+	name string
+	a    float64
+	b    float64
+	want float64
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:20
-func TestRound(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:21
-	if math.Round(3.700000) != 4.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:22
-		t.Errorf("Expected Round(3.7) = 4.0, got %v", math.Round(3.7))
-	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:23
-	if math.Round(3.200000) != 3.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:24
-		t.Errorf("Expected Round(3.2) = 3.0, got %v", math.Round(3.2))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:25
-	if math.Round(3.500000) != 4.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:26
-		t.Errorf("Expected Round(3.5) = 4.0, got %v", math.Round(3.5))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:27
-	if math.Round(-3.500000) != -4.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:28
-		t.Errorf("Expected Round(-3.5) = -4.0, got %v", math.Round(-3.5))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:29
-	if math.Round(0.000000) != 0.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:30
-		t.Errorf("Expected Round(0.0) = 0.0, got %v", math.Round(0.0))
-	}
+type ClampCase struct {
+	name string
+	val  float64
+	lo   float64
+	hi   float64
+	want float64
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:33
-func TestFloor(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:34
-	if math.Floor(3.900000) != 3.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:35
-		t.Errorf("Expected Floor(3.9) = 3.0, got %v", math.Floor(3.9))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:36
-	if math.Floor(3.000000) != 3.000000 {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:31
+func TestAbs(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:37
-		t.Errorf("Expected Floor(3.0) = 3.0, got %v", math.Floor(3.0))
-	}
+	cases := []FloatCase{FloatCase{name: "negative", val: -5.000000, want: 5.000000}, FloatCase{name: "positive", val: 5.000000, want: 5.000000}, FloatCase{name: "zero", val: 0.000000, want: 0.000000}, FloatCase{name: "small negative", val: -0.001000, want: 0.001000}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:38
-	if math.Floor(-1.100000) != -2.000000 {
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:39
-		t.Errorf("Expected Floor(-1.1) = -2.0, got %v", math.Floor(-1.1))
-	}
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:40
-	if math.Floor(-1.000000) != -1.000000 {
+			got := math.Abs(tc.val)
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:41
-		t.Errorf("Expected Floor(-1.0) = -1.0, got %v", math.Floor(-1.0))
+			test.AssertEqual(t, got, tc.want)
+		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:44
-func TestCeil(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:45
-	if math.Ceil(3.100000) != 4.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:46
-		t.Errorf("Expected Ceil(3.1) = 4.0, got %v", math.Ceil(3.1))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:47
-	if math.Ceil(3.000000) != 3.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:48
-		t.Errorf("Expected Ceil(3.0) = 3.0, got %v", math.Ceil(3.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:49
-	if math.Ceil(-1.900000) != -1.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:50
-		t.Errorf("Expected Ceil(-1.9) = -1.0, got %v", math.Ceil(-1.9))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:51
-	if math.Ceil(-1.000000) != -1.000000 {
+func TestRound(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:52
-		t.Errorf("Expected Ceil(-1.0) = -1.0, got %v", math.Ceil(-1.0))
-	}
-}
-
+	cases := []FloatCase{FloatCase{name: "round up", val: 3.700000, want: 4.000000}, FloatCase{name: "round down", val: 3.200000, want: 3.000000}, FloatCase{name: "halfway up", val: 3.500000, want: 4.000000}, FloatCase{name: "negative halfway", val: -3.500000, want: -4.000000}, FloatCase{name: "zero", val: 0.000000, want: 0.000000}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:53
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:54
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:55
-func TestMinMax(t *testing.T) {
+			got := math.Round(tc.val)
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:56
-	if math.Min(3.000000, 7.000000) != 3.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:57
-		t.Errorf("Expected Min(3.0, 7.0) = 3.0, got %v", math.Min(3.0, 7.0))
+			test.AssertEqual(t, got, tc.want)
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:58
-	if math.Min(7.000000, 3.000000) != 3.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:59
-		t.Errorf("Expected Min(7.0, 3.0) = 3.0, got %v", math.Min(7.0, 3.0))
-	}
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:60
-	if math.Min(5.000000, 5.000000) != 5.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:61
-		t.Errorf("Expected Min(5.0, 5.0) = 5.0, got %v", math.Min(5.0, 5.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:63
-	if math.Max(3.000000, 7.000000) != 7.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:64
-		t.Errorf("Expected Max(3.0, 7.0) = 7.0, got %v", math.Max(3.0, 7.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:65
-	if math.Max(7.000000, 3.000000) != 7.000000 {
+func TestFloor(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:66
-		t.Errorf("Expected Max(7.0, 3.0) = 7.0, got %v", math.Max(7.0, 3.0))
-	}
+	cases := []FloatCase{FloatCase{name: "fractional", val: 3.900000, want: 3.000000}, FloatCase{name: "whole", val: 3.000000, want: 3.000000}, FloatCase{name: "negative fractional", val: -1.100000, want: -2.000000}, FloatCase{name: "negative whole", val: -1.000000, want: -1.000000}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:67
-	if math.Max(5.000000, 5.000000) != 5.000000 {
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:68
-		t.Errorf("Expected Max(5.0, 5.0) = 5.0, got %v", math.Max(5.0, 5.0))
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:69
+			got := math.Floor(tc.val)
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:70
+			test.AssertEqual(t, got, tc.want)
+		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:71
-func TestPow(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:72
-	if math.Pow(2.000000, 8.000000) != 256.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:73
-		t.Errorf("Expected Pow(2.0, 8.0) = 256.0, got %v", math.Pow(2.0, 8.0))
-	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:74
-	if math.Pow(3.000000, 3.000000) != 27.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:75
-		t.Errorf("Expected Pow(3.0, 3.0) = 27.0, got %v", math.Pow(3.0, 3.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:76
-	if math.Pow(5.000000, 0.000000) != 1.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:77
-		t.Errorf("Expected Pow(5.0, 0.0) = 1.0, got %v", math.Pow(5.0, 0.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:78
-	if math.Pow(1.000000, 100.000000) != 1.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:79
-		t.Errorf("Expected Pow(1.0, 100.0) = 1.0, got %v", math.Pow(1.0, 100.0))
-	}
-}
-
+func TestCeil(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:80
+	cases := []FloatCase{FloatCase{name: "fractional", val: 3.100000, want: 4.000000}, FloatCase{name: "whole", val: 3.000000, want: 3.000000}, FloatCase{name: "negative fractional", val: -1.900000, want: -1.000000}, FloatCase{name: "negative whole", val: -1.000000, want: -1.000000}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:81
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:82
-func TestSqrt(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:83
-	if math.Sqrt(9.000000) != 3.000000 {
+			got := math.Ceil(tc.val)
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:84
-		t.Errorf("Expected Sqrt(9.0) = 3.0, got %v", math.Sqrt(9.0))
+			test.AssertEqual(t, got, tc.want)
+		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:85
-	if math.Sqrt(0.000000) != 0.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:86
-		t.Errorf("Expected Sqrt(0.0) = 0.0, got %v", math.Sqrt(0.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:87
-	if math.Sqrt(1.000000) != 1.000000 {
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:88
-		t.Errorf("Expected Sqrt(1.0) = 1.0, got %v", math.Sqrt(1.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:89
-	if math.Sqrt(4.000000) != 2.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:90
-		t.Errorf("Expected Sqrt(4.0) = 2.0, got %v", math.Sqrt(4.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:93
-	result := math.Sqrt(2.000000)
+func TestSqrt(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:94
-	if (result < 1.410000) || (result > 1.420000) {
+	cases := []FloatCase{FloatCase{name: "nine", val: 9.000000, want: 3.000000}, FloatCase{name: "zero", val: 0.000000, want: 0.000000}, FloatCase{name: "one", val: 1.000000, want: 1.000000}, FloatCase{name: "four", val: 4.000000, want: 2.000000}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:95
-		t.Errorf("Expected Sqrt(2.0) ≈ 1.41421, got %v", result)
-	}
-}
-
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:96
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:97
+			got := math.Sqrt(tc.val)
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:98
-func TestLog(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:100
-	if math.Log(1.000000) != 0.000000 {
+			test.AssertEqual(t, got, tc.want)
+		})
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:101
-		t.Errorf("Expected Log(1.0) = 0.0, got %v", math.Log(1.0))
-	}
+	t.Run("sqrt 2 approx", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:102
+		result := math.Sqrt(2.000000)
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:103
+		if (result < 1.410000) || (result > 1.420000) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:104
-	e := math.E()
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:105
-	result := math.Log(e)
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:106
-	if (result < 0.990000) || (result > 1.010000) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:107
-		t.Errorf("Expected Log(E) ≈ 1.0, got %v", result)
-	}
+			t.Errorf("Expected Sqrt(2.0) ≈ 1.41421, got %v", result)
+		}
+	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:110
-func TestLog2(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:111
-	if math.Log2(1.000000) != 0.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:112
-		t.Errorf("Expected Log2(1.0) = 0.0, got %v", math.Log2(1.0))
-	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:108
+func TestMinMax(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:113
-	if math.Log2(2.000000) != 1.000000 {
+	cases := []FloatPairCase{FloatPairCase{name: "min smaller first", a: 3.000000, b: 7.000000, want: 3.000000}, FloatPairCase{name: "min larger first", a: 7.000000, b: 3.000000, want: 3.000000}, FloatPairCase{name: "min equal", a: 5.000000, b: 5.000000, want: 5.000000}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:114
-		t.Errorf("Expected Log2(2.0) = 1.0, got %v", math.Log2(2.0))
-	}
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:115
-	if math.Log2(8.000000) != 3.000000 {
+		t.Run(fmt.Sprintf("Min/%v", tc.name), func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:116
-		t.Errorf("Expected Log2(8.0) = 3.0, got %v", math.Log2(8.0))
-	}
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:119
-func TestLog10(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:120
-	if math.Log10(1.000000) != 0.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:121
-		t.Errorf("Expected Log10(1.0) = 0.0, got %v", math.Log10(1.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:122
-	if math.Log10(10.000000) != 1.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:123
-		t.Errorf("Expected Log10(10.0) = 1.0, got %v", math.Log10(10.0))
+			got := math.Min(tc.a, tc.b)
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:117
+			test.AssertEqual(t, got, tc.want)
+		})
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:124
-	if math.Log10(1000.000000) != 3.000000 {
+	maxCases := []FloatPairCase{FloatPairCase{name: "max smaller first", a: 3.000000, b: 7.000000, want: 7.000000}, FloatPairCase{name: "max larger first", a: 7.000000, b: 3.000000, want: 7.000000}, FloatPairCase{name: "max equal", a: 5.000000, b: 5.000000, want: 5.000000}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:125
-		t.Errorf("Expected Log10(1000.0) = 3.0, got %v", math.Log10(1000.0))
-	}
-}
-
+	for _, tc := range maxCases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:126
+		t.Run(fmt.Sprintf("Max/%v", tc.name), func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:127
+			got := math.Max(tc.a, tc.b)
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:128
-func TestConstants(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:129
-	pi := math.Pi()
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:130
-	if (pi < 3.140000) || (pi > 3.150000) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:131
-		t.Errorf("Expected Pi ≈ 3.14159, got %v", pi)
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:133
-	e := math.E()
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:134
-	if (e < 2.710000) || (e > 2.720000) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:135
-		t.Errorf("Expected E ≈ 2.71828, got %v", e)
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:138
-	if pi == e {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:139
-		t.Error("Expected Pi and E to be different constants")
+			test.AssertEqual(t, got, tc.want)
+		})
 	}
 }
 
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:132
+func TestPow(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:138
+	cases := []FloatPairCase{FloatPairCase{name: "2^8", a: 2.000000, b: 8.000000, want: 256.000000}, FloatPairCase{name: "3^3", a: 3.000000, b: 3.000000, want: 27.000000}, FloatPairCase{name: "5^0", a: 5.000000, b: 0.000000, want: 1.000000}, FloatPairCase{name: "1^100", a: 1.000000, b: 100.000000, want: 1.000000}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:139
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:140
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:141
+			got := math.Pow(tc.a, tc.b)
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:142
-func TestClamp(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:144
-	if math.Clamp(5.000000, 0.000000, 10.000000) != 5.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:145
-		t.Errorf("Expected Clamp(5.0, 0.0, 10.0) = 5.0, got %v", math.Clamp(5.0, 0.0, 10.0))
+			test.AssertEqual(t, got, tc.want)
+		})
 	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:146
+func TestLog(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:147
+	t.Run("log 1 equals 0", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:148
-	if math.Clamp(-5.000000, 0.000000, 10.000000) != 0.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:149
-		t.Errorf("Expected Clamp(-5.0, 0.0, 10.0) = 0.0, got %v", math.Clamp(-5.0, 0.0, 10.0))
-	}
+		test.AssertEqual(t, math.Log(1.000000), 0.000000)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:150
+	t.Run("log E approx 1", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:151
+		e := math.E()
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:152
-	if math.Clamp(15.000000, 0.000000, 10.000000) != 10.000000 {
+		result := math.Log(e)
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:153
-		t.Errorf("Expected Clamp(15.0, 0.0, 10.0) = 10.0, got %v", math.Clamp(15.0, 0.0, 10.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:156
-	if math.Clamp(0.000000, 0.000000, 10.000000) != 0.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:157
-		t.Errorf("Expected Clamp(0.0, 0.0, 10.0) = 0.0, got %v", math.Clamp(0.0, 0.0, 10.0))
-	}
+		if (result < 0.990000) || (result > 1.010000) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:154
+			t.Errorf("Expected Log(E) ≈ 1.0, got %v", result)
+		}
+	})
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:158
-	if math.Clamp(10.000000, 0.000000, 10.000000) != 10.000000 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:159
-		t.Errorf("Expected Clamp(10.0, 0.0, 10.0) = 10.0, got %v", math.Clamp(10.0, 0.0, 10.0))
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:162
-	if math.Clamp(0.000000, -10.000000, -1.000000) != -1.000000 {
+func TestLog2(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:163
-		t.Errorf("Expected Clamp(0.0, -10.0, -1.0) = -1.0, got %v", math.Clamp(0.0, -10.0, -1.0))
-	}
+	cases := []FloatCase{FloatCase{name: "log2(1)", val: 1.000000, want: 0.000000}, FloatCase{name: "log2(2)", val: 2.000000, want: 1.000000}, FloatCase{name: "log2(8)", val: 8.000000, want: 3.000000}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:164
-	if math.Clamp(-20.000000, -10.000000, -1.000000) != -10.000000 {
+	for _, tc := range cases {
 //line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:165
-		t.Errorf("Expected Clamp(-20.0, -10.0, -1.0) = -10.0, got %v", math.Clamp(-20.0, -10.0, -1.0))
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:166
+			got := math.Log2(tc.val)
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:167
+			test.AssertEqual(t, got, tc.want)
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:171
+func TestLog10(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:176
+	cases := []FloatCase{FloatCase{name: "log10(1)", val: 1.000000, want: 0.000000}, FloatCase{name: "log10(10)", val: 10.000000, want: 1.000000}, FloatCase{name: "log10(1000)", val: 1000.000000, want: 3.000000}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:177
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:178
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:179
+			got := math.Log10(tc.val)
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:180
+			test.AssertEqual(t, got, tc.want)
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:184
+func TestConstants(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:185
+	t.Run("Pi approx", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:186
+		pi := math.Pi()
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:187
+		if (pi < 3.140000) || (pi > 3.150000) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:188
+			t.Errorf("Expected Pi ≈ 3.14159, got %v", pi)
+		}
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:190
+	t.Run("E approx", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:191
+		e := math.E()
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:192
+		if (e < 2.710000) || (e > 2.720000) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:193
+			t.Errorf("Expected E ≈ 2.71828, got %v", e)
+		}
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:195
+	t.Run("Pi and E distinct", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:196
+		pi := math.Pi()
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:197
+		e := math.E()
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:198
+		if pi == e {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:199
+			t.Error("Expected Pi and E to be different constants")
+		}
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:203
+func TestClamp(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:212
+	cases := []ClampCase{ClampCase{name: "within range", val: 5.000000, lo: 0.000000, hi: 10.000000, want: 5.000000}, ClampCase{name: "below min", val: -5.000000, lo: 0.000000, hi: 10.000000, want: 0.000000}, ClampCase{name: "above max", val: 15.000000, lo: 0.000000, hi: 10.000000, want: 10.000000}, ClampCase{name: "at lower boundary", val: 0.000000, lo: 0.000000, hi: 10.000000, want: 0.000000}, ClampCase{name: "at upper boundary", val: 10.000000, lo: 0.000000, hi: 10.000000, want: 10.000000}, ClampCase{name: "negative range clamped high", val: 0.000000, lo: -10.000000, hi: -1.000000, want: -1.000000}, ClampCase{name: "negative range clamped low", val: -20.000000, lo: -10.000000, hi: -1.000000, want: -10.000000}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:213
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:214
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:215
+			got := math.Clamp(tc.val, tc.lo, tc.hi)
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math_test.kuki:216
+			test.AssertEqual(t, got, tc.want)
+		})
 	}
 }

@@ -44,7 +44,46 @@ Import with: `import "stdlib/slice"`
 | `stdlib/slice` | Slice operations | Filter, Map, GroupBy, GetOr, FirstOr, Find, Pop |
 | `stdlib/string` | String utilities | Split, Join, Trim, Contains, Replace, ToUpper, ToLower |
 | `stdlib/template` | Text templating (plain + HTML-safe) | Execute, New, HTMLExecute, HTMLRenderSimple |
+| `stdlib/test` | Test assertion helpers (use in `*_test.kuki` only) | AssertEqual, AssertTrue, AssertFalse, AssertNoError, AssertError, AssertNotEmpty |
 | `stdlib/validate` | Input validation | Email, URL, InRange, NotEmpty, MinLen, MaxLen |
+
+## Testing Stdlib Packages
+
+Use the **table-driven pattern** for all `*_test.kuki` files. This produces self-describing failure messages (`TestClamp/below_min` instead of a bare `t.Errorf`) and makes adding new cases trivial.
+
+```kukicha
+petiole math_test
+
+import "stdlib/math"
+import "stdlib/test"
+import "testing"
+
+type ClampCase
+    name string
+    val  float64
+    lo   float64
+    hi   float64
+    want float64
+
+func TestClamp(t reference testing.T)
+    cases := list of ClampCase{
+        ClampCase{name: "within range", val: 5.0,  lo: 0.0, hi: 10.0, want: 5.0},
+        ClampCase{name: "below min",   val: -5.0, lo: 0.0, hi: 10.0, want: 0.0},
+        ClampCase{name: "above max",   val: 15.0, lo: 0.0, hi: 10.0, want: 10.0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Clamp(tc.val, tc.lo, tc.hi)
+            test.AssertEqual(t, got, tc.want)
+        )
+```
+
+**Conventions:**
+- Case types are declared at file scope, named `<FunctionName>Case`; `name string` is always the first field
+- `t.Run(tc.name, (t reference testing.T) => ...)` wraps every assertion body
+- Use `test.AssertEqual`, `test.AssertNoError`, `test.AssertError` in preference to bare `t.Errorf`
+- A comment `# --- TestFoo ---` separates each function's table from the next
+- Import `stdlib/test` only in `*_test.kuki` files, never in library code
 
 ## Common Patterns
 
@@ -307,7 +346,7 @@ Every stdlib module is **pure Kukicha**: `<name>.kuki` source + `<name>.go` gene
 
 All packages: `a2a`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
 `http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
-`random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `validate`
+`random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `test`, `validate`
 
 ## Import Aliases
 
@@ -336,4 +375,5 @@ import "github.com/jackc/pgx/v5" as pgx
 2. **Never edit `internal/semantic/stdlib_registry_gen.go`** — it is auto-generated from stdlib `.kuki` signatures; `make generate` regenerates it automatically
 3. **Types must be defined in `.kuki`** — so the Kukicha compiler knows about them
 4. **After adding an exported function to a stdlib `.kuki` file**, run `make genstdlibregistry` (or just `make generate`) so `onerr` and pipe expressions work correctly with the new function
-5. There must be a test for each stdlib package.
+5. **Every stdlib package must have a `*_test.kuki` file** using the table-driven pattern (see "Testing Stdlib Packages" above)
+6. **`stdlib/test` is test-only** — import it only in `*_test.kuki` files, never in library `.kuki` files

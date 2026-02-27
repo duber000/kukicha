@@ -3,364 +3,362 @@
 petiole slice_test
 
 import "stdlib/slice"
+import "stdlib/test"
 import "testing"
 
-# Test First returns the first n elements
+# --- SliceNCase: input slice of strings, int n, expected result length ---
+type SliceNCase
+    name    string
+    n       int
+    wantLen int
+
+# --- TestFirst ---
 func TestFirst(t reference testing.T)
     items := list of string{"a", "b", "c", "d", "e"}
+    cases := list of SliceNCase{
+        SliceNCase{name: "3 elements", n: 3, wantLen: 3},
+        SliceNCase{name: "n > length", n: 10, wantLen: 5},
+        SliceNCase{name: "n=0", n: 0, wantLen: 0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            result := slice.First(items, tc.n)
+            test.AssertEqual(t, len(result), tc.wantLen)
+        )
+    t.Run("correct order", (t reference testing.T) =>
+        result := slice.First(items, 3)
+        test.AssertEqual(t, result[0], "a")
+        test.AssertEqual(t, result[2], "c")
+    )
 
-    result := slice.First(items, 3)
-    if len(result) != 3
-        t.Errorf("Expected 3 elements, got {len(result)}")
-    if result[0] != "a"
-        t.Error("Expected first element 'a'")
-    if result[2] != "c"
-        t.Error("Expected third element 'c'")
-
-    # n > length returns whole slice
-    all := slice.First(items, 10)
-    if len(all) != 5
-        t.Errorf("Expected 5 elements, got {len(all)}")
-
-    # n <= 0 returns empty slice
-    none := slice.First(items, 0)
-    if len(none) != 0
-        t.Error("Expected empty slice for n=0")
-
-# Test Last returns the last n elements
+# --- TestLast ---
 func TestLast(t reference testing.T)
     items := list of string{"a", "b", "c", "d", "e"}
+    cases := list of SliceNCase{
+        SliceNCase{name: "2 elements", n: 2, wantLen: 2},
+        SliceNCase{name: "n > length", n: 10, wantLen: 5},
+        SliceNCase{name: "n=0", n: 0, wantLen: 0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            result := slice.Last(items, tc.n)
+            test.AssertEqual(t, len(result), tc.wantLen)
+        )
+    t.Run("correct elements", (t reference testing.T) =>
+        result := slice.Last(items, 2)
+        test.AssertEqual(t, result[0], "d")
+        test.AssertEqual(t, result[1], "e")
+    )
 
-    result := slice.Last(items, 2)
-    if len(result) != 2
-        t.Errorf("Expected 2 elements, got {len(result)}")
-    if result[0] != "d"
-        t.Error("Expected first element 'd'")
-    if result[1] != "e"
-        t.Error("Expected second element 'e'")
-
-    # n > length returns whole slice
-    all := slice.Last(items, 10)
-    if len(all) != 5
-        t.Errorf("Expected 5 elements, got {len(all)}")
-
-    # n <= 0 returns empty slice
-    none := slice.Last(items, 0)
-    if len(none) != 0
-        t.Error("Expected empty slice for n=0")
-
-# Test Drop removes the first n elements
+# --- TestDrop ---
 func TestDrop(t reference testing.T)
     items := list of string{"a", "b", "c", "d", "e"}
+    cases := list of SliceNCase{
+        SliceNCase{name: "drop 2", n: 2, wantLen: 3},
+        SliceNCase{name: "n >= length", n: 10, wantLen: 0},
+        SliceNCase{name: "n=0", n: 0, wantLen: 5},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            result := slice.Drop(items, tc.n)
+            test.AssertEqual(t, len(result), tc.wantLen)
+        )
+    t.Run("first element after drop 2", (t reference testing.T) =>
+        result := slice.Drop(items, 2)
+        test.AssertEqual(t, result[0], "c")
+    )
 
-    result := slice.Drop(items, 2)
-    if len(result) != 3
-        t.Errorf("Expected 3 elements, got {len(result)}")
-    if result[0] != "c"
-        t.Error("Expected first element 'c'")
-
-    # n >= length returns empty slice
-    none := slice.Drop(items, 10)
-    if len(none) != 0
-        t.Error("Expected empty slice when n >= length")
-
-    # n <= 0 returns whole slice
-    all := slice.Drop(items, 0)
-    if len(all) != 5
-        t.Errorf("Expected 5 elements, got {len(all)}")
-
-# Test DropLast removes the last n elements
+# --- TestDropLast ---
 func TestDropLast(t reference testing.T)
     items := list of string{"a", "b", "c", "d", "e"}
+    cases := list of SliceNCase{
+        SliceNCase{name: "drop last 2", n: 2, wantLen: 3},
+        SliceNCase{name: "n >= length", n: 10, wantLen: 0},
+        SliceNCase{name: "n=0", n: 0, wantLen: 5},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            result := slice.DropLast(items, tc.n)
+            test.AssertEqual(t, len(result), tc.wantLen)
+        )
+    t.Run("last element after drop last 2", (t reference testing.T) =>
+        result := slice.DropLast(items, 2)
+        test.AssertEqual(t, result[2], "c")
+    )
 
-    result := slice.DropLast(items, 2)
-    if len(result) != 3
-        t.Errorf("Expected 3 elements, got {len(result)}")
-    if result[2] != "c"
-        t.Error("Expected last element 'c'")
-
-    # n >= length returns empty slice
-    none := slice.DropLast(items, 10)
-    if len(none) != 0
-        t.Error("Expected empty slice when n >= length")
-
-    # n <= 0 returns whole slice
-    all := slice.DropLast(items, 0)
-    if len(all) != 5
-        t.Errorf("Expected 5 elements, got {len(all)}")
-
-# Test Reverse returns a reversed copy without modifying the original
+# --- TestReverse ---
 func TestReverse(t reference testing.T)
     items := list of string{"a", "b", "c"}
-
     result := slice.Reverse(items)
-    if len(result) != 3
-        t.Errorf("Expected 3 elements, got {len(result)}")
-    if result[0] != "c"
-        t.Error("Expected first element 'c'")
-    if result[1] != "b"
-        t.Error("Expected second element 'b'")
-    if result[2] != "a"
-        t.Error("Expected third element 'a'")
 
-    # Original slice should not be modified
-    if items[0] != "a"
-        t.Error("Reverse should not modify the original slice")
+    t.Run("length preserved", (t reference testing.T) =>
+        test.AssertEqual(t, len(result), 3)
+    )
+    t.Run("reversed order", (t reference testing.T) =>
+        test.AssertEqual(t, result[0], "c")
+        test.AssertEqual(t, result[1], "b")
+        test.AssertEqual(t, result[2], "a")
+    )
+    t.Run("original unchanged", (t reference testing.T) =>
+        test.AssertEqual(t, items[0], "a")
+    )
 
-# Test Unique removes duplicates while preserving order
+# --- TestUnique ---
 func TestUnique(t reference testing.T)
     items := list of any{"a", "b", "a", "c", "b", "d"}
-
     result := slice.Unique(items)
-    if len(result) != 4
-        t.Errorf("Expected 4 elements, got {len(result)}")
-    if result[0] != "a"
-        t.Error("Expected first element 'a'")
-    if result[1] != "b"
-        t.Error("Expected second element 'b'")
-    if result[2] != "c"
-        t.Error("Expected third element 'c'")
-    if result[3] != "d"
-        t.Error("Expected fourth element 'd'")
 
-# Test Contains checks for element presence
+    t.Run("removes duplicates", (t reference testing.T) =>
+        test.AssertEqual(t, len(result), 4)
+    )
+    t.Run("preserves order", (t reference testing.T) =>
+        test.AssertEqual(t, result[0], "a")
+        test.AssertEqual(t, result[1], "b")
+        test.AssertEqual(t, result[2], "c")
+        test.AssertEqual(t, result[3], "d")
+    )
+
+# --- ContainsCase ---
+type ContainsCase
+    name   string
+    needle any
+    want   bool
+
+# --- TestContains ---
 func TestContains(t reference testing.T)
     items := list of any{"apple", "banana", "cherry"}
+    cases := list of ContainsCase{
+        ContainsCase{name: "banana present", needle: "banana", want: true},
+        ContainsCase{name: "grape absent", needle: "grape", want: false},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            test.AssertEqual(t, slice.Contains(items, tc.needle), tc.want)
+        )
 
-    if not slice.Contains(items, "banana")
-        t.Error("Expected Contains to return true for 'banana'")
-    if slice.Contains(items, "grape")
-        t.Error("Expected Contains to return false for 'grape'")
+# --- IndexOfCase ---
+type IndexOfCase
+    name   string
+    needle any
+    want   int
 
-# Test IndexOf returns the index of an element
+# --- TestIndexOf ---
 func TestIndexOf(t reference testing.T)
     items := list of any{"a", "b", "c"}
+    cases := list of IndexOfCase{
+        IndexOfCase{name: "b at 1", needle: "b", want: 1},
+        IndexOfCase{name: "a at 0", needle: "a", want: 0},
+        IndexOfCase{name: "z not found", needle: "z", want: -1},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            test.AssertEqual(t, slice.IndexOf(items, tc.needle), tc.want)
+        )
 
-    if slice.IndexOf(items, "b") != 1
-        t.Error("Expected IndexOf 'b' to return 1")
-    if slice.IndexOf(items, "a") != 0
-        t.Error("Expected IndexOf 'a' to return 0")
-    if slice.IndexOf(items, "z") != -1
-        t.Error("Expected IndexOf 'z' to return -1")
-
-# Test IsEmpty and IsNotEmpty
+# --- TestIsEmptyIsNotEmpty ---
 func TestIsEmptyIsNotEmpty(t reference testing.T)
     emptySlice := list of string{}
     items := list of string{"a"}
 
-    if not slice.IsEmpty(emptySlice)
-        t.Error("Expected IsEmpty to return true for empty slice")
-    if slice.IsEmpty(items)
-        t.Error("Expected IsEmpty to return false for non-empty slice")
-    if slice.IsNotEmpty(emptySlice)
-        t.Error("Expected IsNotEmpty to return false for empty slice")
-    if not slice.IsNotEmpty(items)
-        t.Error("Expected IsNotEmpty to return true for non-empty slice")
+    t.Run("IsEmpty/empty slice", (t reference testing.T) =>
+        test.AssertEqual(t, slice.IsEmpty(emptySlice), true)
+    )
+    t.Run("IsEmpty/non-empty", (t reference testing.T) =>
+        test.AssertEqual(t, slice.IsEmpty(items), false)
+    )
+    t.Run("IsNotEmpty/empty slice", (t reference testing.T) =>
+        test.AssertEqual(t, slice.IsNotEmpty(emptySlice), false)
+    )
+    t.Run("IsNotEmpty/non-empty", (t reference testing.T) =>
+        test.AssertEqual(t, slice.IsNotEmpty(items), true)
+    )
 
-# Test Get with valid indices, negative indexing, and error cases
+# --- TestGet ---
 func TestGet(t reference testing.T)
     items := list of any{"a", "b", "c"}
 
-    val, err := slice.Get(items, 1)
-    if err != empty
-        t.Fatalf("Expected no error for index 1, got {err}")
-    if val != "b"
-        t.Error("Expected element 'b' at index 1")
+    t.Run("valid index", (t reference testing.T) =>
+        val, err := slice.Get(items, 1)
+        test.AssertNoError(t, err)
+        test.AssertEqual(t, val, "b")
+    )
+    t.Run("negative index -1", (t reference testing.T) =>
+        last, err := slice.Get(items, -1)
+        test.AssertNoError(t, err)
+        test.AssertEqual(t, last, "c")
+    )
+    t.Run("out of bounds returns error", (t reference testing.T) =>
+        _, outErr := slice.Get(items, 10)
+        test.AssertError(t, outErr)
+    )
+    t.Run("empty slice returns error", (t reference testing.T) =>
+        emptySlice := list of any{}
+        _, emptyErr := slice.Get(emptySlice, 0)
+        test.AssertError(t, emptyErr)
+    )
 
-    # Negative indexing: -1 is last element
-    last, err2 := slice.Get(items, -1)
-    if err2 != empty
-        t.Fatalf("Expected no error for index -1, got {err2}")
-    if last != "c"
-        t.Error("Expected last element 'c' at index -1")
-
-    # Out of bounds returns error
-    _, outErr := slice.Get(items, 10)
-    if outErr == empty
-        t.Error("Expected error for out-of-bounds index")
-
-    # Empty slice returns error
-    emptySlice := list of any{}
-    _, emptyErr := slice.Get(emptySlice, 0)
-    if emptyErr == empty
-        t.Error("Expected error when getting from empty slice")
-
-# Test GetOr returns a default value on out-of-bounds access
+# --- TestGetOr ---
 func TestGetOr(t reference testing.T)
     items := list of string{"a", "b", "c"}
 
-    val := slice.GetOr(items, 1, "default")
-    if val != "b"
-        t.Error("Expected element 'b'")
+    t.Run("valid index", (t reference testing.T) =>
+        test.AssertEqual(t, slice.GetOr(items, 1, "default"), "b")
+    )
+    t.Run("out of bounds returns default", (t reference testing.T) =>
+        test.AssertEqual(t, slice.GetOr(items, 10, "default"), "default")
+    )
+    t.Run("negative index -1", (t reference testing.T) =>
+        test.AssertEqual(t, slice.GetOr(items, -1, "default"), "c")
+    )
+    t.Run("empty slice returns default", (t reference testing.T) =>
+        emptySlice := list of string{}
+        test.AssertEqual(t, slice.GetOr(emptySlice, 0, "default"), "default")
+    )
 
-    defaultVal := slice.GetOr(items, 10, "default")
-    if defaultVal != "default"
-        t.Error("Expected default value for out-of-bounds index")
-
-    # Negative indexing
-    last := slice.GetOr(items, -1, "default")
-    if last != "c"
-        t.Error("Expected last element 'c' at index -1")
-
-    # Empty slice returns default
-    emptySlice := list of string{}
-    d := slice.GetOr(emptySlice, 0, "default")
-    if d != "default"
-        t.Error("Expected default value for empty slice")
-
-# Test FirstOr and LastOr return defaults for empty slices
+# --- TestFirstOrLastOr ---
 func TestFirstOrLastOr(t reference testing.T)
     items := list of string{"x", "y", "z"}
     emptySlice := list of string{}
 
-    first := slice.FirstOr(items, "default")
-    if first != "x"
-        t.Error("Expected first element 'x'")
+    t.Run("FirstOr/non-empty", (t reference testing.T) =>
+        test.AssertEqual(t, slice.FirstOr(items, "default"), "x")
+    )
+    t.Run("FirstOr/empty uses default", (t reference testing.T) =>
+        test.AssertEqual(t, slice.FirstOr(emptySlice, "default"), "default")
+    )
+    t.Run("LastOr/non-empty", (t reference testing.T) =>
+        test.AssertEqual(t, slice.LastOr(items, "default"), "z")
+    )
+    t.Run("LastOr/empty uses default", (t reference testing.T) =>
+        test.AssertEqual(t, slice.LastOr(emptySlice, "default"), "default")
+    )
 
-    firstDefault := slice.FirstOr(emptySlice, "default")
-    if firstDefault != "default"
-        t.Error("Expected default for empty slice")
-
-    last := slice.LastOr(items, "default")
-    if last != "z"
-        t.Error("Expected last element 'z'")
-
-    lastDefault := slice.LastOr(emptySlice, "default")
-    if lastDefault != "default"
-        t.Error("Expected default for empty slice")
-
-# Test FirstOne and LastOne return errors for empty slices
+# --- TestFirstOneLastOne ---
 func TestFirstOneLastOne(t reference testing.T)
     items := list of any{"x", "y", "z"}
     emptySlice := list of any{}
 
-    first, err := slice.FirstOne(items)
-    if err != empty
-        t.Fatalf("Expected no error, got {err}")
-    if first != "x"
-        t.Error("Expected first element 'x'")
+    t.Run("FirstOne/non-empty", (t reference testing.T) =>
+        first, err := slice.FirstOne(items)
+        test.AssertNoError(t, err)
+        test.AssertEqual(t, first, "x")
+    )
+    t.Run("FirstOne/empty returns error", (t reference testing.T) =>
+        _, err := slice.FirstOne(emptySlice)
+        test.AssertError(t, err)
+    )
+    t.Run("LastOne/non-empty", (t reference testing.T) =>
+        last, err := slice.LastOne(items)
+        test.AssertNoError(t, err)
+        test.AssertEqual(t, last, "z")
+    )
+    t.Run("LastOne/empty returns error", (t reference testing.T) =>
+        _, err := slice.LastOne(emptySlice)
+        test.AssertError(t, err)
+    )
 
-    _, firstErr := slice.FirstOne(emptySlice)
-    if firstErr == empty
-        t.Error("Expected error for empty slice in FirstOne")
-
-    last, err2 := slice.LastOne(items)
-    if err2 != empty
-        t.Fatalf("Expected no error, got {err2}")
-    if last != "z"
-        t.Error("Expected last element 'z'")
-
-    _, lastErr := slice.LastOne(emptySlice)
-    if lastErr == empty
-        t.Error("Expected error for empty slice in LastOne")
-
-# Test Filter keeps only elements that satisfy the predicate
+# --- TestFilter ---
 func TestFilter(t reference testing.T)
     items := list of string{"apple", "banana", "avocado", "cherry"}
 
-    # "banana" and "cherry" both have 6 chars
-    result := items |> slice.Filter((s string) => len(s) == 6)
-    if len(result) != 2
-        t.Errorf("Expected 2 elements, got {len(result)}")
+    t.Run("keeps 6-char strings", (t reference testing.T) =>
+        result := items |> slice.Filter((s string) => len(s) == 6)
+        test.AssertEqual(t, len(result), 2)
+    )
+    t.Run("all filtered out", (t reference testing.T) =>
+        none := items |> slice.Filter((s string) => len(s) > 100)
+        test.AssertEqual(t, len(none), 0)
+    )
 
-    # All elements filtered out
-    none := items |> slice.Filter((s string) => len(s) > 100)
-    if len(none) != 0
-        t.Errorf("Expected 0 elements, got {len(none)}")
-
-# Test Map transforms each element
+# --- TestMap ---
 func TestMap(t reference testing.T)
     items := list of int{1, 2, 3}
-
     result := items |> slice.Map((n int) => n * 2)
-    if len(result) != 3
-        t.Errorf("Expected 3 elements, got {len(result)}")
-    if result[0] != 2
-        t.Errorf("Expected first element 2, got {result[0]}")
-    if result[1] != 4
-        t.Errorf("Expected second element 4, got {result[1]}")
-    if result[2] != 6
-        t.Errorf("Expected third element 6, got {result[2]}")
 
-# Test FindIndex returns the index of the first matching element
+    t.Run("length preserved", (t reference testing.T) =>
+        test.AssertEqual(t, len(result), 3)
+    )
+    t.Run("values doubled", (t reference testing.T) =>
+        test.AssertEqual(t, result[0], 2)
+        test.AssertEqual(t, result[1], 4)
+        test.AssertEqual(t, result[2], 6)
+    )
+
+# --- TestFindIndex ---
 func TestFindIndex(t reference testing.T)
     items := list of int{10, 20, 30, 40}
 
-    idx := items |> slice.FindIndex((n int) => n > 25)
-    if idx != 2
-        t.Errorf("Expected index 2, got {idx}")
+    t.Run("first match", (t reference testing.T) =>
+        idx := items |> slice.FindIndex((n int) => n > 25)
+        test.AssertEqual(t, idx, 2)
+    )
+    t.Run("no match returns -1", (t reference testing.T) =>
+        notFound := items |> slice.FindIndex((n int) => n > 100)
+        test.AssertEqual(t, notFound, -1)
+    )
 
-    notFound := items |> slice.FindIndex((n int) => n > 100)
-    if notFound != -1
-        t.Errorf("Expected -1 for no match, got {notFound}")
-
-# Test Find returns the first matching element
+# --- TestFind ---
 func TestFind(t reference testing.T)
     items := list of any{"apple", "banana", "cherry"}
 
-    val, err := slice.Find(items, (v any) => v == "banana")
-    if err != empty
-        t.Fatalf("Expected no error, got {err}")
-    if val != "banana"
-        t.Errorf("Expected 'banana', got '{val}'")
+    t.Run("found element", (t reference testing.T) =>
+        val, err := slice.Find(items, (v any) => v == "banana")
+        test.AssertNoError(t, err)
+        test.AssertEqual(t, val, "banana")
+    )
+    t.Run("not found returns error", (t reference testing.T) =>
+        _, err := slice.Find(items, (v any) => v == "grape")
+        test.AssertError(t, err)
+    )
 
-    _, notFoundErr := slice.Find(items, (v any) => v == "grape")
-    if notFoundErr == empty
-        t.Error("Expected error when no element matches")
-
-# Test FindOr returns a default when no element matches
+# --- TestFindOr ---
 func TestFindOr(t reference testing.T)
     items := list of string{"apple", "banana", "cherry"}
 
-    val := items |> slice.FindOr((s string) => len(s) == 6, "none")
-    if val != "banana"
-        t.Errorf("Expected 'banana', got '{val}'")
+    t.Run("match found", (t reference testing.T) =>
+        val := items |> slice.FindOr((s string) => len(s) == 6, "none")
+        test.AssertEqual(t, val, "banana")
+    )
+    t.Run("no match uses default", (t reference testing.T) =>
+        def := items |> slice.FindOr((s string) => len(s) > 100, "none")
+        test.AssertEqual(t, def, "none")
+    )
 
-    def := items |> slice.FindOr((s string) => len(s) > 100, "none")
-    if def != "none"
-        t.Errorf("Expected default 'none', got '{def}'")
-
-# Test Pop removes and returns the last element
+# --- TestPop ---
 func TestPop(t reference testing.T)
     items := list of any{"a", "b", "c"}
 
-    last, rest, err := slice.Pop(items)
-    if err != empty
-        t.Fatalf("Expected no error, got {err}")
-    if last != "c"
-        t.Errorf("Expected popped element 'c', got '{last}'")
-    if len(rest) != 2
-        t.Errorf("Expected 2 remaining elements, got {len(rest)}")
-    if rest[0] != "a"
-        t.Error("Expected first remaining element 'a'")
+    t.Run("pops last element", (t reference testing.T) =>
+        last, rest, err := slice.Pop(items)
+        test.AssertNoError(t, err)
+        test.AssertEqual(t, last, "c")
+        test.AssertEqual(t, len(rest), 2)
+        test.AssertEqual(t, rest[0], "a")
+    )
+    t.Run("empty slice returns error", (t reference testing.T) =>
+        emptySlice := list of any{}
+        _, _, err := slice.Pop(emptySlice)
+        test.AssertError(t, err)
+    )
 
-    # Pop from empty slice returns error
-    emptySlice := list of any{}
-    _, _, emptyErr := slice.Pop(emptySlice)
-    if emptyErr == empty
-        t.Error("Expected error when popping from empty slice")
-
-# Test Shift removes and returns the first element
+# --- TestShift ---
 func TestShift(t reference testing.T)
     items := list of any{"a", "b", "c"}
 
-    first, rest, err := slice.Shift(items)
-    if err != empty
-        t.Fatalf("Expected no error, got {err}")
-    if first != "a"
-        t.Errorf("Expected shifted element 'a', got '{first}'")
-    if len(rest) != 2
-        t.Errorf("Expected 2 remaining elements, got {len(rest)}")
-    if rest[0] != "b"
-        t.Error("Expected first remaining element 'b'")
+    t.Run("shifts first element", (t reference testing.T) =>
+        first, rest, err := slice.Shift(items)
+        test.AssertNoError(t, err)
+        test.AssertEqual(t, first, "a")
+        test.AssertEqual(t, len(rest), 2)
+        test.AssertEqual(t, rest[0], "b")
+    )
+    t.Run("empty slice returns error", (t reference testing.T) =>
+        emptySlice := list of any{}
+        _, _, err := slice.Shift(emptySlice)
+        test.AssertError(t, err)
+    )
 
-    # Shift from empty slice returns error
-    emptySlice := list of any{}
-    _, _, emptyErr := slice.Shift(emptySlice)
-    if emptyErr == empty
-        t.Error("Expected error when shifting from empty slice")
-
-# Test Concat combines multiple slices into one
+# --- TestConcat ---
 func TestConcat(t reference testing.T)
     a := list of string{"a", "b"}
     b := list of string{"c", "d"}
@@ -372,28 +370,26 @@ func TestConcat(t reference testing.T)
     allSlices = append(allSlices, c)
 
     result := slice.Concat(allSlices)
-    if len(result) != 5
-        t.Errorf("Expected 5 elements, got {len(result)}")
-    if result[0] != "a"
-        t.Error("Expected first element 'a'")
-    if result[4] != "e"
-        t.Error("Expected last element 'e'")
+    t.Run("combined length", (t reference testing.T) =>
+        test.AssertEqual(t, len(result), 5)
+    )
+    t.Run("first and last elements", (t reference testing.T) =>
+        test.AssertEqual(t, result[0], "a")
+        test.AssertEqual(t, result[4], "e")
+    )
 
-# Test Chunk splits slice into chunks of the given size
+# --- TestChunk ---
 func TestChunk(t reference testing.T)
     items := list of int{1, 2, 3, 4, 5}
 
-    chunks := slice.Chunk(items, 2)
-    if len(chunks) != 3
-        t.Errorf("Expected 3 chunks, got {len(chunks)}")
-    if len(chunks[0]) != 2
-        t.Errorf("Expected first chunk of size 2, got {len(chunks[0])}")
-    if len(chunks[1]) != 2
-        t.Errorf("Expected second chunk of size 2, got {len(chunks[1])}")
-    if len(chunks[2]) != 1
-        t.Errorf("Expected last chunk of size 1, got {len(chunks[2])}")
-
-    # size <= 0 returns empty
-    none := slice.Chunk(items, 0)
-    if len(none) != 0
-        t.Error("Expected empty result for size 0")
+    t.Run("chunks of 2", (t reference testing.T) =>
+        chunks := slice.Chunk(items, 2)
+        test.AssertEqual(t, len(chunks), 3)
+        test.AssertEqual(t, len(chunks[0]), 2)
+        test.AssertEqual(t, len(chunks[1]), 2)
+        test.AssertEqual(t, len(chunks[2]), 1)
+    )
+    t.Run("size=0 returns empty", (t reference testing.T) =>
+        none := slice.Chunk(items, 0)
+        test.AssertEqual(t, len(none), 0)
+    )

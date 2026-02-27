@@ -3,264 +3,346 @@
 petiole string_test
 
 import "stdlib/string"
+import "stdlib/test"
 import "testing"
 
-# Test ToUpper and ToLower
+# Shared case type for single-string transformations
+type StringCase
+    name  string
+    input string
+    want  string
+
+# --- TestToUpperToLower ---
 func TestToUpperToLower(t reference testing.T)
-    if string.ToUpper("hello") != "HELLO"
-        t.Error("Expected ToUpper('hello') = 'HELLO'")
-    if string.ToUpper("Hello World") != "HELLO WORLD"
-        t.Error("Expected ToUpper('Hello World') = 'HELLO WORLD'")
-    if string.ToUpper("") != ""
-        t.Error("Expected ToUpper('') = ''")
+    upperCases := list of StringCase{
+        StringCase{name: "all lower", input: "hello", want: "HELLO"},
+        StringCase{name: "mixed", input: "Hello World", want: "HELLO WORLD"},
+        StringCase{name: "empty", input: "", want: ""},
+    }
+    for tc in upperCases
+        t.Run("ToUpper/{tc.name}", (t reference testing.T) =>
+            test.AssertEqual(t, string.ToUpper(tc.input), tc.want)
+        )
 
-    if string.ToLower("HELLO") != "hello"
-        t.Error("Expected ToLower('HELLO') = 'hello'")
-    if string.ToLower("Hello World") != "hello world"
-        t.Error("Expected ToLower('Hello World') = 'hello world'")
-    if string.ToLower("") != ""
-        t.Error("Expected ToLower('') = ''")
+    lowerCases := list of StringCase{
+        StringCase{name: "all upper", input: "HELLO", want: "hello"},
+        StringCase{name: "mixed", input: "Hello World", want: "hello world"},
+        StringCase{name: "empty", input: "", want: ""},
+    }
+    for tc in lowerCases
+        t.Run("ToLower/{tc.name}", (t reference testing.T) =>
+            test.AssertEqual(t, string.ToLower(tc.input), tc.want)
+        )
 
-# Test Trim functions
+# --- TestTrimFunctions ---
+type TrimCase
+    name   string
+    input  string
+    cutset string
+    want   string
+
 func TestTrimFunctions(t reference testing.T)
-    if string.Trim("  hello  ", " ") != "hello"
-        t.Error("Expected Trim to remove leading and trailing spaces")
-    if string.Trim("xxhelloxx", "x") != "hello"
-        t.Error("Expected Trim to remove 'x' from both ends")
+    trimCases := list of TrimCase{
+        TrimCase{name: "spaces", input: "  hello  ", cutset: " ", want: "hello"},
+        TrimCase{name: "x chars", input: "xxhelloxx", cutset: "x", want: "hello"},
+    }
+    for tc in trimCases
+        t.Run("Trim/{tc.name}", (t reference testing.T) =>
+            test.AssertEqual(t, string.Trim(tc.input, tc.cutset), tc.want)
+        )
 
-    if string.TrimSpace("  hello  ") != "hello"
-        t.Error("Expected TrimSpace to remove whitespace")
-    if string.TrimSpace("\t hello \n") != "hello"
-        t.Error("Expected TrimSpace to remove tabs and newlines")
+    trimSpaceCases := list of StringCase{
+        StringCase{name: "spaces", input: "  hello  ", want: "hello"},
+        StringCase{name: "tabs and newlines", input: "\t hello \n", want: "hello"},
+    }
+    for tc in trimSpaceCases
+        t.Run("TrimSpace/{tc.name}", (t reference testing.T) =>
+            test.AssertEqual(t, string.TrimSpace(tc.input), tc.want)
+        )
 
-    if string.TrimPrefix("hello world", "hello ") != "world"
-        t.Error("Expected TrimPrefix to remove prefix")
-    if string.TrimPrefix("hello world", "xyz") != "hello world"
-        t.Error("Expected TrimPrefix to return original when prefix not present")
-    if string.TrimPrefix("hello world", "") != "hello world"
-        t.Error("Expected TrimPrefix with empty prefix to return original")
+    prefixCases := list of TrimCase{
+        TrimCase{name: "removes prefix", input: "hello world", cutset: "hello ", want: "world"},
+        TrimCase{name: "not present", input: "hello world", cutset: "xyz", want: "hello world"},
+        TrimCase{name: "empty prefix", input: "hello world", cutset: "", want: "hello world"},
+    }
+    for tc in prefixCases
+        t.Run("TrimPrefix/{tc.name}", (t reference testing.T) =>
+            test.AssertEqual(t, string.TrimPrefix(tc.input, tc.cutset), tc.want)
+        )
 
-    if string.TrimSuffix("hello world", " world") != "hello"
-        t.Error("Expected TrimSuffix to remove suffix")
-    if string.TrimSuffix("hello world", "xyz") != "hello world"
-        t.Error("Expected TrimSuffix to return original when suffix not present")
+    suffixCases := list of TrimCase{
+        TrimCase{name: "removes suffix", input: "hello world", cutset: " world", want: "hello"},
+        TrimCase{name: "not present", input: "hello world", cutset: "xyz", want: "hello world"},
+    }
+    for tc in suffixCases
+        t.Run("TrimSuffix/{tc.name}", (t reference testing.T) =>
+            test.AssertEqual(t, string.TrimSuffix(tc.input, tc.cutset), tc.want)
+        )
 
-    if string.TrimLeft("xxhello", "x") != "hello"
-        t.Error("Expected TrimLeft to remove leading 'x' chars")
-    if string.TrimRight("helloxx", "x") != "hello"
-        t.Error("Expected TrimRight to remove trailing 'x' chars")
+    t.Run("TrimLeft removes leading x", (t reference testing.T) =>
+        test.AssertEqual(t, string.TrimLeft("xxhello", "x"), "hello")
+    )
+    t.Run("TrimRight removes trailing x", (t reference testing.T) =>
+        test.AssertEqual(t, string.TrimRight("helloxx", "x"), "hello")
+    )
 
-# Test Split and Join
+# --- TestSplitJoin ---
 func TestSplitJoin(t reference testing.T)
-    parts := string.Split("a,b,c", ",")
-    if len(parts) != 3
-        t.Errorf("Expected 3 parts, got {len(parts)}")
-    if parts[0] != "a"
-        t.Error("Expected first part 'a'")
-    if parts[1] != "b"
-        t.Error("Expected second part 'b'")
-    if parts[2] != "c"
-        t.Error("Expected third part 'c'")
+    t.Run("split on comma", (t reference testing.T) =>
+        parts := string.Split("a,b,c", ",")
+        test.AssertEqual(t, len(parts), 3)
+        test.AssertEqual(t, parts[0], "a")
+        test.AssertEqual(t, parts[1], "b")
+        test.AssertEqual(t, parts[2], "c")
+    )
+    t.Run("join with dash", (t reference testing.T) =>
+        parts := string.Split("a,b,c", ",")
+        test.AssertEqual(t, string.Join(parts, "-"), "a-b-c")
+    )
+    t.Run("split on empty string", (t reference testing.T) =>
+        chars := string.Split("abc", "")
+        test.AssertEqual(t, len(chars), 3)
+    )
+    t.Run("join with empty separator", (t reference testing.T) =>
+        chars := string.Split("abc", "")
+        test.AssertEqual(t, string.Join(chars, ""), "abc")
+    )
 
-    joined := string.Join(parts, "-")
-    if joined != "a-b-c"
-        t.Errorf("Expected 'a-b-c', got '{joined}'")
-
-    # Split on empty string gives individual characters
-    chars := string.Split("abc", "")
-    if len(chars) != 3
-        t.Errorf("Expected 3 chars, got {len(chars)}")
-
-    # Join with empty separator
-    back := string.Join(chars, "")
-    if back != "abc"
-        t.Errorf("Expected 'abc', got '{back}'")
-
-# Test SplitN
+# --- TestSplitN ---
 func TestSplitN(t reference testing.T)
-    parts := string.SplitN("a:b:c:d", ":", 2)
-    if len(parts) != 2
-        t.Errorf("Expected 2 parts, got {len(parts)}")
-    if parts[0] != "a"
-        t.Error("Expected first part 'a'")
-    if parts[1] != "b:c:d"
-        t.Errorf("Expected second part 'b:c:d', got '{parts[1]}'")
+    t.Run("limit to 2 parts", (t reference testing.T) =>
+        parts := string.SplitN("a:b:c:d", ":", 2)
+        test.AssertEqual(t, len(parts), 2)
+        test.AssertEqual(t, parts[0], "a")
+        test.AssertEqual(t, parts[1], "b:c:d")
+    )
 
-# Test Fields splits on whitespace
+# --- TestFields ---
 func TestFields(t reference testing.T)
-    parts := string.Fields("  hello   world  ")
-    if len(parts) != 2
-        t.Errorf("Expected 2 fields, got {len(parts)}")
-    if parts[0] != "hello"
-        t.Error("Expected first field 'hello'")
-    if parts[1] != "world"
-        t.Error("Expected second field 'world'")
+    t.Run("splits on whitespace", (t reference testing.T) =>
+        parts := string.Fields("  hello   world  ")
+        test.AssertEqual(t, len(parts), 2)
+        test.AssertEqual(t, parts[0], "hello")
+        test.AssertEqual(t, parts[1], "world")
+    )
+    t.Run("empty string returns empty slice", (t reference testing.T) =>
+        none := string.Fields("")
+        test.AssertEqual(t, len(none), 0)
+    )
 
-    # Empty string returns empty slice
-    none := string.Fields("")
-    if len(none) != 0
-        t.Error("Expected Fields('') to return empty slice")
-
-# Test Contains, HasPrefix, HasSuffix
+# --- TestSearchFunctions ---
 func TestSearchFunctions(t reference testing.T)
     s := "hello world"
 
-    if not string.Contains(s, "world")
-        t.Error("Expected Contains to return true for 'world'")
-    if not string.Contains(s, "hello")
-        t.Error("Expected Contains to return true for 'hello'")
-    if string.Contains(s, "xyz")
-        t.Error("Expected Contains to return false for 'xyz'")
-    if not string.Contains(s, "")
-        t.Error("Expected Contains to return true for empty substring")
+    containsCases := list of TrimCase{
+        TrimCase{name: "world present", input: s, cutset: "world", want: "true"},
+        TrimCase{name: "hello present", input: s, cutset: "hello", want: "true"},
+        TrimCase{name: "xyz absent", input: s, cutset: "xyz", want: "false"},
+        TrimCase{name: "empty always present", input: s, cutset: "", want: "true"},
+    }
+    for tc in containsCases
+        t.Run("Contains/{tc.name}", (t reference testing.T) =>
+            got := string.Contains(tc.input, tc.cutset)
+            wantBool := tc.want == "true"
+            test.AssertEqual(t, got, wantBool)
+        )
 
-    if not string.HasPrefix(s, "hello")
-        t.Error("Expected HasPrefix to return true for 'hello'")
-    if string.HasPrefix(s, "world")
-        t.Error("Expected HasPrefix to return false for 'world'")
+    t.Run("HasPrefix/hello", (t reference testing.T) =>
+        test.AssertEqual(t, string.HasPrefix(s, "hello"), true)
+    )
+    t.Run("HasPrefix/world false", (t reference testing.T) =>
+        test.AssertEqual(t, string.HasPrefix(s, "world"), false)
+    )
+    t.Run("HasSuffix/world", (t reference testing.T) =>
+        test.AssertEqual(t, string.HasSuffix(s, "world"), true)
+    )
+    t.Run("HasSuffix/hello false", (t reference testing.T) =>
+        test.AssertEqual(t, string.HasSuffix(s, "hello"), false)
+    )
 
-    if not string.HasSuffix(s, "world")
-        t.Error("Expected HasSuffix to return true for 'world'")
-    if string.HasSuffix(s, "hello")
-        t.Error("Expected HasSuffix to return false for 'hello'")
+# --- TestIndexFunctions ---
+type IndexCase
+    name  string
+    input string
+    sub   string
+    want  int
 
-# Test Index and LastIndex
 func TestIndexFunctions(t reference testing.T)
-    if string.Index("hello world", "world") != 6
-        t.Error("Expected Index to return 6")
-    if string.Index("hello world", "hello") != 0
-        t.Error("Expected Index to return 0")
-    if string.Index("hello world", "xyz") != -1
-        t.Error("Expected Index to return -1 for missing substring")
+    indexCases := list of IndexCase{
+        IndexCase{name: "world at 6", input: "hello world", sub: "world", want: 6},
+        IndexCase{name: "hello at 0", input: "hello world", sub: "hello", want: 0},
+        IndexCase{name: "xyz not found", input: "hello world", sub: "xyz", want: -1},
+    }
+    for tc in indexCases
+        t.Run("Index/{tc.name}", (t reference testing.T) =>
+            test.AssertEqual(t, string.Index(tc.input, tc.sub), tc.want)
+        )
 
-    if string.LastIndex("abcabc", "abc") != 3
-        t.Error("Expected LastIndex to return 3")
-    if string.LastIndex("abcabc", "xyz") != -1
-        t.Error("Expected LastIndex to return -1 for missing substring")
+    lastIndexCases := list of IndexCase{
+        IndexCase{name: "last abc at 3", input: "abcabc", sub: "abc", want: 3},
+        IndexCase{name: "xyz not found", input: "abcabc", sub: "xyz", want: -1},
+    }
+    for tc in lastIndexCases
+        t.Run("LastIndex/{tc.name}", (t reference testing.T) =>
+            test.AssertEqual(t, string.LastIndex(tc.input, tc.sub), tc.want)
+        )
 
-# Test Count
+# --- TestCount ---
+type CountCase
+    name  string
+    input string
+    sub   string
+    want  int
+
 func TestCount(t reference testing.T)
-    got := string.Count("hello", "l")
-    if got != 2
-        t.Errorf("Expected Count('hello', 'l') = 2, got {got}")
-    if string.Count("hello", "ll") != 1
-        t.Error("Expected Count to return 1 for 'll'")
-    if string.Count("hello", "x") != 0
-        t.Error("Expected Count to return 0 for missing char")
+    cases := list of CountCase{
+        CountCase{name: "l appears twice", input: "hello", sub: "l", want: 2},
+        CountCase{name: "ll appears once", input: "hello", sub: "ll", want: 1},
+        CountCase{name: "x absent", input: "hello", sub: "x", want: 0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            test.AssertEqual(t, string.Count(tc.input, tc.sub), tc.want)
+        )
 
-# Test Replace and ReplaceAll
+# --- TestReplaceFunctions ---
 func TestReplaceFunctions(t reference testing.T)
-    if string.ReplaceAll("aabbcc", "b", "x") != "aaxxcc"
-        t.Error("Expected ReplaceAll to replace all occurrences")
-    if string.ReplaceAll("hello", "x", "y") != "hello"
-        t.Error("Expected ReplaceAll to return original when substring not found")
+    t.Run("ReplaceAll replaces all", (t reference testing.T) =>
+        test.AssertEqual(t, string.ReplaceAll("aabbcc", "b", "x"), "aaxxcc")
+    )
+    t.Run("ReplaceAll no match", (t reference testing.T) =>
+        test.AssertEqual(t, string.ReplaceAll("hello", "x", "y"), "hello")
+    )
+    t.Run("Replace first only", (t reference testing.T) =>
+        test.AssertEqual(t, string.Replace("aabbcc", "b", "x", 1), "aaxbcc")
+    )
+    t.Run("Replace n=-1 replaces all", (t reference testing.T) =>
+        test.AssertEqual(t, string.Replace("aabbcc", "b", "x", -1), "aaxxcc")
+    )
 
-    if string.Replace("aabbcc", "b", "x", 1) != "aaxbcc"
-        t.Error("Expected Replace to replace only first occurrence")
-    if string.Replace("aabbcc", "b", "x", -1) != "aaxxcc"
-        t.Error("Expected Replace with n=-1 to replace all")
-
-# Test Repeat
+# --- TestRepeat ---
 func TestRepeat(t reference testing.T)
-    if string.Repeat("ab", 3) != "ababab"
-        t.Error("Expected Repeat to repeat string 3 times")
-    if string.Repeat("x", 1) != "x"
-        t.Error("Expected Repeat with count=1 to return original")
-    if string.Repeat("x", 0) != ""
-        t.Error("Expected Repeat with count=0 to return empty")
+    cases := list of StringCase{
+        StringCase{name: "repeat 3 times", input: "ab", want: "ababab"},
+        StringCase{name: "repeat 1 time", input: "x", want: "x"},
+        StringCase{name: "repeat 0 times", input: "x", want: ""},
+    }
+    counts := list of int{3, 1, 0}
+    for i from 0 to len(cases)
+        tc := cases[i]
+        n := counts[i]
+        t.Run(tc.name, (t reference testing.T) =>
+            test.AssertEqual(t, string.Repeat(tc.input, n), tc.want)
+        )
 
-# Test PadRight and PadLeft
+# --- TestPadFunctions ---
+type PadCase
+    name  string
+    input string
+    width int
+    pad   string
+    want  string
+
 func TestPadFunctions(t reference testing.T)
-    if string.PadRight("hi", 5, " ") != "hi   "
-        got := string.PadRight("hi", 5, " ")
-        t.Errorf("Expected PadRight('hi', 5) = 'hi   ', got '{got}'")
-    if string.PadRight("hello", 3, " ") != "hello"
-        t.Error("Expected PadRight to return original when longer than width")
-    if string.PadRight("hi", 5, "-") != "hi---"
-        got := string.PadRight("hi", 5, "-")
-        t.Errorf("Expected PadRight with custom char = 'hi---', got '{got}'")
+    rightCases := list of PadCase{
+        PadCase{name: "pad with spaces", input: "hi", width: 5, pad: " ", want: "hi   "},
+        PadCase{name: "already long enough", input: "hello", width: 3, pad: " ", want: "hello"},
+        PadCase{name: "pad with dash", input: "hi", width: 5, pad: "-", want: "hi---"},
+    }
+    for tc in rightCases
+        t.Run("PadRight/{tc.name}", (t reference testing.T) =>
+            test.AssertEqual(t, string.PadRight(tc.input, tc.width, tc.pad), tc.want)
+        )
 
-    if string.PadLeft("hi", 5, " ") != "   hi"
-        got := string.PadLeft("hi", 5, " ")
-        t.Errorf("Expected PadLeft('hi', 5) = '   hi', got '{got}'")
-    if string.PadLeft("hello", 3, " ") != "hello"
-        t.Error("Expected PadLeft to return original when longer than width")
-    if string.PadLeft("hi", 5, "-") != "---hi"
-        got := string.PadLeft("hi", 5, "-")
-        t.Errorf("Expected PadLeft with custom char = '---hi', got '{got}'")
+    leftCases := list of PadCase{
+        PadCase{name: "pad with spaces", input: "hi", width: 5, pad: " ", want: "   hi"},
+        PadCase{name: "already long enough", input: "hello", width: 3, pad: " ", want: "hello"},
+        PadCase{name: "pad with dash", input: "hi", width: 5, pad: "-", want: "---hi"},
+    }
+    for tc in leftCases
+        t.Run("PadLeft/{tc.name}", (t reference testing.T) =>
+            test.AssertEqual(t, string.PadLeft(tc.input, tc.width, tc.pad), tc.want)
+        )
 
-# Test EqualFold (case-insensitive comparison)
+# --- TestEqualFold ---
 func TestEqualFold(t reference testing.T)
-    if not string.EqualFold("Hello", "hello")
-        t.Error("Expected EqualFold('Hello', 'hello') = true")
-    if not string.EqualFold("WORLD", "world")
-        t.Error("Expected EqualFold('WORLD', 'world') = true")
-    if string.EqualFold("hello", "world")
-        t.Error("Expected EqualFold('hello', 'world') = false")
-    if not string.EqualFold("", "")
-        t.Error("Expected EqualFold('', '') = true")
+    cases := list of TrimCase{
+        TrimCase{name: "same case diff", input: "Hello", cutset: "hello", want: "true"},
+        TrimCase{name: "all caps", input: "WORLD", cutset: "world", want: "true"},
+        TrimCase{name: "different strings", input: "hello", cutset: "world", want: "false"},
+        TrimCase{name: "both empty", input: "", cutset: "", want: "true"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := string.EqualFold(tc.input, tc.cutset)
+            wantBool := tc.want == "true"
+            test.AssertEqual(t, got, wantBool)
+        )
 
-# Test Len
+# --- TestLen ---
 func TestLen(t reference testing.T)
-    if string.Len("hello") != 5
-        t.Error("Expected Len('hello') = 5")
-    if string.Len("") != 0
-        t.Error("Expected Len('') = 0")
-    if string.Len("a") != 1
-        t.Error("Expected Len('a') = 1")
+    cases := list of IndexCase{
+        IndexCase{name: "hello is 5", input: "hello", sub: "", want: 5},
+        IndexCase{name: "empty is 0", input: "", sub: "", want: 0},
+        IndexCase{name: "single char is 1", input: "a", sub: "", want: 1},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            test.AssertEqual(t, string.Len(tc.input), tc.want)
+        )
 
-# Test IsEmpty and IsBlank
+# --- TestIsEmptyIsBlank ---
 func TestIsEmptyIsBlank(t reference testing.T)
-    if not string.IsEmpty("")
-        t.Error("Expected IsEmpty('') = true")
-    if string.IsEmpty("hello")
-        t.Error("Expected IsEmpty('hello') = false")
-    if string.IsEmpty(" ")
-        t.Error("Expected IsEmpty(' ') = false (contains space)")
+    t.Run("IsEmpty/empty string", (t reference testing.T) =>
+        test.AssertEqual(t, string.IsEmpty(""), true)
+    )
+    t.Run("IsEmpty/non-empty", (t reference testing.T) =>
+        test.AssertEqual(t, string.IsEmpty("hello"), false)
+    )
+    t.Run("IsEmpty/space is not empty", (t reference testing.T) =>
+        test.AssertEqual(t, string.IsEmpty(" "), false)
+    )
+    t.Run("IsBlank/empty", (t reference testing.T) =>
+        test.AssertEqual(t, string.IsBlank(""), true)
+    )
+    t.Run("IsBlank/spaces", (t reference testing.T) =>
+        test.AssertEqual(t, string.IsBlank("   "), true)
+    )
+    t.Run("IsBlank/tabs and newlines", (t reference testing.T) =>
+        test.AssertEqual(t, string.IsBlank("\t\n"), true)
+    )
+    t.Run("IsBlank/non-blank", (t reference testing.T) =>
+        test.AssertEqual(t, string.IsBlank("hello"), false)
+    )
+    t.Run("IsBlank/space with char", (t reference testing.T) =>
+        test.AssertEqual(t, string.IsBlank(" x "), false)
+    )
 
-    if not string.IsBlank("")
-        t.Error("Expected IsBlank('') = true")
-    if not string.IsBlank("   ")
-        t.Error("Expected IsBlank('   ') = true")
-    if not string.IsBlank("\t\n")
-        t.Error("Expected IsBlank('\\t\\n') = true")
-    if string.IsBlank("hello")
-        t.Error("Expected IsBlank('hello') = false")
-    if string.IsBlank(" x ")
-        t.Error("Expected IsBlank(' x ') = false")
-
-# Test Lines splits by newline
+# --- TestLines ---
 func TestLines(t reference testing.T)
-    lines := string.Lines("line1\nline2\nline3")
-    if len(lines) != 3
-        t.Errorf("Expected 3 lines, got {len(lines)}")
-    if lines[0] != "line1"
-        t.Errorf("Expected first line 'line1', got '{lines[0]}'")
-    if lines[2] != "line3"
-        t.Errorf("Expected third line 'line3', got '{lines[2]}'")
+    t.Run("three lines", (t reference testing.T) =>
+        lines := string.Lines("line1\nline2\nline3")
+        test.AssertEqual(t, len(lines), 3)
+        test.AssertEqual(t, lines[0], "line1")
+        test.AssertEqual(t, lines[2], "line3")
+    )
+    t.Run("single line no newline", (t reference testing.T) =>
+        single := string.Lines("hello")
+        test.AssertEqual(t, len(single), 1)
+        test.AssertEqual(t, single[0], "hello")
+    )
 
-    # Single line with no newline
-    single := string.Lines("hello")
-    if len(single) != 1
-        t.Errorf("Expected 1 line, got {len(single)}")
-    if single[0] != "hello"
-        t.Error("Expected line 'hello'")
-
-# Test Concat concatenates a slice of strings
+# --- TestConcat ---
 func TestConcat(t reference testing.T)
-    parts := list of string{"hello", " ", "world"}
-    result := string.Concat(parts)
-    if result != "hello world"
-        t.Errorf("Expected 'hello world', got '{result}'")
-
-    # Empty slice returns empty string
-    noParts := list of string{}
-    emptyResult := string.Concat(noParts)
-    if emptyResult != ""
-        t.Error("Expected Concat of empty slice to return ''")
-
-    # Single element
-    single := list of string{"alone"}
-    singleResult := string.Concat(single)
-    if singleResult != "alone"
-        t.Errorf("Expected 'alone', got '{singleResult}'")
+    t.Run("joins parts", (t reference testing.T) =>
+        parts := list of string{"hello", " ", "world"}
+        test.AssertEqual(t, string.Concat(parts), "hello world")
+    )
+    t.Run("empty slice", (t reference testing.T) =>
+        noParts := list of string{}
+        test.AssertEqual(t, string.Concat(noParts), "")
+    )
+    t.Run("single element", (t reference testing.T) =>
+        single := list of string{"alone"}
+        test.AssertEqual(t, string.Concat(single), "alone")
+    )
