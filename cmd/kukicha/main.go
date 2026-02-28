@@ -33,16 +33,17 @@ func main() {
 		buildFlags.SetOutput(os.Stderr)
 		target := buildFlags.String("target", "", "Compile target")
 		skipBuild := buildFlags.Bool("skip-build", false, "Skip go build step (for test files)")
+		ifChanged := buildFlags.Bool("if-changed", false, "Skip writing output if Go body (excluding generated header) is unchanged")
 		if err := buildFlags.Parse(args); err != nil {
-			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] [--skip-build] <file.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] [--skip-build] [--if-changed] <file.kuki>")
 			os.Exit(1)
 		}
 		buildArgs := buildFlags.Args()
 		if len(buildArgs) < 1 {
-			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] [--skip-build] <file.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] [--skip-build] [--if-changed] <file.kuki>")
 			os.Exit(1)
 		}
-		buildCommand(buildArgs[0], *target, *skipBuild)
+		buildCommand(buildArgs[0], *target, *skipBuild, *ifChanged)
 	case "run":
 		runFlags := flag.NewFlagSet("run", flag.ContinueOnError)
 		runFlags.SetOutput(os.Stderr)
@@ -183,7 +184,16 @@ func rewriteGoErrors(stderr []byte, goFile, kukiFile string) []byte {
 	return []byte(result)
 }
 
-func buildCommand(filename string, targetFlag string, skipBuild bool) {
+// stripFirstLine removes the first line (including its newline) from b.
+// Used to compare generated Go files while ignoring the version header.
+func stripFirstLine(b []byte) []byte {
+	if i := bytes.IndexByte(b, '\n'); i >= 0 {
+		return b[i+1:]
+	}
+	return b
+}
+
+func buildCommand(filename string, targetFlag string, skipBuild bool, ifChanged bool) {
 	absFile, err := filepath.Abs(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
@@ -232,6 +242,15 @@ func buildCommand(filename string, targetFlag string, skipBuild bool) {
 
 	// Write Go file
 	outputFile := strings.TrimSuffix(absFile, ".kuki") + ".go"
+
+	if ifChanged {
+		if existing, readErr := os.ReadFile(outputFile); readErr == nil {
+			if bytes.Equal(stripFirstLine(existing), stripFirstLine(formatted)) {
+				return // body unchanged — preserve old version comment, skip write+build
+			}
+		}
+	}
+
 	err = os.WriteFile(outputFile, formatted, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing output file: %v\n", err)
