@@ -181,8 +181,9 @@ else if count < 10
 for item in items
     process(item)
 
-for i from 0 to 10        # 0..9 (exclusive)
-for i from 0 through 10   # 0..10 (inclusive)
+for i from 0 to 10        # 0..9 (exclusive, ascending)
+for i from 0 through 10   # 0..10 (inclusive, ascending)
+for i from 10 through 0   # 10..0 (inclusive, descending)
 
 switch command
     when "fetch", "pull"

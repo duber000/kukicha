@@ -64,8 +64,7 @@ func CsvWithHeader(data string) (list of map of string to string, error)
 
     # Process each row starting from index 1
     numRecords := len(records)
-    i := 1
-    for i < numRecords
+    for i from 1 to numRecords
         row := records[i]
         rowMap := make(map of string to string)
 
@@ -74,13 +73,10 @@ func CsvWithHeader(data string) (list of map of string to string, error)
         numCols := len(row)
         maxCols := min(numCols, numHeaders)
 
-        j := 0
-        for j < maxCols
+        for j from 0 to maxCols
             rowMap[headers[j]] = row[j]
-            j = j + 1
 
         result = append(result, rowMap)
-        i = i + 1
 
     return result, empty
 

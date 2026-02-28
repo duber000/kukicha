@@ -158,9 +158,8 @@ func Do(req Request) (reference http.Response, error)
         delayMs = 1000
     cfg := retry.Config{MaxAttempts: req.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
 
-    attempt := 0
     lastErr := error "no attempts made"
-    for attempt < cfg.MaxAttempts
+    for attempt from 0 to cfg.MaxAttempts
         resp, err := doOnce(req)
         if err == empty
             # Success or non-retryable status: return immediately
@@ -173,7 +172,6 @@ func Do(req Request) (reference http.Response, error)
             # Network/transport error: record and retry
             lastErr = err
         retry.Sleep(cfg, attempt)
-        attempt = attempt + 1
 
     return empty, lastErr
 

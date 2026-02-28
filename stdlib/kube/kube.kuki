@@ -225,15 +225,13 @@ func Open(cfg Config) (Cluster, error)
     if delayMs <= 0
         delayMs = 1000
     retryCfg := retry.Config{MaxAttempts: cfg.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
-    attempt := 0
     lastErr := error "no attempts made"
-    for attempt < retryCfg.MaxAttempts
+    for attempt from 0 to retryCfg.MaxAttempts
         cluster, err := openOnce(cfg)
         if err == empty
             return cluster, empty
         lastErr = err
         retry.Sleep(retryCfg, attempt)
-        attempt = attempt + 1
     return Cluster{}, lastErr
 
 # --- Pods ---

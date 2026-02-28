@@ -125,15 +125,13 @@ func Send(req Request) (Task, error)
     if delayMs <= 0
         delayMs = 1000
     cfg := retry.Config{MaxAttempts: req.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
-    attempt := 0
     lastErr := error "no attempts made"
-    for attempt < cfg.MaxAttempts
+    for attempt from 0 to cfg.MaxAttempts
         task, err := sendRequest(req.agent, req.text, req.contextID)
         if err == empty
             return task, empty
         lastErr = err
         retry.Sleep(cfg, attempt)
-        attempt = attempt + 1
     return empty Task, lastErr
 
 # Stream executes a streaming request with callbacks.

@@ -137,7 +137,7 @@ function CreateLink on s reference Server(url string) (Link, error)
 
     # Generate a unique code (retry if collision)
     code := random.String(6)
-    for i := 0 to 10
+    for i from 0 to 10
         _, exists := s.db.GetLink(code) onerr empty
         if not exists
             break
@@ -363,7 +363,7 @@ function handleShorten on s reference Server(w http.ResponseWriter, r reference 
     s.mu.Lock()
     code := random.String(6)
     # Retry on collision (unlikely with 6 random chars, but be safe)
-    for i := 0 to 10
+    for i from 0 to 10
         _, getErr := s.db.GetLink(code)
         if getErr not equals empty
             break
@@ -742,8 +742,7 @@ function FetchReposResilient(username string) list of Repo
         |> retry.Delay(500)
         |> retry.Backoff(1)   # 1 = exponential: 500ms, 1000ms, 2000ms
 
-    attempt := 0
-    for attempt < cfg.MaxAttempts
+    for attempt from 0 to cfg.MaxAttempts
         repos := empty list of Repo
         fetchOk := true
 
@@ -765,8 +764,6 @@ function FetchReposResilient(username string) list of Repo
         if attempt < cfg.MaxAttempts - 1
             print("Attempt {attempt + 1} failed, retrying...")
             retry.Sleep(cfg, attempt)
-
-        attempt = attempt + 1
 
     print("Failed to fetch repos for '{username}' after {cfg.MaxAttempts} attempts")
     return empty list of Repo

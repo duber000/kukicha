@@ -4,69 +4,65 @@ package retry
 
 import "time"
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:18
 type Config struct {
 	MaxAttempts  int
 	InitialDelay int
 	Strategy     int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:24
 func New() Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:25
 	return Config{MaxAttempts: 3, InitialDelay: 1000, Strategy: 1}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:28
 func Attempts(cfg Config, maxAttempts int) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:29
 	cfg.MaxAttempts = maxAttempts
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:30
 	return cfg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:33
 func Delay(cfg Config, delayMs int) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:34
 	cfg.InitialDelay = delayMs
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:35
 	return cfg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:39
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:38
 func Linear(cfg Config) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:39
 	cfg.Strategy = 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:40
 	return cfg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:44
 func Sleep(cfg Config, attempt int) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:45
 	delay := calculateDelay(cfg, attempt)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:46
 	time.Sleep((time.Duration(delay) * time.Millisecond))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:49
 func calculateDelay(cfg Config, attempt int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:50
 	if cfg.Strategy == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:51
 		return cfg.InitialDelay
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:54
 	multiplier := 1
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:55
+	for range attempt {
 //line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:56
-	i := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:57
-	for i < attempt {
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:58
 		multiplier = (multiplier * 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:59
-		i = (i + 1)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/retry/retry.kuki:58
 	return (cfg.InitialDelay * multiplier)
 }

@@ -456,6 +456,10 @@ function main()
     # 'through' is inclusive: prints 1, 2, 3, 4, 5
     for i from 1 through 5
         print(i)
+
+    # Counting down works too: prints 5, 4, 3, 2, 1, 0
+    for i from 5 through 0
+        print(i)
 ```
 
 ### While Loops
@@ -729,6 +733,7 @@ You now know how to translate your shell scripting knowledge into Kukicha:
 | `-eq`, `-gt`, `-lt` | `equals`, `>`, `<` |
 | `&&`, `\|\|` | `and`, `or` |
 | `for x in ...; do ... done` | `for x in ...` with indentation |
+| `for i in $(seq 5 -1 0)` | `for i from 5 through 0` |
 | `cmd1 \| cmd2 \| cmd3` | `val \|> func1() \|> func2()` |
 | `result=$(command)` | `result := shell.Output(...)` |
 | `set -e` / `$?` | `onerr` |

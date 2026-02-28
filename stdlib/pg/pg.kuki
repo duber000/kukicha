@@ -126,15 +126,13 @@ func Open(cfg Config) (Pool, error)
     if delayMs <= 0
         delayMs = 500
     retryCfg := retry.Config{MaxAttempts: cfg.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
-    attempt := 0
     lastErr := error "no attempts made"
-    for attempt < retryCfg.MaxAttempts
+    for attempt from 0 to retryCfg.MaxAttempts
         pool, openErr := pgxpool.NewWithConfig(ctxpkg.Value(bg), poolCfg)
         if openErr == empty
             return Pool{pool: pool}, empty
         lastErr = errors.Wrap(openErr, "pg open")
         retry.Sleep(retryCfg, attempt)
-        attempt = attempt + 1
     return Pool{}, lastErr
 
 # Query executes a query that returns multiple rows.

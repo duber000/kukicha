@@ -1,0 +1,42 @@
+# find_last_example.kuki
+#
+# This example demonstrates:
+# 1. Bidirectional loops using 'through' (ascending and descending)
+# 2. The slice.FindLast and slice.FindLastOr functions
+
+import "stdlib/slice"
+
+type Item
+    Id   int
+    Name string
+
+func main()
+    # 1. Bidirectional Loops
+    print("--- Countdown ---")
+    for i from 5 through 0
+        print(i)
+
+    print("\n--- Count Up ---")
+    for i from 0 through 5
+        print(i)
+
+    # 2. Slice FindLast
+    items := list of Item{
+        Item{Id: 1, Name: "A"},
+        Item{Id: 2, Name: "B"},
+        Item{Id: 3, Name: "A"},
+        Item{Id: 4, Name: "C"},
+    }
+
+    print("\n--- Slice FindLast ---")
+    # Find the last item named "A" (should be Id: 3)
+    lastA, err := items |> slice.FindLast((n Item) => n.Name == "A")
+    if err == empty
+        print("Last A has Id: {lastA.Id}")
+    else
+        print("Not found: {err}")
+
+    # Use FindLastOr for a default value
+    print("\n--- Slice FindLastOr ---")
+    lastZ := items |> slice.FindLastOr((n Item) => n.Name == "Z", Item{Id: -1, Name: "None"})
+    print("Last Z has Id: {lastZ.Id}")

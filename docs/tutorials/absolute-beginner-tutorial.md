@@ -908,6 +908,11 @@ function main()
     print("Counting with 'through':")
     for i from 1 through 5
         print(i)
+
+    # You can also count down: 5, 4, 3, 2, 1, 0
+    print("Counting down:")
+    for i from 5 through 0
+        print(i)
 ```
 
 **Try it yourself:**

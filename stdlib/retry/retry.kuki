@@ -4,12 +4,11 @@
 # Usage:
 #   cfg := retry.New() |> retry.Attempts(5) |> retry.Delay(500)
 #   attempt := 0
-#   for attempt < cfg.MaxAttempts
+#   for attempt from 0 to cfg.MaxAttempts
 #       result, err := doSomething()
 #       if err == empty
 #           break
 #       retry.Sleep(cfg, attempt)
-#       attempt = attempt + 1
 
 petiole retry
 
@@ -53,9 +52,7 @@ func calculateDelay(cfg Config, attempt int) int
 
     # Exponential backoff: InitialDelay * 2^attempt
     multiplier := 1
-    i := 0
-    for i < attempt
+    for _ from 0 to attempt
         multiplier = multiplier * 2
-        i = i + 1
 
     return cfg.InitialDelay * multiplier

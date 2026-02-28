@@ -83,52 +83,69 @@ func CsvWithHeader(data string) ([]map[string]string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:66
 	numRecords := len(records)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:67
-	i := 1
+	{
+		_iStart, _iEnd := 1, numRecords
+		if _iStart <= _iEnd {
+			for i := _iStart; i < _iEnd; i++ {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:68
-	for i < numRecords {
+				row := records[i]
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:69
-		row := records[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:70
-		rowMap := make(map[string]string)
+				rowMap := make(map[string]string)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:72
+				numHeaders := len(headers)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:73
-		numHeaders := len(headers)
+				numCols := len(row)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:74
-		numCols := len(row)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:75
-		maxCols := min(numCols, numHeaders)
+				maxCols := min(numCols, numHeaders)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:76
+				for j := range maxCols {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:77
-		j := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:78
-		for j < maxCols {
+					rowMap[headers[j]] = row[j]
+				}
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:79
-			rowMap[headers[j]] = row[j]
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:80
-			j = (j + 1)
+				result = append(result, rowMap)
+			}
+		} else {
+			for i := _iStart; i > _iEnd; i-- {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:68
+				row := records[i]
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:69
+				rowMap := make(map[string]string)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:72
+				numHeaders := len(headers)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:73
+				numCols := len(row)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:74
+				maxCols := min(numCols, numHeaders)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:76
+				for j := range maxCols {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:77
+					rowMap[headers[j]] = row[j]
+				}
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:79
+				result = append(result, rowMap)
+			}
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:82
-		result = append(result, rowMap)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:83
-		i = (i + 1)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:81
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:90
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:86
 func Yaml(data string) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:87
 	return []byte(data), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:91
 func YamlPretty(value any) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:96
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:92
 	yamlData, err := yaml.Marshal(value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:97
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:93
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:94
 		return nil, err
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:95
 	return yamlData, nil
 }

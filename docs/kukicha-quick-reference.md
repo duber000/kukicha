@@ -269,6 +269,7 @@ function Get on s reference Store(id int) Todo
 # Range loops
 for i from 0 to 10          # 0 to 9
 for i from 0 through 10     # 0 to 10
+for i from 10 through 0     # 10 down to 0
 
 # Collection loops
 for item in items           # Values only
@@ -343,6 +344,7 @@ func Connect(host string, port int = 8080, timeout int = 30)
 | `for _, v := range slice` | `for v in slice` |
 | `for i, v := range slice` | `for i, v in slice` |
 | `for i := 0; i < 10; i++` | `for i from 0 to 10` |
+| `for i := 10; i >= 0; i--` | `for i from 10 through 0` |
 | `ch <- v` | `send ch, v` |
 | `v := <-ch` | `v := receive from ch` |
 | `_` | `_` or `discard` (see section 2) |
