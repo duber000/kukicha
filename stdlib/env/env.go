@@ -10,308 +10,308 @@ import (
 	"os"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:15
+//line /home/user/kukicha/stdlib/env/env.kuki:15
 func Get(key string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:16
+//line /home/user/kukicha/stdlib/env/env.kuki:16
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:17
+//line /home/user/kukicha/stdlib/env/env.kuki:17
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:18
+//line /home/user/kukicha/stdlib/env/env.kuki:18
 		return "", errors.New(fmt.Sprintf("environment variable %v is not set", key))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:19
+//line /home/user/kukicha/stdlib/env/env.kuki:19
 	return value, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:24
+//line /home/user/kukicha/stdlib/env/env.kuki:24
 func GetOr(key string, defaultValue string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:25
+//line /home/user/kukicha/stdlib/env/env.kuki:25
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:26
+//line /home/user/kukicha/stdlib/env/env.kuki:26
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:27
+//line /home/user/kukicha/stdlib/env/env.kuki:27
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:28
+//line /home/user/kukicha/stdlib/env/env.kuki:28
 	return value
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:33
+//line /home/user/kukicha/stdlib/env/env.kuki:33
 func GetInt(key string) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:34
+//line /home/user/kukicha/stdlib/env/env.kuki:34
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:35
+//line /home/user/kukicha/stdlib/env/env.kuki:35
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:36
+//line /home/user/kukicha/stdlib/env/env.kuki:36
 		return 0, errors.New(fmt.Sprintf("environment variable %v is not set", key))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:37
+//line /home/user/kukicha/stdlib/env/env.kuki:37
 	n, err := cast.Atoi(value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:38
+//line /home/user/kukicha/stdlib/env/env.kuki:38
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:39
+//line /home/user/kukicha/stdlib/env/env.kuki:39
 		return 0, errors.New(fmt.Sprintf("environment variable %v is not a valid integer: %v", key, value))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:40
+//line /home/user/kukicha/stdlib/env/env.kuki:40
 	return n, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:45
+//line /home/user/kukicha/stdlib/env/env.kuki:45
 func GetIntOr(key string, defaultValue int) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:46
+//line /home/user/kukicha/stdlib/env/env.kuki:46
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:47
+//line /home/user/kukicha/stdlib/env/env.kuki:47
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:48
+//line /home/user/kukicha/stdlib/env/env.kuki:48
 		return defaultValue, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:49
+//line /home/user/kukicha/stdlib/env/env.kuki:49
 	n, err := cast.Atoi(value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:50
+//line /home/user/kukicha/stdlib/env/env.kuki:50
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:51
+//line /home/user/kukicha/stdlib/env/env.kuki:51
 		return 0, errors.New(fmt.Sprintf("environment variable %v is not a valid integer: %v", key, value))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:52
+//line /home/user/kukicha/stdlib/env/env.kuki:52
 	return n, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:57
+//line /home/user/kukicha/stdlib/env/env.kuki:57
 func GetIntOrDefault(key string, defaultValue int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:58
+//line /home/user/kukicha/stdlib/env/env.kuki:58
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:59
+//line /home/user/kukicha/stdlib/env/env.kuki:59
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:60
+//line /home/user/kukicha/stdlib/env/env.kuki:60
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:61
+//line /home/user/kukicha/stdlib/env/env.kuki:61
 	n, err := cast.Atoi(value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:62
+//line /home/user/kukicha/stdlib/env/env.kuki:62
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:63
+//line /home/user/kukicha/stdlib/env/env.kuki:63
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:64
+//line /home/user/kukicha/stdlib/env/env.kuki:64
 	return n
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:70
+//line /home/user/kukicha/stdlib/env/env.kuki:70
 func GetBool(key string) (bool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:71
+//line /home/user/kukicha/stdlib/env/env.kuki:71
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:72
+//line /home/user/kukicha/stdlib/env/env.kuki:72
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:73
+//line /home/user/kukicha/stdlib/env/env.kuki:73
 		return false, errors.New(fmt.Sprintf("environment variable %v is not set", key))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:74
+//line /home/user/kukicha/stdlib/env/env.kuki:74
 	return parseBool(key, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:79
+//line /home/user/kukicha/stdlib/env/env.kuki:79
 func GetBoolOr(key string, defaultValue bool) (bool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:80
+//line /home/user/kukicha/stdlib/env/env.kuki:80
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:81
+//line /home/user/kukicha/stdlib/env/env.kuki:81
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:82
+//line /home/user/kukicha/stdlib/env/env.kuki:82
 		return defaultValue, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:83
+//line /home/user/kukicha/stdlib/env/env.kuki:83
 	return parseBool(key, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:88
+//line /home/user/kukicha/stdlib/env/env.kuki:88
 func GetBoolOrDefault(key string, defaultValue bool) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:89
+//line /home/user/kukicha/stdlib/env/env.kuki:89
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:90
+//line /home/user/kukicha/stdlib/env/env.kuki:90
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:91
+//line /home/user/kukicha/stdlib/env/env.kuki:91
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:92
+//line /home/user/kukicha/stdlib/env/env.kuki:92
 	result, err := parseBool(key, value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:93
+//line /home/user/kukicha/stdlib/env/env.kuki:93
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:94
+//line /home/user/kukicha/stdlib/env/env.kuki:94
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:95
+//line /home/user/kukicha/stdlib/env/env.kuki:95
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:100
+//line /home/user/kukicha/stdlib/env/env.kuki:100
 func GetFloat(key string) (float64, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:101
+//line /home/user/kukicha/stdlib/env/env.kuki:101
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:102
+//line /home/user/kukicha/stdlib/env/env.kuki:102
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:103
+//line /home/user/kukicha/stdlib/env/env.kuki:103
 		return 0.0, errors.New(fmt.Sprintf("environment variable %v is not set", key))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:104
+//line /home/user/kukicha/stdlib/env/env.kuki:104
 	n, err := cast.ParseFloat(value, 64)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:105
+//line /home/user/kukicha/stdlib/env/env.kuki:105
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:106
+//line /home/user/kukicha/stdlib/env/env.kuki:106
 		return 0.0, errors.New(fmt.Sprintf("environment variable %v is not a valid number: %v", key, value))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:107
+//line /home/user/kukicha/stdlib/env/env.kuki:107
 	return n, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:112
+//line /home/user/kukicha/stdlib/env/env.kuki:112
 func GetFloatOr(key string, defaultValue float64) (float64, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:113
+//line /home/user/kukicha/stdlib/env/env.kuki:113
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:114
+//line /home/user/kukicha/stdlib/env/env.kuki:114
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:115
+//line /home/user/kukicha/stdlib/env/env.kuki:115
 		return defaultValue, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:116
+//line /home/user/kukicha/stdlib/env/env.kuki:116
 	n, err := cast.ParseFloat(value, 64)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:117
+//line /home/user/kukicha/stdlib/env/env.kuki:117
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:118
+//line /home/user/kukicha/stdlib/env/env.kuki:118
 		return 0.0, errors.New(fmt.Sprintf("environment variable %v is not a valid number: %v", key, value))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:119
+//line /home/user/kukicha/stdlib/env/env.kuki:119
 	return n, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:124
+//line /home/user/kukicha/stdlib/env/env.kuki:124
 func GetList(key string, separator string) ([]string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:125
+//line /home/user/kukicha/stdlib/env/env.kuki:125
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:126
+//line /home/user/kukicha/stdlib/env/env.kuki:126
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:127
+//line /home/user/kukicha/stdlib/env/env.kuki:127
 		return []string{}, errors.New(fmt.Sprintf("environment variable %v is not set", key))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:128
+//line /home/user/kukicha/stdlib/env/env.kuki:128
 	return splitAndTrim(value, separator), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:133
+//line /home/user/kukicha/stdlib/env/env.kuki:133
 func GetListOr(key string, separator string, defaultValue []string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:134
+//line /home/user/kukicha/stdlib/env/env.kuki:134
 	value := os.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:135
+//line /home/user/kukicha/stdlib/env/env.kuki:135
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:136
+//line /home/user/kukicha/stdlib/env/env.kuki:136
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:137
+//line /home/user/kukicha/stdlib/env/env.kuki:137
 	return splitAndTrim(value, separator)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:141
+//line /home/user/kukicha/stdlib/env/env.kuki:141
 func Set(key string, value string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:142
+//line /home/user/kukicha/stdlib/env/env.kuki:142
 	return os.Setenv(key, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:146
+//line /home/user/kukicha/stdlib/env/env.kuki:146
 func Unset(key string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:147
+//line /home/user/kukicha/stdlib/env/env.kuki:147
 	return os.Unsetenv(key)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:151
+//line /home/user/kukicha/stdlib/env/env.kuki:151
 func IsSet(key string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:152
+//line /home/user/kukicha/stdlib/env/env.kuki:152
 	_, exists := os.LookupEnv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:153
+//line /home/user/kukicha/stdlib/env/env.kuki:153
 	return exists
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:157
+//line /home/user/kukicha/stdlib/env/env.kuki:157
 func IsSetAndNotEmpty(key string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:158
+//line /home/user/kukicha/stdlib/env/env.kuki:158
 	value, exists := os.LookupEnv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:159
+//line /home/user/kukicha/stdlib/env/env.kuki:159
 	if !exists {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:160
+//line /home/user/kukicha/stdlib/env/env.kuki:160
 		return false
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:161
+//line /home/user/kukicha/stdlib/env/env.kuki:161
 	return !(value == "")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:165
+//line /home/user/kukicha/stdlib/env/env.kuki:165
 func All() map[string]string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:166
+//line /home/user/kukicha/stdlib/env/env.kuki:166
 	result := make(map[string]string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:167
+//line /home/user/kukicha/stdlib/env/env.kuki:167
 	for _, e := range os.Environ() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:168
+//line /home/user/kukicha/stdlib/env/env.kuki:168
 		parts := kukistring.SplitN(e, "=", 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:169
+//line /home/user/kukicha/stdlib/env/env.kuki:169
 		if len(parts) == 2 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:170
+//line /home/user/kukicha/stdlib/env/env.kuki:170
 			result[parts[0]] = parts[1]
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:171
+//line /home/user/kukicha/stdlib/env/env.kuki:171
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:177
+//line /home/user/kukicha/stdlib/env/env.kuki:177
 func ParseBool(value string) (bool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:178
+//line /home/user/kukicha/stdlib/env/env.kuki:178
 	lower := kukistring.ToLower(kukistring.TrimSpace(value))
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:179
+//line /home/user/kukicha/stdlib/env/env.kuki:179
 	if (((lower == "true") || (lower == "1")) || (lower == "yes")) || (lower == "on") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:180
+//line /home/user/kukicha/stdlib/env/env.kuki:180
 		return true, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:181
+//line /home/user/kukicha/stdlib/env/env.kuki:181
 	if (((lower == "false") || (lower == "0")) || (lower == "no")) || (lower == "off") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:182
+//line /home/user/kukicha/stdlib/env/env.kuki:182
 		return false, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:183
+//line /home/user/kukicha/stdlib/env/env.kuki:183
 	return false, errors.New(fmt.Sprintf("not a valid boolean: %v", value))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:188
+//line /home/user/kukicha/stdlib/env/env.kuki:188
 func SplitAndTrim(value string, separator string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:189
+//line /home/user/kukicha/stdlib/env/env.kuki:189
 	parts := kukistring.Split(value, separator)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:190
+//line /home/user/kukicha/stdlib/env/env.kuki:190
 	result := make([]string, 0, len(parts))
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:191
+//line /home/user/kukicha/stdlib/env/env.kuki:191
 	for _, part := range parts {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:192
+//line /home/user/kukicha/stdlib/env/env.kuki:192
 		trimmed := kukistring.TrimSpace(part)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:193
+//line /home/user/kukicha/stdlib/env/env.kuki:193
 		if trimmed != "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:194
+//line /home/user/kukicha/stdlib/env/env.kuki:194
 			result = append(result, trimmed)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:195
+//line /home/user/kukicha/stdlib/env/env.kuki:195
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:198
+//line /home/user/kukicha/stdlib/env/env.kuki:198
 func parseBool(key string, value string) (bool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:199
+//line /home/user/kukicha/stdlib/env/env.kuki:199
 	result, err := ParseBool(value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:200
+//line /home/user/kukicha/stdlib/env/env.kuki:200
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:201
+//line /home/user/kukicha/stdlib/env/env.kuki:201
 		return false, errors.New(fmt.Sprintf("environment variable %v is not a valid boolean: %v", key, value))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:202
+//line /home/user/kukicha/stdlib/env/env.kuki:202
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:205
+//line /home/user/kukicha/stdlib/env/env.kuki:205
 func splitAndTrim(value string, separator string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:206
+//line /home/user/kukicha/stdlib/env/env.kuki:206
 	return SplitAndTrim(value, separator)
 }

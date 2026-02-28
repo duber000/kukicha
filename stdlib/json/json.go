@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:10
+//line /home/user/kukicha/stdlib/json/json.kuki:10
 type Encoder struct {
 	writer        io.Writer
 	deterministic bool
@@ -16,126 +16,126 @@ type Encoder struct {
 	prefix        string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:17
+//line /home/user/kukicha/stdlib/json/json.kuki:17
 type Decoder struct {
 	reader io.Reader
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:23
+//line /home/user/kukicha/stdlib/json/json.kuki:23
 func NewEncoder(writer io.Writer) Encoder {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:24
+//line /home/user/kukicha/stdlib/json/json.kuki:24
 	enc := Encoder{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:25
+//line /home/user/kukicha/stdlib/json/json.kuki:25
 	enc.writer = writer
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:26
+//line /home/user/kukicha/stdlib/json/json.kuki:26
 	enc.deterministic = false
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:27
+//line /home/user/kukicha/stdlib/json/json.kuki:27
 	enc.indent = ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:28
+//line /home/user/kukicha/stdlib/json/json.kuki:28
 	enc.prefix = ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:29
+//line /home/user/kukicha/stdlib/json/json.kuki:29
 	return enc
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:34
+//line /home/user/kukicha/stdlib/json/json.kuki:34
 func WithDeterministic(enc Encoder) Encoder {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:35
+//line /home/user/kukicha/stdlib/json/json.kuki:35
 	enc.deterministic = true
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:36
+//line /home/user/kukicha/stdlib/json/json.kuki:36
 	return enc
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:41
+//line /home/user/kukicha/stdlib/json/json.kuki:41
 func WithIndent(enc Encoder, indent string) Encoder {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:42
+//line /home/user/kukicha/stdlib/json/json.kuki:42
 	enc.indent = indent
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:43
+//line /home/user/kukicha/stdlib/json/json.kuki:43
 	return enc
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:47
+//line /home/user/kukicha/stdlib/json/json.kuki:47
 func WithPrefix(enc Encoder, prefix string) Encoder {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:48
+//line /home/user/kukicha/stdlib/json/json.kuki:48
 	enc.prefix = prefix
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:49
+//line /home/user/kukicha/stdlib/json/json.kuki:49
 	return enc
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:56
+//line /home/user/kukicha/stdlib/json/json.kuki:56
 func Encode(enc Encoder, value any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:58
+//line /home/user/kukicha/stdlib/json/json.kuki:58
 	encoder := json.NewEncoder(enc.writer)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:59
+//line /home/user/kukicha/stdlib/json/json.kuki:59
 	return encoder.Encode(value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:64
+//line /home/user/kukicha/stdlib/json/json.kuki:64
 func NewDecoder(reader io.Reader) Decoder {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:65
+//line /home/user/kukicha/stdlib/json/json.kuki:65
 	dec := Decoder{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:66
+//line /home/user/kukicha/stdlib/json/json.kuki:66
 	dec.reader = reader
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:67
+//line /home/user/kukicha/stdlib/json/json.kuki:67
 	return dec
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:72
+//line /home/user/kukicha/stdlib/json/json.kuki:72
 func Decode(dec Decoder, target any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:73
+//line /home/user/kukicha/stdlib/json/json.kuki:73
 	decoder := json.NewDecoder(dec.reader)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:74
+//line /home/user/kukicha/stdlib/json/json.kuki:74
 	return decoder.Decode(target)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:79
+//line /home/user/kukicha/stdlib/json/json.kuki:79
 func Marshal(value any) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:80
+//line /home/user/kukicha/stdlib/json/json.kuki:80
 	bytes, err := json.Marshal(value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:81
+//line /home/user/kukicha/stdlib/json/json.kuki:81
 	return bytes, err
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:85
+//line /home/user/kukicha/stdlib/json/json.kuki:85
 func MarshalPretty(value any) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:86
+//line /home/user/kukicha/stdlib/json/json.kuki:86
 	bytes, err := json.MarshalIndent(value, "", "  ")
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:87
+//line /home/user/kukicha/stdlib/json/json.kuki:87
 	return bytes, err
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:92
+//line /home/user/kukicha/stdlib/json/json.kuki:92
 func Unmarshal(data []byte, target any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:93
+//line /home/user/kukicha/stdlib/json/json.kuki:93
 	return json.Unmarshal(data, target)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:99
+//line /home/user/kukicha/stdlib/json/json.kuki:99
 func MarshalWrite(writer io.Writer, value any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:100
+//line /home/user/kukicha/stdlib/json/json.kuki:100
 	encoder := json.NewEncoder(writer)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:101
+//line /home/user/kukicha/stdlib/json/json.kuki:101
 	return encoder.Encode(value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:107
+//line /home/user/kukicha/stdlib/json/json.kuki:107
 func UnmarshalRead(reader io.Reader, target any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:108
+//line /home/user/kukicha/stdlib/json/json.kuki:108
 	decoder := json.NewDecoder(reader)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:109
+//line /home/user/kukicha/stdlib/json/json.kuki:109
 	return decoder.Decode(target)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:114
+//line /home/user/kukicha/stdlib/json/json.kuki:114
 func DecodeRead[T any](reader io.Reader, sample T) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:115
+//line /home/user/kukicha/stdlib/json/json.kuki:115
 	data := sample
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:116
+//line /home/user/kukicha/stdlib/json/json.kuki:116
 	decoder := json.NewDecoder(reader)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:117
+//line /home/user/kukicha/stdlib/json/json.kuki:117
 	if err_1 := decoder.Decode(&data); err_1 != nil {
 		err_1 = fmt.Errorf("failed to decode json: %w", err_1)
 		return *new(T), err_1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:118
+//line /home/user/kukicha/stdlib/json/json.kuki:118
 	return data, nil
 }

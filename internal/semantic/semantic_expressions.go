@@ -158,6 +158,14 @@ func (a *Analyzer) analyzeExpressionMulti(expr ast.Expression) []*TypeInfo {
 		return a.analyzeMethodCallExpr(e, nil)
 	case *ast.PipeExpr:
 		return a.analyzePipeExprMulti(e)
+	case *ast.IndexExpr:
+		// Map index supports two-value form: val, ok := m[key]
+		leftType := a.analyzeExpression(e.Left)
+		if leftType.Kind == TypeKindMap || leftType.Kind == TypeKindUnknown {
+			elemType := a.analyzeIndexExpr(e)
+			return []*TypeInfo{elemType, {Kind: TypeKindBool}}
+		}
+		return []*TypeInfo{a.analyzeIndexExpr(e)}
 	default:
 		return []*TypeInfo{a.analyzeExpression(expr)}
 	}

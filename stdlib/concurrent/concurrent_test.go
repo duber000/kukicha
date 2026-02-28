@@ -7,40 +7,40 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:9
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:9
 func TestParallelEmpty(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:10
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:10
 	emptyTasks := []func(){}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:11
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:11
 	concurrent.Parallel(emptyTasks...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:13
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:13
 	t.Logf("Parallel completed with empty task list")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:16
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:16
 func TestParallelWithLimitEmpty(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:17
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:17
 	emptyTasks := []func(){}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:18
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:18
 	concurrent.ParallelWithLimit(5, emptyTasks...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:20
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:20
 	t.Logf("ParallelWithLimit completed with empty task list")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:23
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:23
 func TestParallelSingleTask(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:24
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:24
 	taskRun := false
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:28
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:28
 	task := func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:26
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:26
 		taskRun = true
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:28
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:28
 	concurrent.Parallel(task)
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:29
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:29
 	if !taskRun {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent_test.kuki:30
+//line /home/user/kukicha/stdlib/concurrent/concurrent_test.kuki:30
 		t.Errorf("Task should have been executed")
 	}
 }

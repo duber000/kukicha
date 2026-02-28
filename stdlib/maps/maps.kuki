@@ -21,7 +21,5 @@ func Values(m map of any to any) list of any
 
 # Contains checks if a key exists in the map
 func Contains(m map of any to any, key any) bool
-    for k, _ in m
-        if k equals key
-            return true
-    return false
+    _, ok := m[key]
+    return ok

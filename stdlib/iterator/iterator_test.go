@@ -4,11 +4,11 @@ package iterator_test
 
 import "testing"
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:12
+//line /home/user/kukicha/stdlib/iterator/iterator_test.kuki:12
 func TestIteratorPackageLoads(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:17
+//line /home/user/kukicha/stdlib/iterator/iterator_test.kuki:17
 	if true {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:18
+//line /home/user/kukicha/stdlib/iterator/iterator_test.kuki:18
 		return
 	}
 }
