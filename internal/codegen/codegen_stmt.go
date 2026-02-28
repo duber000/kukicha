@@ -424,14 +424,12 @@ func (g *Generator) generateForNumericStmt(stmt *ast.ForNumericStmt) {
 	start := g.exprToString(stmt.Start)
 	end := g.exprToString(stmt.End)
 
-	// for i from A to/through B  →  supports both A <= B and A > B
-	// Generates:
-	// _start, _end := A, B
-	// if _start <= _end {
-	//     for varName := _start; varName <= _end; varName++ { ... }
-	// } else {
-	//     for varName := _start; varName >= _end; varName-- { ... }
-	// }
+	// for i from A to/through B  →  supports both ascending and descending
+	// Generates a single loop with a step variable:
+	//   _start, _end, _step := A, B, 1
+	//   if _start > _end { _step = -1 }
+	//   for varName := _start; varName != _end; varName += _step { ... }       // "to"
+	//   for varName := _start; varName != _end+_step; varName += _step { ... } // "through"
 	// Optimization: for i from 0 to N stays as range-over-int (Go 1.22+)
 	if !stmt.Through && start == "0" {
 		if varName == "_" {
@@ -447,58 +445,41 @@ func (g *Generator) generateForNumericStmt(stmt *ast.ForNumericStmt) {
 		// Use unique internal variable names to avoid collisions with varName
 		startVar := "_" + varName + "Start"
 		endVar := "_" + varName + "End"
+		stepVar := "_" + varName + "Step"
 		if varName == "_" {
 			startVar = g.uniqueId("_start")
 			endVar = g.uniqueId("_end")
+			stepVar = g.uniqueId("_step")
 		}
-
-		g.writeLine("{")
-		g.indent++
-		g.writeLine(fmt.Sprintf("%s, %s := %s, %s", startVar, endVar, start, end))
 
 		loopVar := varName
 		if varName == "_" {
 			loopVar = g.uniqueId("_i")
 		}
 
-		// Check for range-over-int optimization if start is 0
+		// Emit a single loop with a runtime step variable to avoid duplicating
+		// the loop body for ascending vs descending directions.
+		g.writeLine("{")
+		g.indent++
+		g.writeLine(fmt.Sprintf("%s, %s, %s := %s, %s, 1", startVar, endVar, stepVar, start, end))
+		g.writeLine(fmt.Sprintf("if %s > %s {", startVar, endVar))
+		g.indent++
+		g.writeLine(fmt.Sprintf("%s = -1", stepVar))
+		g.indent--
+		g.writeLine("}")
+
 		if !stmt.Through {
-			g.writeLine(fmt.Sprintf("if %s <= %s {", startVar, endVar))
-			g.indent++
-			g.writeLine(fmt.Sprintf("for %s := %s; %s < %s; %s++ {", loopVar, startVar, loopVar, endVar, loopVar))
-			g.indent++
-			g.generateBlock(stmt.Body)
-			g.indent--
-			g.writeLine("}")
-			g.indent--
-			g.writeLine("} else {")
-			g.indent++
-			g.writeLine(fmt.Sprintf("for %s := %s; %s > %s; %s-- {", loopVar, startVar, loopVar, endVar, loopVar))
-			g.indent++
-			g.generateBlock(stmt.Body)
-			g.indent--
-			g.writeLine("}")
-			g.indent--
-			g.writeLine("}")
+			// "to" (exclusive): loop while i != end
+			g.writeLine(fmt.Sprintf("for %s := %s; %s != %s; %s += %s {", loopVar, startVar, loopVar, endVar, loopVar, stepVar))
 		} else {
-			g.writeLine(fmt.Sprintf("if %s <= %s {", startVar, endVar))
-			g.indent++
-			g.writeLine(fmt.Sprintf("for %s := %s; %s <= %s; %s++ {", loopVar, startVar, loopVar, endVar, loopVar))
-			g.indent++
-			g.generateBlock(stmt.Body)
-			g.indent--
-			g.writeLine("}")
-			g.indent--
-			g.writeLine("} else {")
-			g.indent++
-			g.writeLine(fmt.Sprintf("for %s := %s; %s >= %s; %s-- {", loopVar, startVar, loopVar, endVar, loopVar))
-			g.indent++
-			g.generateBlock(stmt.Body)
-			g.indent--
-			g.writeLine("}")
-			g.indent--
-			g.writeLine("}")
+			// "through" (inclusive): loop while i != end + step
+			g.writeLine(fmt.Sprintf("for %s := %s; %s != %s+%s; %s += %s {", loopVar, startVar, loopVar, endVar, stepVar, loopVar, stepVar))
 		}
+
+		g.indent++
+		g.generateBlock(stmt.Body)
+		g.indent--
+		g.writeLine("}")
 
 		g.indent--
 		g.writeLine("}")

@@ -611,8 +611,8 @@ func TestNumericForLoopThrough(t *testing.T) {
 		t.Fatalf("codegen error: %v", err)
 	}
 
-	if !strings.Contains(output, "for i := _iStart; i <= _iEnd; i++") {
-		t.Errorf("expected numeric for loop with bidirectional check, got: %s", output)
+	if !strings.Contains(output, "for i := _iStart; i != _iEnd+_iStep; i += _iStep {") {
+		t.Errorf("expected numeric for loop with step variable, got: %s", output)
 	}
 }
 

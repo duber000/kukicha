@@ -84,47 +84,28 @@ func CsvWithHeader(data string) ([]map[string]string, error) {
 	numRecords := len(records)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:67
 	{
-		_iStart, _iEnd := 1, numRecords
-		if _iStart <= _iEnd {
-			for i := _iStart; i < _iEnd; i++ {
+		_iStart, _iEnd, _iStep := 1, numRecords, 1
+		if _iStart > _iEnd {
+			_iStep = -1
+		}
+		for i := _iStart; i != _iEnd; i += _iStep {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:68
-				row := records[i]
+			row := records[i]
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:69
-				rowMap := make(map[string]string)
+			rowMap := make(map[string]string)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:72
-				numHeaders := len(headers)
+			numHeaders := len(headers)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:73
-				numCols := len(row)
+			numCols := len(row)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:74
-				maxCols := min(numCols, numHeaders)
+			maxCols := min(numCols, numHeaders)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:76
-				for j := range maxCols {
+			for j := range maxCols {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:77
-					rowMap[headers[j]] = row[j]
-				}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:79
-				result = append(result, rowMap)
+				rowMap[headers[j]] = row[j]
 			}
-		} else {
-			for i := _iStart; i > _iEnd; i-- {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:68
-				row := records[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:69
-				rowMap := make(map[string]string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:72
-				numHeaders := len(headers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:73
-				numCols := len(row)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:74
-				maxCols := min(numCols, numHeaders)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:76
-				for j := range maxCols {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:77
-					rowMap[headers[j]] = row[j]
-				}
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:79
-				result = append(result, rowMap)
-			}
+			result = append(result, rowMap)
 		}
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:81

@@ -358,22 +358,15 @@ func FindIndex[T any](items []T, predicate func(T) bool) int {
 func FindLast[T any](items []T, predicate func(T) bool) (T, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:243
 	{
-		_iStart, _iEnd := (len(items) - 1), 0
-		if _iStart <= _iEnd {
-			for i := _iStart; i <= _iEnd; i++ {
+		_iStart, _iEnd, _iStep := (len(items) - 1), 0, 1
+		if _iStart > _iEnd {
+			_iStep = -1
+		}
+		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:244
-				if predicate(items[i]) {
+			if predicate(items[i]) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:245
-					return items[i], nil
-				}
-			}
-		} else {
-			for i := _iStart; i >= _iEnd; i-- {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:244
-				if predicate(items[i]) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:245
-					return items[i], nil
-				}
+				return items[i], nil
 			}
 		}
 	}
@@ -385,22 +378,15 @@ func FindLast[T any](items []T, predicate func(T) bool) (T, error) {
 func FindLastOr[T any](items []T, predicate func(T) bool, defaultValue T) T {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:251
 	{
-		_iStart, _iEnd := (len(items) - 1), 0
-		if _iStart <= _iEnd {
-			for i := _iStart; i <= _iEnd; i++ {
+		_iStart, _iEnd, _iStep := (len(items) - 1), 0, 1
+		if _iStart > _iEnd {
+			_iStep = -1
+		}
+		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:252
-				if predicate(items[i]) {
+			if predicate(items[i]) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:253
-					return items[i]
-				}
-			}
-		} else {
-			for i := _iStart; i >= _iEnd; i-- {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:252
-				if predicate(items[i]) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:253
-					return items[i]
-				}
+				return items[i]
 			}
 		}
 	}
