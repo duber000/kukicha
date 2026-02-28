@@ -20,14 +20,17 @@ Edit `internal/version/version.go`:
 const Version = "0.0.X"   # new version
 ```
 
-### 3. Update README.md
+### 3. Update version references in docs
 
-There are exactly **three** occurrences to update (grep for the old version to confirm):
+**README.md** — exactly three occurrences (grep for the old version to confirm):
 - `go install github.com/duber000/kukicha/cmd/kukicha@vOLD`
 - `VERSION=vOLD`
 - `**Version:** OLD — Ready for testing`
 
-Replace all three with the new version.
+**CLAUDE.md** and **AGENTS.md** — one occurrence each near the top (must stay in sync):
+- `Current version: **OLD**`
+
+Replace all with the new version.
 
 ### 4. Regenerate and rebuild
 
@@ -74,15 +77,12 @@ git push origin vX.X.X
 
 > Note: `git push --follow-tags` sometimes silently skips tags. Push the tag explicitly with `git push origin vX.X.X` and verify with `git ls-remote --tags origin | grep vX.X.X`.
 
-## Also update CLAUDE.md
-
-The root `CLAUDE.md` contains `Current version: **X.X.X**` near the top. Update it to match the new version.
-
 ## Checklist
 
 - [ ] `internal/version/version.go` bumped
 - [ ] `README.md` — all 3 version strings updated
 - [ ] `CLAUDE.md` — version line updated
+- [ ] `AGENTS.md` — version line updated (must match CLAUDE.md)
 - [ ] `make generate && make build` succeeded
 - [ ] `make test` — all packages pass
 - [ ] Single commit with all generated + doc changes
