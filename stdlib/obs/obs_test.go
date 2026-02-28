@@ -7,35 +7,35 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:9
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:9
 func TestLoggerFields(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:10
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:10
 	logger := obs.New("svc", "env")
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:11
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:11
 	logger = obs.Component(logger, "api")
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:12
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:12
 	logger = obs.WithCorrelation(logger, "cid")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:18
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:18
 func TestCorrelationID(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:19
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:19
 	id := obs.NewCorrelationID()
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:20
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:20
 	if len(id) != 16 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:21
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:21
 		t.Errorf("Correlation IDs should be 16 chars long")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:24
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:24
 func TestTimerStopFail(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:25
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:25
 	logger := obs.New("svc", "env")
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:26
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:26
 	timer := obs.Start(logger, "op")
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:27
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:27
 	obs.Stop(timer, map[string]any{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:28
+//line /home/user/kukicha/stdlib/obs/obs_test.kuki:28
 	obs.Fail(timer, "error", map[string]any{})
 }

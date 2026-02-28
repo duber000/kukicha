@@ -4,23 +4,23 @@ package random
 
 import "math/rand"
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:8
+//line /home/user/kukicha/stdlib/random/random.kuki:8
 func String(length int) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:9
+//line /home/user/kukicha/stdlib/random/random.kuki:9
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:10
+//line /home/user/kukicha/stdlib/random/random.kuki:10
 	b := make([]byte, length)
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:11
+//line /home/user/kukicha/stdlib/random/random.kuki:11
 	for i := range length {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:12
+//line /home/user/kukicha/stdlib/random/random.kuki:12
 		b[i] = charset[rand.Intn(len(charset))]
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:13
+//line /home/user/kukicha/stdlib/random/random.kuki:13
 	return string(b)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:16
+//line /home/user/kukicha/stdlib/random/random.kuki:16
 func Alphanumeric(length int) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:17
+//line /home/user/kukicha/stdlib/random/random.kuki:17
 	return String(length)
 }

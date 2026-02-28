@@ -7,32 +7,32 @@ import (
 	"fmt"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:22
+//line /home/user/kukicha/stdlib/errors/errors.kuki:22
 func Wrap(err error, msg string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:23
+//line /home/user/kukicha/stdlib/errors/errors.kuki:23
 	return fmt.Errorf("%s: %w", msg, err)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:27
+//line /home/user/kukicha/stdlib/errors/errors.kuki:27
 func Is(err error, target error) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:28
+//line /home/user/kukicha/stdlib/errors/errors.kuki:28
 	return goerrors.Is(err, target)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:33
+//line /home/user/kukicha/stdlib/errors/errors.kuki:33
 func Unwrap(err error) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:34
+//line /home/user/kukicha/stdlib/errors/errors.kuki:34
 	return goerrors.Unwrap(err)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:38
+//line /home/user/kukicha/stdlib/errors/errors.kuki:38
 func New(msg string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:39
+//line /home/user/kukicha/stdlib/errors/errors.kuki:39
 	return goerrors.New(msg)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:43
+//line /home/user/kukicha/stdlib/errors/errors.kuki:43
 func Join(items ...error) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors.kuki:44
+//line /home/user/kukicha/stdlib/errors/errors.kuki:44
 	return goerrors.Join(items...)
 }

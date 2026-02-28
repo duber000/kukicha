@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:12
+//line /home/user/kukicha/stdlib/must/must_test.kuki:12
 type DoCase struct {
 	name  string
 	value string
@@ -18,46 +18,46 @@ type DoCase struct {
 	want  string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:18
+//line /home/user/kukicha/stdlib/must/must_test.kuki:18
 func TestDo(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:26
+//line /home/user/kukicha/stdlib/must/must_test.kuki:26
 	cases := []DoCase{DoCase{name: "returns value when no error", value: "ok", err: nil, want: "ok"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:27
+//line /home/user/kukicha/stdlib/must/must_test.kuki:27
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:28
+//line /home/user/kukicha/stdlib/must/must_test.kuki:28
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:29
+//line /home/user/kukicha/stdlib/must/must_test.kuki:29
 			got := must.Do(tc.value, tc.err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:30
+//line /home/user/kukicha/stdlib/must/must_test.kuki:30
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:34
+//line /home/user/kukicha/stdlib/must/must_test.kuki:34
 type OkCase struct {
 	name      string
 	err       error
 	wantPanic bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:39
+//line /home/user/kukicha/stdlib/must/must_test.kuki:39
 func TestOk(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:46
+//line /home/user/kukicha/stdlib/must/must_test.kuki:46
 	cases := []OkCase{OkCase{name: "succeeds when error empty", err: nil, wantPanic: false}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:47
+//line /home/user/kukicha/stdlib/must/must_test.kuki:47
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:48
+//line /home/user/kukicha/stdlib/must/must_test.kuki:48
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:49
+//line /home/user/kukicha/stdlib/must/must_test.kuki:49
 			must.Ok(tc.err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:50
+//line /home/user/kukicha/stdlib/must/must_test.kuki:50
 			test.AssertNoError(t, tc.err)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:54
+//line /home/user/kukicha/stdlib/must/must_test.kuki:54
 type EnvCase struct {
 	name     string
 	envKey   string
@@ -65,75 +65,75 @@ type EnvCase struct {
 	want     string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:60
+//line /home/user/kukicha/stdlib/must/must_test.kuki:60
 func TestEnvHelpers(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:74
+//line /home/user/kukicha/stdlib/must/must_test.kuki:74
 	cases := []EnvCase{EnvCase{name: "returns set env value", envKey: "MUST_TEST", envValue: "value", want: "value"}, EnvCase{name: "returns default when env missing", envKey: "MISSING_TEST", envValue: "", want: "default"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:75
+//line /home/user/kukicha/stdlib/must/must_test.kuki:75
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:76
+//line /home/user/kukicha/stdlib/must/must_test.kuki:76
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:77
+//line /home/user/kukicha/stdlib/must/must_test.kuki:77
 			if len(tc.envValue) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:78
+//line /home/user/kukicha/stdlib/must/must_test.kuki:78
 				os.Setenv(tc.envKey, tc.envValue)
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:80
+//line /home/user/kukicha/stdlib/must/must_test.kuki:80
 			if tc.want == "default" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:81
+//line /home/user/kukicha/stdlib/must/must_test.kuki:81
 				got := must.EnvOr(tc.envKey, "default")
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:82
+//line /home/user/kukicha/stdlib/must/must_test.kuki:82
 				test.AssertEqual(t, got, "default")
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:83
+//line /home/user/kukicha/stdlib/must/must_test.kuki:83
 				os.Unsetenv(tc.envKey)
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:84
+//line /home/user/kukicha/stdlib/must/must_test.kuki:84
 				gotDefault := must.EnvOr(tc.envKey, "default")
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:85
+//line /home/user/kukicha/stdlib/must/must_test.kuki:85
 				test.AssertEqual(t, gotDefault, "default")
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:87
+//line /home/user/kukicha/stdlib/must/must_test.kuki:87
 				got := must.Env(tc.envKey)
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:88
+//line /home/user/kukicha/stdlib/must/must_test.kuki:88
 				test.AssertEqual(t, got, tc.want)
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:89
+//line /home/user/kukicha/stdlib/must/must_test.kuki:89
 				gotOr := must.EnvOr(tc.envKey, "default")
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:90
+//line /home/user/kukicha/stdlib/must/must_test.kuki:90
 				test.AssertEqual(t, gotOr, tc.want)
 			}
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:94
+//line /home/user/kukicha/stdlib/must/must_test.kuki:94
 type AssertionCase struct {
 	name      string
 	condition bool
 	wantPanic bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:99
+//line /home/user/kukicha/stdlib/must/must_test.kuki:99
 func TestAssertionHelpers(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:105
+//line /home/user/kukicha/stdlib/must/must_test.kuki:105
 	cases := []AssertionCase{AssertionCase{name: "True succeeds on true", condition: true, wantPanic: false}, AssertionCase{name: "False succeeds on false", condition: false, wantPanic: false}, AssertionCase{name: "NotEmpty succeeds on non-empty", condition: true, wantPanic: false}, AssertionCase{name: "NotNil succeeds on non-nil", condition: true, wantPanic: false}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:106
+//line /home/user/kukicha/stdlib/must/must_test.kuki:106
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:107
+//line /home/user/kukicha/stdlib/must/must_test.kuki:107
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:108
+//line /home/user/kukicha/stdlib/must/must_test.kuki:108
 			if kukistring.Contains(tc.name, "True") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:109
+//line /home/user/kukicha/stdlib/must/must_test.kuki:109
 				must.True(tc.condition, "message")
 			} else if kukistring.Contains(tc.name, "False") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:111
+//line /home/user/kukicha/stdlib/must/must_test.kuki:111
 				must.False(tc.condition, "message")
 			} else if kukistring.Contains(tc.name, "Empty") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:113
+//line /home/user/kukicha/stdlib/must/must_test.kuki:113
 				must.NotEmpty("x", "name")
 			} else if kukistring.Contains(tc.name, "Nil") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:115
+//line /home/user/kukicha/stdlib/must/must_test.kuki:115
 				must.NotNil("value", "value")
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/must/must_test.kuki:116
+//line /home/user/kukicha/stdlib/must/must_test.kuki:116
 			test.AssertNoError(t, nil)
 		})
 	}

@@ -163,11 +163,7 @@ func IsBlank(s string) bool
 
 # Lines splits a string into lines (by newline characters)
 func Lines(s string) list of string
-    lines := strings.Split(s, "\n")
-    result := make(list of string, 0)
-    for line in lines
-        result = append(result, line)
-    return result
+    return strings.Split(s, "\n")
 
 # Concat concatenates multiple strings efficiently
 # Uses Join with empty separator for efficiency

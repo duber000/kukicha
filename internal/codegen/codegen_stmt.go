@@ -402,7 +402,11 @@ func (g *Generator) generateForRangeStmt(stmt *ast.ForRangeStmt) {
 	collection := g.exprToString(stmt.Collection)
 
 	if stmt.Index != nil {
-		g.writeLine(fmt.Sprintf("for %s, %s := range %s {", stmt.Index.Value, stmt.Variable.Value, collection))
+		if stmt.Variable.Value == "_" {
+			g.writeLine(fmt.Sprintf("for %s := range %s {", stmt.Index.Value, collection))
+		} else {
+			g.writeLine(fmt.Sprintf("for %s, %s := range %s {", stmt.Index.Value, stmt.Variable.Value, collection))
+		}
 	} else {
 		// In stdlib/iter, all range loops are over iter.Seq which yields one value
 		if g.isStdlibIter {

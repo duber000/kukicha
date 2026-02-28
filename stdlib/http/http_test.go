@@ -11,203 +11,203 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:13
+//line /home/user/kukicha/stdlib/http/http_test.kuki:13
 func TestResponseHelpers(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:14
+//line /home/user/kukicha/stdlib/http/http_test.kuki:14
 	jsonRec := httptest.NewRecorder()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:15
+//line /home/user/kukicha/stdlib/http/http_test.kuki:15
 	err := httphelper.JSON(jsonRec, map[string]any{"status": "ok"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:16
+//line /home/user/kukicha/stdlib/http/http_test.kuki:16
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:17
+//line /home/user/kukicha/stdlib/http/http_test.kuki:17
 		t.Fatalf("JSON helper failed: %v", err)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:18
+//line /home/user/kukicha/stdlib/http/http_test.kuki:18
 	resp := jsonRec.Result()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:19
+//line /home/user/kukicha/stdlib/http/http_test.kuki:19
 	if resp.StatusCode != 200 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:20
+//line /home/user/kukicha/stdlib/http/http_test.kuki:20
 		t.Errorf("Expected 200, got %v", resp.StatusCode)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:21
+//line /home/user/kukicha/stdlib/http/http_test.kuki:21
 	if resp.Header.Get("Content-Type") != "application/json" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:22
+//line /home/user/kukicha/stdlib/http/http_test.kuki:22
 		t.Errorf("Expected JSON content type, got %v", resp.Header.Get("Content-Type"))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:24
+//line /home/user/kukicha/stdlib/http/http_test.kuki:24
 	textRec := httptest.NewRecorder()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:25
+//line /home/user/kukicha/stdlib/http/http_test.kuki:25
 	err2 := httphelper.TextStatus(textRec, "bye", 201)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:26
+//line /home/user/kukicha/stdlib/http/http_test.kuki:26
 	if err2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:27
+//line /home/user/kukicha/stdlib/http/http_test.kuki:27
 		t.Fatalf("TextStatus failed: %v", err2)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:28
+//line /home/user/kukicha/stdlib/http/http_test.kuki:28
 	if textRec.Result().StatusCode != 201 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:29
+//line /home/user/kukicha/stdlib/http/http_test.kuki:29
 		t.Errorf("Expected 201 status, got %v", textRec.Result().StatusCode)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:30
+//line /home/user/kukicha/stdlib/http/http_test.kuki:30
 	if textRec.Header().Get("Content-Type") != "text/plain; charset=utf-8" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:31
+//line /home/user/kukicha/stdlib/http/http_test.kuki:31
 		t.Errorf("Expected text/plain header")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:33
+//line /home/user/kukicha/stdlib/http/http_test.kuki:33
 	htmlRec := httptest.NewRecorder()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:34
+//line /home/user/kukicha/stdlib/http/http_test.kuki:34
 	err3 := httphelper.SafeHTML(htmlRec, "<script>x</script>")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:35
+//line /home/user/kukicha/stdlib/http/http_test.kuki:35
 	if err3 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:36
+//line /home/user/kukicha/stdlib/http/http_test.kuki:36
 		t.Fatalf("SafeHTML failed: %v", err3)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:37
+//line /home/user/kukicha/stdlib/http/http_test.kuki:37
 	if htmlRec.Header().Get("Content-Type") != "text/html; charset=utf-8" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:38
+//line /home/user/kukicha/stdlib/http/http_test.kuki:38
 		t.Errorf("Expected html content type")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:39
+//line /home/user/kukicha/stdlib/http/http_test.kuki:39
 	body := htmlRec.Body.String()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:40
+//line /home/user/kukicha/stdlib/http/http_test.kuki:40
 	if kukistring.Contains(body, "<") || kukistring.Contains(body, ">") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:41
+//line /home/user/kukicha/stdlib/http/http_test.kuki:41
 		t.Errorf("SafeHTML should escape content")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:44
+//line /home/user/kukicha/stdlib/http/http_test.kuki:44
 func TestSafeURL(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:45
+//line /home/user/kukicha/stdlib/http/http_test.kuki:45
 	safe, err := httphelper.SafeURL("/items/test-id", map[string]string{}, map[string]string{"q": "kuki"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:46
+//line /home/user/kukicha/stdlib/http/http_test.kuki:46
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:47
+//line /home/user/kukicha/stdlib/http/http_test.kuki:47
 		t.Fatalf("SafeURL failed: %v", err)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:48
+//line /home/user/kukicha/stdlib/http/http_test.kuki:48
 	_, parseErr := url.ParseRequestURI(safe)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:49
+//line /home/user/kukicha/stdlib/http/http_test.kuki:49
 	if parseErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:50
+//line /home/user/kukicha/stdlib/http/http_test.kuki:50
 		t.Errorf("SafeURL should return valid URL, parse error %v", parseErr)
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:53
+//line /home/user/kukicha/stdlib/http/http_test.kuki:53
 func TestRequestHelpers(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:54
+//line /home/user/kukicha/stdlib/http/http_test.kuki:54
 	req, _ := http.NewRequest("GET", "https://example.com/search?page=3&verbose=1", nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:55
+//line /home/user/kukicha/stdlib/http/http_test.kuki:55
 	if httphelper.GetQueryParam(req, "page") != "3" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:56
+//line /home/user/kukicha/stdlib/http/http_test.kuki:56
 		t.Errorf("GetQueryParam returned wrong page")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:57
+//line /home/user/kukicha/stdlib/http/http_test.kuki:57
 	if httphelper.GetQueryParamOr(req, "missing", "5") != "5" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:58
+//line /home/user/kukicha/stdlib/http/http_test.kuki:58
 		t.Errorf("GetQueryParamOr should fallback to default")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:60
+//line /home/user/kukicha/stdlib/http/http_test.kuki:60
 	page, err := httphelper.GetQueryInt(req, "page")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:61
+//line /home/user/kukicha/stdlib/http/http_test.kuki:61
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:62
+//line /home/user/kukicha/stdlib/http/http_test.kuki:62
 		t.Fatalf("GetQueryInt failed: %v", err)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:63
+//line /home/user/kukicha/stdlib/http/http_test.kuki:63
 	if page != 3 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:64
+//line /home/user/kukicha/stdlib/http/http_test.kuki:64
 		t.Errorf("Expected page 3, got %v", page)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:65
+//line /home/user/kukicha/stdlib/http/http_test.kuki:65
 	if httphelper.GetQueryIntOr(req, "missing", 7) != 7 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:66
+//line /home/user/kukicha/stdlib/http/http_test.kuki:66
 		t.Errorf("GetQueryIntOr default mismatch")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:68
+//line /home/user/kukicha/stdlib/http/http_test.kuki:68
 	verbose, err2 := httphelper.GetQueryBool(req, "verbose")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:69
+//line /home/user/kukicha/stdlib/http/http_test.kuki:69
 	if err2 != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:70
+//line /home/user/kukicha/stdlib/http/http_test.kuki:70
 		t.Fatalf("GetQueryBool failed: %v", err2)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:71
+//line /home/user/kukicha/stdlib/http/http_test.kuki:71
 	if !verbose {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:72
+//line /home/user/kukicha/stdlib/http/http_test.kuki:72
 		t.Errorf("Expected verbose true")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:73
+//line /home/user/kukicha/stdlib/http/http_test.kuki:73
 	if !httphelper.GetQueryBoolOr(req, "missing", true) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:74
+//line /home/user/kukicha/stdlib/http/http_test.kuki:74
 		t.Errorf("GetQueryBoolOr should return default when missing")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:77
+//line /home/user/kukicha/stdlib/http/http_test.kuki:77
 func TestSafeRedirect(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:78
+//line /home/user/kukicha/stdlib/http/http_test.kuki:78
 	rec := httptest.NewRecorder()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:79
+//line /home/user/kukicha/stdlib/http/http_test.kuki:79
 	req, _ := http.NewRequest("GET", "https://example.com", nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:80
+//line /home/user/kukicha/stdlib/http/http_test.kuki:80
 	err := httphelper.SafeRedirect(rec, req, "https://example.com/home", "example.com")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:81
+//line /home/user/kukicha/stdlib/http/http_test.kuki:81
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:82
+//line /home/user/kukicha/stdlib/http/http_test.kuki:82
 		t.Fatalf("SafeRedirect failed: %v", err)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:83
+//line /home/user/kukicha/stdlib/http/http_test.kuki:83
 	if rec.Result().Header.Get("Location") != "https://example.com/home" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:84
+//line /home/user/kukicha/stdlib/http/http_test.kuki:84
 		t.Errorf("Expected location header to match redirect target")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:86
+//line /home/user/kukicha/stdlib/http/http_test.kuki:86
 	rec2 := httptest.NewRecorder()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:87
+//line /home/user/kukicha/stdlib/http/http_test.kuki:87
 	err2 := httphelper.SafeRedirect(rec2, req, "https://evil.com", "example.com")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:88
+//line /home/user/kukicha/stdlib/http/http_test.kuki:88
 	if err2 == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:89
+//line /home/user/kukicha/stdlib/http/http_test.kuki:89
 		t.Fatalf("SafeRedirect should return error for blocked host")
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:92
+//line /home/user/kukicha/stdlib/http/http_test.kuki:92
 func TestMethodAndSecurityHelpers(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:93
+//line /home/user/kukicha/stdlib/http/http_test.kuki:93
 	req := httptest.NewRequest("POST", "/", nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:94
+//line /home/user/kukicha/stdlib/http/http_test.kuki:94
 	if !httphelper.IsPost(req) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:95
+//line /home/user/kukicha/stdlib/http/http_test.kuki:95
 		t.Errorf("Expected IsPost true")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:96
+//line /home/user/kukicha/stdlib/http/http_test.kuki:96
 	if httphelper.IsGet(req) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:97
+//line /home/user/kukicha/stdlib/http/http_test.kuki:97
 		t.Errorf("Expected IsGet false when method is POST")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:99
+//line /home/user/kukicha/stdlib/http/http_test.kuki:99
 	rec := httptest.NewRecorder()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:100
+//line /home/user/kukicha/stdlib/http/http_test.kuki:100
 	httphelper.SetSecureHeaders(rec)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:101
+//line /home/user/kukicha/stdlib/http/http_test.kuki:101
 	if rec.Header().Get("X-Content-Type-Options") != "nosniff" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:102
+//line /home/user/kukicha/stdlib/http/http_test.kuki:102
 		t.Errorf("Expected secure headers to be set")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:104
+//line /home/user/kukicha/stdlib/http/http_test.kuki:104
 	rec2 := httptest.NewRecorder()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:105
+//line /home/user/kukicha/stdlib/http/http_test.kuki:105
 	httphelper.MethodNotAllowed(rec2, "GET", "POST")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:106
+//line /home/user/kukicha/stdlib/http/http_test.kuki:106
 	if rec2.Result().StatusCode != 405 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:107
+//line /home/user/kukicha/stdlib/http/http_test.kuki:107
 		t.Errorf("Expected 405 for MethodNotAllowed")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:108
+//line /home/user/kukicha/stdlib/http/http_test.kuki:108
 	if rec2.Header().Get("Allow") != "GET, POST" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http_test.kuki:109
+//line /home/user/kukicha/stdlib/http/http_test.kuki:109
 		t.Errorf("Allow header should list provided methods")
 	}
 }

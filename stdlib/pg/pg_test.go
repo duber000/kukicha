@@ -8,93 +8,93 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:12
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:12
 type NewConfigCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:15
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:15
 func TestNewConfig(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:18
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:18
 	cases := []NewConfigCase{NewConfigCase{name: "builder methods"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:19
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:19
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:20
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:20
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:21
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:21
 			cfg := pg.New("postgres://user:pass@localhost/testdb")
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:22
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:22
 			cfg = pg.MinConns(pg.MaxConns(cfg, 10), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:23
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:23
 			_ = cfg
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:27
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:27
 type MaxConnsCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:30
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:30
 func TestMaxConns(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:33
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:33
 	cases := []MaxConnsCase{MaxConnsCase{name: "max conns"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:34
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:34
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:35
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:35
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:36
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:36
 			cfg := pg.MaxConns(pg.New("postgres://localhost/test"), 20)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:37
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:37
 			cfg = pg.MinConns(cfg, 5)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:38
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:38
 			_ = cfg
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:42
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:42
 type LifetimeCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:45
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:45
 func TestMaxConnLifetime(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:48
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:48
 	cases := []LifetimeCase{LifetimeCase{name: "lifetime"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:49
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:49
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:50
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:50
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:51
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:51
 			cfg := pg.MaxConnLifetime(pg.New("postgres://localhost/test"), 3600000000000)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:52
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:52
 			cfg = pg.MaxConnIdleTime(cfg, 600000000000)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:53
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:53
 			_ = cfg
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:57
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:57
 type RowsAffectedCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:60
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:60
 func TestRowsAffected(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:63
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:63
 	cases := []RowsAffectedCase{RowsAffectedCase{name: "zero result"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:64
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:64
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:65
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:65
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:66
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:66
 			r := pg.Result{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:67
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:67
 			count := pg.RowsAffected(r)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg_test.kuki:68
+//line /home/user/kukicha/stdlib/pg/pg_test.kuki:68
 			test.AssertEqual(t, count, int64(0))
 		})
 	}

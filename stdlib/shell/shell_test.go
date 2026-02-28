@@ -10,184 +10,184 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:11
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:11
 type ExecuteCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:14
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:14
 func TestExecute(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:17
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:17
 	cases := []ExecuteCase{ExecuteCase{name: "basic"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:18
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:18
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:19
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:19
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:20
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:20
 			cmd := shell.New("echo", "hello world")
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:21
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:21
 			result := shell.Execute(cmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:23
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:23
 			test.AssertTrue(t, shell.Success(result))
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:25
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:25
 			output := string(shell.GetOutput(result))
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:26
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:26
 			expected := "hello world\n"
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:27
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:27
 			test.AssertEqual(t, output, expected)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:31
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:31
 type ExecuteWithDirCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:34
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:34
 func TestExecuteWithDir(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:37
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:37
 	cases := []ExecuteWithDirCase{ExecuteWithDirCase{name: "with dir"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:38
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:38
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:39
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:39
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:40
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:40
 			cmd := shell.Dir(shell.New("pwd"), "/tmp")
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:41
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:41
 			result := shell.Execute(cmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:43
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:43
 			test.AssertTrue(t, shell.Success(result))
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:45
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:45
 			output := string(shell.GetOutput(result))
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:46
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:46
 			test.AssertTrue(t, kukistring.Contains(output, "tmp"))
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:50
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:50
 type ExecuteWithEnvCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:53
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:53
 func TestExecuteWithEnv(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:56
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:56
 	cases := []ExecuteWithEnvCase{ExecuteWithEnvCase{name: "with env"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:57
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:57
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:58
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:58
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:59
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:59
 			cmd := shell.Env(shell.New("sh", "-c", "echo $TEST_VAR"), "TEST_VAR", "hello")
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:60
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:60
 			result := shell.Execute(cmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:62
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:62
 			test.AssertTrue(t, shell.Success(result))
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:64
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:64
 			output := string(shell.GetOutput(result))
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:65
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:65
 			test.AssertTrue(t, kukistring.Contains(output, "hello"))
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:69
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:69
 type ExecuteFailedCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:72
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:72
 func TestExecuteFailed(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:75
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:75
 	cases := []ExecuteFailedCase{ExecuteFailedCase{name: "failed"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:76
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:76
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:77
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:77
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:78
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:78
 			cmd := shell.New("false")
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:79
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:79
 			result := shell.Execute(cmd)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:81
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:81
 			test.AssertFalse(t, shell.Success(result))
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:83
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:83
 			exitCode := shell.ExitCode(result)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:84
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:84
 			if exitCode == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:85
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:85
 				t.Errorf("Expected non-zero exit code, got %v", exitCode)
 			}
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:89
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:89
 type WhichCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:92
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:92
 func TestWhich(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:95
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:95
 	cases := []WhichCase{WhichCase{name: "which"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:96
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:96
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:97
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:97
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:98
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:98
 			test.AssertTrue(t, shell.Which("ls"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:99
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:99
 			test.AssertFalse(t, shell.Which("nonexistent-command-xyz"))
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:103
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:103
 type EnvCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:106
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:106
 func TestEnv(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:109
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:109
 	cases := []EnvCase{EnvCase{name: "env operations"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:110
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:110
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:111
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:111
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:112
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:112
 			key := "KUKICHA_TEST_VAR"
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:113
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:113
 			val := "test_value"
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:115
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:115
 			err := shell.Setenv(key, val)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:116
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:116
 			test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:118
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:118
 			got := shell.Getenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:119
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:119
 			test.AssertEqual(t, got, val)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:121
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:121
 			found := false
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:122
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:122
 			envs := shell.Environ()
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:123
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:123
 			for _, e := range envs {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:124
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:124
 				if e == fmt.Sprintf("%v=%v", key, val) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:125
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:125
 					found = true
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:126
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:126
 					break
 				}
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:128
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:128
 			test.AssertTrue(t, found)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:130
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:130
 			shell.Unsetenv(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/shell/shell_test.kuki:131
+//line /home/user/kukicha/stdlib/shell/shell_test.kuki:131
 			test.AssertEqual(t, shell.Getenv(key), "")
 		})
 	}

@@ -240,6 +240,8 @@ func FindIndex(items list of any, predicate func(any) bool) int
 # FindLast returns the last element matching the predicate, or error if not found
 # Example: user := slice.FindLast(users, func(u) { return u.Active }) onerr return
 func FindLast(items list of any, predicate func(any) bool) (any, error)
+    if len(items) == 0
+        return empty, error("no matching element found")
     for i from len(items) - 1 through 0
         if predicate(items[i])
             return items[i], empty
@@ -248,6 +250,8 @@ func FindLast(items list of any, predicate func(any) bool) (any, error)
 # FindLastOr returns the last element matching the predicate, or defaultValue if not found
 # Example: user := slice.FindLastOr(users, func(u) { return u.Active }, defaultUser)
 func FindLastOr(items list of any, predicate func(any) bool, defaultValue any) any
+    if len(items) == 0
+        return defaultValue
     for i from len(items) - 1 through 0
         if predicate(items[i])
             return items[i]

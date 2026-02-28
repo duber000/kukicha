@@ -378,6 +378,23 @@ func (l *Lexer) scanString() {
 					value.WriteRune('"')
 				case '\'':
 					value.WriteRune('\'')
+				case 'x':
+					// Hex escape: \xHH
+					if !l.isAtEnd() {
+						h1 := l.advance()
+						if !l.isAtEnd() {
+							h2 := l.advance()
+							hi, ok1 := hexDigit(h1)
+							lo, ok2 := hexDigit(h2)
+							if ok1 && ok2 {
+								value.WriteRune(rune(hi*16 + lo))
+							} else {
+								value.WriteString(`\x`)
+								value.WriteRune(h1)
+								value.WriteRune(h2)
+							}
+						}
+					}
 				default:
 					value.WriteRune(escaped)
 				}
@@ -572,6 +589,19 @@ func (l *Lexer) error(message string) {
 
 func isDigit(c rune) bool {
 	return c >= '0' && c <= '9'
+}
+
+func hexDigit(c rune) (int, bool) {
+	switch {
+	case c >= '0' && c <= '9':
+		return int(c - '0'), true
+	case c >= 'a' && c <= 'f':
+		return int(c-'a') + 10, true
+	case c >= 'A' && c <= 'F':
+		return int(c-'A') + 10, true
+	default:
+		return 0, false
+	}
 }
 
 func isAlpha(c rune) bool {
