@@ -1,6 +1,0 @@
-# command-line-arguments
-/var/home/tluker/repos/go/kukicha/map_test.kuki:19: undefined: any2
-/var/home/tluker/repos/go/kukicha/map_test.kuki:15: cannot use numbers (variable of type []int) as []any value in argument to MyMap
-/var/home/tluker/repos/go/kukicha/map_test.kuki:20: undefined: any2
-/var/home/tluker/repos/go/kukicha/map_test.kuki:7:2: "github.com/duber000/kukicha/stdlib/cast" imported and not used
-/var/home/tluker/repos/go/kukicha/map_test.kuki:8:2: "github.com/duber000/kukicha/stdlib/slice" imported and not used
