@@ -236,6 +236,13 @@ Use `g.write(str)` (no indent) or `g.writeLine(str)` (with current indent + newl
 5. **Codegen** (`codegen/codegen.go`): in `generateStatement()` add `case *ast.ForRepeatStmt:` → emit `for _i := 0; _i < N; _i++ { ... }`
 6. **Tests**: add test cases in each package's `*_test.go`
 
+### Bidirectional Loops
+
+The `for` loop now supports the `through` keyword for descending loops:
+- `for i from 10 through 0`: generates `for i := 10; i >= 0; i--`
+- `for i from 0 through 10`: generates `for i := 0; i <= 10; i++`
+- The compiler generates a bidirectional condition `(start <= end && i <= end) || (start > end && i >= end)` to handle cases where bounds are variables.
+
 ---
 
 ## Test Patterns

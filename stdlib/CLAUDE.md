@@ -41,7 +41,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/retry` | Retry with backoff | New, Attempts, Delay, Sleep |
 | `stdlib/sandbox` | os.Root filesystem sandboxing | New, Read, Write, List, Exists, Delete |
 | `stdlib/shell` | Safe command execution | Run, Output, New/Dir/Env/Execute, Which, Getenv |
-| `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Get, Find, Unique, Contains, Pop, Shift |
+| `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Get, Find, FindLast, Unique, Contains, Pop, Shift |
 | `stdlib/string` | String utilities | Split, Join, Trim, Contains, Replace, ToUpper, ToLower |
 | `stdlib/template` | Text templating (plain + HTML-safe) | Execute, New, HTMLExecute, HTMLRenderSimple |
 | `stdlib/test` | Test assertion helpers (use in `*_test.kuki` only) | AssertEqual, AssertTrue, AssertFalse, AssertNoError, AssertError, AssertNotEmpty |
@@ -169,16 +169,20 @@ pool := pg.New(url) |> pg.Retry(5, 500) |> pg.Open() onerr panic "db: {error}"
 import "stdlib/kube"
 cluster := kube.New() |> kube.Retry(5, 1000) |> kube.Open() onerr panic "k8s: {error}"
 
+# Bidirectional Loops
+# Use 'through' to iterate in either direction (ascending or descending).
+# The compiler handles the comparison logic automatically.
+for i from 10 through 0
+    print("Countdown: {i}")
+
 # Manual retry loop (for custom retry conditions)
 import "stdlib/retry"
 cfg := retry.New() |> retry.Attempts(5) |> retry.Delay(200)
-attempt := 0
-for attempt < cfg.MaxAttempts
+for attempt from 0 to cfg.MaxAttempts
     result, err := doSomething()
     if err == empty
         break
     retry.Sleep(cfg, attempt)
-    attempt = attempt + 1
 
 # HTTP fetch with builder
 resp := fetch.New(url) |> fetch.BearerAuth(token) |> fetch.Timeout(30000000000) |> fetch.Do() onerr panic "{error}"
