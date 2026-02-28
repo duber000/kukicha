@@ -424,24 +424,68 @@ func (g *Generator) generateForNumericStmt(stmt *ast.ForNumericStmt) {
 	start := g.exprToString(stmt.Start)
 	end := g.exprToString(stmt.End)
 
-	// for i from 0 to N  →  for i := range N  (range-over-int, Go 1.22+)
+	// for i from A to/through B  →  supports both A <= B and A > B
+	// Generates:
+	// _start, _end := A, B
+	// if _start <= _end {
+	//     for varName := _start; varName <= _end; varName++ { ... }
+	// } else {
+	//     for varName := _start; varName >= _end; varName-- { ... }
+	// }
+	// Optimization: for i from 0 to N stays as range-over-int (Go 1.22+)
 	if !stmt.Through && start == "0" {
 		g.writeLine(fmt.Sprintf("for %s := range %s {", varName, end))
 	} else {
-		var condition string
-		if stmt.Through {
-			condition = fmt.Sprintf("%s <= %s", varName, end)
+		// Use unique internal variable names to avoid collisions with varName
+		startVar := "_" + varName + "Start"
+		endVar := "_" + varName + "End"
+
+		g.writeLine("{")
+		g.indent++
+		g.writeLine(fmt.Sprintf("%s, %s := %s, %s", startVar, endVar, start, end))
+
+		// Check for range-over-int optimization if start is 0
+		if !stmt.Through {
+			g.writeLine(fmt.Sprintf("if %s <= %s {", startVar, endVar))
+			g.indent++
+			g.writeLine(fmt.Sprintf("for %s := %s; %s < %s; %s++ {", varName, startVar, varName, endVar, varName))
+			g.indent++
+			g.generateBlock(stmt.Body)
+			g.indent--
+			g.writeLine("}")
+			g.indent--
+			g.writeLine("} else {")
+			g.indent++
+			g.writeLine(fmt.Sprintf("for %s := %s; %s > %s; %s-- {", varName, startVar, varName, endVar, varName))
+			g.indent++
+			g.generateBlock(stmt.Body)
+			g.indent--
+			g.writeLine("}")
+			g.indent--
+			g.writeLine("}")
 		} else {
-			condition = fmt.Sprintf("%s < %s", varName, end)
+			g.writeLine(fmt.Sprintf("if %s <= %s {", startVar, endVar))
+			g.indent++
+			g.writeLine(fmt.Sprintf("for %s := %s; %s <= %s; %s++ {", varName, startVar, varName, endVar, varName))
+			g.indent++
+			g.generateBlock(stmt.Body)
+			g.indent--
+			g.writeLine("}")
+			g.indent--
+			g.writeLine("} else {")
+			g.indent++
+			g.writeLine(fmt.Sprintf("for %s := %s; %s >= %s; %s-- {", varName, startVar, varName, endVar, varName))
+			g.indent++
+			g.generateBlock(stmt.Body)
+			g.indent--
+			g.writeLine("}")
+			g.indent--
+			g.writeLine("}")
 		}
-		g.writeLine(fmt.Sprintf("for %s := %s; %s; %s++ {", varName, start, condition, varName))
+
+		g.indent--
+		g.writeLine("}")
 	}
-
-	g.indent++
-	g.generateBlock(stmt.Body)
-	g.indent--
-
-	g.writeLine("}")
 }
 
 func (g *Generator) generateForConditionStmt(stmt *ast.ForConditionStmt) {

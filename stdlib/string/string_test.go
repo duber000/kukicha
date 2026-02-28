@@ -11,9 +11,9 @@ import (
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:10
 type StringCase struct {
-	name  string
+	name string
 	input string
-	want  string
+	want string
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:16
@@ -42,10 +42,10 @@ func TestToUpperToLower(t *testing.T) {
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:38
 type TrimCase struct {
-	name   string
-	input  string
+	name string
+	input string
 	cutset string
-	want   string
+	want string
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:44
@@ -219,10 +219,10 @@ func TestSearchFunctions(t *testing.T) {
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:164
 type IndexCase struct {
-	name  string
+	name string
 	input string
-	sub   string
-	want  int
+	sub string
+	want int
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:170
@@ -251,10 +251,10 @@ func TestIndexFunctions(t *testing.T) {
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:191
 type CountCase struct {
-	name  string
+	name string
 	input string
-	sub   string
-	want  int
+	sub string
+	want int
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:197
@@ -303,25 +303,15 @@ func TestRepeat(t *testing.T) {
 	counts := []int{3, 1, 0}
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:231
 	for i := range len(cases) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:232
-		tc := cases[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:233
-		n := counts[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:234
-		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:235
-			test.AssertEqual(t, kukistring.Repeat(tc.input, n), tc.want)
-		})
-	}
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:239
 type PadCase struct {
-	name  string
+	name string
 	input string
 	width int
-	pad   string
-	want  string
+	pad string
+	want string
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:246

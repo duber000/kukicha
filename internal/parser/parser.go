@@ -202,16 +202,11 @@ func (p *Parser) isIdentifierFollower() bool {
 	switch next {
 	case lexer.TOKEN_WALRUS, lexer.TOKEN_ASSIGN,
 		lexer.TOKEN_DOT, lexer.TOKEN_LBRACKET,
-		lexer.TOKEN_COMMA, lexer.TOKEN_RPAREN, lexer.TOKEN_RBRACKET,
-		lexer.TOKEN_PLUS, lexer.TOKEN_MINUS, lexer.TOKEN_STAR, lexer.TOKEN_SLASH, lexer.TOKEN_PERCENT,
+		lexer.TOKEN_COMMA, lexer.TOKEN_RPAREN, lexer.TOKEN_RBRACKET, lexer.TOKEN_RBRACE,
 		lexer.TOKEN_PLUS_PLUS, lexer.TOKEN_MINUS_MINUS,
-		lexer.TOKEN_DOUBLE_EQUALS, lexer.TOKEN_NOT_EQUALS,
-		lexer.TOKEN_LT, lexer.TOKEN_LTE, lexer.TOKEN_GT, lexer.TOKEN_GTE,
-		lexer.TOKEN_PIPE, lexer.TOKEN_AND, lexer.TOKEN_OR,
-		lexer.TOKEN_ONERR:
+		lexer.TOKEN_SEMICOLON:
 		return true
 	default:
 		return false
 	}
 }
-

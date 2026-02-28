@@ -393,3 +393,59 @@ func TestChunk(t reference testing.T)
         none := slice.Chunk(items, 0)
         test.AssertEqual(t, len(none), 0)
     )
+# --- TestFindLast ---
+func TestFindLast(t reference testing.T)
+    items := list of string{"apple", "banana", "cherry", "banana", "date"}
+
+    t.Run("found last element", (t reference testing.T) =>
+        val, err := slice.FindLast(items, (v string) => v == "banana")
+        test.AssertNoError(t, err)
+        test.AssertEqual(t, val, "banana")
+        # How to verify it's the LAST one? We can check with a unique property if available,
+        # but here we can just trust the logic if it doesn't fail.
+        # Ideally we'd use a list of structs with IDs.
+    )
+
+    t.Run("found last with condition", (t reference testing.T) =>
+        itemsWithIds := list of Item{
+            Item{Id: 1, Name: "a"},
+            Item{Id: 2, Name: "b"},
+            Item{Id: 3, Name: "a"},
+        }
+        val, err := slice.FindLast(itemsWithIds, (v Item) => v.Name == "a")
+        test.AssertNoError(t, err)
+        test.AssertEqual(t, (val as Item).Id, 3)
+    )
+
+    t.Run("not found returns error", (t reference testing.T) =>
+        _, err := slice.FindLast(items, (v string) => v == "grape")
+        test.AssertError(t, err)
+    )
+
+# --- TestFindLastOr ---
+func TestFindLastOr(t reference testing.T)
+    items := list of string{"apple", "banana", "cherry", "banana", "date"}
+
+    t.Run("match found", (t reference testing.T) =>
+        val := items |> slice.FindLastOr((s string) => s == "banana", "none")
+        test.AssertEqual(t, val, "banana")
+    )
+
+    t.Run("match last item", (t reference testing.T) =>
+        itemsWithIds := list of Item{
+            Item{Id: 1, Name: "a"},
+            Item{Id: 2, Name: "b"},
+            Item{Id: 3, Name: "a"},
+        }
+        val := itemsWithIds |> slice.FindLastOr((v Item) => v.Name == "a", Item{Id: 0, Name: ""})
+        test.AssertEqual(t, (val as Item).Id, 3)
+    )
+
+    t.Run("no match uses default", (t reference testing.T) =>
+        def := items |> slice.FindLastOr((s string) => s == "grape", "none")
+        test.AssertEqual(t, def, "none")
+    )
+
+type Item
+    Id   int
+    Name string

@@ -383,7 +383,11 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 		}
 		return p.parseIdentifierOrStructLiteral()
 	case lexer.TOKEN_EMPTY:
-		if p.isIdentifierFollower() {
+		// empty is almost always a literal unless it's an assignment or member access
+		next := p.peekNextToken().Type
+		if next == lexer.TOKEN_WALRUS || next == lexer.TOKEN_ASSIGN ||
+			next == lexer.TOKEN_DOT || next == lexer.TOKEN_LBRACKET ||
+			next == lexer.TOKEN_COLON {
 			token := p.advance()
 			return &ast.Identifier{Token: token, Value: token.Lexeme}
 		}
@@ -392,7 +396,7 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 		token := p.advance()
 		return &ast.DiscardExpr{Token: token}
 	case lexer.TOKEN_ERROR:
-		if p.isIdentifierFollower() {
+		if p.isIdentifierFollower() || p.check(lexer.TOKEN_RPAREN) || p.check(lexer.TOKEN_COMMA) || p.check(lexer.TOKEN_COLON) {
 			token := p.advance()
 			return &ast.Identifier{Token: token, Value: token.Lexeme}
 		}
@@ -1011,4 +1015,3 @@ func (p *Parser) parseMapLiteral() ast.Expression {
 		Pairs:   pairs,
 	}
 }
-

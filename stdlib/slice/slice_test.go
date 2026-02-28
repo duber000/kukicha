@@ -597,3 +597,71 @@ func TestChunk(t *testing.T) {
 		test.AssertEqual(t, len(none), 0)
 	})
 }
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:397
+func TestFindLast(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:398
+	items := []string{"apple", "banana", "cherry", "banana", "date"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:400
+	t.Run("found last element", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:401
+		val, err := slice.FindLast(items, func(v string) bool { return (v == "banana") })
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:402
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:403
+		test.AssertEqual(t, val, "banana")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:409
+	t.Run("found last with condition", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:414
+		itemsWithIds := []Item{Item{Id: 1, Name: "a"}, Item{Id: 2, Name: "b"}, Item{Id: 3, Name: "a"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:415
+		val, err := slice.FindLast(itemsWithIds, func(v Item) bool { return (v.Name == "a") })
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:416
+		test.AssertNoError(t, err)
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:417
+		test.AssertEqual(t, Item(val).Id, 3)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:420
+	t.Run("not found returns error", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:421
+		_, err := slice.FindLast(items, func(v string) bool { return (v == "grape") })
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:422
+		test.AssertError(t, err)
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:426
+func TestFindLastOr(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:427
+	items := []string{"apple", "banana", "cherry", "banana", "date"}
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:429
+	t.Run("match found", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:430
+		val := slice.FindLastOr(items, func(s string) bool { return (s == "banana") }, "none")
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:431
+		test.AssertEqual(t, val, "banana")
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:434
+	t.Run("match last item", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:439
+		itemsWithIds := []Item{Item{Id: 1, Name: "a"}, Item{Id: 2, Name: "b"}, Item{Id: 3, Name: "a"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:440
+		val := slice.FindLastOr(itemsWithIds, func(v Item) bool { return (v.Name == "a") }, Item{Id: 0, Name: ""})
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:441
+		test.AssertEqual(t, Item(val).Id, 3)
+	})
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:444
+	t.Run("no match uses default", func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:445
+		def := slice.FindLastOr(items, func(s string) bool { return (s == "grape") }, "none")
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:446
+		test.AssertEqual(t, def, "none")
+	})
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:449
+type Item struct {
+	Id   int
+	Name string
+}

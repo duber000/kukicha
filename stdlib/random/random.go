@@ -12,9 +12,6 @@ func String(length int) string {
 	b := make([]byte, length)
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:11
 	for i := range length {
-//line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:12
-		b[i] = charset[rand.Intn(len(charset))]
-	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/random/random.kuki:13
 	return string(b)
 }

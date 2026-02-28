@@ -357,11 +357,24 @@ func FindIndex[T any](items []T, predicate func(T) bool) int {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:242
 func FindLast[T any](items []T, predicate func(T) bool) (T, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:243
-	for i := (len(items) - 1); i <= 0; i++ {
+	{
+		_iStart, _iEnd := (len(items) - 1), 0
+		if _iStart <= _iEnd {
+			for i := _iStart; i <= _iEnd; i++ {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:244
-		if predicate(items[i]) {
+				if predicate(items[i]) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:245
-			return items[i], nil
+					return items[i], nil
+				}
+			}
+		} else {
+			for i := _iStart; i >= _iEnd; i-- {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:244
+				if predicate(items[i]) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:245
+					return items[i], nil
+				}
+			}
 		}
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:246
@@ -371,11 +384,24 @@ func FindLast[T any](items []T, predicate func(T) bool) (T, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:250
 func FindLastOr[T any](items []T, predicate func(T) bool, defaultValue T) T {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:251
-	for i := (len(items) - 1); i <= 0; i++ {
+	{
+		_iStart, _iEnd := (len(items) - 1), 0
+		if _iStart <= _iEnd {
+			for i := _iStart; i <= _iEnd; i++ {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:252
-		if predicate(items[i]) {
+				if predicate(items[i]) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:253
-			return items[i]
+					return items[i]
+				}
+			}
+		} else {
+			for i := _iStart; i >= _iEnd; i-- {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:252
+				if predicate(items[i]) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:253
+					return items[i]
+				}
+			}
 		}
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:254
