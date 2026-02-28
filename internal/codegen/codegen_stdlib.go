@@ -182,7 +182,49 @@ func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypePara
 		"FindOr":     true,
 		"FindIndex":  true,
 		"FindLastOr": true,
+		"Get":        true,
+		"FirstOne":   true,
+		"LastOne":    true,
+		"Find":       true,
+		"FindLast":   true,
+		"Pop":        true,
+		"Shift":      true,
 	}
+
+	// Functions that use any2 (comparable) but not any as first type param
+	comparableSafe := map[string]bool{
+		"Unique":   true,
+		"Contains": true,
+		"IndexOf":  true,
+	}
+
+	if comparableSafe[decl.Name.Value] {
+		// These functions use any2 only — emit [K comparable] as the sole type parameter
+		usesAny2 := false
+		for _, param := range decl.Parameters {
+			if g.typeContainsPlaceholder(param.Type, "any2") {
+				usesAny2 = true
+				break
+			}
+		}
+		if !usesAny2 {
+			for _, ret := range decl.Returns {
+				if g.typeContainsPlaceholder(ret, "any2") {
+					usesAny2 = true
+					break
+				}
+			}
+		}
+		if usesAny2 {
+			typeParams = append(typeParams, &TypeParameter{
+				Name:        "K",
+				Placeholder: "any2",
+				Constraint:  "comparable",
+			})
+		}
+		return typeParams
+	}
+
 	if !genericSafe[decl.Name.Value] {
 		return typeParams
 	}

@@ -105,7 +105,7 @@ func TestReverse(t reference testing.T)
 
 # --- TestUnique ---
 func TestUnique(t reference testing.T)
-    items := list of any{"a", "b", "a", "c", "b", "d"}
+    items := list of string{"a", "b", "a", "c", "b", "d"}
     result := slice.Unique(items)
 
     t.Run("removes duplicates", (t reference testing.T) =>
@@ -121,12 +121,12 @@ func TestUnique(t reference testing.T)
 # --- ContainsCase ---
 type ContainsCase
     name   string
-    needle any
+    needle string
     want   bool
 
 # --- TestContains ---
 func TestContains(t reference testing.T)
-    items := list of any{"apple", "banana", "cherry"}
+    items := list of string{"apple", "banana", "cherry"}
     cases := list of ContainsCase{
         ContainsCase{name: "banana present", needle: "banana", want: true},
         ContainsCase{name: "grape absent", needle: "grape", want: false},
@@ -139,12 +139,12 @@ func TestContains(t reference testing.T)
 # --- IndexOfCase ---
 type IndexOfCase
     name   string
-    needle any
+    needle string
     want   int
 
 # --- TestIndexOf ---
 func TestIndexOf(t reference testing.T)
-    items := list of any{"a", "b", "c"}
+    items := list of string{"a", "b", "c"}
     cases := list of IndexOfCase{
         IndexOfCase{name: "b at 1", needle: "b", want: 1},
         IndexOfCase{name: "a at 0", needle: "a", want: 0},
@@ -175,7 +175,7 @@ func TestIsEmptyIsNotEmpty(t reference testing.T)
 
 # --- TestGet ---
 func TestGet(t reference testing.T)
-    items := list of any{"a", "b", "c"}
+    items := list of string{"a", "b", "c"}
 
     t.Run("valid index", (t reference testing.T) =>
         val, err := slice.Get(items, 1)
@@ -192,7 +192,7 @@ func TestGet(t reference testing.T)
         test.AssertError(t, outErr)
     )
     t.Run("empty slice returns error", (t reference testing.T) =>
-        emptySlice := list of any{}
+        emptySlice := list of string{}
         _, emptyErr := slice.Get(emptySlice, 0)
         test.AssertError(t, emptyErr)
     )
@@ -235,8 +235,8 @@ func TestFirstOrLastOr(t reference testing.T)
 
 # --- TestFirstOneLastOne ---
 func TestFirstOneLastOne(t reference testing.T)
-    items := list of any{"x", "y", "z"}
-    emptySlice := list of any{}
+    items := list of string{"x", "y", "z"}
+    emptySlice := list of string{}
 
     t.Run("FirstOne/non-empty", (t reference testing.T) =>
         first, err := slice.FirstOne(items)
@@ -299,15 +299,15 @@ func TestFindIndex(t reference testing.T)
 
 # --- TestFind ---
 func TestFind(t reference testing.T)
-    items := list of any{"apple", "banana", "cherry"}
+    items := list of string{"apple", "banana", "cherry"}
 
     t.Run("found element", (t reference testing.T) =>
-        val, err := slice.Find(items, (v any) => v == "banana")
+        val, err := slice.Find(items, (v string) => v == "banana")
         test.AssertNoError(t, err)
         test.AssertEqual(t, val, "banana")
     )
     t.Run("not found returns error", (t reference testing.T) =>
-        _, err := slice.Find(items, (v any) => v == "grape")
+        _, err := slice.Find(items, (v string) => v == "grape")
         test.AssertError(t, err)
     )
 
@@ -326,7 +326,7 @@ func TestFindOr(t reference testing.T)
 
 # --- TestPop ---
 func TestPop(t reference testing.T)
-    items := list of any{"a", "b", "c"}
+    items := list of string{"a", "b", "c"}
 
     t.Run("pops last element", (t reference testing.T) =>
         last, rest, err := slice.Pop(items)
@@ -336,14 +336,14 @@ func TestPop(t reference testing.T)
         test.AssertEqual(t, rest[0], "a")
     )
     t.Run("empty slice returns error", (t reference testing.T) =>
-        emptySlice := list of any{}
+        emptySlice := list of string{}
         _, _, err := slice.Pop(emptySlice)
         test.AssertError(t, err)
     )
 
 # --- TestShift ---
 func TestShift(t reference testing.T)
-    items := list of any{"a", "b", "c"}
+    items := list of string{"a", "b", "c"}
 
     t.Run("shifts first element", (t reference testing.T) =>
         first, rest, err := slice.Shift(items)
@@ -353,7 +353,7 @@ func TestShift(t reference testing.T)
         test.AssertEqual(t, rest[0], "b")
     )
     t.Run("empty slice returns error", (t reference testing.T) =>
-        emptySlice := list of any{}
+        emptySlice := list of string{}
         _, _, err := slice.Shift(emptySlice)
         test.AssertError(t, err)
     )

@@ -1,4 +1,4 @@
-# stdlib/AGENTS.md
+# stdlib/CLAUDE.md
 
 Kukicha standard library reference. Each package lives in `stdlib/<name>/` with:
 - `<name>.kuki` — Kukicha source (types, function signatures, inline implementations)
@@ -41,7 +41,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/retry` | Retry with backoff | New, Attempts, Delay, Sleep |
 | `stdlib/sandbox` | os.Root filesystem sandboxing | New, Read, Write, List, Exists, Delete |
 | `stdlib/shell` | Safe command execution | Run, Output, New/Dir/Env/Execute, Which, Getenv |
-| `stdlib/slice` | Slice operations | Filter, Map, GroupBy, GetOr, FirstOr, Find, Pop |
+| `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Get, Find, Unique, Contains, Pop, Shift |
 | `stdlib/string` | String utilities | Split, Join, Trim, Contains, Replace, ToUpper, ToLower |
 | `stdlib/template` | Text templating (plain + HTML-safe) | Execute, New, HTMLExecute, HTMLRenderSimple |
 | `stdlib/test` | Test assertion helpers (use in `*_test.kuki` only) | AssertEqual, AssertTrue, AssertFalse, AssertNoError, AssertError, AssertNotEmpty |

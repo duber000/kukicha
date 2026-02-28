@@ -1,4 +1,4 @@
-# AGENTS.md
+# CLAUDE.md
 
 Kukicha is a beginner-friendly programming language that **transpiles to Go**.
 Current version: **0.0.10**
@@ -14,7 +14,7 @@ When editing `.kuki` files, write **Kukicha syntax, NOT Go**.
 | `*User` | `reference User` |
 | `&user` | `reference of user` |
 | `*ptr` | `dereference ptr` |
-| `nil` | `empty` |
+| `nil` | `empty` (also usable as variable name) |
 | `{ }` braces | 4-space indentation |
 | `==` | `equals` (or `==`) |
 | `func (t T) Method()` | `func Method on t T` |
@@ -61,6 +61,8 @@ func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of a
 ```
 The compiler generates: `func GroupBy[T any, K comparable](items []T, keyFunc func(T) K) map[K][]T`
 
+Functions that use `any2` only (no `any`): `Unique`, `Contains`, `IndexOf`. These emit `[K comparable]` as the sole type parameter.
+
 Application code just calls `logs |> slice.GroupBy(getLevel)` — no generics syntax needed.
 
 ## Kukicha Syntax Quick Reference
@@ -69,6 +71,7 @@ Application code just calls `logs |> slice.GroupBy(getLevel)` — no generics sy
 ```kukicha
 count := 42              # Type inferred
 count = 100              # Reassignment
+val, error := f()        # 'error' and 'empty' can be used as variable names
 ```
 
 ### Functions (explicit types required)
@@ -292,7 +295,7 @@ select
 
 ## Security Checks (Compiler-Enforced)
 
-The compiler enforces SQL injection, XSS, SSRF, path traversal, command injection, and open redirect checks at compile time. See **[`stdlib/AGENTS.md`](stdlib/AGENTS.md)** for the full check table and safe alternatives.
+The compiler enforces SQL injection, XSS, SSRF, path traversal, command injection, and open redirect checks at compile time. See **[`stdlib/CLAUDE.md`](stdlib/CLAUDE.md)** for the full check table and safe alternatives.
 
 ## Build & Test Commands
 
@@ -339,7 +342,7 @@ import "stdlib/ctx" as ctxpkg          # alias — use when the package name con
 import "github.com/jackc/pgx/v5" as pgx  # external package with alias
 ```
 
-Use `as alias` whenever the package's last path segment clashes with a local variable name. See **[`stdlib/AGENTS.md`](stdlib/AGENTS.md)** for the canonical alias table.
+Use `as alias` whenever the package's last path segment clashes with a local variable name. See **[`stdlib/CLAUDE.md`](stdlib/CLAUDE.md)** for the canonical alias table.
 
 ## Critical Rules
 
@@ -358,11 +361,11 @@ Typical workflow for new syntax:
 4. **Codegen** (`internal/codegen/`) - Generate corresponding Go code
 5. **Tests** - Add tests in each modified package
 
-See **[`internal/AGENTS.md`](internal/AGENTS.md)** for the full compiler reference.
+See **[`internal/CLAUDE.md`](internal/CLAUDE.md)** for the full compiler reference.
 
 ## Stdlib Packages
 
-See **[`stdlib/AGENTS.md`](stdlib/AGENTS.md)** for the full package reference, API details, and common usage patterns.
+See **[`stdlib/CLAUDE.md`](stdlib/CLAUDE.md)** for the full package reference, API details, and common usage patterns.
 
 Import with: `import "stdlib/slice"`
 

@@ -87,13 +87,13 @@ func SmartFloat64(value any) (float64, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:68
 		if v {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:69
-			return 1.000000, nil
+			return 1.0, nil
 		}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:70
-		return 0.000000, nil
+		return 0.0, nil
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:71
-	return 0.000000, errors.New("cannot convert to float64")
+	return 0.0, errors.New("cannot convert to float64")
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:75
@@ -108,7 +108,7 @@ func SmartBool(value any) (bool, error) {
 		return (v != 0), nil
 	case float64:
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:82
-		return (v != 0.000000), nil
+		return (v != 0.0), nil
 	case string:
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:84
 		b, err := strconv.ParseBool(v)

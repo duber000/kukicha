@@ -261,7 +261,7 @@ func TestGetFloat(t *testing.T) {
 		panic("get float failed")
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:157
-	test.AssertEqual(t, value, 3.140000)
+	test.AssertEqual(t, value, 3.14)
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:159
 	_, err := env.GetFloat("NONEXISTENT")
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:160
@@ -283,25 +283,25 @@ func TestGetFloatOr(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:170
 	defer cleanupTestEnv()
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:172
-	value, err_10 := env.GetFloatOr("TEST_FLOAT", 2.710000)
+	value, err_10 := env.GetFloatOr("TEST_FLOAT", 2.71)
 	if err_10 != nil {
 		panic("get float or failed")
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:173
-	test.AssertEqual(t, value, 3.140000)
+	test.AssertEqual(t, value, 3.14)
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:175
-	value2, err_11 := env.GetFloatOr("NONEXISTENT", 2.710000)
+	value2, err_11 := env.GetFloatOr("NONEXISTENT", 2.71)
 	if err_11 != nil {
 		panic("get float or failed")
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:176
-	test.AssertEqual(t, value2, 2.710000)
+	test.AssertEqual(t, value2, 2.71)
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:178
 	os.Setenv("TEST_INVALID_FLOAT", "not_a_number")
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:179
 	defer os.Unsetenv("TEST_INVALID_FLOAT")
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:180
-	_, err := env.GetFloatOr("TEST_INVALID_FLOAT", 2.710000)
+	_, err := env.GetFloatOr("TEST_INVALID_FLOAT", 2.71)
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env_test.kuki:181
 	test.AssertNotEmpty(t, err)
 }

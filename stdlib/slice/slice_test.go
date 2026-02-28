@@ -149,7 +149,7 @@ func TestReverse(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:107
 func TestUnique(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:108
-	items := []any{"a", "b", "a", "c", "b", "d"}
+	items := []string{"a", "b", "a", "c", "b", "d"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:109
 	result := slice.Unique(items)
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:111
@@ -173,14 +173,14 @@ func TestUnique(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:122
 type ContainsCase struct {
 	name   string
-	needle any
+	needle string
 	want   bool
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:128
 func TestContains(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:129
-	items := []any{"apple", "banana", "cherry"}
+	items := []string{"apple", "banana", "cherry"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:133
 	cases := []ContainsCase{ContainsCase{name: "banana present", needle: "banana", want: true}, ContainsCase{name: "grape absent", needle: "grape", want: false}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:134
@@ -196,14 +196,14 @@ func TestContains(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:140
 type IndexOfCase struct {
 	name   string
-	needle any
+	needle string
 	want   int
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:146
 func TestIndexOf(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:147
-	items := []any{"a", "b", "c"}
+	items := []string{"a", "b", "c"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:152
 	cases := []IndexOfCase{IndexOfCase{name: "b at 1", needle: "b", want: 1}, IndexOfCase{name: "a at 0", needle: "a", want: 0}, IndexOfCase{name: "z not found", needle: "z", want: -1}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:153
@@ -247,7 +247,7 @@ func TestIsEmptyIsNotEmpty(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:177
 func TestGet(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:178
-	items := []any{"a", "b", "c"}
+	items := []string{"a", "b", "c"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:180
 	t.Run("valid index", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:181
@@ -276,7 +276,7 @@ func TestGet(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:194
 	t.Run("empty slice returns error", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:195
-		emptySlice := []any{}
+		emptySlice := []string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:196
 		_, emptyErr := slice.Get(emptySlice, 0)
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:197
@@ -343,9 +343,9 @@ func TestFirstOrLastOr(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:237
 func TestFirstOneLastOne(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:238
-	items := []any{"x", "y", "z"}
+	items := []string{"x", "y", "z"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:239
-	emptySlice := []any{}
+	emptySlice := []string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:241
 	t.Run("FirstOne/non-empty", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:242
@@ -445,11 +445,11 @@ func TestFindIndex(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:301
 func TestFind(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:302
-	items := []any{"apple", "banana", "cherry"}
+	items := []string{"apple", "banana", "cherry"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:304
 	t.Run("found element", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:305
-		val, err := slice.Find(items, func(v any) bool { return (v == "banana") })
+		val, err := slice.Find(items, func(v string) bool { return (v == "banana") })
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:306
 		test.AssertNoError(t, err)
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:307
@@ -458,7 +458,7 @@ func TestFind(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:309
 	t.Run("not found returns error", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:310
-		_, err := slice.Find(items, func(v any) bool { return (v == "grape") })
+		_, err := slice.Find(items, func(v string) bool { return (v == "grape") })
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:311
 		test.AssertError(t, err)
 	})
@@ -487,7 +487,7 @@ func TestFindOr(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:328
 func TestPop(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:329
-	items := []any{"a", "b", "c"}
+	items := []string{"a", "b", "c"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:331
 	t.Run("pops last element", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:332
@@ -504,7 +504,7 @@ func TestPop(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:338
 	t.Run("empty slice returns error", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:339
-		emptySlice := []any{}
+		emptySlice := []string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:340
 		_, _, err := slice.Pop(emptySlice)
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:341
@@ -515,7 +515,7 @@ func TestPop(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:345
 func TestShift(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:346
-	items := []any{"a", "b", "c"}
+	items := []string{"a", "b", "c"}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:348
 	t.Run("shifts first element", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:349
@@ -532,7 +532,7 @@ func TestShift(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:355
 	t.Run("empty slice returns error", func(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:356
-		emptySlice := []any{}
+		emptySlice := []string{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:357
 		_, _, err := slice.Shift(emptySlice)
 //line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice_test.kuki:358

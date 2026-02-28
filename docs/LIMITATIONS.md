@@ -1,13 +1,17 @@
 # Kukicha Language Limitations
 
-Known gaps between Kukicha syntax and Go patterns. 
+No known limitations at this time.
 
-1. empty is a reserved keyword — can't be used as a
-  variable name - same as error
-2. Non-generic slice functions (Unique, Contains,
-  IndexOf, Get, FirstOne, LastOne, Find, Pop, Shift) take
-   []any literally, not []T — must pass list of any{...}
-  at call sites
-3. Float literals lose precision in codegen — avoid
-  small tolerances like 0.000000001; use simple range
-  checks (x < 3.14 or x > 3.15) instead
+Previously documented gaps (all resolved):
+
+1. ~~`empty` and `error` as variable names~~ — Fixed: context-sensitive
+   parsing now allows both keywords to be used as identifiers when
+   followed by assignment, operators, or delimiters.
+
+2. ~~Non-generic slice functions~~ — Fixed: all slice functions are now
+   generic. `Get`, `FirstOne`, `LastOne`, `Find`, `FindLast`, `Pop`,
+   `Shift` use `[T any]`; `Unique`, `Contains`, `IndexOf` use
+   `[K comparable]`.
+
+3. ~~Float literal precision~~ — Fixed: codegen now preserves the original
+   source text for float literals instead of formatting through `%f`.

@@ -60,18 +60,20 @@ type Generator struct {
 	mcpTarget            bool                     // True if targeting MCP (Model Context Protocol)
 	currentOnErrVar      string                   // Current onerr error variable name (for block-style onerr {error} references)
 	currentOnErrAlias    string                   // Named alias for caught error in current onerr block (e.g., "e" for "onerr as e")
+	currentReturnIndex   int                      // Index of return value being generated (-1 if not in return)
 	stdlibModuleBase     string                   // Base module path for rewriting "stdlib/X" imports (default: defaultStdlibModuleBase)
 }
 
 // New creates a new code generator
 func New(program *ast.Program) *Generator {
 	return &Generator{
-		program:          program,
-		indent:           0,
-		autoImports:      make(map[string]bool),
-		pkgAliases:       make(map[string]string),
-		funcDefaults:     make(map[string]*FuncDefaults),
-		stdlibModuleBase: defaultStdlibModuleBase,
+		program:            program,
+		indent:             0,
+		autoImports:        make(map[string]bool),
+		pkgAliases:         make(map[string]string),
+		funcDefaults:       make(map[string]*FuncDefaults),
+		stdlibModuleBase:   defaultStdlibModuleBase,
+		currentReturnIndex: -1,
 	}
 }
 

@@ -149,14 +149,14 @@ func GetFloat(key string) (float64, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:102
 	if value == "" {
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:103
-		return 0.000000, errors.New(fmt.Sprintf("environment variable %v is not set", key))
+		return 0.0, errors.New(fmt.Sprintf("environment variable %v is not set", key))
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:104
 	n, err := cast.ParseFloat(value, 64)
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:105
 	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:106
-		return 0.000000, errors.New(fmt.Sprintf("environment variable %v is not a valid number: %v", key, value))
+		return 0.0, errors.New(fmt.Sprintf("environment variable %v is not a valid number: %v", key, value))
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:107
 	return n, nil
@@ -176,7 +176,7 @@ func GetFloatOr(key string, defaultValue float64) (float64, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:117
 	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:118
-		return 0.000000, errors.New(fmt.Sprintf("environment variable %v is not a valid number: %v", key, value))
+		return 0.0, errors.New(fmt.Sprintf("environment variable %v is not a valid number: %v", key, value))
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/env/env.kuki:119
 	return n, nil

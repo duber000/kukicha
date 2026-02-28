@@ -33,7 +33,7 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		}
 		return fmt.Sprintf("%d", e.Value)
 	case *ast.FloatLiteral:
-		return fmt.Sprintf("%f", e.Value)
+		return e.Token.Lexeme
 	case *ast.RuneLiteral:
 		return fmt.Sprintf("'%s'", g.escapeRune(e.Value))
 	case *ast.StringLiteral:
@@ -91,10 +91,27 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 			}
 			return g.zeroValueForType(e.Type)
 		}
-		// In generic stdlib/iter context, use *new(T) for zero value instead of nil
-		if g.isStdlibIter && g.placeholderMap != nil {
-			if _, hasT := g.placeholderMap["any"]; hasT {
-				return "*new(T)"
+		// In generic stdlib context, use *new(T) or *new(K) for zero value instead of nil
+		// But only if the return type at this position actually uses a placeholder type
+		if (g.isStdlibIter || g.isStdlibSlice()) && g.placeholderMap != nil {
+			// If we're in a return statement and know the return type, check if it's a placeholder
+			if g.currentReturnIndex >= 0 && g.currentReturnIndex < len(g.currentReturnTypes) {
+				retType := g.currentReturnTypes[g.currentReturnIndex]
+				if _, hasT := g.placeholderMap["any"]; hasT && g.typeContainsPlaceholder(retType, "any") {
+					return "*new(T)"
+				}
+				if _, hasK := g.placeholderMap["any2"]; hasK && g.typeContainsPlaceholder(retType, "any2") {
+					return "*new(K)"
+				}
+				// Return type doesn't use a placeholder — fall through to nil
+			} else {
+				// Not in a return statement context — use *new(T) as default
+				if _, hasT := g.placeholderMap["any"]; hasT {
+					return "*new(T)"
+				}
+				if _, hasK := g.placeholderMap["any2"]; hasK {
+					return "*new(K)"
+				}
 			}
 		}
 		return "nil"

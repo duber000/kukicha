@@ -301,7 +301,7 @@ func Max(n int, max int) (int, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:199
 func PositiveFloat(n float64) (float64, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:200
-	if n <= 0.000000 {
+	if n <= 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:201
 		return n, errors.New("value must be positive")
 	}
@@ -358,7 +358,7 @@ func ParseFloat(s string) (float64, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:235
 	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:236
-		return 0.000000, errors.New(fmt.Sprintf("invalid number: %v", s))
+		return 0.0, errors.New(fmt.Sprintf("invalid number: %v", s))
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/validate/validate.kuki:237
 	return n, nil

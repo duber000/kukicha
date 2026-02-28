@@ -177,6 +177,7 @@ func (g *Generator) generateReturnStmt(stmt *ast.ReturnStmt) {
 
 	values := make([]string, len(stmt.Values))
 	for i, val := range stmt.Values {
+		g.currentReturnIndex = i
 		valStr := g.exprToString(val)
 
 		// Apply type coercion if we have matching return types
@@ -188,6 +189,7 @@ func (g *Generator) generateReturnStmt(stmt *ast.ReturnStmt) {
 		values[i] = valStr
 	}
 
+	g.currentReturnIndex = -1
 	g.writeLine(fmt.Sprintf("return %s", strings.Join(values, ", ")))
 }
 

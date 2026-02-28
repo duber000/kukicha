@@ -316,13 +316,13 @@ func ScanFloat64(r Row) (float64, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:208
 	row := r.scanFn.(pgx.Row)
 //line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:209
-	v := 0.000000
+	v := 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:210
 	err := row.Scan(&v)
 //line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:211
 	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:212
-		return 0.000000, kukierrors.Wrap(err, "pg scan float64")
+		return 0.0, kukierrors.Wrap(err, "pg scan float64")
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:213
 	return v, nil

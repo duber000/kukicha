@@ -53,12 +53,12 @@ func Reverse(items list of any) list of any
 # Unique returns a new slice with duplicate elements removed
 # Preserves the order of first occurrence
 # Note: Elements must be comparable
-func Unique(items list of any) list of any
+func Unique(items list of any2) list of any2
     if len(items) == 0
         return items
 
-    seen := make(map of any to bool)
-    result := make(list of any, 0)
+    seen := make(map of any2 to bool)
+    result := make(list of any2, 0)
 
     for item in items
         if not seen[item]
@@ -87,13 +87,13 @@ func Chunk(items list of any, size int) list of list of any
 
 # Contains checks if a slice contains the specified value
 # Wraps Go's slices.Contains for convenience
-func Contains(items list of any, value any) bool
+func Contains(items list of any2, value any2) bool
     return slices.Contains(items, value)
 
 # IndexOf returns the index of the first occurrence of value in the slice
 # Returns -1 if the value is not found
 # Wraps Go's slices.Index for convenience
-func IndexOf(items list of any, value any) int
+func IndexOf(items list of any2, value any2) int
     return slices.Index(items, value)
 
 # Concat concatenates multiple slices into a single slice

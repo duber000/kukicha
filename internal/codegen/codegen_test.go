@@ -2073,3 +2073,97 @@ func Wrap(handler http.Handler) http.Handler
 		t.Errorf("expected return handler, got: %s", output)
 	}
 }
+
+func TestFloatLiteralPrecision(t *testing.T) {
+	input := `func Main()
+    x := 0.000000001
+    y := 3.14159265358979
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "0.000000001") {
+		t.Errorf("expected float 0.000000001 to be preserved, got: %s", output)
+	}
+	if !strings.Contains(output, "3.14159265358979") {
+		t.Errorf("expected float 3.14159265358979 to be preserved, got: %s", output)
+	}
+}
+
+func TestErrorAsVariableName(t *testing.T) {
+	input := `func Main()
+    val, error := divide(10, 0)
+    print(error)
+
+func divide(a int, b int) (int, error)
+    if b == 0
+        return 0, error "division by zero"
+    return a / b, empty
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	// error used as variable name in multi-value assignment
+	if !strings.Contains(output, "val, error := divide(10, 0)") {
+		t.Errorf("expected 'val, error := divide(10, 0)', got: %s", output)
+	}
+	// error keyword still works as errors.New()
+	if !strings.Contains(output, `errors.New("division by zero")`) {
+		t.Errorf("expected errors.New for error keyword, got: %s", output)
+	}
+}
+
+func TestEmptyAsVariableName(t *testing.T) {
+	input := `func Main()
+    empty := 42
+    print(empty)
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "empty := 42") {
+		t.Errorf("expected 'empty := 42', got: %s", output)
+	}
+}

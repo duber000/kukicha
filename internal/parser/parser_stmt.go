@@ -717,9 +717,9 @@ func (p *Parser) checkMultiValueAssignment() bool {
 	// Supports 2 or more identifiers on the left-hand side.
 	// Examples: a, b := ...   or   _, ipNet, err := ...
 
-	// Check if we have an identifier at current position
+	// Check if we have an identifier (or context-sensitive keyword) at current position
 	currentToken := p.peekToken()
-	if currentToken.Type != lexer.TOKEN_IDENTIFIER {
+	if currentToken.Type != lexer.TOKEN_IDENTIFIER && currentToken.Type != lexer.TOKEN_EMPTY && currentToken.Type != lexer.TOKEN_ERROR {
 		return false
 	}
 
@@ -745,7 +745,7 @@ func (p *Parser) checkMultiValueAssignment() bool {
 	// Consume (comma, identifier) pairs until we reach an assignment operator
 	for tok.Type == lexer.TOKEN_COMMA {
 		idx, tok = skipIgnored(idx + 1)
-		if tok.Type != lexer.TOKEN_IDENTIFIER {
+		if tok.Type != lexer.TOKEN_IDENTIFIER && tok.Type != lexer.TOKEN_EMPTY && tok.Type != lexer.TOKEN_ERROR {
 			return false // Comma must be followed by an identifier
 		}
 		idx, tok = skipIgnored(idx + 1)
@@ -760,8 +760,8 @@ func (p *Parser) parseMultiValueAssignmentStmt() ast.Statement {
 	var names []*ast.Identifier
 	var targets []ast.Expression
 
-	// Parse first identifier
-	if !p.match(lexer.TOKEN_IDENTIFIER) {
+	// Parse first identifier (also accept empty/error as identifiers)
+	if !p.match(lexer.TOKEN_IDENTIFIER, lexer.TOKEN_EMPTY, lexer.TOKEN_ERROR) {
 		p.error(p.peekToken(), "expected identifier in multi-value assignment")
 		return nil
 	}
@@ -775,7 +775,7 @@ func (p *Parser) parseMultiValueAssignmentStmt() ast.Statement {
 
 	// Parse additional identifiers separated by commas
 	for p.match(lexer.TOKEN_COMMA) {
-		if !p.match(lexer.TOKEN_IDENTIFIER) {
+		if !p.match(lexer.TOKEN_IDENTIFIER, lexer.TOKEN_EMPTY, lexer.TOKEN_ERROR) {
 			p.error(p.peekToken(), "expected identifier after comma in multi-value assignment")
 			return nil
 		}

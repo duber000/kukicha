@@ -383,11 +383,19 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 		}
 		return p.parseIdentifierOrStructLiteral()
 	case lexer.TOKEN_EMPTY:
+		if p.isIdentifierFollower() {
+			token := p.advance()
+			return &ast.Identifier{Token: token, Value: token.Lexeme}
+		}
 		return p.parseEmptyExpr()
 	case lexer.TOKEN_DISCARD:
 		token := p.advance()
 		return &ast.DiscardExpr{Token: token}
 	case lexer.TOKEN_ERROR:
+		if p.isIdentifierFollower() {
+			token := p.advance()
+			return &ast.Identifier{Token: token, Value: token.Lexeme}
+		}
 		return p.parseErrorExpr()
 	case lexer.TOKEN_MAKE:
 		return p.parseMakeExpr()
@@ -435,7 +443,7 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 
 func (p *Parser) parseIdentifier() *ast.Identifier {
 	token := p.advance()
-	if token.Type != lexer.TOKEN_IDENTIFIER {
+	if token.Type != lexer.TOKEN_IDENTIFIER && token.Type != lexer.TOKEN_EMPTY && token.Type != lexer.TOKEN_ERROR {
 		p.error(token, "expected identifier")
 		return nil
 	}

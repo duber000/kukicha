@@ -1791,3 +1791,126 @@ func TestParseSelectStatement(t *testing.T) {
 		t.Fatal("expected otherwise branch")
 	}
 }
+
+func TestErrorAsVariableName(t *testing.T) {
+	input := `func Main()
+    error := 5
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errs := p.Parse()
+	if len(errs) > 0 {
+		t.Fatalf("expected no parse errors, got: %v", errs)
+	}
+
+	// Find the VarDeclStmt
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	varDecl, ok := fn.Body.Statements[0].(*ast.VarDeclStmt)
+	if !ok {
+		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
+	}
+	if varDecl.Names[0].Value != "error" {
+		t.Errorf("expected name 'error', got %q", varDecl.Names[0].Value)
+	}
+}
+
+func TestEmptyAsVariableName(t *testing.T) {
+	input := `func Main()
+    empty := 10
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errs := p.Parse()
+	if len(errs) > 0 {
+		t.Fatalf("expected no parse errors, got: %v", errs)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	varDecl, ok := fn.Body.Statements[0].(*ast.VarDeclStmt)
+	if !ok {
+		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
+	}
+	if varDecl.Names[0].Value != "empty" {
+		t.Errorf("expected name 'empty', got %q", varDecl.Names[0].Value)
+	}
+}
+
+func TestMultiValueAssignmentWithError(t *testing.T) {
+	input := `func Main()
+    val, error := f()
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errs := p.Parse()
+	if len(errs) > 0 {
+		t.Fatalf("expected no parse errors, got: %v", errs)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	varDecl, ok := fn.Body.Statements[0].(*ast.VarDeclStmt)
+	if !ok {
+		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
+	}
+	if len(varDecl.Names) != 2 {
+		t.Fatalf("expected 2 names, got %d", len(varDecl.Names))
+	}
+	if varDecl.Names[1].Value != "error" {
+		t.Errorf("expected second name 'error', got %q", varDecl.Names[1].Value)
+	}
+}
+
+func TestEmptyKeywordStillWorks(t *testing.T) {
+	input := `func Main()
+    x := empty string
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errs := p.Parse()
+	if len(errs) > 0 {
+		t.Fatalf("expected no parse errors, got: %v", errs)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	varDecl, ok := fn.Body.Statements[0].(*ast.VarDeclStmt)
+	if !ok {
+		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
+	}
+	// The value should be an EmptyExpr (keyword), not an Identifier
+	_, ok = varDecl.Values[0].(*ast.EmptyExpr)
+	if !ok {
+		t.Fatalf("expected EmptyExpr (keyword), got %T", varDecl.Values[0])
+	}
+}
+
+func TestErrorKeywordStillWorks(t *testing.T) {
+	input := `func Main()
+    x := error "msg"
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errs := p.Parse()
+	if len(errs) > 0 {
+		t.Fatalf("expected no parse errors, got: %v", errs)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	varDecl, ok := fn.Body.Statements[0].(*ast.VarDeclStmt)
+	if !ok {
+		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
+	}
+	// The value should be an ErrorExpr (keyword), not an Identifier
+	_, ok = varDecl.Values[0].(*ast.ErrorExpr)
+	if !ok {
+		t.Fatalf("expected ErrorExpr (keyword), got %T", varDecl.Values[0])
+	}
+}

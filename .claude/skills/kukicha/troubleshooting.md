@@ -414,7 +414,7 @@ kukicha check myfile.kuki
 | Error | Likely Cause |
 |-------|--------------|
 | "unexpected NEWLINE" | Missing expression or extra blank line |
-| "expected identifier" | Using reserved word as variable name |
+| "expected identifier" | Using a keyword in an unsupported position (note: `empty` and `error` can be used as variable names) |
 | "type mismatch" | Wrong type in assignment/return |
 | "undeclared name" | Variable used before declaration |
 | "not enough arguments" | Missing function arguments |

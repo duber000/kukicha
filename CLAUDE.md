@@ -14,7 +14,7 @@ When editing `.kuki` files, write **Kukicha syntax, NOT Go**.
 | `*User` | `reference User` |
 | `&user` | `reference of user` |
 | `*ptr` | `dereference ptr` |
-| `nil` | `empty` |
+| `nil` | `empty` (also usable as variable name) |
 | `{ }` braces | 4-space indentation |
 | `==` | `equals` (or `==`) |
 | `func (t T) Method()` | `func Method on t T` |
@@ -61,6 +61,8 @@ func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of a
 ```
 The compiler generates: `func GroupBy[T any, K comparable](items []T, keyFunc func(T) K) map[K][]T`
 
+Functions that use `any2` only (no `any`): `Unique`, `Contains`, `IndexOf`. These emit `[K comparable]` as the sole type parameter.
+
 Application code just calls `logs |> slice.GroupBy(getLevel)` — no generics syntax needed.
 
 ## Kukicha Syntax Quick Reference
@@ -69,6 +71,7 @@ Application code just calls `logs |> slice.GroupBy(getLevel)` — no generics sy
 ```kukicha
 count := 42              # Type inferred
 count = 100              # Reassignment
+val, error := f()        # 'error' and 'empty' can be used as variable names
 ```
 
 ### Functions (explicit types required)

@@ -150,19 +150,19 @@ func New(model string) Client {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:248
 	c.tools = []Tool{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:249
-	c.temperature = 0.000000
+	c.temperature = 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:250
 	c.maxTokens = 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:251
-	c.topP = 0.000000
+	c.topP = 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:252
 	c.n = 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:253
 	c.seed = 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:254
-	c.presencePenalty = 0.000000
+	c.presencePenalty = 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:255
-	c.frequencyPenalty = 0.000000
+	c.frequencyPenalty = 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:258
 	if kukistring.Contains(model, ":") {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:259
@@ -621,7 +621,7 @@ func buildRequest(c Client) CompletionRequest {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:586
 	req.Messages = c.messages
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:588
-	if c.temperature != 0.000000 {
+	if c.temperature != 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:589
 		req.Temperature = c.temperature
 	}
@@ -631,7 +631,7 @@ func buildRequest(c Client) CompletionRequest {
 		req.MaxTokens = c.maxTokens
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:592
-	if c.topP != 0.000000 {
+	if c.topP != 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:593
 		req.TopP = c.topP
 	}
@@ -646,12 +646,12 @@ func buildRequest(c Client) CompletionRequest {
 		req.Seed = c.seed
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:598
-	if c.presencePenalty != 0.000000 {
+	if c.presencePenalty != 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:599
 		req.PresencePenalty = c.presencePenalty
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:600
-	if c.frequencyPenalty != 0.000000 {
+	if c.frequencyPenalty != 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:601
 		req.FrequencyPenalty = c.frequencyPenalty
 	}
@@ -998,15 +998,15 @@ func NewResponse(model string) ResponseClient {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:860
 	c.tools = []Tool{}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:861
-	c.temperature = 0.000000
+	c.temperature = 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:862
-	c.topP = 0.000000
+	c.topP = 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:863
 	c.maxOutputTokens = 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:864
-	c.presencePenalty = 0.000000
+	c.presencePenalty = 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:865
-	c.frequencyPenalty = 0.000000
+	c.frequencyPenalty = 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:866
 	c.store = false
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:867
@@ -1573,12 +1573,12 @@ func rBuildRequest(c ResponseClient) ResponseRequest {
 		req.PreviousResponseID = c.previousResponseID
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1250
-	if c.temperature != 0.000000 {
+	if c.temperature != 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1251
 		req.Temperature = c.temperature
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1252
-	if c.topP != 0.000000 {
+	if c.topP != 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1253
 		req.TopP = c.topP
 	}
@@ -1588,12 +1588,12 @@ func rBuildRequest(c ResponseClient) ResponseRequest {
 		req.MaxOutputTokens = c.maxOutputTokens
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1256
-	if c.presencePenalty != 0.000000 {
+	if c.presencePenalty != 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1257
 		req.PresencePenalty = c.presencePenalty
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1258
-	if c.frequencyPenalty != 0.000000 {
+	if c.frequencyPenalty != 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1259
 		req.FrequencyPenalty = c.frequencyPenalty
 	}
@@ -1959,9 +1959,9 @@ func NewMessages(model string) MessagesClient {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1530
 	c.maxTokens = 1024
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1531
-	c.temperature = 0.000000
+	c.temperature = 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1532
-	c.topP = 0.000000
+	c.topP = 0.0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1533
 	c.topK = 0
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1534
@@ -2371,12 +2371,12 @@ func mBuildRequest(c MessagesClient) MessagesRequest {
 		req.System = c.system
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1844
-	if c.temperature != 0.000000 {
+	if c.temperature != 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1845
 		req.Temperature = c.temperature
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1846
-	if c.topP != 0.000000 {
+	if c.topP != 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1847
 		req.TopP = c.topP
 	}

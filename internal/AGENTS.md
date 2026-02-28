@@ -1,6 +1,6 @@
-# internal/AGENTS.md
+# internal/CLAUDE.md
 
-Compiler internals reference. Read this when working in `internal/`. For language syntax and build commands see the root `AGENTS.md`.
+Compiler internals reference. Read this when working in `internal/`. For language syntax and build commands see the root `CLAUDE.md`.
 
 ## Pipeline Overview
 
@@ -64,7 +64,7 @@ Add the keyword string → `TokenType` mapping in `token.go`'s `keywords` map an
 - Recursive descent
 - **Error collection** (not fail-fast): errors are appended to `p.errors`, parsing continues. This allows multiple errors per compile.
 - `peekToken()` calls `skipIgnoredTokens()` first, which skips `TOKEN_COMMENT` and `TOKEN_SEMICOLON`
-- Context-sensitive keywords: `list`, `map`, `channel` are only keywords when followed by `of` in a type context — this allows them as variable names elsewhere
+- Context-sensitive keywords: `list`, `map`, `channel` are only keywords when followed by `of` in a type context — this allows them as variable names elsewhere. `empty` and `error` are context-sensitive too: `isIdentifierFollower()` checks if the next token indicates identifier usage (assignment, operators, delimiters); if so, they parse as identifiers instead of `EmptyExpr`/`ErrorExpr`
 
 ### Key helpers
 
@@ -75,6 +75,7 @@ Add the keyword string → `TokenType` mapping in `token.go`'s `keywords` map an
 | `skipNewlines()` | Skip `TOKEN_NEWLINE` tokens |
 | `parseBlock()` | Parse `INDENT … DEDENT` block into `*ast.BlockStmt` |
 | `parseTypeAnnotation()` | Parse any Kukicha type (`list of T`, `map of K to V`, `reference T`, etc.) |
+| `isIdentifierFollower()` | Returns true if next token indicates `empty`/`error` is being used as an identifier |
 
 ### Adding a new statement
 
@@ -199,6 +200,7 @@ make genstdlibregistry   # or: make generate (runs everything)
 | `funcDefaults map[string]*FuncDefaults` | Default parameter info for wrapper generation |
 | `placeholderMap map[string]string` | Generic placeholder substitution (`"any"→"T"`, `"any2"→"K"`) |
 | `currentOnErrVar string` | Error variable name in active `onerr` block (for `{error}` interpolation) |
+| `currentReturnIndex int` | Index of return value being generated (-1 if not in return); used to emit `*new(T)` vs `nil` for bare `empty` in generic stdlib functions |
 | `exprReturnCounts map[ast.Expression]int` | From semantic — drives `onerr` multi-value split |
 
 ### onerr code generation
@@ -211,6 +213,9 @@ When `isStdlibIter` is true (or per-function for `stdlib/slice`), the generator 
 1. Builds a `placeholderMap` mapping placeholder → Go type param name (`T`, `K`)
 2. Emits `[T any, K comparable]` on the function signature
 3. Substitutes placeholders throughout parameter and return types
+4. Emits `*new(T)` or `*new(K)` for bare `empty` in return position when the return type uses a placeholder (otherwise emits `nil`)
+
+All `stdlib/slice` functions are generic: `genericSafe` map lists `[T any]` functions, `comparableSafe` map lists `[K comparable]` functions (`Unique`, `Contains`, `IndexOf`), and `GroupBy` gets both `[T any, K comparable]`.
 
 Application code never sees this — it just calls functions normally.
 

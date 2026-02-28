@@ -30,7 +30,7 @@ func TestBasicParsers(t *testing.T) {
 		t.Fatalf("ParseFloat failed: %v", err2)
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:20
-	if f == 0.000000 {
+	if f == 0.0 {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:21
 		t.Errorf("ParseFloat returned zero for valid input")
 	}
@@ -71,16 +71,16 @@ func TestSmartInt(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:39
 func TestSmartFloat64(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:40
-	val, err := cast.SmartFloat64(1.500000)
+	val, err := cast.SmartFloat64(1.5)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:41
-	if (err != nil) || (val != 1.500000) {
+	if (err != nil) || (val != 1.5) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:42
 		t.Fatalf("SmartFloat64 failed for float64: %v", err)
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:43
 	val2, err2 := cast.SmartFloat64("2.5")
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:44
-	if (err2 != nil) || (val2 == 0.000000) {
+	if (err2 != nil) || (val2 == 0.0) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:45
 		t.Fatalf("SmartFloat64 failed for string: %v", err2)
 	}
