@@ -23,7 +23,7 @@ func main()
         print("{repo.name}: {repo.stars} stars")
 ```
 
-No classes. No `__init__`. No `**kwargs`. No `&&`, `||`, or `*ptr`. If you can read the code above, you can review what an AI wrote for you.
+No classes. No `__init__`. No `**kwargs`. No `||`, or `*ptr`. If you can read the code above, you can review what an AI wrote for you.
 
 ---
 
