@@ -9,7 +9,7 @@ repository = "https://github.com/duber000/kukicha"
 [grammars.kukicha]
 repository = "https://github.com/duber000/kukicha"
 path = "editors/zed/grammars/kukicha"
-rev = "1e52e9d0061c598bf4e667abfe24560664ec9de5"
+rev = "c8069aeaea34a0a54c1d1cc0f317da07763c88eb"
 
 [language_servers.kukicha-lsp]
 name = "Kukicha Language Server"
