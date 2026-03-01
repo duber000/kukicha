@@ -121,22 +121,26 @@ func (s *Server) getDocumentSymbols(doc *Document) []lsp.SymbolInformation {
 		return symbols
 	}
 
+	// Helper to ensure non-negative positions
+	pos := func(line, col int) lsp.Position {
+		return lsp.Position{
+			Line:      max(0, line-1),
+			Character: max(0, col-1),
+		}
+	}
+
 	// Add petiole declaration
 	if doc.Program.PetioleDecl != nil {
+		startCol := doc.Program.PetioleDecl.Pos().Column - 1
+		endCol := startCol + len(doc.Program.PetioleDecl.Name.Value)
 		symbols = append(symbols, lsp.SymbolInformation{
 			Name: doc.Program.PetioleDecl.Name.Value,
 			Kind: lsp.SKPackage,
 			Location: lsp.Location{
 				URI: doc.URI,
 				Range: lsp.Range{
-					Start: lsp.Position{
-						Line:      doc.Program.PetioleDecl.Pos().Line - 1,
-						Character: doc.Program.PetioleDecl.Pos().Column - 1,
-					},
-					End: lsp.Position{
-						Line:      doc.Program.PetioleDecl.Pos().Line - 1,
-						Character: doc.Program.PetioleDecl.Pos().Column - 1 + len(doc.Program.PetioleDecl.Name.Value),
-					},
+					Start: pos(doc.Program.PetioleDecl.Pos().Line, startCol+1),
+					End:   pos(doc.Program.PetioleDecl.Pos().Line, endCol+1),
 				},
 			},
 		})
@@ -150,43 +154,37 @@ func (s *Server) getDocumentSymbols(doc *Document) []lsp.SymbolInformation {
 			if d.Receiver != nil {
 				kind = lsp.SKMethod
 			}
+			startCol := d.Pos().Column - 1
+			endCol := startCol + len(d.Name.Value)
 			symbols = append(symbols, lsp.SymbolInformation{
 				Name: d.Name.Value,
 				Kind: kind,
 				Location: lsp.Location{
 					URI: doc.URI,
 					Range: lsp.Range{
-						Start: lsp.Position{
-							Line:      d.Pos().Line - 1,
-							Character: d.Pos().Column - 1,
-						},
-						End: lsp.Position{
-							Line:      d.Pos().Line - 1,
-							Character: d.Pos().Column - 1 + len(d.Name.Value),
-						},
+						Start: pos(d.Pos().Line, startCol+1),
+						End:   pos(d.Pos().Line, endCol+1),
 					},
 				},
 			})
 		case *ast.TypeDecl:
+			startCol := d.Pos().Column - 1
+			endCol := startCol + len(d.Name.Value)
 			symbols = append(symbols, lsp.SymbolInformation{
 				Name: d.Name.Value,
 				Kind: lsp.SKStruct,
 				Location: lsp.Location{
 					URI: doc.URI,
 					Range: lsp.Range{
-						Start: lsp.Position{
-							Line:      d.Pos().Line - 1,
-							Character: d.Pos().Column - 1,
-						},
-						End: lsp.Position{
-							Line:      d.Pos().Line - 1,
-							Character: d.Pos().Column - 1 + len(d.Name.Value),
-						},
+						Start: pos(d.Pos().Line, startCol+1),
+						End:   pos(d.Pos().Line, endCol+1),
 					},
 				},
 			})
 			// Add fields
 			for _, field := range d.Fields {
+				fStartCol := field.Name.Pos().Column - 1
+				fEndCol := fStartCol + len(field.Name.Value)
 				symbols = append(symbols, lsp.SymbolInformation{
 					Name:          field.Name.Value,
 					Kind:          lsp.SKField,
@@ -194,38 +192,30 @@ func (s *Server) getDocumentSymbols(doc *Document) []lsp.SymbolInformation {
 					Location: lsp.Location{
 						URI: doc.URI,
 						Range: lsp.Range{
-							Start: lsp.Position{
-								Line:      field.Name.Pos().Line - 1,
-								Character: field.Name.Pos().Column - 1,
-							},
-							End: lsp.Position{
-								Line:      field.Name.Pos().Line - 1,
-								Character: field.Name.Pos().Column - 1 + len(field.Name.Value),
-							},
+							Start: pos(field.Name.Pos().Line, fStartCol+1),
+							End:   pos(field.Name.Pos().Line, fEndCol+1),
 						},
 					},
 				})
 			}
 		case *ast.InterfaceDecl:
+			startCol := d.Pos().Column - 1
+			endCol := startCol + len(d.Name.Value)
 			symbols = append(symbols, lsp.SymbolInformation{
 				Name: d.Name.Value,
 				Kind: lsp.SKInterface,
 				Location: lsp.Location{
 					URI: doc.URI,
 					Range: lsp.Range{
-						Start: lsp.Position{
-							Line:      d.Pos().Line - 1,
-							Character: d.Pos().Column - 1,
-						},
-						End: lsp.Position{
-							Line:      d.Pos().Line - 1,
-							Character: d.Pos().Column - 1 + len(d.Name.Value),
-						},
+						Start: pos(d.Pos().Line, startCol+1),
+						End:   pos(d.Pos().Line, endCol+1),
 					},
 				},
 			})
 			// Add interface methods
 			for _, method := range d.Methods {
+				mStartCol := method.Name.Pos().Column - 1
+				mEndCol := mStartCol + len(method.Name.Value)
 				symbols = append(symbols, lsp.SymbolInformation{
 					Name:          method.Name.Value,
 					Kind:          lsp.SKMethod,
@@ -233,14 +223,8 @@ func (s *Server) getDocumentSymbols(doc *Document) []lsp.SymbolInformation {
 					Location: lsp.Location{
 						URI: doc.URI,
 						Range: lsp.Range{
-							Start: lsp.Position{
-								Line:      method.Name.Pos().Line - 1,
-								Character: method.Name.Pos().Column - 1,
-							},
-							End: lsp.Position{
-								Line:      method.Name.Pos().Line - 1,
-								Character: method.Name.Pos().Column - 1 + len(method.Name.Value),
-							},
+							Start: pos(method.Name.Pos().Line, mStartCol+1),
+							End:   pos(method.Name.Pos().Line, mEndCol+1),
 						},
 					},
 				})
