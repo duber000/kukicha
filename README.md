@@ -27,23 +27,13 @@ No classes. No `__init__`. No `**kwargs`. No `&&`, `||`, or `*ptr`. If you can r
 
 ---
 
-## Why This Matters Right Now
+## Why This Matters
 
-As of February 2026, AI writes nearly half of all committed code. The industry is sprinting toward full autonomy — autonomous agent loops that generate, deploy, and patch code with no human in the loop.
-
-Here's what that's producing:
-
-- AI-generated code contains **2.74x more security vulnerabilities** than human-written code (Veracode 2025 GenAI Code Security Report)
-- **1.7x more logical and correctness bugs** in AI-assisted codebases (CodeRabbit, December 2025)
-- **45% of AI-generated code** contains security flaws — and the rate isn't improving with larger models (Veracode, 100+ LLMs tested)
-- In January 2026, a vibe-coded startup leaked **1.5 million API keys in three days** because no one read what the AI wrote
-- Only **3% of developers** report high trust in AI-generated output (Stack Overflow 2025 Developer Survey) — yet the industry keeps removing them from the review process
-
-The trajectory is clear: AI generates the app, deploys it, monitors it, patches it — and your entire production system becomes code that nobody at your company has ever read.
+AI writes nearly half of all committed code, yet [45% of it contains security flaws](https://www.veracode.com) and AI-assisted codebases show [1.7x more bugs](https://www.coderabbit.ai). The industry is sprinting toward full autonomy — agent loops that generate, deploy, and patch code with no human in the loop.
 
 **Kukicha exists because the answer to "AI writes all the code" shouldn't be "and nobody reads any of it." It should be "and a human can still understand every line."**
 
-The key word is **assisted**. AI is the writer. You are the editor. That's not a limitation — it's the architecture of trust.
+AI is the writer. You are the editor. That's not a limitation — it's the architecture of trust.
 
 ---
 
@@ -67,20 +57,6 @@ See the [Agent Workflow Tutorial](docs/tutorials/agent-workflow-tutorial.md) to 
 
 ---
 
-## Where We Are and Where This Is Going
-
-**Today:** You describe what you want → AI generates code across six languages and config formats you can't fully review → you deploy and hope.
-
-**Kukicha (now):** You describe what you want → AI generates one readable language → you review every line and ship a real binary.
-
-**The future:** AI-native runtimes will collapse the entire stack — from intent to running application — with far fewer intermediate artifacts. The languages, frameworks, and configuration layers that exist today were designed for humans to *write*. That assumption is already breaking down.
-
-Within three years, the best AI-generated applications won't be written in languages designed for humans to type — they'll target the describe-generate-review-ship workflow end to end.
-
-Kukicha is that bridge. As AI capabilities grow, the human review step may get faster — but it should never disappear.
-
----
-
 ## Why Not Just Use Go or Python?
 
 | | Go | Python | Kukicha |
@@ -92,19 +68,7 @@ Kukicha is that bridge. As AI capabilities grow, the human review step may get f
 | Built for AI generation + human review | No | No | Yes |
 | Transfers to Go/Python | — | — | 1:1 |
 
-Go and Python were designed for humans to *write*. The bottleneck has shifted from writing to reviewing.
-
-Kukicha uses plain English for every operator:
-
-| Other languages | Kukicha |
-|----------------|---------|
-| `&&`, `\|\|`, `!` | `and`, `or`, `not` |
-| `==` (equality) | `equals` |
-| `nil`, `None`, `null` | `empty` |
-| `[]string`, `list[str]` | `list of string` |
-| `*User` (Go pointer) | `reference User` |
-| `if err != nil { return err }` | `onerr return` |
-| Curly braces `{ }` | 4-space indentation |
+Go and Python were designed for humans to *write*. The bottleneck has shifted from writing to reviewing. Every Kukicha concept maps 1:1 to Go and Python — see the [Quick Reference](docs/kukicha-quick-reference.md) for a full translation table.
 
 ---
 
@@ -117,17 +81,7 @@ go install github.com/duber000/kukicha/cmd/kukicha@v0.0.11
 kukicha version
 ```
 
-Or download a release binary for your OS/arch from [GitHub Releases](https://github.com/duber000/kukicha/releases):
-
-```bash
-VERSION=v0.0.11
-OS=linux   # or darwin, windows
-ARCH=amd64 # or arm64
-curl -L -o kukicha.tar.gz \
-  "https://github.com/duber000/kukicha/releases/download/${VERSION}/kukicha_${VERSION}_${OS}_${ARCH}.tar.gz"
-tar -xzf kukicha.tar.gz
-./kukicha version
-```
+Or download a release binary from [GitHub Releases](https://github.com/duber000/kukicha/releases).
 
 **Requirements:** Go 1.26+
 
@@ -161,35 +115,14 @@ When AI writes Kukicha for you, here's the decoder ring:
 | `list of string` | A collection of text values |
 | `map of string to int` | A lookup table: text key → number |
 | `reference User` | A reference to a User (like a bookmark) |
-| `func main()` | Where the program starts |
 | `for item in items` | Do this for each item |
-| `type Repo` | A data shape definition |
 | `:=` | Create a new variable |
-| `# comment` | A note — the computer ignores this |
 
-**Key question to ask yourself when reviewing:** Does each `onerr` say what to do when something fails? If it panics, is that appropriate? If it returns an error, will the caller handle it?
+**Key question when reviewing:** Does each `onerr` say what to do when something fails? If it panics, is that appropriate? If it returns an error, will the caller handle it?
 
 ---
 
 ## What Can You Build?
-
-### Ask an AI to summarize something
-
-```kukicha
-import "stdlib/llm"
-import "stdlib/shell"
-
-func main()
-    diff := shell.Output("git", "diff", "--staged") onerr return
-
-    message := llm.New("openai:gpt-5-nano")
-        |> llm.System("Write a concise git commit message for this diff.")
-        |> llm.Ask(diff) onerr panic "AI Error: {error}"
-
-    print("Suggested commit message: {message}")
-```
-
-### Build a custom AI tool (MCP server)
 
 ```kukicha
 import "stdlib/mcp"
@@ -209,7 +142,7 @@ func main()
 
 Compile to a single binary and register it with Claude Desktop or any MCP-compatible agent.
 
-**More examples:** [Concurrent URL health checker](docs/tutorials/concurrent-url-health-checker.md), [REST API link shortener](docs/tutorials/web-app-tutorial.md), [CLI repo explorer](docs/tutorials/cli-explorer-tutorial.md)
+**More examples:** [AI commit messages](docs/tutorials/data-scripting-tutorial.md), [Concurrent URL health checker](docs/tutorials/concurrent-url-health-checker.md), [REST API link shortener](docs/tutorials/web-app-tutorial.md), [CLI repo explorer](docs/tutorials/cli-explorer-tutorial.md)
 
 ---
 
@@ -226,96 +159,19 @@ Compile to a single binary and register it with Claude Desktop or any MCP-compat
 | **Web** | `http`, `fetch`, `validate`, `netguard` |
 | **Config & Ops** | `env`, `must`, `cli`, `obs`, `retry`, `ctx` |
 
-```kukicha
-import "stdlib/fetch"
-import "stdlib/slice"
-import "stdlib/string"
-
-repos := fetch.Get("https://api.github.com/users/golang/repos")
-    |> fetch.CheckStatus()
-    |> fetch.Json(list of Repo) onerr panic "{error}"
-
-names := repos
-    |> slice.Filter((r Repo) => r.stars > 1000)          # r is each repo
-    |> slice.Map((r Repo) => r.name |> string.ToUpper())
-```
-
 See the full [Stdlib Reference](stdlib/AGENTS.md).
-
----
-
-## When You're Ready to Graduate
-
-Every Kukicha concept maps directly to Go and Python. Learning Kukicha first is not a detour.
-
-| Concept | Kukicha | Go | Python |
-|---------|---------|-----|--------|
-| Variable | `count := 42` | `count := 42` | `count = 42` |
-| List | `list of string{"a","b"}` | `[]string{"a","b"}` | `["a","b"]` |
-| Loop | `for item in items` | `for _, item := range items` | `for item in items:` |
-| Function | `func Add(a int, b int) int` | `func Add(a int, b int) int` | `def add(a: int, b: int) -> int:` |
-| Error handling | `result onerr panic "msg"` | `if err != nil { panic("msg") }` | `try: ... except: raise` |
-| Null check | `if x equals empty` | `if x == nil` | `if x is None:` |
-| Struct | `type User` | `type User struct { ... }` | `@dataclass\nclass User:` |
-| Method | `func Greet on u User` | `func (u User) Greet()` | `def greet(self):` |
-| Pointer | `reference User` | `*User` | *(implicit reference)* |
-| Pipe/chain | `data \|> f() \|> g()` | `g(f(data))` | `g(f(data))` |
-
-Once you understand these patterns in Kukicha, reading Go or Python code will feel familiar.
-
----
-
-## Usage
-
-```bash
-kukicha init                  # go mod init + set up stdlib (run once per project)
-kukicha run myapp.kuki        # Compile and run
-kukicha build myapp.kuki      # Compile to binary
-kukicha check myapp.kuki      # Validate syntax only
-kukicha fmt -w myapp.kuki     # Format in place
-```
 
 ---
 
 ## Editor Support
 
-### Zed
+**VS Code:** Search `kukicha-lang` in extensions, or download the `.vsix` from [GitHub Releases](https://github.com/duber000/kukicha/releases). See [`editors/vscode/README.md`](editors/vscode/README.md).
 
-Install the extension from the repo:
+**Zed:** Open Zed → `zed: install dev extension` → point to `editors/zed/` in this repo.
 
-1. Open Zed → `zed: install dev extension`
-2. Point it at the `editors/zed/` directory in this repo
+**Other editors:** `make install-lsp` and configure your editor to run `kukicha-lsp` for `.kuki` files.
 
-Includes syntax highlighting (tree-sitter grammar) and full LSP integration.
-
-### VS Code
-
-Install the official extension:
-
-1. Open VS Code
-2. Press `Ctrl+P` (or `Cmd+P` on macOS)
-3. Type `ext install kukicha-lang`
-4. Press Enter
-
-Or download from the [GitHub Releases](https://github.com/duber000/kukicha/releases) page and install the `.vsix` file.
-
-**Features:**
-- Syntax highlighting for `.kuki` files
-- Full LSP integration (hover, go-to-definition, completions, diagnostics)
-- Format on save
-- Pre-bundled LSP binary (no separate installation needed)
-
-See [`editors/vscode/README.md`](editors/vscode/README.md) for details.
-
-### LSP Server (other editors)
-
-Build and install the language server:
-
-```bash
-make install-lsp   # installs kukicha-lsp to $GOPATH/bin
-```
-
-Then configure your editor to run `kukicha-lsp` for `.kuki` files. Supports hover, go-to-definition, completions, and diagnostics.
+All editors get syntax highlighting, hover, go-to-definition, completions, and diagnostics via the LSP.
 
 ---
 
