@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kukicha Language — Development History</title>
+<title>Kukicha — Claude Assisted Development History</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
@@ -62,8 +62,8 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .ms-label { font-size: 9.5px; font-weight: 600; margin-top: 3px; max-width: 90px; line-height: 1.25; word-break: break-word; }
 
 /* date axis */
-.tl-dates { display: flex; justify-content: space-between; margin-top: 6px; }
-.tl-date { font-size: 10px; color: var(--text3); }
+.tl-dates { position: relative; height: 16px; margin-top: 6px; }
+.tl-date { font-size: 10px; color: var(--text3); position: absolute; transform: translateX(-50%); }
 
 .tl-legend { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
 .tl-leg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
@@ -105,8 +105,8 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 
 <div class="header">
   <div class="header-inner">
-    <h1>🍵 Kukicha Language — Development History <span class="badge">v0.0.10</span></h1>
-    <p>A beginner-friendly language that transpiles to Go · Jan 19 – Feb 26, 2026 · Built from <code style="color:var(--green);font-size:12px">git log --numstat</code></p>
+    <h1>🍵 Kukicha — Claude Assisted Development History <span class="badge">v0.0.11</span></h1>
+    <p>A beginner-friendly language that transpiles to Go · Jan 19 – Mar 1, 2026 · Built from <code style="color:var(--green);font-size:12px">git log --numstat</code></p>
   </div>
 </div>
 
@@ -125,7 +125,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
   <div class="tab-pane active" id="tab-milestones">
     <div class="card">
       <div class="card-title">Release Timeline</div>
-      <div class="card-sub">Jan 19 – Feb 26, 2026 · 10 official releases · 90 detected milestones</div>
+      <div class="card-sub">Jan 19 – Mar 1, 2026 · 11 official releases · 93 detected milestones</div>
       <div class="tl-wrap">
         <div class="tl-inner" id="tl-inner">
           <div class="tl-track"><div class="tl-fill"></div></div>
@@ -140,7 +140,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
         <input class="search-box" id="ms-search" type="text" placeholder="Search milestones…" oninput="filterMilestones()">
         <div class="filter-row" id="ms-filter-row"></div>
       </div>
-      <table class="ms-table"><thead><tr><th>Date</th><th>Category</th><th>Feature</th><th>Commit</th><th>Author</th></tr></thead>
+      <table class="ms-table"><thead><tr><th>Date</th><th>Category</th><th>Feature</th><th>Commit</th></tr></thead>
       <tbody id="ms-tbody"></tbody></table>
     </div>
   </div>
@@ -150,7 +150,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
     <div class="note"><strong>Note:</strong> "Editor Support" is large due to a generated tree-sitter <code>parser.c</code> (~15k lines added in one commit). Toggle it off below for a cleaner view of code growth.</div>
     <div class="card">
       <div class="card-title">Codebase Growth by Category</div>
-      <div class="card-sub">Cumulative net lines of code over time · Jan–Feb 2026</div>
+      <div class="card-sub">Cumulative net lines of code over time · Jan–Mar 2026</div>
       <div class="filter-row" id="cat-toggles"></div>
       <div class="chart-h420"><canvas id="growthChart"></canvas></div>
     </div>
@@ -561,6 +561,36 @@ const DATA = {
       "Examples": 995,
       "Build/Other": 797
     },
+    {
+      "date": "2026-02-27",
+      "Standard Library": 32392,
+      "Compiler": 23965,
+      "Docs": 16968,
+      "Editor Support": 44906,
+      "Tools": 3846,
+      "Examples": 995,
+      "Build/Other": 803
+    },
+    {
+      "date": "2026-02-28",
+      "Standard Library": 32488,
+      "Compiler": 24054,
+      "Docs": 16977,
+      "Editor Support": 44906,
+      "Tools": 3846,
+      "Examples": 1037,
+      "Build/Other": 804
+    },
+    {
+      "date": "2026-03-01",
+      "Standard Library": 32492,
+      "Compiler": 24173,
+      "Docs": 16978,
+      "Editor Support": 49386,
+      "Tools": 3865,
+      "Examples": 1037,
+      "Build/Other": 925
+    }
   ],
   "stdlib_snapshots": [
     {
@@ -2103,6 +2133,123 @@ const DATA = {
       "test": 118,
       "validate": 1050
     },
+    {
+      "date": "2026-02-27",
+      "a2a": 805,
+      "cast": 438,
+      "cli": 515,
+      "concurrent": 180,
+      "container": 2519,
+      "ctx": 406,
+      "datetime": 1478,
+      "encoding": 414,
+      "env": 1322,
+      "errors": 249,
+      "fetch": 2021,
+      "files": 1486,
+      "http": 1073,
+      "input": 232,
+      "iterator": 442,
+      "json": 824,
+      "kube": 1930,
+      "llm": 4820,
+      "maps": 166,
+      "math": 677,
+      "mcp": 291,
+      "must": 625,
+      "net": 262,
+      "netguard": 448,
+      "obs": 344,
+      "parse": 510,
+      "pg": 986,
+      "random": 108,
+      "retry": 188,
+      "sandbox": 600,
+      "shell": 714,
+      "slice": 1691,
+      "string": 1205,
+      "template": 497,
+      "test": 118,
+      "validate": 1050
+    },
+    {
+      "date": "2026-02-28",
+      "a2a": 799,
+      "cast": 438,
+      "cli": 515,
+      "concurrent": 180,
+      "container": 2519,
+      "ctx": 406,
+      "datetime": 1478,
+      "encoding": 414,
+      "env": 1322,
+      "errors": 249,
+      "fetch": 2015,
+      "files": 1486,
+      "http": 1073,
+      "input": 232,
+      "iterator": 442,
+      "json": 824,
+      "kube": 1924,
+      "llm": 4820,
+      "maps": 158,
+      "math": 677,
+      "mcp": 291,
+      "must": 625,
+      "net": 262,
+      "netguard": 448,
+      "obs": 344,
+      "parse": 504,
+      "pg": 980,
+      "random": 108,
+      "retry": 181,
+      "sandbox": 600,
+      "shell": 714,
+      "slice": 1841,
+      "string": 1192,
+      "template": 497,
+      "test": 118,
+      "validate": 1050
+    },
+    {
+      "date": "2026-03-01",
+      "a2a": 799,
+      "cast": 438,
+      "cli": 515,
+      "concurrent": 180,
+      "container": 2519,
+      "ctx": 406,
+      "datetime": 1478,
+      "encoding": 414,
+      "env": 1322,
+      "errors": 249,
+      "fetch": 2015,
+      "files": 1486,
+      "http": 1073,
+      "input": 232,
+      "iterator": 442,
+      "json": 824,
+      "kube": 1924,
+      "llm": 4820,
+      "maps": 158,
+      "math": 677,
+      "mcp": 291,
+      "must": 625,
+      "net": 262,
+      "netguard": 448,
+      "obs": 344,
+      "parse": 504,
+      "pg": 980,
+      "random": 108,
+      "retry": 181,
+      "sandbox": 600,
+      "shell": 714,
+      "slice": 1841,
+      "string": 1192,
+      "template": 497,
+      "test": 118,
+      "validate": 1050
+    }
   ],
   "compiler_snapshots": [
     {
@@ -2490,6 +2637,39 @@ const DATA = {
       "semantic": 5340,
       "version": 6
     },
+    {
+      "date": "2026-02-27",
+      "ast": 1237,
+      "codegen": 6515,
+      "formatter": 1834,
+      "lexer": 1761,
+      "lsp": 2052,
+      "parser": 4716,
+      "semantic": 5340,
+      "version": 6
+    },
+    {
+      "date": "2026-02-28",
+      "ast": 1237,
+      "codegen": 6561,
+      "formatter": 1834,
+      "lexer": 1791,
+      "lsp": 2052,
+      "parser": 4714,
+      "semantic": 5348,
+      "version": 6
+    },
+    {
+      "date": "2026-03-01",
+      "ast": 1237,
+      "codegen": 6689,
+      "formatter": 1834,
+      "lexer": 1791,
+      "lsp": 2036,
+      "parser": 4714,
+      "semantic": 5348,
+      "version": 6
+    }
   ],
   "stdlib_packages": [
     "a2a",
@@ -2506,7 +2686,6 @@ const DATA = {
     "files",
     "http",
     "input",
-    "iter",
     "iterator",
     "json",
     "kube",
@@ -2521,7 +2700,6 @@ const DATA = {
     "parse",
     "pg",
     "random",
-    "result",
     "retry",
     "sandbox",
     "shell",
@@ -2575,8 +2753,11 @@ const DATA = {
     "2026-02-22": 23,
     "2026-02-23": 18,
     "2026-02-24": 12,
-    "2026-02-25": 35,
-    "2026-02-26": 24
+    "2026-02-25": 34,
+    "2026-02-26": 23,
+    "2026-02-27": 4,
+    "2026-02-28": 13,
+    "2026-03-01": 9
   },
   "snapshot_dates": [
     "2026-01-19",
@@ -2613,9 +2794,12 @@ const DATA = {
     "2026-02-23",
     "2026-02-24",
     "2026-02-25",
-    "2026-02-26"
+    "2026-02-26",
+    "2026-02-27",
+    "2026-02-28",
+    "2026-03-01"
   ],
-  "total_commits": 452,
+  "total_commits": 478,
   "categories": [
     "Standard Library",
     "Compiler",
@@ -2626,13 +2810,13 @@ const DATA = {
     "Build/Other"
   ],
   "final_totals": {
-    "Docs": 16957,
-    "Compiler": 23645,
-    "Build/Other": 797,
-    "Standard Library": 32392,
-    "Editor Support": 44906,
-    "Tools": 3846,
-    "Examples": 995
+    "Docs": 16978,
+    "Compiler": 24173,
+    "Build/Other": 925,
+    "Standard Library": 32492,
+    "Editor Support": 49386,
+    "Tools": 3865,
+    "Examples": 1037
   },
   "milestones": [
     {
@@ -3020,6 +3204,46 @@ const DATA = {
       "category": "Release"
     },
     {
+      "date": "2026-02-02",
+      "label": "stdlib: datetime, validate, must, env, http",
+      "subject": "Add datetime, validate, must, env, and http stdlib packages (+1345 lines)",
+      "author": "Tivon Luker",
+      "hash": "adf85e3",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-07",
+      "label": "stdlib: fetch enhancements",
+      "subject": "enhance fetch package with builder pattern improvements",
+      "author": "Tivon Luker",
+      "hash": "e7b1c8a",
+      "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-09",
+      "label": "GitHub Actions release workflow",
+      "subject": ".github action for release",
+      "author": "Tivon Luker",
+      "hash": "79f1cf86",
+      "category": "Tooling"
+    },
+    {
+      "date": "2026-02-13",
+      "label": "switch/when/otherwise syntax",
+      "subject": "Add switch with when/otherwise and default alias",
+      "author": "Tivon Luker",
+      "hash": "9e6d1c5",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-13",
+      "label": "stdlib expansion (+2771 lines)",
+      "subject": "Expand all stdlib packages: llm, cast, fetch, files, iterator, maps, and 15 more",
+      "author": "Tivon Luker",
+      "hash": "b9e1543",
+      "category": "Stdlib"
+    },
+    {
       "date": "2026-02-13",
       "label": "Arrow lambda syntax (=>)",
       "subject": "Add arrow lambda (=>) and go block syntax",
@@ -3290,6 +3514,54 @@ const DATA = {
       "author": "Tivon Luker",
       "hash": "d7689af",
       "category": "Stdlib"
+    },
+    {
+      "date": "2026-02-27",
+      "label": "Bidirectional loops",
+      "subject": "feat(codegen,parser): support bidirectional loops and fix keyword parsing",
+      "author": "Tivon Luker",
+      "hash": "7b38dd5",
+      "category": "Language Core"
+    },
+    {
+      "date": "2026-02-27",
+      "label": "Compiler limitations fixed",
+      "subject": "fix: resolve all three documented compiler limitations",
+      "author": "Tivon Luker",
+      "hash": "32d7938",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-02-28",
+      "label": "Go code quality fixes",
+      "subject": "fix(codegen): fix 5 generated Go code quality issues",
+      "author": "Tivon Luker",
+      "hash": "5a28b96",
+      "category": "Compiler"
+    },
+    {
+      "date": "2026-02-28",
+      "label": "Release: v0.0.11",
+      "subject": "chore: release v0.0.11",
+      "author": "Tivon Luker",
+      "hash": "a6beced",
+      "category": "Release"
+    },
+    {
+      "date": "2026-03-01",
+      "label": "VS Code extension",
+      "subject": "feat(editors): add VS Code extension and fix Zed grammar issues",
+      "author": "Tivon Luker",
+      "hash": "c8069ae",
+      "category": "Tooling"
+    },
+    {
+      "date": "2026-03-01",
+      "label": "Negative indexing codegen",
+      "subject": "feat(codegen): rewrite negative indices to valid Go len() expressions",
+      "author": "Tivon Luker",
+      "hash": "f562245",
+      "category": "Compiler"
     }
   ],
   "tags": [
@@ -3342,6 +3614,11 @@ const DATA = {
       "date": "2026-02-26",
       "tag": "v0.0.10",
       "desc": "Table-driven tests, pure Kukicha stdlib"
+    },
+    {
+      "date": "2026-02-28",
+      "tag": "v0.0.11",
+      "desc": "Bidirectional loops, codegen quality fixes"
     }
   ]
 };
@@ -3388,7 +3665,7 @@ document.getElementById('stats-row').innerHTML = [
 
 // ===== TIMELINE =====
 function pctNum(dateStr){
-  const min=new Date(firstDate), max=new Date('2026-03-05'); // visual padding so Feb 26 items don't overflow the right edge
+  const min=new Date(firstDate), max=new Date('2026-03-08'); // visual padding so Mar 1 items don't overflow the right edge
   return (new Date(dateStr)-min)/(max-min)*100;
 }
 function pct(dateStr){ return pctNum(dateStr).toFixed(2)+'%'; }
@@ -3405,8 +3682,8 @@ const tlTrack = tlInner.querySelector('.tl-track');
 
 // --- Version tags: manually assign levels to avoid collision ---
 // v0.0.2 & v0.0.3 share Feb 13; v0.0.4 is Feb 14 (very close)
-// v0.0.6 & v0.0.7 share Feb 21; v0.0.9 & v0.0.10 are recent
-const TAG_LEVELS = {'v0.0.1':0, 'v0.0.2':0, 'v0.0.3':2, 'v0.0.4':1, 'v0.0.5':0, 'v0.0.6':0, 'v0.0.7':2, 'v0.0.8':1, 'v0.0.9':0, 'v0.0.10':2};
+// v0.0.6 & v0.0.7 share Feb 21; v0.0.10 & v0.0.11 are close together
+const TAG_LEVELS = {'v0.0.1':0, 'v0.0.2':0, 'v0.0.3':2, 'v0.0.4':1, 'v0.0.5':0, 'v0.0.6':0, 'v0.0.7':2, 'v0.0.8':1, 'v0.0.9':0, 'v0.0.10':2, 'v0.0.11':1};
 DATA.tags.forEach(t => {
   const lv = TAG_LEVELS[t.tag] ?? 0;
   const stemH = VT_STEMS[lv];
@@ -3418,31 +3695,46 @@ DATA.tags.forEach(t => {
   tlTrack.appendChild(el);
 });
 
-// --- 13 landmark milestones below the track, 4 stagger levels (lv 0–3) ---
-// Same-level items verified to be 4+ days apart (≥140px on 1200px track) so labels don't collide.
+// --- Landmark milestones below the track, 4 stagger levels (lv 0–3) ---
 // topOff = 4 + lv*26: level 0→4px, 1→30px, 2→56px, 3→82px below track
 const LANDMARKS = [
   // ── Early language (Jan 20–25) ────────────────────────────────────────────
   {date:'2026-01-20', label:'First full compiler',   cat:'Compiler',      lv:0},
   {date:'2026-01-20', label:'kukicha fmt',            cat:'Tooling',       lv:3},
   {date:'2026-01-21', label:'Drop generics',          cat:'Language Core', lv:2},
-  {date:'2026-01-22', label:'stdlib: iter',            cat:'Stdlib',        lv:1},
+  {date:'2026-01-22', label:'stdlib: slice, string',  cat:'Stdlib',        lv:1},
   {date:'2026-01-24', label:'print() builtin',         cat:'Language Core', lv:3},
   {date:'2026-01-25', label:'Context-first pipes',    cat:'Language Core', lv:2},
   {date:'2026-01-25', label:'Loop control',            cat:'Language Core', lv:0},
-  // ── Tooling & syntax (Jan 28–Feb 5) ──────────────────────────────────────
+  // ── Editor & stdlib ramp (Jan 28–Feb 7) ──────────────────────────────────
   {date:'2026-01-28', label:'Zed + Tree-sitter',       cat:'Tooling',       lv:1},
-  {date:'2026-02-03', label:'Multiline pipes',         cat:'Language Core', lv:0},
-  {date:'2026-02-05', label:'stdlib: llm',             cat:'Stdlib',        lv:2},
-  // ── Recent features (Feb 14–22) ──────────────────────────────────────────
-  {date:'2026-02-14', label:'stdlib: MCP',             cat:'Stdlib',        lv:3},
-  {date:'2026-02-19', label:'select statement',        cat:'Language Core', lv:1},
-  {date:'2026-02-22', label:'Security hardening',      cat:'Security',      lv:0},
-  // ── Test suite & tooling (Feb 25–26) ──────────────────────────────────────
+  {date:'2026-01-29', label:'LSP server',              cat:'Tooling',       lv:3},
+  {date:'2026-02-02', label:'stdlib: datetime, env, validate', cat:'Stdlib', lv:0},
+  {date:'2026-02-03', label:'Multiline pipes',         cat:'Language Core', lv:2},
+  {date:'2026-02-04', label:'Map literals & closures', cat:'Language Core', lv:1},
+  {date:'2026-02-05', label:'stdlib: llm',             cat:'Stdlib',        lv:0},
+  {date:'2026-02-06', label:'Anthropic API client',    cat:'Stdlib',        lv:3},
+  {date:'2026-02-07', label:'DuckDB example',          cat:'Tooling',       lv:2},
+  // ── First release & features (Feb 9–14) ──────────────────────────────────
+  {date:'2026-02-09', label:'CI/CD release pipeline',  cat:'Tooling',       lv:1},
+  {date:'2026-02-13', label:'Arrow lambdas (=>)',      cat:'Language Core', lv:0},
+  {date:'2026-02-13', label:'switch/when syntax',      cat:'Language Core', lv:3},
+  {date:'2026-02-13', label:'Stdlib expansion (+2.7k)', cat:'Stdlib',       lv:2},
+  {date:'2026-02-14', label:'stdlib: MCP',             cat:'Stdlib',        lv:1},
+  // ── Security & infra (Feb 15–22) ─────────────────────────────────────────
+  {date:'2026-02-16', label:'stdlib: A2A, pg, kube',   cat:'Stdlib',        lv:0},
+  {date:'2026-02-19', label:'select statement',        cat:'Language Core', lv:3},
+  {date:'2026-02-22', label:'Security hardening',      cat:'Security',      lv:2},
+  // ── Stdlib maturity & tooling (Feb 25–26) ─────────────────────────────────
   {date:'2026-02-25', label:'onerr shorthand',         cat:'Language Core', lv:0},
-  {date:'2026-02-25', label:'kukicha init',            cat:'Tooling',       lv:2},
+  {date:'2026-02-25', label:'kukicha init',            cat:'Tooling',       lv:3},
   {date:'2026-02-26', label:'Pure Kukicha stdlib',     cat:'Stdlib',        lv:1},
-  {date:'2026-02-26', label:'Table-driven tests',      cat:'Stdlib',        lv:3},
+  {date:'2026-02-26', label:'Table-driven tests',      cat:'Stdlib',        lv:2},
+  // ── Recent features (Feb 27–Mar 1) ───────────────────────────────────────
+  {date:'2026-02-28', label:'Bidirectional loops',     cat:'Language Core', lv:3},
+  {date:'2026-02-28', label:'Codegen quality fixes',   cat:'Compiler',      lv:0},
+  {date:'2026-03-01', label:'VS Code extension',       cat:'Tooling',       lv:1},
+  {date:'2026-03-01', label:'Negative indexing',       cat:'Language Core', lv:2},
 ];
 LANDMARKS.forEach(m => {
   const c = CAT_COLORS_TL[m.cat]||'#8b949e';
@@ -3457,10 +3749,10 @@ LANDMARKS.forEach(m => {
   tlTrack.appendChild(el);
 });
 
-// Date axis labels
+// Date axis labels — positioned using the same pct() as timeline points
 const datesDiv = document.createElement('div'); datesDiv.className='tl-dates';
-['2026-01-19','2026-01-26','2026-02-02','2026-02-09','2026-02-16','2026-02-22','2026-02-26']
-  .forEach(d=>{ const s=document.createElement('span'); s.className='tl-date'; s.textContent=d.slice(5); datesDiv.appendChild(s); });
+['2026-01-19','2026-01-26','2026-02-02','2026-02-09','2026-02-16','2026-02-23','2026-03-01']
+  .forEach(d=>{ const s=document.createElement('span'); s.className='tl-date'; s.textContent=d.slice(5); s.style.left=pct(d); datesDiv.appendChild(s); });
 tlInner.appendChild(datesDiv);
 
 // Legend
@@ -3486,8 +3778,7 @@ function renderMilestones(list){
     <td><span class="mono">${m.date}</span></td>
     <td>${chipFor(m.category)}</td>
     <td style="font-weight:500;color:var(--text)">${m.label}</td>
-    <td style="color:var(--text2);max-width:280px;">${m.subject.length>75?m.subject.slice(0,75)+'…':m.subject}</td>
-    <td style="white-space:nowrap"><span style="color:var(--blue);font-size:11px">${m.author}</span> <span class="mono">${m.hash}</span></td>
+    <td style="color:var(--text2);max-width:320px;">${m.subject.length>90?m.subject.slice(0,90)+'…':m.subject}</td>
   </tr>`).join('');
 }
 

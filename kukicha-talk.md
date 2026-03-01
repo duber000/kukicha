@@ -277,12 +277,12 @@ The human stays **in the loop** without needing to know Go internals.
 
 | Thing | Status |
 |-------|--------|
-| Version | 0.0.10 |
+| Version | 0.0.11 |
 | Go requirement | 1.26+ |
 | License | MIT |
 | LSP support | ✓ (Zed, Neovim, etc.) |
 | Stdlib packages | 35+ |
-| Editor extension | Zed (tree-sitter + LSP) |
+| Editor extension | VS Code, Zed (tree-sitter + LSP) |
 
 <!-- end_slide -->
 
@@ -1554,7 +1554,7 @@ import "stdlib/concurrent"
 
 func checkURL(url string) (string, error)
     resp := fetch.Get(url) onerr return "", error "unreachable: {error}"
-    return "{url}: {resp.status}", empty
+    return "{url}: {resp.StatusCode}", empty
 
 func main()
     urls := list of string{
@@ -1768,6 +1768,8 @@ make install-lsp
 ```
 
 <!-- pause -->
+
+**VS Code** — install the official extension (syntax highlighting + LSP)
 
 **Zed** — install the official extension (tree-sitter grammar + LSP)
 
