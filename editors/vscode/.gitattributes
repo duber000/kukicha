@@ -1,0 +1,20 @@
+# Set default behavior for text files
+* text=auto
+
+# Explicitly declare text files
+*.ts text
+*.js text
+*.json text
+*.md text
+*.sh text eol=lf
+*.toml text
+
+# Force shell scripts to use LF
+*.sh eol=lf
+
+# Ensure SVGs are treated as text
+*.svg text
+
+# Binary files
+*.png binary
+*.vsix binary

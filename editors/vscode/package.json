@@ -1,0 +1,121 @@
+{
+  "name": "kukicha-lang",
+  "displayName": "Kukicha Language Support",
+  "description": "Full language support for Kukicha - a beginner-friendly language that compiles to Go",
+  "version": "0.1.0",
+  "kukichaVersion": "0.0.11",
+  "publisher": "kukicha",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters"
+  ],
+  "keywords": [
+    "kukicha",
+    "go",
+    "beginner-friendly",
+    "transpiler"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/duber000/kukicha"
+  },
+  "license": "Apache-2.0",
+  "icon": "images/icon.png",
+  "activationEvents": [
+    "onLanguage:kukicha"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "kukicha",
+        "aliases": [
+          "Kukicha",
+          "kukicha"
+        ],
+        "extensions": [
+          ".kuki"
+        ],
+        "configuration": "./languages/kukicha.json",
+        "icon": {
+          "light": "images/icon-light.svg",
+          "dark": "images/icon-dark.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "kukicha",
+        "scopeName": "source.kukicha",
+        "path": "./syntaxes/kukicha.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "kukicha.format",
+        "title": "Format Kukicha File",
+        "category": "Kukicha"
+      },
+      {
+        "command": "kukicha.checkSyntax",
+        "title": "Check Syntax",
+        "category": "Kukicha"
+      }
+    ],
+    "configuration": {
+      "title": "Kukicha",
+      "properties": {
+        "kukicha.lsp.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the kukicha-lsp binary. Leave empty to use the bundled binary."
+        },
+        "kukicha.format.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic formatting on save"
+        },
+        "kukicha.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace communications between the client and server"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "tsc": "tsc -p ./",
+    "tsc-watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "copy-wasm": "test -f ./node_modules/tree-sitter/tree-sitter.wasm && cp ./node_modules/tree-sitter/tree-sitter.wasm ./dist/ || echo 'tree-sitter-wasm not available, skipping'",
+    "fetch-lsp": "node scripts/fetch-lsp-binaries.js"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.90.0",
+    "@typescript-eslint/eslint-plugin": "^7.13.0",
+    "@typescript-eslint/parser": "^7.13.0",
+    "esbuild": "^0.21.5",
+    "eslint": "^8.57.0",
+    "node-fetch": "^3.3.2",
+    "tar": "^7.2.0",
+    "tree-sitter": "^0.21.1",
+    "typescript": "^5.4.5"
+  }
+}

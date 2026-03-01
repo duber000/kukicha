@@ -1,0 +1,35 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Dependencies
+node_modules/
+
+# Build output (keep dist/, ignore other build artifacts)
+out/
+
+# Binaries (keep only for current platform)
+# binaries/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VSCode extension package
+*.vsix
+
+# Testing
+.vscode-test/
+
+# Misc
+.vscode/launch.json
+
+# Development files
+.vscodeignore
+*.map
+IMPLEMENTATION.md
+CONTRIBUTING.md
+example.kuki
+quickstart.sh

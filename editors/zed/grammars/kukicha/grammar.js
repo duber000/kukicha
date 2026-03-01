@@ -64,7 +64,7 @@ module.exports = grammar({
       field('parameters', $.parameter_list),
       optional(field('return_type', $.return_type)),
       $._newline,
-      field('body', $.block),
+      optional(field('body', $.block)),
     ),
 
     // Method declaration: func Name on receiver Type ReturnType
@@ -76,7 +76,7 @@ module.exports = grammar({
       field('receiver_type', $.type),
       optional(field('return_type', $.return_type)),
       $._newline,
-      field('body', $.block),
+      optional(field('body', $.block)),
     ),
 
     // Type declaration
@@ -489,6 +489,8 @@ module.exports = grammar({
     onerr_clause: $ => prec(5, seq(
       'onerr',
       choice(
+        // Named alias block form: onerr as e NEWLINE INDENT ... DEDENT
+        seq('as', field('alias', $.identifier), $._newline, field('body', $.block)),
         // Block form: onerr NEWLINE INDENT ... DEDENT
         seq($._newline, field('body', $.block)),
         // Standalone explain: onerr explain "hint"

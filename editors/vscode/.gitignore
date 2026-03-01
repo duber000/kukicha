@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+*.tsbuildinfo
+
+# Binaries (keep .gitkeep files)
+binaries/*/kukicha-lsp
+binaries/*/kukicha-lsp.exe
+!binaries/**/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VSCode extension package
+*.vsix
+
+# Testing
+.vscode-test/
+coverage/
+.nyc_output/
+
+# Cache
+.eslintcache
+
+# Local debug configs (use .example.json templates instead)
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/settings.json

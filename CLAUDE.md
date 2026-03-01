@@ -333,6 +333,9 @@ stdlib/                   # Standard library (.kuki source files)
   ...
 examples/                 # Example programs
 docs/                     # Documentation
+editors/
+  vscode/                 # VS Code extension (syntax highlighting, LSP client)
+  zed/                    # Zed extension (tree-sitter grammar, LSP client)
 ```
 
 ## Imports

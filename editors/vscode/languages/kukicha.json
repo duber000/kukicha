@@ -1,0 +1,21 @@
+{
+  "comments": "# ",
+  "symbols": {
+    "blockStart": "{",
+    "blockEnd": "}"
+  },
+  "autoClosingPairs": [
+    { "open": "(", "close": ")" },
+    { "open": "[", "close": "]" },
+    { "open": "{", "close": "}" },
+    { "open": "\"", "close": "\"", "notIn": ["comment", "string"] },
+    { "open": "'", "close": "'", "notIn": ["comment", "string"] }
+  ],
+  "folding": {
+    "markers": {
+      "start": "^\\s*(func|function|type|interface|if|for|switch|select|go)\\b",
+      "end": "^(?!\\s)"
+    }
+  },
+  "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\%\\^\\&\\*\\(\\)\\-\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\?\\s]+)"
+}

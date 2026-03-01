@@ -1,0 +1,15 @@
+# hello.kuki - Example Kukicha program
+# Open this file in VS Code with the Kukicha extension installed
+
+func main()
+    name := "World"
+    print("Hello, {name}!")
+    
+    numbers := list of int{1, 2, 3, 4, 5}
+    
+    for n in numbers
+        if n > 3
+            print("{n} is greater than 3")
+        else
+            print("{n} is 3 or less")
+
