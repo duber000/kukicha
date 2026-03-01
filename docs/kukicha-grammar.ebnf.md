@@ -735,7 +735,7 @@ func ProcessAll(items list of Item)
     for discard, item in items
         go
             result := process(item)
-            send results, result
+            send result to results
     
     for i from 0 to len(items)
         result := receive from results
@@ -769,7 +769,7 @@ FunctionDeclaration
    │  └─ GoStatement
    │     └─ StatementList
    │        ├─ VariableDeclaration: result := process(item)
-   │        └─ SendStatement: send results, result
+   │        └─ SendStatement: send result to results
    └─ ForRangeLoop
       ├─ for
       ├─ i
@@ -1054,7 +1054,7 @@ func Fetch(urls list of string)
     for discard, url in urls
         go
             result := http.get(url) onerr return
-            send ch, result
+            send result to ch
 
     for i from 0 to len(urls)
         print receive from ch

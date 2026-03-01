@@ -345,13 +345,14 @@ func Connect(host string, port int = 8080, timeout int = 30)
 | `for i, v := range slice` | `for i, v in slice` |
 | `for i := 0; i < 10; i++` | `for i from 0 to 10` |
 | `for i := 10; i >= 0; i--` | `for i from 10 through 0` |
-| `ch <- v` | `send ch, v` |
+| `ch <- v` | `send v to ch` |
 | `v := <-ch` | `v := receive from ch` |
 | `_` | `_` or `discard` (see section 2) |
-| `v.(T)` | `v as T` |
+| `v.(T)` | `v.(T)` (same syntax) |
+| `T(v)` (type conversion) | `v as T` |
 | `func F(v ...T)` | `func F(many v T)` |
-| `v[len(v)-1]` | `v at -1` or `v[-1]` |
-| `v[1:len(v)-1]` | `v[1:-1]` |
+| `v[len(v)-1]` | `v[-1]` (negative indexing) |
+| `v[1:len(v)-1]` | `v[1:-1]` (negative slice) |
 | `struct { Key string }` | `type T \n    Key string` |
 | `append(slice, item)` | `append(slice, item)` |
 | `make([]T, len)` | `make list of T, len` |

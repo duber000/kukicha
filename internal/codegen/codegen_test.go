@@ -2141,6 +2141,114 @@ func divide(a int, b int) (int, error)
 	}
 }
 
+func TestNegativeIndexRewriting(t *testing.T) {
+	input := `func Main()
+    items := list of string{"a", "b", "c"}
+    last := items[-1]
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "items[len(items)-1]") {
+		t.Errorf("expected items[len(items)-1], got: %s", output)
+	}
+}
+
+func TestNegativeSliceStartRewriting(t *testing.T) {
+	input := `func Main()
+    items := list of string{"a", "b", "c"}
+    tail := items[-3:]
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "items[len(items)-3:]") {
+		t.Errorf("expected items[len(items)-3:], got: %s", output)
+	}
+}
+
+func TestNegativeSliceEndRewriting(t *testing.T) {
+	input := `func Main()
+    items := list of string{"a", "b", "c"}
+    init := items[:-1]
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "items[:len(items)-1]") {
+		t.Errorf("expected items[:len(items)-1], got: %s", output)
+	}
+}
+
+func TestNegativeSliceBothRewriting(t *testing.T) {
+	input := `func Main()
+    items := list of string{"a", "b", "c"}
+    middle := items[1:-1]
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "items[1:len(items)-1]") {
+		t.Errorf("expected items[1:len(items)-1], got: %s", output)
+	}
+}
+
 func TestEmptyAsVariableName(t *testing.T) {
 	input := `func Main()
     empty := 42

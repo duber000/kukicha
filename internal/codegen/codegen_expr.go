@@ -55,6 +55,10 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		return g.generateMethodCallExpr(e)
 	case *ast.IndexExpr:
 		left := g.exprToString(e.Left)
+		if u, ok := isNegativeExpr(e.Index); ok {
+			absIndex := g.exprToString(u.Right)
+			return fmt.Sprintf("%s[len(%s)-%s]", left, left, absIndex)
+		}
 		index := g.exprToString(e.Index)
 		return fmt.Sprintf("%s[%s]", left, index)
 	case *ast.SliceExpr:
@@ -647,13 +651,29 @@ func (g *Generator) generateSliceExpr(expr *ast.SliceExpr) string {
 
 	var start, end string
 	if expr.Start != nil {
-		start = g.exprToString(expr.Start)
+		if u, ok := isNegativeExpr(expr.Start); ok {
+			absIndex := g.exprToString(u.Right)
+			start = fmt.Sprintf("len(%s)-%s", left, absIndex)
+		} else {
+			start = g.exprToString(expr.Start)
+		}
 	}
 	if expr.End != nil {
-		end = g.exprToString(expr.End)
+		if u, ok := isNegativeExpr(expr.End); ok {
+			absIndex := g.exprToString(u.Right)
+			end = fmt.Sprintf("len(%s)-%s", left, absIndex)
+		} else {
+			end = g.exprToString(expr.End)
+		}
 	}
 
 	return fmt.Sprintf("%s[%s:%s]", left, start, end)
+}
+
+// isNegativeExpr checks if an expression is a unary minus (negative index).
+func isNegativeExpr(expr ast.Expression) (*ast.UnaryExpr, bool) {
+	u, ok := expr.(*ast.UnaryExpr)
+	return u, ok && u.Operator == "-"
 }
 
 func (g *Generator) generateStructLiteral(expr *ast.StructLiteralExpr) string {

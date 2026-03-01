@@ -307,15 +307,6 @@ Or download from the [GitHub Releases](https://github.com/duber000/kukicha/relea
 
 See [`editors/vscode/README.md`](editors/vscode/README.md) for details.
 
-### Zed
-
-Install the extension from the repo:
-
-1. Open Zed → `zed: install dev extension`
-2. Point it at the `editors/zed/` directory in this repo
-
-Includes syntax highlighting (tree-sitter grammar) and full LSP integration.
-
 ### LSP Server (other editors)
 
 Build and install the language server:
