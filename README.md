@@ -31,11 +31,19 @@ If you can read the code above, you can review what an AI wrote for you.
 
 ## Why This Matters
 
-AI writes nearly half of all committed code, yet [45% of it contains security flaws](https://www.veracode.com) and AI-assisted codebases show [1.7x more bugs](https://www.coderabbit.ai). The industry is sprinting toward full autonomy — agent loops that generate, deploy, and patch code with no human in the loop.
+AI writes [nearly half of all committed code](https://shiftmag.dev/state-of-code-2025-7978/), yet [45% of it contains security flaws](https://www.veracode.com/blog/genai-code-security-report/) and AI-generated code introduces [1.7x more issues](https://www.coderabbit.ai/blog/state-of-ai-vs-human-code-generation-report). In 2026, [security debt hit 82% of organizations](https://www.veracode.com/resources/analyst-reports/state-of-software-security-2026/) and AI-generated code [introduces 15–18% more security vulnerabilities](https://opsera.ai/resources/report/ai-coding-impact-2025-benchmark-report/) at enterprise scale. The industry is sprinting toward full autonomy — agent loops that generate, deploy, and patch code with no human in the loop.
 
 **Kukicha exists because the answer to "AI writes all the code" shouldn't be "and nobody reads any of it." It should be "and a human can still understand every line."**
 
 AI is the writer. You are the editor. That's not a limitation — it's the architecture of trust.
+
+---
+
+## Beyond Readability
+
+Kukicha compiles to Go — single binaries, goroutines, strong typing, memory safety, fast cold starts. No runtime dependencies.
+
+The compiler also catches common AI-generated vulnerabilities **at build time** — SQL injection, XSS, SSRF, path traversal, command injection, and open redirects — and tells both you and the AI agent what safe alternative to use instead.
 
 ---
 
