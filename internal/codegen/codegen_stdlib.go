@@ -7,6 +7,71 @@ import (
 	"github.com/duber000/kukicha/internal/ast"
 )
 
+// Package-level lookup maps — allocated once to avoid per-call allocation.
+var boolMethods = map[string]bool{
+	"Contains":  true,
+	"HasPrefix": true,
+	"HasSuffix": true,
+	"EqualFold": true,
+}
+
+var genericSafe = map[string]bool{
+	"Filter":     true,
+	"Map":        true,
+	"First":      true,
+	"Last":       true,
+	"Drop":       true,
+	"DropLast":   true,
+	"Reverse":    true,
+	"Chunk":      true,
+	"IsEmpty":    true,
+	"IsNotEmpty": true,
+	"Concat":     true,
+	"GetOr":      true,
+	"FirstOr":    true,
+	"LastOr":     true,
+	"FindOr":     true,
+	"FindIndex":  true,
+	"FindLastOr": true,
+	"Get":        true,
+	"FirstOne":   true,
+	"LastOne":    true,
+	"Find":       true,
+	"FindLast":   true,
+	"Pop":        true,
+	"Shift":      true,
+}
+
+var comparableSafe = map[string]bool{
+	"Unique":   true,
+	"Contains": true,
+	"IndexOf":  true,
+}
+
+var knownInterfaces = map[string]bool{
+	"io.Reader":           true,
+	"io.Writer":           true,
+	"io.Closer":           true,
+	"io.ReadCloser":       true,
+	"io.WriteCloser":      true,
+	"io.ReadWriter":       true,
+	"io.ReadWriteCloser":  true,
+	"io.ReaderFrom":       true,
+	"io.WriterTo":         true,
+	"io.Seeker":           true,
+	"io.ReadSeeker":       true,
+	"io.ReadWriteSeeker":  true,
+	"fmt.Stringer":        true,
+	"fmt.Scanner":         true,
+	"http.Handler":        true,
+	"http.ResponseWriter": true,
+	"context.Context":     true,
+	"sort.Interface":      true,
+	"net.Conn":            true,
+	"net.Listener":        true,
+	"net.Error":           true,
+}
+
 // inferExprReturnType tries to infer the return type of an expression lambda body.
 // Returns empty string if it can't determine the type.
 func (g *Generator) inferExprReturnType(expr ast.Expression) string {
@@ -40,13 +105,6 @@ func (g *Generator) inferExprReturnType(expr ast.Expression) string {
 		// For a pipe chain, the return type is determined by the final step.
 		return g.inferExprReturnType(e.Right)
 	case *ast.MethodCallExpr:
-		// Known bool-returning stdlib methods used in filter/predicate lambdas.
-		boolMethods := map[string]bool{
-			"Contains":  true,
-			"HasPrefix": true,
-			"HasSuffix": true,
-			"EqualFold": true,
-		}
 		if boolMethods[e.Method.Value] {
 			return "bool"
 		}
@@ -159,43 +217,6 @@ func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypePara
 			Constraint:  "comparable",
 		})
 		return typeParams
-	}
-
-	// Allowlist: functions that are safe to parameterise with [T any].
-	// These never return `empty` as a value of type T, never use T as a map key,
-	// and do not delegate to comparable-constrained Go stdlib helpers.
-	genericSafe := map[string]bool{
-		"Filter":     true,
-		"Map":        true,
-		"First":      true,
-		"Last":       true,
-		"Drop":       true,
-		"DropLast":   true,
-		"Reverse":    true,
-		"Chunk":      true,
-		"IsEmpty":    true,
-		"IsNotEmpty": true,
-		"Concat":     true,
-		"GetOr":      true,
-		"FirstOr":    true,
-		"LastOr":     true,
-		"FindOr":     true,
-		"FindIndex":  true,
-		"FindLastOr": true,
-		"Get":        true,
-		"FirstOne":   true,
-		"LastOne":    true,
-		"Find":       true,
-		"FindLast":   true,
-		"Pop":        true,
-		"Shift":      true,
-	}
-
-	// Functions that use any2 (comparable) but not any as first type param
-	comparableSafe := map[string]bool{
-		"Unique":   true,
-		"Contains": true,
-		"IndexOf":  true,
 	}
 
 	if comparableSafe[decl.Name.Value] {
@@ -386,31 +407,6 @@ func (g *Generator) isLikelyInterfaceType(typeName string) bool {
 				return true
 			}
 		}
-	}
-
-	// Common standard library interfaces
-	knownInterfaces := map[string]bool{
-		"io.Reader":           true,
-		"io.Writer":           true,
-		"io.Closer":           true,
-		"io.ReadCloser":       true,
-		"io.WriteCloser":      true,
-		"io.ReadWriter":       true,
-		"io.ReadWriteCloser":  true,
-		"io.ReaderFrom":       true,
-		"io.WriterTo":         true,
-		"io.Seeker":           true,
-		"io.ReadSeeker":       true,
-		"io.ReadWriteSeeker":  true,
-		"fmt.Stringer":        true,
-		"fmt.Scanner":         true,
-		"http.Handler":        true,
-		"http.ResponseWriter": true,
-		"context.Context":     true,
-		"sort.Interface":      true,
-		"net.Conn":            true,
-		"net.Listener":        true,
-		"net.Error":           true,
 	}
 
 	return knownInterfaces[typeName]

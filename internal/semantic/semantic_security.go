@@ -7,6 +7,47 @@ import (
 	"github.com/duber000/kukicha/internal/ast"
 )
 
+// Package-level lookup maps — allocated once to avoid per-call allocation.
+var sqlFunctions = map[string]bool{
+	"pg.Query":      true,
+	"pg.QueryRow":   true,
+	"pg.Exec":       true,
+	"pg.TxQuery":    true,
+	"pg.TxQueryRow": true,
+	"pg.TxExec":     true,
+}
+
+var htmlFunctions = map[string]bool{
+	"httphelper.HTML": true,
+	"http.HTML":      true,
+}
+
+var fetchFunctions = map[string]bool{
+	"fetch.Get":  true,
+	"fetch.Post": true,
+	"fetch.New":  true,
+}
+
+var filesFunctions = map[string]bool{
+	"files.Read":          true,
+	"files.ReadBytes":     true,
+	"files.Write":         true,
+	"files.WriteString":   true,
+	"files.Append":        true,
+	"files.AppendString":  true,
+	"files.Delete":        true,
+	"files.DeleteAll":     true,
+	"files.List":          true,
+	"files.ListRecursive": true,
+}
+
+var redirectFunctions = map[string]bool{
+	"httphelper.Redirect":          true,
+	"http.Redirect":               true,
+	"httphelper.RedirectPermanent": true,
+	"http.RedirectPermanent":      true,
+}
+
 // isInHTTPHandler returns true when the current function is an HTTP handler.
 // Detected by the presence of an http.ResponseWriter parameter.
 func (a *Analyzer) isInHTTPHandler() bool {
@@ -28,16 +69,6 @@ func (a *Analyzer) isInHTTPHandler() bool {
 // class of SQL injection where Kukicha's "{var}" syntax interpolates user
 // data into the query string before pgx's parameterization can protect it.
 func (a *Analyzer) checkSQLInterpolation(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
-	// Functions where the SQL string is an argument
-	sqlFunctions := map[string]bool{
-		"pg.Query":      true,
-		"pg.QueryRow":   true,
-		"pg.Exec":       true,
-		"pg.TxQuery":    true,
-		"pg.TxQueryRow": true,
-		"pg.TxExec":     true,
-	}
-
 	if !sqlFunctions[qualifiedName] {
 		return
 	}
@@ -67,10 +98,6 @@ func (a *Analyzer) checkSQLInterpolation(qualifiedName string, expr *ast.MethodC
 // checkHTMLNonLiteral warns when http.HTML (or its alias) is called with a
 // non-literal content argument, which is a direct XSS vector.
 func (a *Analyzer) checkHTMLNonLiteral(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
-	htmlFunctions := map[string]bool{
-		"httphelper.HTML": true,
-		"http.HTML":       true,
-	}
 	if !htmlFunctions[qualifiedName] {
 		return
 	}
@@ -97,11 +124,6 @@ func (a *Analyzer) checkHTMLNonLiteral(qualifiedName string, expr *ast.MethodCal
 // checkFetchInHandler warns when fetch.Get, fetch.Post, or fetch.New is called
 // directly inside an HTTP handler without SSRF protection.
 func (a *Analyzer) checkFetchInHandler(qualifiedName string, expr *ast.MethodCallExpr) {
-	fetchFunctions := map[string]bool{
-		"fetch.Get":  true,
-		"fetch.Post": true,
-		"fetch.New":  true,
-	}
 	if !fetchFunctions[qualifiedName] {
 		return
 	}
@@ -117,18 +139,6 @@ func (a *Analyzer) checkFetchInHandler(qualifiedName string, expr *ast.MethodCal
 // checkFilesInHandler warns when files.* I/O functions are called inside an
 // HTTP handler, where the path argument may be user-controlled.
 func (a *Analyzer) checkFilesInHandler(qualifiedName string, expr *ast.MethodCallExpr) {
-	filesFunctions := map[string]bool{
-		"files.Read":          true,
-		"files.ReadBytes":     true,
-		"files.Write":         true,
-		"files.WriteString":   true,
-		"files.Append":        true,
-		"files.AppendString":  true,
-		"files.Delete":        true,
-		"files.DeleteAll":     true,
-		"files.List":          true,
-		"files.ListRecursive": true,
-	}
 	if !filesFunctions[qualifiedName] {
 		return
 	}
@@ -168,12 +178,6 @@ func (a *Analyzer) checkShellRunNonLiteral(qualifiedName string, expr *ast.Metho
 // checkRedirectNonLiteral warns when http.Redirect / http.RedirectPermanent is
 // called with a non-literal URL argument, which is an open-redirect vector.
 func (a *Analyzer) checkRedirectNonLiteral(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
-	redirectFunctions := map[string]bool{
-		"httphelper.Redirect":          true,
-		"http.Redirect":                true,
-		"httphelper.RedirectPermanent": true,
-		"http.RedirectPermanent":       true,
-	}
 	if !redirectFunctions[qualifiedName] {
 		return
 	}

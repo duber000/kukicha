@@ -6,6 +6,29 @@ import (
 	"github.com/duber000/kukicha/internal/ast"
 )
 
+// knownExternalReturns maps qualified function names to their return count.
+// Built once from the auto-generated stdlib registry plus Go stdlib entries.
+var knownExternalReturns map[string]int
+
+func init() {
+	knownExternalReturns = make(map[string]int, len(generatedStdlibRegistry)+20)
+	for k, v := range generatedStdlibRegistry {
+		knownExternalReturns[k] = v
+	}
+	// Go stdlib (not derived from .kuki files)
+	knownExternalReturns["os.ReadFile"] = 2
+	knownExternalReturns["os.Create"] = 2
+	knownExternalReturns["os.Open"] = 2
+	knownExternalReturns["os.LookupEnv"] = 2
+	knownExternalReturns["strconv.Atoi"] = 2
+	knownExternalReturns["strconv.ParseInt"] = 2
+	knownExternalReturns["strconv.ParseFloat"] = 2
+	knownExternalReturns["url.Parse"] = 2
+	knownExternalReturns["fmt.Fprintf"] = 2
+	knownExternalReturns["fmt.Sprintf"] = 1
+	knownExternalReturns["net.ParseCIDR"] = 3
+}
+
 func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*TypeInfo {
 	// Check for known stdlib functions first
 	if id, ok := expr.Function.(*ast.Identifier); ok {
@@ -199,25 +222,6 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 
 		// Security: detect http.Redirect with non-literal URL (open redirect)
 		a.checkRedirectNonLiteral(qualifiedName, expr, pipedArg)
-
-		// Build the registry from the auto-generated Kukicha stdlib entries,
-		// then layer in Go stdlib functions (which have no .kuki source).
-		knownExternalReturns := make(map[string]int, len(generatedStdlibRegistry)+20)
-		for k, v := range generatedStdlibRegistry {
-			knownExternalReturns[k] = v
-		}
-		// Go stdlib (not derived from .kuki files)
-		knownExternalReturns["os.ReadFile"] = 2
-		knownExternalReturns["os.Create"] = 2
-		knownExternalReturns["os.Open"] = 2
-		knownExternalReturns["os.LookupEnv"] = 2
-		knownExternalReturns["strconv.Atoi"] = 2
-		knownExternalReturns["strconv.ParseInt"] = 2
-		knownExternalReturns["strconv.ParseFloat"] = 2
-		knownExternalReturns["url.Parse"] = 2
-		knownExternalReturns["fmt.Fprintf"] = 2
-		knownExternalReturns["fmt.Sprintf"] = 1
-		knownExternalReturns["net.ParseCIDR"] = 3
 
 		if count, ok := knownExternalReturns[qualifiedName]; ok {
 			types := make([]*TypeInfo, count)

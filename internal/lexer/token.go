@@ -1,6 +1,9 @@
 package lexer
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // TokenType represents the type of a token
 type TokenType int
@@ -381,14 +384,22 @@ var keywords = map[string]TokenType{
 	"select":      TOKEN_SELECT,
 }
 
+var (
+	cachedKeywords     []string
+	cachedKeywordsOnce sync.Once
+)
+
 // Keywords returns all keyword strings from the canonical keywords map.
 // This is the single source of truth for keyword completion in the LSP.
+// The result is computed once and cached for subsequent calls.
 func Keywords() []string {
-	result := make([]string, 0, len(keywords))
-	for kw := range keywords {
-		result = append(result, kw)
-	}
-	return result
+	cachedKeywordsOnce.Do(func() {
+		cachedKeywords = make([]string, 0, len(keywords))
+		for kw := range keywords {
+			cachedKeywords = append(cachedKeywords, kw)
+		}
+	})
+	return cachedKeywords
 }
 
 // LookupKeyword returns the token type for a keyword, or TOKEN_IDENTIFIER if not a keyword

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
+	"unique"
 )
 
 // Lexer tokenizes Kukicha source code.
@@ -497,9 +498,9 @@ func (l *Lexer) scanIdentifier() {
 		l.advance()
 	}
 
-	text := string(l.source[l.start:l.current])
+	text := unique.Make(string(l.source[l.start:l.current])).Value()
 	tokenType := LookupKeyword(text)
-	l.addToken(tokenType)
+	l.addTokenWithLexeme(tokenType, text)
 	
 	// Track when we enter a function literal context
 	if tokenType == TOKEN_FUNC {
