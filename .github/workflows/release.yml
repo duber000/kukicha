@@ -116,7 +116,13 @@ jobs:
       - name: Generate changelog
         env:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-        run: ./kukicha run scripts/changelog.kuki ${{ steps.vars.outputs.version }}
+          VERSION: ${{ steps.vars.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version: $VERSION" && exit 1
+          fi
+          ./kukicha run scripts/changelog.kuki "$VERSION"
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
