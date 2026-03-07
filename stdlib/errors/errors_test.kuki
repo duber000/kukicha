@@ -45,6 +45,49 @@ func TestWrapAndIs(t reference testing.T)
                 test.AssertNotEmpty(t, unwrapped)
         )
 
+# --- TestOpaque ---
+type OpaqueCase
+    name string
+    msg string
+    wrapMsg string
+    wantMsg string
+
+func TestOpaque(t reference testing.T)
+    cases := list of OpaqueCase{
+        OpaqueCase{name: "formats message", msg: "inner detail", wrapMsg: "subsystem", wantMsg: "subsystem: inner detail"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            base := goerrors.New(tc.msg)
+            opaque := errors.Opaque(base, tc.wrapMsg)
+            test.AssertEqual(t, opaque.Error(), tc.wantMsg)
+            # Crucially, errors.Is must NOT traverse through an opaque boundary
+            test.AssertFalse(t, errors.Is(opaque, base))
+        )
+
+# --- TestPublicError ---
+type PublicErrorCase
+    name string
+    internal string
+    public string
+
+func TestPublicError(t reference testing.T)
+    cases := list of PublicErrorCase{
+        PublicErrorCase{name: "Error() returns internal message", internal: "pg: connection refused to 10.0.0.1", public: "database unavailable"},
+        PublicErrorCase{name: "Public() returns public message", internal: "auth token expired at 2024-01-01", public: "session expired, please log in again"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            e := errors.NewPublic(tc.internal, tc.public)
+            test.AssertEqual(t, e.Error(), tc.internal)
+            test.AssertEqual(t, errors.Public(e), tc.public)
+        )
+
+func TestPublicFallback(t reference testing.T)
+    plain := goerrors.New("some internal error")
+    msg := errors.Public(plain)
+    test.AssertEqual(t, msg, "an error occurred")
+
 # --- TestJoin ---
 type JoinCase
     name string

@@ -88,7 +88,7 @@ func EnvInt(key string) int {
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:68
 	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:69
-		panic(fmt.Sprintf("must: environment variable %v must be a valid integer, got '%v'", key, value))
+		panic(fmt.Sprintf("must: environment variable %v must be a valid integer", key))
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:70
 	return n
@@ -108,7 +108,7 @@ func EnvIntOr(key string, defaultValue int) int {
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:80
 	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:81
-		panic(fmt.Sprintf("must: environment variable %v must be a valid integer, got '%v'", key, value))
+		panic(fmt.Sprintf("must: environment variable %v must be a valid integer", key))
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:82
 	return n
@@ -128,7 +128,7 @@ func EnvBool(key string) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:92
 	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:93
-		panic(fmt.Sprintf("must: environment variable %v must be a valid boolean, got '%v'", key, value))
+		panic(fmt.Sprintf("must: environment variable %v must be a valid boolean", key))
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:94
 	return result
@@ -148,7 +148,7 @@ func EnvBoolOr(key string, defaultValue bool) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:104
 	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:105
-		panic(fmt.Sprintf("must: environment variable %v must be a valid boolean, got '%v'", key, value))
+		panic(fmt.Sprintf("must: environment variable %v must be a valid boolean", key))
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/must/must.kuki:106
 	return result

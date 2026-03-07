@@ -52,36 +52,99 @@ func TestWrapAndIs(t *testing.T) {
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:49
+type OpaqueCase struct {
+	name    string
+	msg     string
+	wrapMsg string
+	wantMsg string
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:55
+func TestOpaque(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:58
+	cases := []OpaqueCase{OpaqueCase{name: "formats message", msg: "inner detail", wrapMsg: "subsystem", wantMsg: "subsystem: inner detail"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:59
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:60
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:61
+			base := goerrors.New(tc.msg)
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:62
+			opaque := errors.Opaque(base, tc.wrapMsg)
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:63
+			test.AssertEqual(t, opaque.Error(), tc.wantMsg)
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:65
+			test.AssertFalse(t, errors.Is(opaque, base))
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:69
+type PublicErrorCase struct {
+	name     string
+	internal string
+	public   string
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:74
+func TestPublicError(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:78
+	cases := []PublicErrorCase{PublicErrorCase{name: "Error() returns internal message", internal: "pg: connection refused to 10.0.0.1", public: "database unavailable"}, PublicErrorCase{name: "Public() returns public message", internal: "auth token expired at 2024-01-01", public: "session expired, please log in again"}}
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:79
+	for _, tc := range cases {
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:80
+		t.Run(tc.name, func(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:81
+			e := errors.NewPublic(tc.internal, tc.public)
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:82
+			test.AssertEqual(t, e.Error(), tc.internal)
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:83
+			test.AssertEqual(t, errors.Public(e), tc.public)
+		})
+	}
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:86
+func TestPublicFallback(t *testing.T) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:87
+	plain := goerrors.New("some internal error")
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:88
+	msg := errors.Public(plain)
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:89
+	test.AssertEqual(t, msg, "an error occurred")
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:92
 type JoinCase struct {
 	name    string
 	errs    []error
 	wantNil bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:97
 func TestJoin(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:66
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:109
 	cases := []JoinCase{JoinCase{name: "joins multiple errors", errs: []error{goerrors.New("a"), goerrors.New("b")}, wantNil: false}, JoinCase{name: "returns nil for empty list", errs: []error{}, wantNil: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:110
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:111
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:112
 			e := errors.Join(tc.errs...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:113
 			if tc.wantNil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:114
 				test.AssertNoError(t, e)
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:116
 				test.AssertError(t, e)
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:117
 				test.AssertNoError(t, nil)
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:118
 				errStr := e.Error()
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:119
 				test.AssertNotEmpty(t, errStr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/errors/errors_test.kuki:120
 				test.AssertTrue(t, (len(errStr) > 0))
 			}
 		})

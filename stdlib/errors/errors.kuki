@@ -42,3 +42,36 @@ func New(msg string) error
 # discarded. Returns empty if all values are nil.
 func Join(many items error) error
     return goerrors.Join(many items)
+
+# Opaque wraps err with a message prefix WITHOUT preserving the error chain.
+# Unlike Wrap, callers cannot errors.Is/As through this boundary, which
+# prevents leaking internal library error types at subsystem boundaries.
+# Use at DB/infra boundaries; use Wrap within a single subsystem.
+func Opaque(err error, msg string) error
+    return fmt.Errorf("%s: %s", msg, err)
+
+# PublicError is a dual-message error type.
+# The internal message contains full details for logs.
+# The public message is safe to return to end users.
+type PublicError
+    internal string
+    public string
+
+# Error implements the error interface, returning the internal (detailed) message.
+func Error on e PublicError string
+    return e.internal
+
+# NewPublic creates an error with separate internal and public messages.
+# Log e.Error() server-side; return errors.Public(e) in HTTP responses.
+# Example: return errors.NewPublic("pg: connection refused to 10.0.0.1:5432", "database unavailable")
+func NewPublic(internalMsg string, publicMsg string) error
+    return PublicError{internal: internalMsg, public: publicMsg}
+
+# Public extracts the safe public message from a PublicError.
+# If err is not a PublicError, returns a generic fallback message.
+# Example: httphelper.JSONError(w, errors.Public(err), 500)
+func Public(err error) string
+    e, ok := err.(PublicError)
+    if ok
+        return e.public
+    return "an error occurred"

@@ -11,6 +11,7 @@ Import with: `import "stdlib/slice"`
 | Package | Purpose | Key Functions |
 |---------|---------|---------------|
 | `stdlib/a2a` | Agent-to-Agent protocol client | Discover, Ask, Send, Stream, New/Text/Context |
+| `stdlib/accel` | Smart inference fallback (native → web) | Init, InitWith, Cleanup, Backend, Version, IsAvailable, New/Threads/InterOpThreads/OptLevel/EP/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
 | `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString |
 | `stdlib/cli` | CLI argument parsing | New, String, Int, Bool, Parse |
 | `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
@@ -19,10 +20,11 @@ Import with: `import "stdlib/slice"`
 | `stdlib/datetime` | Named formats, duration helpers | Format, Seconds, Minutes, Hours |
 | `stdlib/encoding` | Base64 and hex encoding/decoding | Base64Encode, Base64Decode, Base64URLEncode, HexEncode, HexDecode |
 | `stdlib/env` | Typed env vars with onerr | Get, GetInt, GetBool, GetFloat, GetOr, Set |
-| `stdlib/errors` | Error wrapping and inspection | Wrap, Is, Unwrap, New, Join |
+| `stdlib/errors` | Error wrapping and inspection | Wrap, Opaque, Is, Unwrap, New, Join, NewPublic, Public |
 | `stdlib/fetch` | HTTP client (Builder, Auth, Sessions, Safe URL helpers, Retry) | Get, SafeGet, Post, Json, Decode, URLTemplate, URLWithQuery, PathEscape, QueryEscape, New/Header/Timeout/Retry/MaxBodySize/Do, BearerAuth, BasicAuth, FormData, NewSession |
 | `stdlib/files` | File I/O operations | Read, Write, Append, Exists, Copy, Move, Delete, Watch |
 | `stdlib/http` | HTTP response/request helpers + security | JSON, JSONError, JSONNotFound, ReadJSON, ReadJSONLimit, SafeURL, HTML, SafeHTML, Redirect, SafeRedirect, SetSecureHeaders, SecureHeaders |
+| `stdlib/infer` | ONNX Runtime inference (CPU; Phase 1) | Init, InitWithPath, Cleanup, IsAvailable, Version, New/Threads/InterOpThreads/OptLevel/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
 | `stdlib/input` | User input utilities | Line, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration | Map, Filter, Reduce |
 | `stdlib/json` | encoding/json wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
@@ -46,6 +48,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/template` | Text templating (plain + HTML-safe) | Execute, New, HTMLExecute, HTMLRenderSimple |
 | `stdlib/test` | Test assertion helpers (use in `*_test.kuki` only) | AssertEqual, AssertTrue, AssertFalse, AssertNoError, AssertError, AssertNotEmpty |
 | `stdlib/validate` | Input validation | Email, URL, InRange, NotEmpty, MinLen, MaxLen |
+| `stdlib/webinfer` | ONNX inference via headless Chromium (Playwright) | Init, Cleanup, IsAvailable, Version, New/EP/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
 
 ## Testing Stdlib Packages
 
@@ -259,11 +262,47 @@ err := errors.Wrap(originalErr, "loading config")
 if errors.Is(err, io.EOF)
     print("end of file")
 
+# Opaque wrap — breaks errors.Is/As chain at subsystem boundaries
+# Use when crossing DB/infra boundaries to prevent internal type leakage
+dbErr := errors.Opaque(pgxErr, "pg connect")  # callers cannot errors.As into pgx
+
+# Dual-message errors — separate internal detail from user-safe message
+# Log e.Error() internally; return errors.Public(e) in HTTP responses
+e := errors.NewPublic("pg: connection refused to 10.0.0.1:5432", "database unavailable")
+print(e.Error())           # "pg: connection refused to 10.0.0.1:5432" — log this
+print(errors.Public(e))    # "database unavailable" — safe to return to users
+# Falls back to "an error occurred" for non-PublicError errors
+print(errors.Public(plainErr))  # "an error occurred"
+
 # Base64 and hex encoding
 import "stdlib/encoding"
 encoded := encoding.Base64Encode("hello" as list of byte)
 decoded := encoding.Base64Decode(encoded) onerr panic "invalid base64: {error}"
 hexStr := encoding.HexEncode(hashBytes)
+
+# ONNX Runtime inference (CPU)
+import "stdlib/infer"
+env := infer.Init() onerr panic "ort: {error}"
+defer infer.Cleanup(env)
+input, _ := infer.NewFloat32(infer.Shape(1, 10), inputData)
+output, _ := infer.ZeroFloat32(infer.Shape(1, 5))
+model := infer.New() |> infer.Threads(4) |> infer.Load("model.onnx", inNames, outNames, ins, outs) onerr panic "{error}"
+defer infer.Close(model)
+infer.Run(model) onerr panic "inference: {error}"
+results := infer.GetFloat32(output)
+
+# Smart inference fallback (native → web)
+import "stdlib/accel"
+env := accel.Init() onerr panic "no inference: {error}"
+defer accel.Cleanup(env)
+print("Backend: {accel.Backend(env)}")
+input := accel.NewFloat32(env, accel.Shape(1, 10), inputData) onerr panic "{error}"
+output := accel.ZeroFloat32(env, accel.Shape(1, 5)) onerr panic "{error}"
+model := accel.New() |> accel.Threads(4) |> accel.EP("webnn")
+    |> accel.Load(env, "model.onnx", inNames, outNames, ins, outs) onerr panic "{error}"
+defer accel.Close(model)
+accel.Run(model) onerr panic "{error}"
+results := accel.GetFloat32(output)
 ```
 
 ## Security Patterns
@@ -348,9 +387,9 @@ result := template.HTMLRenderSimple(tmplStr, data) onerr return
 
 Every stdlib module is **pure Kukicha**: `<name>.kuki` source + `<name>.go` generated output. No `_helper.go` or `_tool.go` files.
 
-All packages: `a2a`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
-`http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
-`random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `test`, `validate`
+All packages: `a2a`, `accel`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
+`http`, `infer`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
+`random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `test`, `validate`, `webinfer`
 
 ## Import Aliases
 
