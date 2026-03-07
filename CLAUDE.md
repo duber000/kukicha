@@ -333,6 +333,9 @@ stdlib/                   # Standard library (.kuki source files)
   json/                   # encoding/json wrapper
   fetch/                  # HTTP client (Auth, Sessions)
   files/                  # File I/O
+  infer/                  # ONNX Runtime inference (CPU; Phase 1)
+  webinfer/               # ONNX inference via headless Chromium (Playwright)
+  accel/                  # Smart inference fallback (native → web)
   shell/                  # Command execution
   ...
 examples/                 # Example programs

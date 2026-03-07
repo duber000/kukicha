@@ -1,0 +1,191 @@
+# Tests for Kukicha Standard Library - Accel Package
+# Tests that need a backend (native ORT or Chrome) are skipped when unavailable.
+
+petiole accel_test
+
+import "testing"
+import "stdlib/test"
+import "stdlib/accel"
+
+# --- TestNew ---
+type NewCase
+    name string
+
+func TestNew(t reference testing.T)
+    cases := list of NewCase{
+        NewCase{name: "default config"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cfg := accel.New()
+            _ = cfg
+        )
+
+# --- TestConfigBuilder ---
+type ConfigBuilderCase
+    name string
+
+func TestConfigBuilder(t reference testing.T)
+    cases := list of ConfigBuilderCase{
+        ConfigBuilderCase{name: "chain all settings"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cfg := accel.New()
+            cfg = cfg |> accel.Threads(4) |> accel.InterOpThreads(2) |> accel.OptLevel(1) |> accel.EP("webnn")
+            _ = cfg
+        )
+
+# --- TestShape ---
+type ShapeCase
+    name string
+    dims list of int64
+    want list of int64
+
+func TestShape(t reference testing.T)
+    cases := list of ShapeCase{
+        ShapeCase{name: "1d", dims: list of int64{10}, want: list of int64{10}},
+        ShapeCase{name: "2d", dims: list of int64{1, 10}, want: list of int64{1, 10}},
+        ShapeCase{name: "3d", dims: list of int64{2, 3, 4}, want: list of int64{2, 3, 4}},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := accel.Shape(many tc.dims)
+            test.AssertEqual(t, len(got), len(tc.want))
+            for i from 0 to len(tc.want)
+                test.AssertEqual(t, got[i], tc.want[i])
+        )
+
+# --- TestAvailability ---
+type AvailabilityCase
+    name string
+
+func TestAvailability(t reference testing.T)
+    cases := list of AvailabilityCase{
+        AvailabilityCase{name: "check availability functions"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            # These should not panic regardless of backend availability
+            _ = accel.IsAvailable()
+            _ = accel.IsNativeAvailable()
+            _ = accel.IsWebAvailable()
+        )
+
+# --- TestInit ---
+type InitCase
+    name string
+
+func TestInit(t reference testing.T)
+    cases := list of InitCase{
+        InitCase{name: "auto-detect backend"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            env, err := accel.Init()
+            if err != empty
+                t.Skip("no inference backend available: {err}")
+                return
+            backend := accel.Backend(env)
+            test.AssertTrue(t, backend == "native" or backend == "web")
+            ver := accel.Version(env)
+            test.AssertTrue(t, len(ver) > 0)
+            cleanErr := accel.Cleanup(env)
+            test.AssertNoError(t, cleanErr)
+        )
+
+# --- TestInitWith ---
+type InitWithCase
+    name string
+    backend string
+
+func TestInitWith(t reference testing.T)
+    cases := list of InitWithCase{
+        InitWithCase{name: "invalid backend", backend: "invalid"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            _, err := accel.InitWith(tc.backend)
+            test.AssertError(t, err)
+        )
+
+# --- TestInspectWebError ---
+type InspectWebErrorCase
+    name string
+
+func TestInspectWebError(t reference testing.T)
+    cases := list of InspectWebErrorCase{
+        InspectWebErrorCase{name: "inspect on web backend errors"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            # Try to init web backend; if unavailable, skip
+            env, err := accel.InitWith("web")
+            if err != empty
+                t.Skip("web backend not available: {err}")
+                return
+            defer accel.Cleanup(env)
+            test.AssertEqual(t, accel.Backend(env), "web")
+            _, inspectErr := accel.Inspect(env, "model.onnx")
+            test.AssertError(t, inspectErr)
+        )
+
+# --- TestNewFloat32 ---
+type NewFloat32Case
+    name string
+    shape list of int64
+    data list of float32
+
+func TestNewFloat32(t reference testing.T)
+    cases := list of NewFloat32Case{
+        NewFloat32Case{name: "small tensor", shape: list of int64{1, 3}, data: list of float32{1.0, 2.0, 3.0}},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            env, envErr := accel.Init()
+            if envErr != empty
+                t.Skip("no inference backend: {envErr}")
+                return
+            defer accel.Cleanup(env)
+
+            tensor, err := accel.NewFloat32(env, tc.shape, tc.data)
+            test.AssertNoError(t, err)
+            test.AssertEqual(t, accel.Dtype(tensor), "float32")
+
+            got := accel.GetFloat32(tensor)
+            test.AssertEqual(t, len(got), len(tc.data))
+
+            gotShape := accel.GetShape(tensor)
+            test.AssertEqual(t, len(gotShape), len(tc.shape))
+
+            destroyErr := accel.Destroy(tensor)
+            test.AssertNoError(t, destroyErr)
+        )
+
+# --- TestZeroFloat32 ---
+type ZeroFloat32Case
+    name string
+    shape list of int64
+    expectedLen int
+
+func TestZeroFloat32(t reference testing.T)
+    cases := list of ZeroFloat32Case{
+        ZeroFloat32Case{name: "2x3 zeroes", shape: list of int64{2, 3}, expectedLen: 6},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            env, envErr := accel.Init()
+            if envErr != empty
+                t.Skip("no inference backend: {envErr}")
+                return
+            defer accel.Cleanup(env)
+
+            tensor, err := accel.ZeroFloat32(env, tc.shape)
+            test.AssertNoError(t, err)
+
+            got := accel.GetFloat32(tensor)
+            test.AssertEqual(t, len(got), tc.expectedLen)
+
+            destroyErr := accel.Destroy(tensor)
+            test.AssertNoError(t, destroyErr)
+        )

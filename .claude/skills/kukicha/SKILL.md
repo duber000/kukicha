@@ -90,6 +90,13 @@ todo := Todo{
 }
 ```
 
+### Inference packages (`infer`, `webinfer`, `accel`) — platform caveats
+
+- **`infer`** uses CGO (`yalue/onnxruntime_go`). The ONNX Runtime shared library must be present at runtime. CPU-only on all platforms.
+- **`webinfer`** requires Playwright's Chromium (`playwright install chromium`). Launches with `channel: "chromium"` (full binary) + `--enable-features=WebMachineLearningNeuralNetwork,WebNNOnnxRuntime`. On Linux, only the XNNPACK CPU backend is available — no GPU or NPU.
+- **`accel`** tries native (`infer`) first, falls back to web (`webinfer`) automatically. The `EP()` option only applies to the web path. NPU/GPU acceleration is only available on macOS 14.4+ (Core ML) or Windows 11 24H2+ (Windows ML).
+- **No NPU support on Linux** in any path — neither native nor web.
+
 ### `any2` in stdlib source is a compiler placeholder — not user syntax
 
 When reading stdlib `.kuki` files you will see `any2` in function signatures. Do not use it in application code — it is a compiler-reserved name for a second generic type parameter.

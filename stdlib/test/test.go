@@ -66,6 +66,22 @@ func AssertError(t *testing.T, err error, msgAndArgs ...any) {
 	}
 }
 
+// AssertNearFloat32 fails the test if |got-want| > tolerance.
+func AssertNearFloat32(t *testing.T, got, want, tolerance float32, msgAndArgs ...any) {
+	t.Helper()
+	diff := got - want
+	if diff < 0 {
+		diff = -diff
+	}
+	if diff > tolerance {
+		prefix := ""
+		if len(msgAndArgs) > 0 {
+			prefix = fmt.Sprintf("%v: ", msgAndArgs[0])
+		}
+		t.Errorf("%sexpected %v ≈ %v (tolerance %v), diff %v", prefix, got, want, tolerance, diff)
+	}
+}
+
 // AssertNotEmpty fails the test if val is nil or the zero value of its type.
 func AssertNotEmpty(t *testing.T, val any, msgAndArgs ...any) {
 	t.Helper()
