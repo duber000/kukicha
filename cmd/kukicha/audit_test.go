@@ -14,7 +14,7 @@ func TestFindProjectRoot_WithGoMod(t *testing.T) {
 	if err := os.MkdirAll(subDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.26\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.26.1\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -46,7 +46,7 @@ func TestFindProjectRoot_DirectRoot(t *testing.T) {
 	dir := t.TempDir()
 
 	// go.mod in the given dir itself
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.26\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.26.1\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 

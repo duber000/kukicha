@@ -119,7 +119,7 @@ func TestEnsureGoMod_AddsRequireAndReplace(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create a minimal go.mod
-	goModContent := "module example.com/app\n\ngo 1.26\n"
+	goModContent := "module example.com/app\n\ngo 1.26.1\n"
 	goModPath := filepath.Join(dir, "go.mod")
 	if err := os.WriteFile(goModPath, []byte(goModContent), 0644); err != nil {
 		t.Fatal(err)
@@ -151,7 +151,7 @@ func TestEnsureGoMod_AddsRequireAndReplace(t *testing.T) {
 func TestEnsureGoMod_IdempotentOnRerun(t *testing.T) {
 	dir := t.TempDir()
 
-	goModContent := "module example.com/app\n\ngo 1.26\n"
+	goModContent := "module example.com/app\n\ngo 1.26.1\n"
 	goModPath := filepath.Join(dir, "go.mod")
 	if err := os.WriteFile(goModPath, []byte(goModContent), 0644); err != nil {
 		t.Fatal(err)
@@ -319,7 +319,7 @@ func TestFindProjectDir_WithGoMod(t *testing.T) {
 	if err := os.MkdirAll(subDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.26\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.26.1\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 

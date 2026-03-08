@@ -159,6 +159,19 @@ func TestSearchFunctions(t reference testing.T)
     t.Run("HasSuffix/hello false", (t reference testing.T) =>
         test.AssertEqual(t, string.HasSuffix(s, "hello"), false)
     )
+    # Multibyte rune tests — guards against #77618 (compiler optimizer bug in Go 1.26.0)
+    t.Run("HasSuffix/multibyte match", (t reference testing.T) =>
+        test.AssertEqual(t, string.HasSuffix("café", "é"), true)
+    )
+    t.Run("HasSuffix/multibyte no match", (t reference testing.T) =>
+        test.AssertEqual(t, string.HasSuffix("café", "c"), false)
+    )
+    t.Run("HasSuffix/CJK match", (t reference testing.T) =>
+        test.AssertEqual(t, string.HasSuffix("日本語", "語"), true)
+    )
+    t.Run("HasSuffix/CJK no match", (t reference testing.T) =>
+        test.AssertEqual(t, string.HasSuffix("日本語", "日"), false)
+    )
 
 # --- TestIndexFunctions ---
 type IndexCase

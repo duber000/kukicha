@@ -1,6 +1,6 @@
 module github.com/duber000/kukicha
 
-go 1.26
+go 1.26.1
 
 require (
 	github.com/a2aproject/a2a-go v0.3.6

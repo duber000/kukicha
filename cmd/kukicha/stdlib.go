@@ -22,7 +22,7 @@ const stdlibVersionFile = "KUKICHA_VERSION"
 // reference it via a replace directive.
 const stdlibGoMod = `module github.com/duber000/kukicha/stdlib
 
-go 1.25
+go 1.26.1
 
 require (
 	github.com/a2aproject/a2a-go v0.3.6

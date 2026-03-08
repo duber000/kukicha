@@ -22,7 +22,7 @@ import _ "github.com/duber000/kukicha/stdlib/json"
 `
 
 	kukichaRepoLike := t.TempDir()
-	if err := os.WriteFile(filepath.Join(kukichaRepoLike, "go.mod"), []byte("module github.com/duber000/kukicha\n\ngo 1.26\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(kukichaRepoLike, "go.mod"), []byte("module github.com/duber000/kukicha\n\ngo 1.26.1\n"), 0o644); err != nil {
 		t.Fatalf("write go.mod: %v", err)
 	}
 	if needsStdlib(goCode, kukichaRepoLike) {
@@ -30,7 +30,7 @@ import _ "github.com/duber000/kukicha/stdlib/json"
 	}
 
 	userProject := t.TempDir()
-	if err := os.WriteFile(filepath.Join(userProject, "go.mod"), []byte("module example.com/app\n\ngo 1.26\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(userProject, "go.mod"), []byte("module example.com/app\n\ngo 1.26.1\n"), 0o644); err != nil {
 		t.Fatalf("write go.mod: %v", err)
 	}
 	if !needsStdlib(goCode, userProject) {
