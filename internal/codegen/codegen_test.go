@@ -1704,59 +1704,6 @@ func TestArrowLambdaZeroParams(t *testing.T) {
 	}
 }
 
-func TestArrowLambdaImplicitIt(t *testing.T) {
-	input := `func main()
-    f := () => print(it)
-`
-	p, err := parser.New(input, "test.kuki")
-	if err != nil {
-		t.Fatalf("parser error: %v", err)
-	}
-	program, parseErrors := p.Parse()
-	if len(parseErrors) > 0 {
-		t.Fatalf("parse errors: %v", parseErrors)
-	}
-	gen := New(program)
-	output, err := gen.Generate()
-	if err != nil {
-		t.Fatalf("codegen error: %v", err)
-	}
-
-	if !strings.Contains(output, "func(it any)") {
-		t.Errorf("expected 'func(it any)' in output, got: %s", output)
-	}
-	if !strings.Contains(output, "fmt.Println(it)") {
-		t.Errorf("expected 'fmt.Println(it)' in output, got: %s", output)
-	}
-}
-
-func TestArrowLambdaImplicitItBlockForm(t *testing.T) {
-	input := `func main()
-    f := () =>
-        return it.Name
-`
-	p, err := parser.New(input, "test.kuki")
-	if err != nil {
-		t.Fatalf("parser error: %v", err)
-	}
-	program, parseErrors := p.Parse()
-	if len(parseErrors) > 0 {
-		t.Fatalf("parse errors: %v", parseErrors)
-	}
-	gen := New(program)
-	output, err := gen.Generate()
-	if err != nil {
-		t.Fatalf("codegen error: %v", err)
-	}
-
-	if !strings.Contains(output, "func(it any)") {
-		t.Errorf("expected 'func(it any)' in output, got: %s", output)
-	}
-	if !strings.Contains(output, "return it.Name") {
-		t.Errorf("expected 'return it.Name' in output, got: %s", output)
-	}
-}
-
 func TestArrowLambdaBlockForm(t *testing.T) {
 	input := `func main()
     f := (r Repo) =>

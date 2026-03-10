@@ -391,7 +391,6 @@ func (g *Generator) generateOnErrPipeChainWithLabels(pipe *ast.PipeExpr, clause 
 			g.writeLine(fmt.Sprintf("%s := %s", next, callExpr))
 		}
 		current = next
-		_ = i
 	}
 
 	return current, true

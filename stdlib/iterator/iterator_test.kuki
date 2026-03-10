@@ -2,17 +2,127 @@
 
 petiole iterator_test
 
+import "stdlib/iterator"
+import "stdlib/test"
 import "testing"
 
-# Test that iterator package compiles
-# Note: Full functional tests require creating iter.Seq values,
-# which requires Go-level integration. These placeholder tests verify
-# the package loads correctly.
+# --- TestValues ---
+func TestValues(t reference testing.T)
+    items := list of int{10, 20, 30}
+    result := items |> iterator.Values() |> iterator.Collect()
+    test.AssertEqual(t, len(result), 3)
 
-func TestIteratorPackageLoads(t reference testing.T)
-    # Iterator functions like Filter, Map, Collect, Any, All, Find
-    # require iter.Seq values which are difficult to construct from
-    # pure Kukicha. Package integration is verified at compile time.
-    # This test placeholder ensures the test file compiles.
-    if true
-        return
+# --- TestFilter ---
+type FilterCase
+    name    string
+    wantLen int
+
+func TestFilter(t reference testing.T)
+    items := list of int{1, 2, 3, 4, 5, 6}
+    t.Run("keep even", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Filter((n int) => n % 2 == 0) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 3)
+    )
+    t.Run("keep none", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Filter((n int) => n > 100) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 0)
+    )
+    t.Run("keep all", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Filter((n int) => n > 0) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 6)
+    )
+
+# --- TestTake ---
+func TestTake(t reference testing.T)
+    items := list of int{1, 2, 3, 4, 5}
+    t.Run("take 3", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Take(3) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 3)
+    )
+    t.Run("take more than available", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Take(10) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 5)
+    )
+    t.Run("take 0", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Take(0) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 0)
+    )
+
+# --- TestSkip ---
+func TestSkip(t reference testing.T)
+    items := list of int{1, 2, 3, 4, 5}
+    t.Run("skip 2", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Skip(2) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 3)
+    )
+    t.Run("skip all", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Skip(10) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 0)
+    )
+    t.Run("skip 0", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Skip(0) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 5)
+    )
+
+# --- TestReduce ---
+func TestReduce(t reference testing.T)
+    items := list of int{1, 2, 3, 4}
+    t.Run("sum", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Reduce(0, (acc int, n int) => acc + n)
+        test.AssertEqual(t, result, 10)
+    )
+    t.Run("empty with initial", (t reference testing.T) =>
+        empty := list of int{}
+        result := empty |> iterator.Values() |> iterator.Reduce(42, (acc int, n int) => acc + n)
+        test.AssertEqual(t, result, 42)
+    )
+
+# --- TestAny ---
+func TestAny(t reference testing.T)
+    items := list of int{1, 2, 3, 4, 5}
+    t.Run("has match", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Any((n int) => n == 3)
+        test.AssertTrue(t, result)
+    )
+    t.Run("no match", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Any((n int) => n > 100)
+        test.AssertFalse(t, result)
+    )
+
+# --- TestAll ---
+func TestAll(t reference testing.T)
+    items := list of int{2, 4, 6, 8}
+    t.Run("all match", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.All((n int) => n % 2 == 0)
+        test.AssertTrue(t, result)
+    )
+    t.Run("not all match", (t reference testing.T) =>
+        mixed := list of int{2, 3, 4}
+        result := mixed |> iterator.Values() |> iterator.All((n int) => n % 2 == 0)
+        test.AssertFalse(t, result)
+    )
+
+# --- TestFind ---
+func TestFind(t reference testing.T)
+    items := list of int{10, 20, 30, 40}
+    t.Run("found", (t reference testing.T) =>
+        val, ok := items |> iterator.Values() |> iterator.Find((n int) => n > 15)
+        test.AssertTrue(t, ok)
+        test.AssertEqual(t, val, 20)
+    )
+    t.Run("not found", (t reference testing.T) =>
+        _, ok := items |> iterator.Values() |> iterator.Find((n int) => n > 100)
+        test.AssertFalse(t, ok)
+    )
+
+# --- TestChain: Filter + Take + Collect ---
+func TestChain(t reference testing.T)
+    items := list of int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+    t.Run("filter then take", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Filter((n int) => n % 2 == 0) |> iterator.Take(2) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 2)
+    )
+    t.Run("skip then filter", (t reference testing.T) =>
+        result := items |> iterator.Values() |> iterator.Skip(5) |> iterator.Filter((n int) => n % 2 == 0) |> iterator.Collect()
+        test.AssertEqual(t, len(result), 3)
+    )

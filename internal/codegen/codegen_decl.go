@@ -280,20 +280,14 @@ func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
 func (g *Generator) generateArrowLambda(lambda *ast.ArrowLambda) string {
 	// Build parameter string
 	var paramParts []string
-	if len(lambda.Parameters) == 0 {
-		// Check for implicit 'it' identifier
-		if (lambda.Body != nil && g.exprHasItIdentifier(lambda.Body)) ||
-			(lambda.Block != nil && g.blockHasItIdentifier(lambda.Block)) {
-			paramParts = append(paramParts, "it any")
-		}
-	} else {
-		for _, param := range lambda.Parameters {
-			if param.Type != nil {
-				paramParts = append(paramParts, param.Name.Value+" "+g.generateTypeAnnotation(param.Type))
-			} else {
-				// Untyped parameter — type must be inferred from context.
-				paramParts = append(paramParts, param.Name.Value)
-			}
+	for _, param := range lambda.Parameters {
+		if param.Type != nil {
+			paramParts = append(paramParts, param.Name.Value+" "+g.generateTypeAnnotation(param.Type))
+		} else {
+			// Untyped parameter — type must be inferred from context.
+			// For now, we emit as-is; the Go compiler will catch type errors.
+			// Full contextual inference is a semantic analysis extension.
+			paramParts = append(paramParts, param.Name.Value)
 		}
 	}
 	params := strings.Join(paramParts, ", ")

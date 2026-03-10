@@ -15,8 +15,12 @@ type Analyzer struct {
 	currentFunc      *ast.FunctionDecl      // Track current function for return type checking
 	loopDepth        int                    // Track loop nesting for break/continue
 	switchDepth      int                    // Track switch nesting for break
-	exprReturnCounts    map[ast.Expression]int // Inferred return counts for expressions (used by codegen)
-	exprTypes           map[ast.Expression]*TypeInfo // Inferred types for expressions (used by codegen)
+	exprReturnCounts    map[ast.Expression]int // Inferred return counts for expressions (used by codegen for onerr multi-value split)
+	// exprTypes maps each analyzed expression to its inferred TypeInfo.
+	// Currently populated during analysis but not yet consumed by codegen.
+	// Planned uses: contextual type inference for untyped arrow lambda parameters,
+	// smarter pipe chain error handling, and typed zero-value generation.
+	exprTypes           map[ast.Expression]*TypeInfo
 	sourceFile          string                 // Source file path, used to detect stdlib context
 	inOnerr             bool                   // True while analyzing an onerr handler
 	currentOnerrrAlias  string                 // Named alias for caught error in current onerr block (e.g., "e" for "onerr as e")
@@ -44,6 +48,9 @@ func NewWithFile(program *ast.Program, sourceFile string) *Analyzer {
 
 // ExprTypes returns the inferred types for expressions.
 // Call after Analyze() to pass these to codegen.
+// Currently populated but not yet consumed by codegen — infrastructure
+// for future contextual type inference (e.g., typed lambda parameters,
+// smarter zero-value generation in pipe chains).
 func (a *Analyzer) ExprTypes() map[ast.Expression]*TypeInfo {
 	return a.exprTypes
 }
