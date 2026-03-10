@@ -545,6 +545,15 @@ type PipeExpr struct {
     Pos   Position
 }
 
+// PipedSwitchExpr represents expr |> switch — piping a value into a switch statement.
+// The parser creates this when TOKEN_SWITCH appears after |> in parsePipeExpr.
+// Codegen wraps the switch in an IIFE: func() { switch left { ... } }()
+type PipedSwitchExpr struct {
+    Left       Expr
+    SwitchStmt *SwitchStmt
+    Pos        Position
+}
+
 // OnErrClause is not an AST node — it's a helper struct attached to statements
 type OnErrClause struct {
     Token   Token      // The 'onerr' token
@@ -1296,6 +1305,39 @@ if err_1 != nil {
 }
 ```
 
+#### Pattern 8: Pipeline-Level onerr (Pipe Chain)
+```kukicha
+processed := data
+    |> parse.Json(list of User)
+    |> fetch.EnrichWithDB()
+    |> validate.Safe()
+    onerr panic "pipeline failed: {error}"
+```
+The compiler generates `if err != nil` checks between every function call in the pipeline, short-circuiting to the `onerr` handler if any step fails. Each intermediate step is flattened into a separate `val, err := f(prev)` assignment.
+
+#### Pattern 9: Piped Switch (IIFE)
+```kukicha
+user.Role |> switch
+    when "admin"
+        grantAccess()
+    when "guest"
+        denyAccess()
+    otherwise
+        checkPermissions()
+```
+Generates an IIFE wrapping a standard Go switch:
+```go
+func() {
+    switch user.Role {
+    case "admin":
+        grantAccess()
+    case "guest":
+        denyAccess()
+    default:
+        checkPermissions()
+    }
+}()
+```
 
 ---
 

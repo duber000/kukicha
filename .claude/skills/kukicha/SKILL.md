@@ -90,6 +90,46 @@ todo := Todo{
 }
 ```
 
+### Piped switch — pipe a value into a switch
+
+```kukicha
+user.Role |> switch
+    when "admin"
+        grantAccess()
+    when "guest"
+        denyAccess()
+    otherwise
+        checkPermissions()
+```
+
+The compiler wraps the switch in an IIFE: `func() { switch role { ... } }()`.
+
+### Pipeline-level onerr — onerr at end of pipe chains
+
+```kukicha
+processed := data
+    |> parse.Json(list of User)
+    |> fetch.EnrichWithDB()
+    |> validate.Safe()
+    onerr panic "pipeline failed: {error}"
+```
+
+If *any* function in the pipe returns a Go `error`, the pipeline short-circuits to the `onerr` block. The compiler generates `if err != nil` checks between each stage.
+
+### `stdlib/iterator` — lazy iteration via Go 1.23 iter.Seq
+
+```kukicha
+import "stdlib/iterator"
+names := repos
+    |> iterator.Values()
+    |> iterator.Filter((r Repo) => r.Stars > 100)
+    |> iterator.Map((r Repo) => r.Name)
+    |> iterator.Take(5)
+    |> iterator.Collect()
+```
+
+Functions: `Values`, `Filter`, `Map`, `FlatMap`, `Take`, `Skip`, `Enumerate`, `Chunk`, `Zip`, `Reduce`, `Collect`, `Any`, `All`, `Find`.
+
 ### `any2` in stdlib source is a compiler placeholder — not user syntax
 
 When reading stdlib `.kuki` files you will see `any2` in function signatures. Do not use it in application code — it is a compiler-reserved name for a second generic type parameter.

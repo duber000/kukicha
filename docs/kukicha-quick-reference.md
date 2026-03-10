@@ -59,6 +59,21 @@ user |> json.MarshalWrite(w, _)
 
 # Multi-value returns: handle errors from a pipe
 res, err := data |> process()
+
+# Pipeline-level onerr: catch errors from any step
+result := data
+    |> parse.Json(list of User)
+    |> validate.Safe()
+    onerr panic "pipeline failed: {error}"
+
+# Piped switch: pipe a value into a switch
+user.Role |> switch
+    when "admin"
+        grantAccess()
+    when "guest"
+        denyAccess()
+    otherwise
+        checkPermissions()
 ```
 
 ### 4. Dot Shorthand
@@ -365,6 +380,8 @@ func Connect(host string, port int = 8080, timeout int = 30)
 | `switch v := x.(type) { case *T: ... }` | `switch x as v` / `when reference T` |
 | (no equivalent) | `foo(name: value)` (named arguments) |
 | (no equivalent) | `func F(x int = 10)` (default parameters) |
+| (no equivalent) | `expr \|> switch` / `when` / `otherwise` (piped switch) |
+| (no equivalent) | pipeline `onerr` across multi-step pipe chains |
 
 ---
 

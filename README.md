@@ -203,7 +203,7 @@ Every Kukicha concept maps 1:1 to Go and Python — see the [Quick Reference](do
 | Category | Packages |
 |---------|---------|
 | **Data** | `fetch`, `files`, `json`, `parse`, `encoding` |
-| **Logic** | `slice`, `maps`, `string`, `math`, `iterator` |
+| **Logic** | `slice`, `maps`, `string`, `math`, `iterator` (lazy iter.Seq pipelines) |
 | **Infrastructure** | `pg`, `kube`, `container`, `shell` |
 | **AI & Agents** | `llm`, `mcp`, `a2a` |
 | **Web** | `http`, `fetch`, `validate`, `netguard` |
