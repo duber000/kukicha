@@ -1,5 +1,7 @@
 # Addressing the Procedural vs. Functional Pipe Split in Kukicha
 
+> **Status (v0.0.12):** Items 1 (pipe-aware iterators), 2 (pipeline-level onerr), and 4 (piped switch) are implemented. Item 3 (implicit `it`) was prototyped and removed — explicit typed lambdas are preferred for type safety.
+
 While Kukicha's pipe operator (`|>`) offers excellent readability for data transformations, the language's reliance on Go's procedural control flow and strict error handling can lead to a "split identity" in codebases.
 
 To remain as Go-compatible as possible while leaning fully into the pipe-forward architecture, the following language design improvements could be explored:

@@ -459,7 +459,7 @@ function main()
         parts := line |> string.SplitN(" ", 2)
         command := parts[0] |> string.ToLower()
 
-        switch command
+        command |> switch
             when "quit", "exit", "q"
                 print("Goodbye!")
                 break

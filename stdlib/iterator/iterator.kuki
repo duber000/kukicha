@@ -3,6 +3,11 @@
 petiole iterator
 
 import "iter"
+import "slices"
+
+# Values creates an iterator from a slice, yielding each element in order
+func Values(items list of any) iter.Seq
+    return slices.Values(items)
 
 # Filter returns an iterator that yields only items matching the predicate
 func Filter(seq iter.Seq, keep func(any) bool) iter.Seq

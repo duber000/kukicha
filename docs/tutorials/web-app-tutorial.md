@@ -346,7 +346,7 @@ function handleLinkDetail on store reference LinkStore(response http.ResponseWri
         httphelper.JSONBadRequest(response, "Missing link code")
         return
 
-    switch request.Method
+    request.Method |> switch
         when "GET"
             link, exists := store.links[code]
             if not exists

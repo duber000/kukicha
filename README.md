@@ -63,6 +63,7 @@ When AI writes Kukicha for you, here's the decoder ring:
 | `onerr return` | If this fails, pass the error up |
 | `onerr 0` or `onerr "unknown"` | If this fails, use this default value |
 | `\|>` | Then pass result to the next step |
+| `expr \|> switch` | Pipe a value into a switch (choose based on it) |
 | `list of string` | A collection of text values |
 | `map of string to int` | A lookup table: text key → number |
 | `reference User` | A reference to a User (like a bookmark) |
@@ -203,7 +204,7 @@ Every Kukicha concept maps 1:1 to Go and Python — see the [Quick Reference](do
 | Category | Packages |
 |---------|---------|
 | **Data** | `fetch`, `files`, `json`, `parse`, `encoding` |
-| **Logic** | `slice`, `maps`, `string`, `math`, `iterator` |
+| **Logic** | `slice`, `maps`, `string`, `math`, `iterator` (lazy iter.Seq pipelines) |
 | **Infrastructure** | `pg`, `kube`, `container`, `shell` |
 | **AI & Agents** | `llm`, `mcp`, `a2a` |
 | **Web** | `http`, `fetch`, `validate`, `netguard` |

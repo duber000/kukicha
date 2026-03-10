@@ -83,11 +83,20 @@ todo |> json.MarshalWrite(w, _)   # → json.MarshalWrite(w, todo)
 # Bare identifier as target
 data |> print                     # → fmt.Println(data)
 
-# onerr on a pipe chain
+# Pipeline-level onerr — catches errors from any step
 items := fetch.Get(url)
     |> fetch.CheckStatus()
     |> fetch.Json(list of Repo)
     onerr panic "{error}"
+
+# Piped switch — pipe a value into a switch
+user.Role |> switch
+    when "admin"
+        grantAccess()
+    when "guest"
+        denyAccess()
+    otherwise
+        checkPermissions()
 ```
 
 ### Control Flow
@@ -374,6 +383,22 @@ The compiler **rejects** these patterns as errors (not warnings):
 | `httphelper.Redirect(w, r, nonLiteral)` | Open redirect | `httphelper.SafeRedirect(w, r, url, "host")` |
 
 HTTP handler detection: any function with an `http.ResponseWriter` parameter triggers the handler-context checks.
+
+---
+
+**stdlib/iterator** — Lazy iteration (Go 1.23 iter.Seq)
+
+```kukicha
+import "stdlib/iterator"
+names := repos
+    |> iterator.Values()
+    |> iterator.Filter((r Repo) => r.Stars > 100)
+    |> iterator.Map((r Repo) => r.Name)
+    |> iterator.Take(5)
+    |> iterator.Collect()
+```
+
+Functions: `Values`, `Filter`, `Map`, `FlatMap`, `Take`, `Skip`, `Enumerate`, `Chunk`, `Zip`, `Reduce`, `Collect`, `Any`, `All`, `Find`.
 
 ---
 

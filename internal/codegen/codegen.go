@@ -57,8 +57,11 @@ type Generator struct {
 	currentReturnTypes   []ast.TypeAnnotation     // Return types of current function (for type coercion in returns)
 	processingReturnType bool                     // Whether we are currently generating return types
 	tempCounter          int                      // Counter for generating unique temporary variable names
-	exprReturnCounts     map[ast.Expression]int      // Semantic return counts passed from analyzer
-	exprTypes            map[ast.Expression]*semantic.TypeInfo // Semantic type info passed from analyzer
+	exprReturnCounts     map[ast.Expression]int      // Semantic return counts passed from analyzer (drives onerr multi-value split)
+	// exprTypes holds per-expression type info from semantic analysis.
+	// Not yet consumed by codegen — infrastructure for future contextual
+	// type inference (e.g., typed lambda parameters, smarter zero values).
+	exprTypes            map[ast.Expression]*semantic.TypeInfo
 	mcpTarget            bool                        // True if targeting MCP (Model Context Protocol)
 	currentOnErrVar      string                   // Current onerr error variable name (for block-style onerr {error} references)
 	currentOnErrAlias    string                   // Named alias for caught error in current onerr block (e.g., "e" for "onerr as e")
@@ -100,6 +103,8 @@ func (g *Generator) SetExprReturnCounts(counts map[ast.Expression]int) {
 }
 
 // SetExprTypes passes semantic analysis expression types to the generator.
+// Currently infrastructure — not yet consumed by codegen, but wired through
+// so future features (contextual type inference, typed zero values) can use it.
 func (g *Generator) SetExprTypes(types map[ast.Expression]*semantic.TypeInfo) {
 	g.exprTypes = types
 }

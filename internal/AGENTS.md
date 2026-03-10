@@ -12,7 +12,9 @@ source (.kuki)
   → codegen/   — *ast.Program → Go source string
 ```
 
-Semantic analysis produces `exprReturnCounts map[ast.Expression]int` which is passed to codegen via `generator.SetExprReturnCounts(...)`. This tells codegen how many values an expression returns so it can emit the right `val, err := f()` split for `onerr`.
+Semantic analysis produces two maps that are passed to codegen:
+- `exprReturnCounts map[ast.Expression]int` — passed via `generator.SetExprReturnCounts(...)`. Tells codegen how many values an expression returns so it can emit the right `val, err := f()` split for `onerr`.
+- `exprTypes map[ast.Expression]*TypeInfo` — passed via `generator.SetExprTypes(...)`. Records the inferred type of every analyzed expression. Not yet consumed by codegen — infrastructure for future contextual type inference (e.g., typed lambda parameters, smarter zero-value generation in pipe chains).
 
 The formatter (`formatter/`) is a separate pipeline that re-parses and pretty-prints. The LSP (`lsp/`) wraps the compiler pipeline and is independent of the above.
 
@@ -122,6 +124,10 @@ func (s *XxxStmt) stmtNode() {} // or declNode() / exprNode() / typeNode()
 
 Always store the keyword's `lexer.Token` as the first field — it carries line/column for error messages.
 
+### PipedSwitchExpr
+
+`PipedSwitchExpr` represents `expr |> switch` syntax — piping a value directly into a switch statement. The parser creates this node when it sees `TOKEN_SWITCH` after `|>` in `parsePipeExpr`. Codegen wraps the switch in an IIFE: `func() { switch left { ... } }()`.
+
 ### OnErrClause
 
 `OnErrClause` is **not** a standalone `Statement` or `Expression`. It is an optional field on `VarDeclStmt`, `AssignStmt`, and `ExpressionStmt`. The `Handler` field holds the parsed error handler expression (`PanicExpr`, `EmptyExpr`, `DiscardExpr`, `ReturnExpr`, or a default value expression).
@@ -184,7 +190,7 @@ make genstdlibregistry   # or: make generate (runs everything)
 | `codegen_decl.go` | Declaration generators (`generateTypeDecl`, `generateInterfaceDecl`, `generateFunctionDecl`, `generateFunctionLiteral`, `generateArrowLambda`, `generateTypeAnnotation`, `generateReturnTypes`, …) |
 | `codegen_stmt.go` | Statement generators (`generateBlock`, `generateStatement`, `generateVarDeclStmt`, `generateAssignStmt`, `generateReturnStmt`, `coerceReturnValue`, `generateIfStmt`, `generateFor*`, `generateSwitch*`, `generateSelect*`) |
 | `codegen_expr.go` | Expression generators (`exprToString`, `generatePipeExpr`, `generateCallExpr`, string interpolation, …) |
-| `codegen_onerr.go` | `onerr` code generation (`generateOnErrVarDecl`, `generateOnErrHandler`, pipe-chain onerr, …) |
+| `codegen_onerr.go` | `onerr` code generation (`generateOnErrVarDecl`, `generateOnErrHandler`, pipeline onerr flattening, …) |
 | `codegen_imports.go` | Import generation and auto-import scanning (`generateImports`, `scanStmtForAutoImports`, …) |
 | `codegen_stdlib.go` | Stdlib/generics type inference (`inferStdlibTypeParameters`, `zeroValueForType`, …) |
 | `codegen_walk.go` | Unified AST visitor (`walkProgram`, `walkBlock`, `walkStmt`, `walkExpr`) and `needsXxx` helpers |

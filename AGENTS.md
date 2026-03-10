@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Kukicha is a beginner-friendly programming language that **transpiles to Go**.
-Current version: **0.0.11**
+Current version: **0.0.12**
 When editing `.kuki` files, write **Kukicha syntax, NOT Go**.
 
 ## Kukicha vs Go Syntax (Common AI Mistakes)
@@ -209,6 +209,22 @@ todo |> json.MarshalWrite(w, _)   # becomes: json.MarshalWrite(w, todo)
 
 # Bare identifier as pipe target (no parentheses needed)
 data |> print                     # becomes: fmt.Println(data)
+
+# Pipeline-level onerr — catches errors from any step in the chain
+processed := data
+    |> parse.Json(list of User)
+    |> fetch.EnrichWithDB()
+    |> validate.Safe()
+    onerr panic "pipeline failed: {error}"
+
+# Piped switch — pipe a value directly into a switch
+user.Role |> switch
+    when "admin"
+        grantAccess()
+    when "guest"
+        denyAccess()
+    otherwise
+        checkPermissions()
 ```
 
 ### Arrow Lambdas

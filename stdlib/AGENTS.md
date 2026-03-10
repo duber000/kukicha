@@ -26,7 +26,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/http` | HTTP response/request helpers + security | JSON, JSONError, JSONNotFound, ReadJSON, ReadJSONLimit, SafeURL, HTML, SafeHTML, Redirect, SafeRedirect, SetSecureHeaders, SecureHeaders |
 | `stdlib/infer` | ONNX Runtime inference (CPU; Phase 1) | Init, InitWithPath, Cleanup, IsAvailable, Version, New/Threads/InterOpThreads/OptLevel/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
 | `stdlib/input` | User input utilities | Line, Confirm, Choose |
-| `stdlib/iterator` | Functional iteration | Map, Filter, Reduce |
+| `stdlib/iterator` | Functional iteration (Go 1.23 iter.Seq) | Values, Filter, Map, FlatMap, Take, Skip, Enumerate, Chunk, Zip, Reduce, Collect, Any, All, Find |
 | `stdlib/json` | encoding/json wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
 | `stdlib/kube` | Kubernetes client via client-go | Connect, New/Kubeconfig/Context/InCluster/Retry/Open, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs |
 | `stdlib/llm` | Large language model client (Chat Completions, OpenResponses, Anthropic; Retry) | Ask/Send/Complete, RAsk/RSend/Respond, MAsk/MSend/AnthropicComplete, Retry/RRetry/MRetry |
@@ -171,6 +171,37 @@ pool := pg.New(url) |> pg.Retry(5, 500) |> pg.Open() onerr panic "db: {error}"
 # Kubernetes with startup retry
 import "stdlib/kube"
 cluster := kube.New() |> kube.Retry(5, 1000) |> kube.Open() onerr panic "k8s: {error}"
+
+# Iterator-based pipelines (lazy evaluation via Go 1.23 iter.Seq)
+import "stdlib/iterator"
+names := repos
+    |> iterator.Values()
+    |> iterator.Filter((r Repo) => r.Stars > 100)
+    |> iterator.Map((r Repo) => r.Name)
+    |> iterator.Collect()
+
+# Take first 5 results lazily
+top5 := items
+    |> iterator.Values()
+    |> iterator.Filter((x Item) => x.Active)
+    |> iterator.Take(5)
+    |> iterator.Collect()
+
+# Piped switch — pipe a value into a switch expression (wraps in IIFE)
+user.Role |> switch
+    when "admin"
+        grantAccess()
+    when "guest"
+        denyAccess()
+    otherwise
+        checkPermissions()
+
+# Pipeline-level onerr — catches errors from any step in a pipe chain
+processed := data
+    |> parse.Json(list of User)
+    |> fetch.EnrichWithDB()
+    |> validate.Safe()
+    onerr panic "pipeline failed: {error}"
 
 # Bidirectional Loops
 # Use 'through' to iterate in either direction (ascending or descending).

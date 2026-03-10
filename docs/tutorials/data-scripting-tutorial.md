@@ -312,6 +312,21 @@ function main()
 kukicha run cleaner.kuki
 ```
 
+> **Going further — lazy pipelines with `stdlib/iterator`:**
+> When working with large datasets, you can use `iterator` to process rows lazily without loading everything into memory at once:
+> ```kukicha
+> import "stdlib/iterator"
+>
+> # Lazy pipeline: filter and transform without materializing intermediate lists
+> rows |> iterator.Filter((row map of string to string) => row["name"] not equals "")
+>     |> iterator.Map((row map of string to string) =>
+>         row["name"] = row["name"] |> string.TrimSpace() |> string.Title()
+>         return row
+>     )
+>     |> iterator.Collect()
+> ```
+> See [stdlib/iterator](../../stdlib/iterator/) for the full API: `Filter`, `Map`, `Take`, `Skip`, `Reduce`, and more.
+
 ---
 
 ## What's Next?

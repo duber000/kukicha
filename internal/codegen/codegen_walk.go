@@ -663,21 +663,4 @@ func (g *Generator) needsErrorsPackage() bool {
 	})
 }
 
-// exprHasItIdentifier returns true if the expression contains an identifier
-// named "it" (not as a field name, but as an independent identifier).
-func (g *Generator) exprHasItIdentifier(expr ast.Expression) bool {
-	return g.walkExpr(expr, func(e ast.Expression) bool {
-		ident, ok := e.(*ast.Identifier)
-		return ok && ident.Value == "it"
-	})
-}
-
-// blockHasItIdentifier returns true if the block contains an identifier
-// named "it".
-func (g *Generator) blockHasItIdentifier(block *ast.BlockStmt) bool {
-	return g.walkBlock(block, func(e ast.Expression) bool {
-		ident, ok := e.(*ast.Identifier)
-		return ok && ident.Value == "it"
-	})
-}
 

@@ -12,7 +12,9 @@ source (.kuki)
   → codegen/   — *ast.Program → Go source string
 ```
 
-Semantic analysis produces `exprReturnCounts map[ast.Expression]int` which is passed to codegen via `generator.SetExprReturnCounts(...)`. This tells codegen how many values an expression returns so it can emit the right `val, err := f()` split for `onerr`.
+Semantic analysis produces two maps that are passed to codegen:
+- `exprReturnCounts map[ast.Expression]int` — passed via `generator.SetExprReturnCounts(...)`. Tells codegen how many values an expression returns so it can emit the right `val, err := f()` split for `onerr`.
+- `exprTypes map[ast.Expression]*TypeInfo` — passed via `generator.SetExprTypes(...)`. Records the inferred type of every analyzed expression. Not yet consumed by codegen — infrastructure for future contextual type inference (e.g., typed lambda parameters, smarter zero-value generation in pipe chains).
 
 The formatter (`formatter/`) is a separate pipeline that re-parses and pretty-prints. The LSP (`lsp/`) wraps the compiler pipeline and is independent of the above.
 

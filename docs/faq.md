@@ -86,6 +86,25 @@ Use `_` to control where the piped value lands when it isn't the first argument:
 todo |> json.MarshalWrite(response, _)  # Becomes: json.MarshalWrite(response, todo)
 ```
 
+**Piped switch** lets you pipe into control flow without intermediate variables:
+
+```kukicha
+user.Role |> switch
+    when "admin"
+        grantAccess()
+    otherwise
+        checkPermissions()
+```
+
+**Pipeline-level onerr** catches errors from any step in a pipe chain:
+
+```kukicha
+items := fetch.Get(url)
+    |> fetch.CheckStatus()
+    |> fetch.Json(list of Repo)
+    onerr panic "pipeline failed: {error}"
+```
+
 **Where to start:** [Quick Reference](kukicha-quick-reference.md) — it's a direct Go-to-Kukicha translation table.
 
 ---

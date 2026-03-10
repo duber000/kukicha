@@ -343,19 +343,16 @@ function handleShorten on s reference Server(w http.ResponseWriter, r reference 
 
     # Parse request body — limit to 64 KB to prevent OOM from huge bodies
     input := ShortenRequest{}
-    readErr := r |> httphelper.ReadJSONLimit(65536, reference of input)
-    if readErr not equals empty
+    r |> httphelper.ReadJSONLimit(65536, reference of input) onerr
         httphelper.JSONBadRequest(w, "Invalid JSON")
         return
 
-    # Validate URL
-    _, emptyErr := input.url |> validate.NotEmpty()
-    if emptyErr not equals empty
+    # Validate URL — onerr blocks replace manual error variable checks
+    _ := input.url |> validate.NotEmpty() onerr
         httphelper.JSONBadRequest(w, "URL is required")
         return
 
-    _, urlErr := input.url |> validate.URL()
-    if urlErr not equals empty
+    _ := input.url |> validate.URL() onerr
         httphelper.JSONBadRequest(w, "Invalid URL — must start with http:// or https://")
         return
 
@@ -436,7 +433,7 @@ function handleLinkDetail on s reference Server(w http.ResponseWriter, r referen
         httphelper.JSONBadRequest(w, "Missing link code")
         return
 
-    switch r.Method
+    r.Method |> switch
         when "GET"
             s.mu.RLock()
             link := s.db.GetLink(code) onerr

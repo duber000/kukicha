@@ -33,7 +33,7 @@ Ship it
 
 1. **Kukicha compiler installed**
    ```bash
-   go install github.com/duber000/kukicha/cmd/kukicha@v0.0.11
+   go install github.com/duber000/kukicha/cmd/kukicha@v0.0.12
    kukicha version  # Confirm it works
    ```
 
