@@ -23,14 +23,14 @@ func DoubleValue(x int) (int, error)
 func main()
     # This now works! Previously would fail semantic analysis
     result, err := ProcessData("42")
-    if err equals empty
+    if err not equals empty
         print("Error:", err)
         return
-    
+
     # And this should also work now
     doubled, err2 := DoubleValue(result)
-    if err2 equals empty
+    if err2 not equals empty
         print("Error:", err2)
         return
-    
+
     print(doubled)

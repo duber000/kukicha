@@ -1,0 +1,23 @@
+# Example demonstrating error-only pipe steps
+# Functions like os.Mkdir, os.Remove that return only an error (no data value)
+# can now be used in pipe chains — the compiler handles them correctly
+
+import "os"
+import "stdlib/files"
+
+func main()
+    path := "/tmp/kukicha-test-dir"
+
+    # os.MkdirAll returns only an error — no data value
+    os.MkdirAll(path, 0755) onerr panic "mkdir failed: {error}"
+
+    # Write a file into the directory
+    files.Write(path + "/hello.txt", "Hello from Kukicha!") onerr panic "write failed: {error}"
+
+    # Read it back
+    content := files.Read(path + "/hello.txt") onerr panic "read failed: {error}"
+    print("Wrote and read back: {content}")
+
+    # Clean up — os.RemoveAll is also error-only
+    os.RemoveAll(path) onerr discard
+    print("Cleaned up {path}")

@@ -1,0 +1,38 @@
+# Example demonstrating typed piped switches (|> switch as v)
+# Branch on a value's type and get a correctly-typed binding in each case
+
+interface Shape
+    Area() float64
+
+type Circle
+    radius float64
+
+func Area on c Circle float64
+    return 3.14159 * c.radius * c.radius
+
+type Rectangle
+    width float64
+    height float64
+
+func Area on r Rectangle float64
+    return r.width * r.height
+
+func Describe(s Shape) string
+    # Typed piped switch — branch on the concrete type of s
+    return s |> switch as v
+        when Circle
+            return "Circle with radius {v.radius}, area {v.Area()}"
+        when Rectangle
+            return "{v.width}x{v.height} rectangle, area {v.Area()}"
+        otherwise
+            return "Unknown shape with area {s.Area()}"
+
+func main()
+    shapes := list of Shape{
+        Circle{radius: 5.0},
+        Rectangle{width: 3.0, height: 4.0},
+        Circle{radius: 1.0},
+    }
+
+    for shape in shapes
+        print(Describe(shape))
