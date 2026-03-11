@@ -7,56 +7,56 @@ import (
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:9
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:9
 func TestBasicTypes(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:11
 	agent := a2a.Agent{}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:12
 	request := a2a.Request{}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:13
 	task := a2a.Task{}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:17
 	_ = agent
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:18
 	_ = request
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:19
 	_ = task
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:22
 func TestRequestBuilder(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:24
 	agent := a2a.Agent{}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:27
 	req := a2a.New(agent)
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:28
 	req = a2a.Text(req, "Hello")
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:29
 	req = a2a.Context(req, "context123")
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:30
 	req = a2a.Retry(req, 3, 100)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:35
 func TestSkillsFunction(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:38
 	agent := a2a.Agent{}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:42
 	_ = agent
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:45
 func TestCloseFunction(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:46
 	agent := a2a.Agent{}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:49
 	_ = agent
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:52
 func TestTaskCreation(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:54
 	emptyTask := a2a.Task{}
-//line /Users/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/a2a/a2a_test.kuki:56
 	_ = emptyTask
 }

@@ -4,96 +4,96 @@ package math
 
 import "math"
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:17
 func Abs(x float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:18
 	return math.Abs(x)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:22
 func Round(x float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:23
 	return math.Round(x)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:27
 func Floor(x float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:28
 	return math.Floor(x)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:32
 func Ceil(x float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:33
 	return math.Ceil(x)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:37
 func Min(a float64, b float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:38
 	return math.Min(a, b)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:42
 func Max(a float64, b float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:43
 	return math.Max(a, b)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:47
 func Pow(base float64, exp float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:48
 	return math.Pow(base, exp)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:52
 func Sqrt(x float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:53
 	return math.Sqrt(x)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:57
 func Log(x float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:58
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:58
 	return math.Log(x)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:62
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:62
 func Log2(x float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:63
 	return math.Log2(x)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:67
 func Log10(x float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:68
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:68
 	return math.Log10(x)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:72
 func Pi() float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:73
 	return math.Pi
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:77
 func E() float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:78
 	return math.E
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:83
 func Clamp(x float64, minimum float64, maximum float64) float64 {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:84
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:84
 	if x < minimum {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:85
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:85
 		return minimum
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:86
 	if x > maximum {
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:87
 		return maximum
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/math/math.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/math/math.kuki:88
 	return x
 }

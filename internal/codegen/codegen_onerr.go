@@ -25,6 +25,69 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 				return
 			}
 		}
+
+		// Handle: result := A |> B() |> switch ... onerr handler
+		// The piped switch must resolve its upstream pipe chain errors before
+		// the switch IIFE runs. We declare the result variable up-front (using
+		// the handler default if provided), run the error-checked pipe chain
+		// inside a goto-label block, then assign the switch result only when
+		// the entire chain succeeded.
+		if ps, ok := values[0].(*ast.PipedSwitchExpr); ok {
+			returnType := g.inferPipedSwitchReturnType(ps.SwitchStmt)
+			if returnType == "" {
+				returnType = "any"
+			}
+			varName := names[0].Value
+
+			onErrLabel := g.uniqueId("onerr")
+			endLabel := g.uniqueId("end")
+
+			// Declare result before the block; pre-initialise to the handler
+			// default so the onerr label just falls through without touching it.
+			handlerDefault := g.extractDefaultValue(clause, returnType)
+			if handlerDefault != "" {
+				g.writeLine(fmt.Sprintf("var %s %s = %s", varName, returnType, handlerDefault))
+			} else {
+				g.writeLine(fmt.Sprintf("var %s %s", varName, returnType))
+			}
+
+			g.writeLine("{")
+			g.indent++
+
+			// Generate the upstream pipe chain using goto labels so any error
+			// in the chain jumps straight to onErrLabel, skipping the switch.
+			var finalPipeVar string
+			var pipeOk bool
+			if pipe, ok2 := ps.Left.(*ast.PipeExpr); ok2 {
+				finalPipeVar, pipeOk = g.generateOnErrPipeChainWithLabels(pipe, clause, []*ast.Identifier{}, onErrLabel, endLabel)
+			} else {
+				finalPipeVar = g.exprToString(ps.Left)
+				pipeOk = true
+			}
+
+			if pipeOk {
+				// Run the switch IIFE and assign only on the success path.
+				savedLeft := ps.Left
+				ps.Left = &ast.Identifier{Value: finalPipeVar}
+				switchStr := g.generatePipedSwitchExpr(ps)
+				ps.Left = savedLeft
+				g.writeLine(fmt.Sprintf("%s = %s", varName, switchStr))
+				g.writeLine(fmt.Sprintf("goto %s", endLabel))
+			}
+
+			g.indent--
+			g.writeLine("}")
+			g.writeLine(fmt.Sprintf("%s:", onErrLabel))
+			// Result is already pre-initialised to the default; for terminating
+			// handlers (panic/return) emit the handler body here.
+			if handlerDefault == "" {
+				g.indent++
+				g.generateOnErrHandler(names, clause.Handler, g.currentOnErrVar)
+				g.indent--
+			}
+			g.writeLine(fmt.Sprintf("%s:", endLabel))
+			return
+		}
 	}
 
 	// Check for discard case first - we can skip error handling entirely
@@ -250,6 +313,28 @@ func (g *Generator) writeOnErrCheck(clause *ast.OnErrClause, errVar string, name
 	g.writeLine("}")
 }
 
+// extractDefaultValue returns the Go literal string for a handler's default value
+// when the handler is a simple literal (string, int, float, bool) and the returned
+// type matches. Returns empty string for terminating handlers (panic, return, block).
+func (g *Generator) extractDefaultValue(clause *ast.OnErrClause, _ string) string {
+	if clause == nil || clause.Handler == nil {
+		return ""
+	}
+	switch h := clause.Handler.(type) {
+	case *ast.StringLiteral:
+		return g.exprToString(h)
+	case *ast.IntegerLiteral:
+		return g.exprToString(h)
+	case *ast.FloatLiteral:
+		return g.exprToString(h)
+	case *ast.BooleanLiteral:
+		return g.exprToString(h)
+	case *ast.EmptyExpr:
+		return "nil"
+	}
+	return ""
+}
+
 func flattenPipeChain(expr ast.Expression) (ast.Expression, []ast.Expression, bool) {
 	pipe, ok := expr.(*ast.PipeExpr)
 	if !ok {
@@ -372,7 +457,7 @@ func (g *Generator) generateOnErrPipeChainWithLabels(pipe *ast.PipeExpr, clause 
 	}
 
 	// Generate intermediate steps
-	for i, step := range steps {
+	for _, step := range steps {
 		next := g.uniqueId("pipe")
 		callExpr, ok := g.generatePipedStepCall(step, current)
 		if !ok {

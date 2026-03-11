@@ -279,6 +279,7 @@ var generatedStdlibRegistry = map[string]int{
 	"iterator.Reduce":                 1,
 	"iterator.Skip":                   1,
 	"iterator.Take":                   1,
+	"iterator.Values":                 1,
 	"iterator.Zip":                    1,
 	"json.Decode":                     1,
 	"json.DecodeRead":                 2,

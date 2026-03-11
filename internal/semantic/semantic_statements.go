@@ -87,6 +87,30 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 	}
 }
 
+// analyzePipedSwitchBody analyzes only the return expressions inside a piped
+// switch body. Full statement analysis is skipped to avoid false errors from
+// the condition-switch bool check and outer-function return-count validation.
+func (a *Analyzer) analyzePipedSwitchBody(stmt *ast.SwitchStmt) {
+	analyzeBodyReturns := func(body *ast.BlockStmt) {
+		if body == nil {
+			return
+		}
+		for _, s := range body.Statements {
+			if ret, ok := s.(*ast.ReturnStmt); ok {
+				for _, v := range ret.Values {
+					a.analyzeExpression(v)
+				}
+			}
+		}
+	}
+	for _, c := range stmt.Cases {
+		analyzeBodyReturns(c.Body)
+	}
+	if stmt.Otherwise != nil {
+		analyzeBodyReturns(stmt.Otherwise.Body)
+	}
+}
+
 func (a *Analyzer) analyzeSwitchStmt(stmt *ast.SwitchStmt) {
 	if stmt.Expression != nil {
 		a.analyzeExpression(stmt.Expression)

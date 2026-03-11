@@ -7,68 +7,68 @@ import (
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:9
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:9
 func TestIPAndCIDRHelpers(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:10
 	ip := netutil.ParseIP("10.0.0.1")
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:11
 	if netutil.IsNil(ip) {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:12
 		t.Fatalf("ParseIP should return valid IP")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:13
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:13
 	if !netutil.IsPrivate(ip) {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:14
 		t.Errorf("10.0.0.1 should be private")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:16
 	loop := netutil.ParseIP("127.0.0.1")
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:17
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:17
 	if !netutil.IsLoopback(loop) {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:18
 		t.Errorf("Loopback detection failed")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:20
 	multicast := netutil.ParseIP("224.0.0.1")
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:21
 	if !netutil.IsMulticast(multicast) {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:22
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:22
 		t.Errorf("Multicast detection failed")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:24
 	cidr, err := netutil.ParseCIDR("192.0.2.0/24")
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:25
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:26
 		t.Fatalf("ParseCIDR failed: %v", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:27
 	if !netutil.Contains(cidr, netutil.ParseIP("192.0.2.5")) {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:28
 		t.Errorf("CIDR should contain 192.0.2.5")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:30
 	host, port, splitErr := netutil.SplitHostPort("example.com:8080")
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:31
 	if splitErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:32
 		t.Fatalf("SplitHostPort failed: %v", splitErr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:33
 	if (host != "example.com") || (port != "8080") {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:34
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:34
 		t.Errorf("SplitHostPort returned wrong parts")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:36
 	joined := netutil.JoinHostPort("example.com", "80")
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:37
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:37
 	if joined != "example.com:80" {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:38
 		t.Errorf("JoinHostPort returned '%v'", joined)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:40
 	if netutil.IPString(multicast) != "224.0.0.1" {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:41
 		t.Errorf("IPString returned wrong value")
 	}
 }

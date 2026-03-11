@@ -9,35 +9,35 @@ import (
 	"os"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:14
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:14
 func ReadLine(prompt string) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:15
 	if prompt != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:16
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:16
 		fmt.Print(prompt)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:18
 	reader := bufio.NewReader(os.Stdin)
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:19
 	text, err := reader.ReadString('\n')
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:20
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:21
 		return "", err
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:23
 	return kukistring.TrimSpace(text), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:27
 func Prompt(prompt string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:28
 	result, err := ReadLine(prompt)
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:29
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:29
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:30
 		panic(err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/input/input.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:31
 	return result
 }

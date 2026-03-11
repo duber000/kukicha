@@ -65,15 +65,18 @@ func TestSkip(t reference testing.T)
     )
 
 # --- TestReduce ---
+func addInts(acc int, n int) int
+    return acc + n
+
 func TestReduce(t reference testing.T)
     items := list of int{1, 2, 3, 4}
     t.Run("sum", (t reference testing.T) =>
-        result := items |> iterator.Values() |> iterator.Reduce(0, (acc int, n int) => acc + n)
+        result := items |> iterator.Values() |> iterator.Reduce(0, addInts)
         test.AssertEqual(t, result, 10)
     )
     t.Run("empty with initial", (t reference testing.T) =>
-        empty := list of int{}
-        result := empty |> iterator.Values() |> iterator.Reduce(42, (acc int, n int) => acc + n)
+        emptyList := list of int{}
+        result := emptyList |> iterator.Values() |> iterator.Reduce(42, addInts)
         test.AssertEqual(t, result, 42)
     )
 

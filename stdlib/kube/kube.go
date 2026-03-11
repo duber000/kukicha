@@ -20,13 +20,13 @@ import (
 	"time"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:38
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:38
 type Cluster struct {
 	client    any
 	namespace string
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:43
 type Config struct {
 	kubeconfig       string
 	context          string
@@ -35,57 +35,57 @@ type Config struct {
 	retryDelayMs     int
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:51
 type PodList struct {
 	items any
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:55
 type Pod struct {
 	pod any
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:59
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:59
 type DeploymentList struct {
 	items any
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:63
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:63
 type Deployment struct {
 	dep any
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:67
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:67
 type ServiceList struct {
 	items any
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:71
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:71
 type Service struct {
 	svc any
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:75
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:75
 type NodeList struct {
 	items any
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:79
 type Node struct {
 	node any
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:83
 type NamespaceList struct {
 	items any
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:87
 type NamespaceItem struct {
 	ns any
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:91
 type PodEvent struct {
 	eventType string
 	name      string
@@ -94,1024 +94,1024 @@ type PodEvent struct {
 	ready     bool
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:101
 func New() Config {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:102
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:102
 	return Config{}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:105
 func Kubeconfig(cfg Config, path string) Config {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:106
 	cfg.kubeconfig = path
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:107
 	return cfg
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:110
 func Context(cfg Config, name string) Config {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:111
 	cfg.context = name
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:112
 	return cfg
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:115
 func InCluster(cfg Config) Config {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:116
 	cfg.inCluster = true
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:117
 	return cfg
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:122
 func Retry(cfg Config, maxAttempts int, delayMs int) Config {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:123
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:123
 	cfg.retryMaxAttempts = maxAttempts
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:124
 	cfg.retryDelayMs = delayMs
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:125
 	return cfg
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:128
 func Namespace(c Cluster, ns string) Cluster {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:129
 	c.namespace = ns
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:130
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:130
 	return c
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:135
 func PodEventType(event PodEvent) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:136
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:136
 	return event.eventType
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:139
 func PodEventName(event PodEvent) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:140
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:140
 	return event.name
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:143
 func PodEventNamespace(event PodEvent) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:144
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:144
 	return event.namespace
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:147
 func PodEventPhase(event PodEvent) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:148
 	return event.phase
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:151
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:151
 func PodEventReady(event PodEvent) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:152
 	return event.ready
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:156
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:156
 func clientset(c Cluster) *kubernetes.Clientset {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:157
 	return c.client.(*kubernetes.Clientset)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:159
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:159
 func pod(p Pod) *corev1.Pod {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:160
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:160
 	return p.pod.(*corev1.Pod)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:162
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:162
 func deployment(d Deployment) *appsv1.Deployment {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:163
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:163
 	return d.dep.(*appsv1.Deployment)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:165
 func service(s Service) *corev1.Service {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:166
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:166
 	return s.svc.(*corev1.Service)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:168
 func node(n Node) *corev1.Node {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:169
 	return n.node.(*corev1.Node)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:171
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:171
 func nsItem(n NamespaceItem) *corev1.Namespace {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:172
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:172
 	return n.ns.(*corev1.Namespace)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:177
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:177
 func Connect() (Cluster, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:178
 	home, err := os.UserHomeDir()
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:179
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:180
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:180
 		return Cluster{}, fmt.Errorf("kube connect: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:181
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:181
 	kubeconfig := filepath.Join(home, ".kube", "config")
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:182
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:182
 	config, cfgErr := clientcmd.BuildConfigFromFlags("", kubeconfig)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:183
 	if cfgErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:184
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:184
 		return Cluster{}, fmt.Errorf("kube connect: %w", cfgErr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:185
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:185
 	cs, csErr := kubernetes.NewForConfig(config)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:186
 	if csErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:187
 		return Cluster{}, fmt.Errorf("kube connect: %w", csErr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:188
 	return Cluster{client: cs, namespace: "default"}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:191
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:191
 func openOnce(cfg Config) (Cluster, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:192
 	if cfg.inCluster {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:193
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:193
 		restConfig, err := rest.InClusterConfig()
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:194
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:194
 		if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:195
 			return Cluster{}, fmt.Errorf("kube in-cluster: %w", err)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:196
 		cs, csErr := kubernetes.NewForConfig(restConfig)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:197
 		if csErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:198
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:198
 			return Cluster{}, fmt.Errorf("kube open: %w", csErr)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:199
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:199
 		return Cluster{client: cs, namespace: "default"}, nil
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:200
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:200
 	kubeconfig := cfg.kubeconfig
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:201
 	if kubeconfig == "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:202
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:202
 		home, homeErr := os.UserHomeDir()
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:203
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:203
 		if homeErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:204
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:204
 			return Cluster{}, fmt.Errorf("kube config: %w", homeErr)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:205
 		kubeconfig = filepath.Join(home, ".kube", "config")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:206
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:206
 	loadingRules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:207
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:207
 	overrides := &clientcmd.ConfigOverrides{}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:208
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:208
 	if cfg.context != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:209
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:209
 		overrides.CurrentContext = cfg.context
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:210
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:210
 	restConfig, rcErr := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides).ClientConfig()
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:211
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:211
 	if rcErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:212
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:212
 		return Cluster{}, fmt.Errorf("kube open: %w", rcErr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:213
 	cs, csErr := kubernetes.NewForConfig(restConfig)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:214
 	if csErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:215
 		return Cluster{}, fmt.Errorf("kube open: %w", csErr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:216
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:216
 	return Cluster{client: cs, namespace: "default"}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:220
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:220
 func Open(cfg Config) (Cluster, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:221
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:221
 	if cfg.retryMaxAttempts <= 1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:222
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:222
 		return openOnce(cfg)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:224
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:224
 	delayMs := cfg.retryDelayMs
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:225
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:225
 	if delayMs <= 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:226
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:226
 		delayMs = 1000
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:227
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:227
 	retryCfg := retry.Config{MaxAttempts: cfg.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:228
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:228
 	lastErr := errors.New("no attempts made")
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:229
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:229
 	for attempt := range retryCfg.MaxAttempts {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:230
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:230
 		cluster, err := openOnce(cfg)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:231
 		if err == nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:232
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:232
 			return cluster, nil
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:233
 		lastErr = err
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:234
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:234
 		retry.Sleep(retryCfg, attempt)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:235
 	return Cluster{}, lastErr
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:240
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:240
 func ListPods(c Cluster) (PodList, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:241
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:241
 	pods, err := clientset(c).CoreV1().Pods(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:242
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:243
 		return PodList{}, fmt.Errorf("kube list pods: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:244
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:244
 	return PodList{items: pods}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:247
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:247
 func ListPodsLabeled(c Cluster, selector string) (PodList, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:248
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:248
 	pods, err := clientset(c).CoreV1().Pods(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{LabelSelector: selector})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:249
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:249
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:250
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:250
 		return PodList{}, fmt.Errorf("kube list pods labeled: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:251
 	return PodList{items: pods}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:254
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:254
 func GetPod(c Cluster, name string) (Pod, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:255
 	p, err := clientset(c).CoreV1().Pods(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:256
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:256
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:257
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:257
 		return Pod{}, fmt.Errorf("kube get pod: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:258
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:258
 	return Pod{pod: p}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:261
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:261
 func DeletePod(c Cluster, name string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:262
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:262
 	err := clientset(c).CoreV1().Pods(c.namespace).Delete(ctx.Value(ctx.Background()), name, metav1.DeleteOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:263
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:263
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:264
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:264
 		return fmt.Errorf("kube delete pod: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:265
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:265
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:270
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:270
 func ListDeployments(c Cluster) (DeploymentList, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:271
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:271
 	deps, err := clientset(c).AppsV1().Deployments(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:272
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:272
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:273
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:273
 		return DeploymentList{}, fmt.Errorf("kube list deployments: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:274
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:274
 	return DeploymentList{items: deps}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:277
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:277
 func GetDeployment(c Cluster, name string) (Deployment, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:278
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:278
 	dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:279
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:279
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:280
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:280
 		return Deployment{}, fmt.Errorf("kube get deployment: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:281
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:281
 	return Deployment{dep: dep}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:284
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:284
 func ScaleDeployment(c Cluster, name string, replicas int32) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:285
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:285
 	scale, err := clientset(c).AppsV1().Deployments(c.namespace).GetScale(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:286
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:286
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:287
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:287
 		return fmt.Errorf("kube scale get: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:288
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:288
 	scale.Spec.Replicas = replicas
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:289
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:289
 	_, updateErr := clientset(c).AppsV1().Deployments(c.namespace).UpdateScale(ctx.Value(ctx.Background()), name, scale, metav1.UpdateOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:290
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:290
 	if updateErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:291
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:291
 		return fmt.Errorf("kube scale update: %w", updateErr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:292
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:292
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:295
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:295
 func DeleteDeployment(c Cluster, name string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:296
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:296
 	err := clientset(c).AppsV1().Deployments(c.namespace).Delete(ctx.Value(ctx.Background()), name, metav1.DeleteOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:297
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:297
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:298
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:298
 		return fmt.Errorf("kube delete deployment: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:299
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:299
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:302
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:302
 func RolloutRestart(c Cluster, name string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:303
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:303
 	dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:304
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:304
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:305
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:305
 		return fmt.Errorf("kube rollout restart get: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:306
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:306
 	if dep.Spec.Template.ObjectMeta.Annotations == nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:307
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:307
 		dep.Spec.Template.ObjectMeta.Annotations = map[string]string{}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:308
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:308
 	dep.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().UTC().Format(time.RFC3339)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:309
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:309
 	_, updateErr := clientset(c).AppsV1().Deployments(c.namespace).Update(ctx.Value(ctx.Background()), dep, metav1.UpdateOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:310
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:310
 	if updateErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:311
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:311
 		return fmt.Errorf("kube rollout restart update: %w", updateErr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:312
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:312
 	return nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:318
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:318
 func WaitDeploymentReady(c Cluster, name string, timeoutSeconds int64) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:319
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:319
 	if timeoutSeconds <= 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:320
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:320
 		timeoutSeconds = 300
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:321
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:321
 	deadline := time.Now().Add((time.Duration(timeoutSeconds) * time.Second))
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:322
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:322
 	for {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:323
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:323
 		dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:324
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:324
 		if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:325
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:325
 			return fmt.Errorf("kube wait deployment get: %w", err)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:326
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:326
 		desired := int32(1)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:327
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:327
 		if dep.Spec.Replicas != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:328
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:328
 			desired = *dep.Spec.Replicas
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:329
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:329
 		if ((dep.Status.ObservedGeneration >= dep.Generation) && (dep.Status.ReadyReplicas >= desired)) && (dep.Status.UpdatedReplicas >= desired) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:330
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:330
 			return nil
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:331
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:331
 		if time.Now().After(deadline) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:332
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:332
 			return fmt.Errorf("kube wait deployment: timed out after %ds (ready=%d desired=%d updated=%d)", timeoutSeconds, dep.Status.ReadyReplicas, desired, dep.Status.UpdatedReplicas)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:333
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:333
 		time.Sleep((2 * time.Second))
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:337
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:337
 func WaitPodReady(c Cluster, name string, timeoutSeconds int64) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:338
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:338
 	if timeoutSeconds <= 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:339
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:339
 		timeoutSeconds = 180
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:340
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:340
 	deadline := time.Now().Add((time.Duration(timeoutSeconds) * time.Second))
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:341
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:341
 	for {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:342
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:342
 		p, err := clientset(c).CoreV1().Pods(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:343
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:343
 		if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:344
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:344
 			return fmt.Errorf("kube wait pod get: %w", err)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:345
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:345
 		ready := false
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:346
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:346
 		for _, cond := range p.Status.Conditions {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:347
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:347
 			if cond.Type == corev1.PodReady {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:348
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:348
 				ready = (cond.Status == corev1.ConditionTrue)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:349
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:349
 				break
 			}
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:350
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:350
 		if ready {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:351
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:351
 			return nil
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:352
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:352
 		if time.Now().After(deadline) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:353
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:353
 			return fmt.Errorf("kube wait pod: timed out after %ds", timeoutSeconds)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:354
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:354
 		time.Sleep((1 * time.Second))
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:357
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:357
 func WaitDeploymentReadyCtx(c Cluster, h ctx.Handle, name string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:358
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:358
 	goCtx := ctx.Value(h)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:359
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:359
 	for {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:360
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:360
 		dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(goCtx, name, metav1.GetOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:361
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:361
 		if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:362
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:362
 			return fmt.Errorf("kube wait deployment get: %w", err)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:363
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:363
 		desired := int32(1)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:364
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:364
 		if dep.Spec.Replicas != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:365
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:365
 			desired = *dep.Spec.Replicas
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:366
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:366
 		if ((dep.Status.ObservedGeneration >= dep.Generation) && (dep.Status.ReadyReplicas >= desired)) && (dep.Status.UpdatedReplicas >= desired) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:367
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:367
 			return nil
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:368
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:368
 		ctxErr := goCtx.Err()
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:369
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:369
 		if ctxErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:370
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:370
 			return fmt.Errorf("kube wait deployment: %w", ctxErr)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:371
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:371
 		time.Sleep((2 * time.Second))
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:374
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:374
 func WaitPodReadyCtx(c Cluster, h ctx.Handle, name string) error {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:375
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:375
 	goCtx := ctx.Value(h)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:376
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:376
 	for {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:377
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:377
 		p, err := clientset(c).CoreV1().Pods(c.namespace).Get(goCtx, name, metav1.GetOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:378
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:378
 		if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:379
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:379
 			return fmt.Errorf("kube wait pod get: %w", err)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:380
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:380
 		ready := false
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:381
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:381
 		for _, cond := range p.Status.Conditions {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:382
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:382
 			if cond.Type == corev1.PodReady {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:383
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:383
 				ready = (cond.Status == corev1.ConditionTrue)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:384
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:384
 				break
 			}
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:385
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:385
 		if ready {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:386
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:386
 			return nil
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:387
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:387
 		ctxErr := goCtx.Err()
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:388
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:388
 		if ctxErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:389
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:389
 			return fmt.Errorf("kube wait pod: %w", ctxErr)
 		}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:390
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:390
 		time.Sleep((1 * time.Second))
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:395
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:395
 func ListServices(c Cluster) (ServiceList, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:396
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:396
 	svcs, err := clientset(c).CoreV1().Services(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:397
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:397
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:398
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:398
 		return ServiceList{}, fmt.Errorf("kube list services: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:399
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:399
 	return ServiceList{items: svcs}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:402
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:402
 func GetService(c Cluster, name string) (Service, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:403
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:403
 	svc, err := clientset(c).CoreV1().Services(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:404
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:404
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:405
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:405
 		return Service{}, fmt.Errorf("kube get service: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:406
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:406
 	return Service{svc: svc}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:411
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:411
 func ListNodes(c Cluster) (NodeList, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:412
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:412
 	nodes, err := clientset(c).CoreV1().Nodes().List(ctx.Value(ctx.Background()), metav1.ListOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:413
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:413
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:414
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:414
 		return NodeList{}, fmt.Errorf("kube list nodes: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:415
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:415
 	return NodeList{items: nodes}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:418
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:418
 func GetNode(c Cluster, name string) (Node, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:419
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:419
 	n, err := clientset(c).CoreV1().Nodes().Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:420
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:420
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:421
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:421
 		return Node{}, fmt.Errorf("kube get node: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:422
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:422
 	return Node{node: n}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:427
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:427
 func ListNamespaces(c Cluster) (NamespaceList, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:428
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:428
 	nsList, err := clientset(c).CoreV1().Namespaces().List(ctx.Value(ctx.Background()), metav1.ListOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:429
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:429
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:430
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:430
 		return NamespaceList{}, fmt.Errorf("kube list namespaces: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:431
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:431
 	return NamespaceList{items: nsList}, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:436
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:436
 func Pods(pl PodList) []Pod {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:437
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:437
 	podList := pl.items.(*corev1.PodList)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:438
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:438
 	result := make([]Pod, len(podList.Items))
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:439
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:439
 	for i := range len(podList.Items) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:440
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:440
 		result[i] = Pod{pod: &podList.Items[i]}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:441
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:441
 	return result
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:444
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:444
 func Deployments(dl DeploymentList) []Deployment {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:445
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:445
 	depList := dl.items.(*appsv1.DeploymentList)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:446
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:446
 	result := make([]Deployment, len(depList.Items))
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:447
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:447
 	for i := range len(depList.Items) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:448
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:448
 		result[i] = Deployment{dep: &depList.Items[i]}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:449
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:449
 	return result
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:452
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:452
 func Services(sl ServiceList) []Service {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:453
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:453
 	svcList := sl.items.(*corev1.ServiceList)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:454
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:454
 	result := make([]Service, len(svcList.Items))
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:455
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:455
 	for i := range len(svcList.Items) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:456
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:456
 		result[i] = Service{svc: &svcList.Items[i]}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:457
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:457
 	return result
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:460
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:460
 func Nodes(nl NodeList) []Node {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:461
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:461
 	nodeList := nl.items.(*corev1.NodeList)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:462
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:462
 	result := make([]Node, len(nodeList.Items))
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:463
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:463
 	for i := range len(nodeList.Items) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:464
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:464
 		result[i] = Node{node: &nodeList.Items[i]}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:465
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:465
 	return result
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:468
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:468
 func Namespaces(nsl NamespaceList) []NamespaceItem {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:469
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:469
 	nsList := nsl.items.(*corev1.NamespaceList)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:470
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:470
 	result := make([]NamespaceItem, len(nsList.Items))
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:471
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:471
 	for i := range len(nsList.Items) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:472
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:472
 		result[i] = NamespaceItem{ns: &nsList.Items[i]}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:473
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:473
 	return result
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:478
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:478
 func PodName(p Pod) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:479
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:479
 	return pod(p).Name
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:482
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:482
 func PodStatus(p Pod) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:483
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:483
 	return string(pod(p).Status.Phase)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:486
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:486
 func PodIP(p Pod) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:487
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:487
 	return pod(p).Status.PodIP
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:490
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:490
 func PodNode(p Pod) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:491
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:491
 	return pod(p).Spec.NodeName
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:494
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:494
 func PodAge(p Pod) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:495
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:495
 	d := time.Since(pod(p).CreationTimestamp.Time)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:496
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:496
 	if d.Hours() >= 24 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:497
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:497
 		days := (d.Hours() / 24)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:498
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:498
 		return fmt.Sprintf("%dd", int(days))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:499
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:499
 	if d.Hours() >= 1 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:500
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:500
 		return fmt.Sprintf("%dh", int(d.Hours()))
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:501
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:501
 	return fmt.Sprintf("%dm", int(d.Minutes()))
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:504
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:504
 func PodReady(p Pod) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:505
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:505
 	for _, cond := range pod(p).Status.Conditions {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:506
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:506
 		if cond.Type == corev1.PodReady {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:507
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:507
 			return (cond.Status == corev1.ConditionTrue)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:508
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:508
 	return false
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:511
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:511
 func PodRestarts(p Pod) int32 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:512
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:512
 	total := int32(0)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:513
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:513
 	for _, cs := range pod(p).Status.ContainerStatuses {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:514
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:514
 		total = (total + cs.RestartCount)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:515
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:515
 	return total
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:518
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:518
 func PodLabels(p Pod) map[string]string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:519
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:519
 	return pod(p).Labels
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:524
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:524
 func DeploymentName(d Deployment) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:525
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:525
 	return deployment(d).Name
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:528
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:528
 func DeploymentReplicas(d Deployment) int32 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:529
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:529
 	if deployment(d).Spec.Replicas != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:530
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:530
 		return *deployment(d).Spec.Replicas
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:531
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:531
 	return 1
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:534
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:534
 func DeploymentReady(d Deployment) int32 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:535
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:535
 	return deployment(d).Status.ReadyReplicas
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:538
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:538
 func DeploymentImage(d Deployment) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:539
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:539
 	containers := deployment(d).Spec.Template.Spec.Containers
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:540
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:540
 	if len(containers) > 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:541
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:541
 		return containers[0].Image
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:542
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:542
 	return ""
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:547
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:547
 func ServiceName(s Service) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:548
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:548
 	return service(s).Name
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:551
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:551
 func ServiceType(s Service) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:552
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:552
 	return string(service(s).Spec.Type)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:555
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:555
 func ServiceClusterIP(s Service) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:556
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:556
 	return service(s).Spec.ClusterIP
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:559
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:559
 func ServicePorts(s Service) []string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:560
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:560
 	ports := service(s).Spec.Ports
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:561
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:561
 	result := make([]string, len(ports))
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:562
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:562
 	for i, p := range ports {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:563
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:563
 		result[i] = fmt.Sprintf("%d/%s", p.Port, p.Protocol)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:564
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:564
 	return result
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:569
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:569
 func NodeName(n Node) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:570
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:570
 	return node(n).Name
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:573
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:573
 func NodeReady(n Node) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:574
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:574
 	for _, cond := range node(n).Status.Conditions {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:575
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:575
 		if cond.Type == corev1.NodeReady {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:576
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:576
 			return (cond.Status == corev1.ConditionTrue)
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:577
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:577
 	return false
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:580
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:580
 func NodeRoles(n Node) []string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:581
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:581
 	roles := make([]string, 0)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:582
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:582
 	for label := range node(n).Labels {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:583
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:583
 		prefix := "node-role.kubernetes.io/"
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:584
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:584
 		if kukistring.HasPrefix(label, prefix) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:585
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:585
 			role := kukistring.TrimPrefix(label, prefix)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:586
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:586
 			if role != "" {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:587
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:587
 				roles = append(roles, role)
 			}
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:588
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:588
 	if len(roles) == 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:589
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:589
 		roles = append(roles, "<none>")
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:590
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:590
 	return roles
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:593
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:593
 func NodeVersion(n Node) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:594
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:594
 	return node(n).Status.NodeInfo.KubeletVersion
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:599
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:599
 func NamespaceName(n NamespaceItem) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:600
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:600
 	return nsItem(n).Name
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:605
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:605
 func watchPodsWithContext(h ctx.Handle, c Cluster) ([]PodEvent, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:606
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:606
 	goCtx := ctx.Value(h)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:607
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:607
 	watcher, err := clientset(c).CoreV1().Pods(c.namespace).Watch(goCtx, metav1.ListOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:608
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:608
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:609
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:609
 		return nil, fmt.Errorf("kube watch pods: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:610
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:610
 	defer watcher.Stop()
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:611
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:611
 	events := make([]PodEvent, 0)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:612
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:612
 	for {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:613
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:613
 		select {
 		case <-goCtx.Done():
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:615
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:615
 			return events, nil
 		case event, ok := <-watcher.ResultChan():
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:617
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:617
 			if !ok {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:618
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:618
 				return events, nil
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:619
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:619
 			p, podOk := event.Object.(*corev1.Pod)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:620
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:620
 			if !podOk {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:621
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:621
 				continue
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:622
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:622
 			ready := false
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:623
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:623
 			for _, cond := range p.Status.Conditions {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:624
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:624
 				if cond.Type == corev1.PodReady {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:625
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:625
 					ready = (cond.Status == corev1.ConditionTrue)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:626
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:626
 					break
 				}
 			}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:633
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:633
 			events = append(events, PodEvent{eventType: string(event.Type), name: p.Name, namespace: p.Namespace, phase: string(p.Status.Phase), ready: ready})
 		}
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:634
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:634
 	return events, nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:638
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:638
 func WatchPods(c Cluster, timeoutSeconds int64) ([]PodEvent, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:639
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:639
 	if timeoutSeconds <= 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:640
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:640
 		timeoutSeconds = 30
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:641
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:641
 	h := ctx.WithTimeout(ctx.Background(), timeoutSeconds)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:642
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:642
 	defer ctx.Cancel(h)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:643
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:643
 	return watchPodsWithContext(h, c)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:646
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:646
 func WatchPodsCtx(c Cluster, h ctx.Handle) ([]PodEvent, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:647
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:647
 	return watchPodsWithContext(h, c)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:653
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:653
 func PodLogs(c Cluster, name string, handles ...ctx.Handle) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:654
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:654
 	goCtx := ctx.Value(ctx.Background())
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:655
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:655
 	if len(handles) > 0 {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:656
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:656
 		goCtx = ctx.Value(handles[0])
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:657
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:657
 	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:658
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:658
 	stream, err := req.Stream(goCtx)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:659
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:659
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:660
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:660
 		return "", fmt.Errorf("kube pod logs: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:661
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:661
 	defer stream.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:662
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:662
 	data, readErr := io.ReadAll(stream)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:663
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:663
 	if readErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:664
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:664
 		return "", fmt.Errorf("kube pod logs read: %w", readErr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:665
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:665
 	return string(data), nil
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:668
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:668
 func PodLogsTail(c Cluster, name string, lines int64) (string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:669
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:669
 	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{TailLines: &lines})
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:670
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:670
 	stream, err := req.Stream(ctx.Value(ctx.Background()))
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:671
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:671
 	if err != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:672
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:672
 		return "", fmt.Errorf("kube pod logs tail: %w", err)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:673
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:673
 	defer stream.Close()
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:674
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:674
 	data, readErr := io.ReadAll(stream)
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:675
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:675
 	if readErr != nil {
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:676
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:676
 		return "", fmt.Errorf("kube pod logs tail read: %w", readErr)
 	}
-//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:677
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:677
 	return string(data), nil
 }

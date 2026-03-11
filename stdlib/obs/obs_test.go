@@ -7,35 +7,35 @@ import (
 	"testing"
 )
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:9
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:9
 func TestLoggerFields(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:10
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:10
 	logger := obs.New("svc", "env")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:11
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:11
 	logger = obs.Component(logger, "api")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:12
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:12
 	logger = obs.WithCorrelation(logger, "cid")
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:18
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:18
 func TestCorrelationID(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:19
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:19
 	id := obs.NewCorrelationID()
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:20
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:20
 	if len(id) != 16 {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:21
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:21
 		t.Errorf("Correlation IDs should be 16 chars long")
 	}
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:24
 func TestTimerStopFail(t *testing.T) {
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:25
 	logger := obs.New("svc", "env")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:26
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:26
 	timer := obs.Start(logger, "op")
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:27
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:27
 	obs.Stop(timer, map[string]any{})
-//line /Users/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:28
+//line /var/home/tluker/repos/go/kukicha/stdlib/obs/obs_test.kuki:28
 	obs.Fail(timer, "error", map[string]any{})
 }

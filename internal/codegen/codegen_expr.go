@@ -170,19 +170,97 @@ func (g *Generator) generatePipedSwitchExpr(expr *ast.PipedSwitchExpr) string {
 		funcDefaults:   g.funcDefaults,
 		isStdlibIter:   g.isStdlibIter,
 		sourceFile:     g.sourceFile,
+		exprTypes:      g.exprTypes,
 	}
 
 	tempGen.generateSwitchStmt(expr.SwitchStmt)
 	expr.SwitchStmt.Expression = originalExpr
 
+	returnType := g.inferPipedSwitchReturnType(expr.SwitchStmt)
+
 	var result strings.Builder
-	result.WriteString("func() {\n")
+	if returnType != "" {
+		result.WriteString(fmt.Sprintf("func() %s {\n", returnType))
+	} else {
+		result.WriteString("func() {\n")
+	}
 	result.WriteString(tempGen.output.String())
 	for i := 0; i < g.indent; i++ {
 		result.WriteString("\t")
 	}
 	result.WriteString("}()")
 	return result.String()
+}
+
+// inferPipedSwitchReturnType scans a switch body for return statements and
+// determines the Go return type for the IIFE wrapper. Returns empty string
+// when no cases return a value (void IIFE). Returns "any" when returns exist
+// but types cannot be inferred consistently. Uses exprTypes populated by the
+// semantic analyzer to resolve expression types.
+func (g *Generator) inferPipedSwitchReturnType(stmt *ast.SwitchStmt) string {
+	var returnExprs []ast.Expression
+
+	for _, c := range stmt.Cases {
+		if c.Body == nil {
+			continue
+		}
+		for _, s := range c.Body.Statements {
+			if ret, ok := s.(*ast.ReturnStmt); ok && len(ret.Values) > 0 {
+				returnExprs = append(returnExprs, ret.Values[0])
+			}
+		}
+	}
+	if stmt.Otherwise != nil && stmt.Otherwise.Body != nil {
+		for _, s := range stmt.Otherwise.Body.Statements {
+			if ret, ok := s.(*ast.ReturnStmt); ok && len(ret.Values) > 0 {
+				returnExprs = append(returnExprs, ret.Values[0])
+			}
+		}
+	}
+
+	if len(returnExprs) == 0 {
+		return "" // void IIFE — no return type needed
+	}
+
+	var inferredType string
+	for _, expr := range returnExprs {
+		ts := g.inferExprType(expr)
+		if ts == "" {
+			return "any" // can't determine type for this return expression
+		}
+		if inferredType == "" {
+			inferredType = ts
+		} else if ts != inferredType {
+			return "any" // inconsistent return types across cases
+		}
+	}
+
+	if inferredType == "" {
+		return "any"
+	}
+	return inferredType
+}
+
+// inferExprType returns the Go type string for an expression, consulting exprTypes
+// first, then falling back to direct AST literal inspection for common cases.
+func (g *Generator) inferExprType(expr ast.Expression) string {
+	if g.exprTypes != nil {
+		if ti, ok := g.exprTypes[expr]; ok && ti != nil {
+			return g.typeInfoToGoString(ti)
+		}
+	}
+	// Fall back to AST literal type inspection
+	switch expr.(type) {
+	case *ast.StringLiteral:
+		return "string"
+	case *ast.IntegerLiteral:
+		return "int"
+	case *ast.FloatLiteral:
+		return "float64"
+	case *ast.BooleanLiteral:
+		return "bool"
+	}
+	return ""
 }
 
 // escapeRune returns the Go escape sequence for a rune

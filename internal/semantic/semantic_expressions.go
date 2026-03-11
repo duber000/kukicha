@@ -35,6 +35,14 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) (result *TypeInfo) {
 		return a.analyzeUnaryExpr(e)
 	case *ast.PipeExpr:
 		return a.analyzePipeExpr(e)
+	case *ast.PipedSwitchExpr:
+		// Analyze the upstream pipe chain so call return counts and expression types
+		// are populated for codegen. For the switch body, only analyze the return
+		// expressions in each case — full statement analysis would misfire on the
+		// bare switch / return-value checks that assume a function context.
+		leftType := a.analyzeExpression(e.Left)
+		a.analyzePipedSwitchBody(e.SwitchStmt)
+		return leftType
 	case *ast.CallExpr:
 		types := a.analyzeCallExpr(e, nil)
 		if len(types) > 0 {

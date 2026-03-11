@@ -2288,8 +2288,8 @@ func ConvertEvent(event string) string
 		t.Errorf("expected flattened 'switch event {', got: %s", output)
 	}
 
-	if !strings.Contains(output, "func() {") {
-		t.Errorf("expected IIFE 'func() {', got: %s", output)
+	if !strings.Contains(output, "func() string {") {
+		t.Errorf("expected typed IIFE 'func() string {', got: %s", output)
 	}
 }
 

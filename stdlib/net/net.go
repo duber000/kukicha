@@ -4,70 +4,70 @@ package net
 
 import "net"
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:24
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:24
 func ParseIP(s string) net.IP {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:25
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:25
 	return net.ParseIP(s)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:30
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:30
 func ParseCIDR(s string) (*net.IPNet, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:31
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:31
 	_, ipNet, err := net.ParseCIDR(s)
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:32
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:32
 	return ipNet, err
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:35
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:35
 func Contains(n *net.IPNet, ip net.IP) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:36
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:36
 	return n.Contains(ip)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:40
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:40
 func SplitHostPort(hostport string) (string, string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:41
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:41
 	return net.SplitHostPort(hostport)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:45
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:45
 func JoinHostPort(host string, port string) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:46
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:46
 	return net.JoinHostPort(host, port)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:50
 func LookupHost(host string) ([]string, error) {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:51
 	return net.LookupHost(host)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:55
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:55
 func IsLoopback(ip net.IP) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:56
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:56
 	return ip.IsLoopback()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:60
 func IsPrivate(ip net.IP) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:61
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:61
 	return ip.IsPrivate()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:64
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:64
 func IsMulticast(ip net.IP) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:65
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:65
 	return ip.IsMulticast()
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:69
 func IsNil(ip net.IP) bool {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:70
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:70
 	return (ip == nil)
 }
 
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:73
 func IPString(ip net.IP) string {
-//line /Users/tluker/repos/go/kukicha/stdlib/net/net.kuki:74
+//line /var/home/tluker/repos/go/kukicha/stdlib/net/net.kuki:74
 	return ip.String()
 }
