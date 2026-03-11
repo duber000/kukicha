@@ -28,7 +28,6 @@ import "os"
 import "path/filepath"
 import "time"
 import "stdlib/ctx" as ctxpkg
-import "stdlib/errors"
 import "stdlib/json"
 import "stdlib/string"
 import "encoding/base64"
@@ -125,9 +124,8 @@ func Close(engine Engine) error
 # ListContainers lists all containers (including stopped).
 func ListContainers(engine Engine) (list of ContainerInfo, error)
     bg := ctxpkg.Background()
-    containers, err := engine.cli.ContainerList(ctxpkg.Value(bg), dockercontainer.ListOptions{All: true})
-    if err != empty
-        return empty, errors.Wrap(err, "container list")
+    containers := engine.cli.ContainerList(ctxpkg.Value(bg), dockercontainer.ListOptions{All: true}) onerr explain "container list"
+
     result := make(list of ContainerInfo, len(containers))
     for i, c in containers
         result[i] = ContainerInfo{
@@ -142,9 +140,8 @@ func ListContainers(engine Engine) (list of ContainerInfo, error)
 # ListImages lists all images on the host.
 func ListImages(engine Engine) (list of ImageInfo, error)
     bg := ctxpkg.Background()
-    images, err := engine.cli.ImageList(ctxpkg.Value(bg), dockerimage.ListOptions{All: true})
-    if err != empty
-        return empty, errors.Wrap(err, "container list images")
+    images := engine.cli.ImageList(ctxpkg.Value(bg), dockerimage.ListOptions{All: true}) onerr explain "container list images"
+
     result := make(list of ImageInfo, len(images))
     for i, img in images
         result[i] = ImageInfo{
@@ -157,17 +154,13 @@ func ListImages(engine Engine) (list of ImageInfo, error)
 # Stop stops a running container.
 func Stop(engine Engine, containerID string) error
     bg := ctxpkg.Background()
-    err := engine.cli.ContainerStop(ctxpkg.Value(bg), containerID, dockercontainer.StopOptions{})
-    if err != empty
-        return errors.Wrap(err, "container stop")
+    engine.cli.ContainerStop(ctxpkg.Value(bg), containerID, dockercontainer.StopOptions{}) onerr explain "container stop"
     return empty
 
 # Remove removes a container.
 func Remove(engine Engine, containerID string) error
     bg := ctxpkg.Background()
-    err := engine.cli.ContainerRemove(ctxpkg.Value(bg), containerID, dockercontainer.RemoveOptions{})
-    if err != empty
-        return errors.Wrap(err, "container remove")
+    engine.cli.ContainerRemove(ctxpkg.Value(bg), containerID, dockercontainer.RemoveOptions{}) onerr explain "container remove"
     return empty
 
 # Login creates an Auth with the given credentials.
@@ -252,18 +245,16 @@ func containerLogs(cli reference client.Client, containerID string, tail string)
     opts := dockercontainer.LogsOptions{ShowStdout: true, ShowStderr: true}
     if tail != ""
         opts.Tail = tail
-    reader, err := cli.ContainerLogs(ctxpkg.Value(bg), containerID, opts)
-    if err != empty
-        return "", errors.Wrap(err, "container logs")
+    reader := cli.ContainerLogs(ctxpkg.Value(bg), containerID, opts) onerr explain "container logs"
     defer reader.Close()
+
     stdout := bytes.Buffer{}
     stderr := bytes.Buffer{}
     _, copyErr := stdcopy.StdCopy(reference of stdout, reference of stderr, reader)
     if copyErr != empty
-        raw, readErr := io.ReadAll(reader)
-        if readErr != empty
-            return "", errors.Wrap(copyErr, "container logs")
+        raw := io.ReadAll(reader) onerr explain "container logs"
         return raw as string, empty
+
     combined := stdout.String()
     if stderr.Len() > 0
         combined = combined + stderr.String()
@@ -280,23 +271,20 @@ func LogsTail(engine Engine, containerID string, lines int64) (string, error)
 # Run creates and starts a container. Returns the container ID.
 func Run(engine Engine, img string, cmd list of string) (string, error)
     bg := ctxpkg.Background()
-    resp, err := engine.cli.ContainerCreate(ctxpkg.Value(bg), reference of dockercontainer.Config{
+    resp := engine.cli.ContainerCreate(ctxpkg.Value(bg), reference of dockercontainer.Config{
         Image: img,
         Cmd: cmd,
-    }, empty, empty, empty, "")
-    if err != empty
-        return "", errors.Wrap(err, "container run create")
-    startErr := engine.cli.ContainerStart(ctxpkg.Value(bg), resp.ID, dockercontainer.StartOptions{})
-    if startErr != empty
-        return "", errors.Wrap(startErr, "container run start")
+    }, empty, empty, empty, "") onerr explain "container run create"
+
+    engine.cli.ContainerStart(ctxpkg.Value(bg), resp.ID, dockercontainer.StartOptions{}) onerr explain "container run start"
+
     return resp.ID, empty
 
 # Inspect returns high-level container metadata.
 func Inspect(engine Engine, containerID string) (ContainerInfo, error)
     bg := ctxpkg.Background()
-    info, err := engine.cli.ContainerInspect(ctxpkg.Value(bg), containerID)
-    if err != empty
-        return ContainerInfo{}, errors.Wrap(err, "container inspect")
+    info := engine.cli.ContainerInspect(ctxpkg.Value(bg), containerID) onerr explain "container inspect"
+
     names := make(list of string, 0)
     if info.Name != ""
         names = append(names, string.TrimPrefix(info.Name, "/"))
@@ -319,28 +307,24 @@ func Exec(engine Engine, containerID string, cmd list of string, many handles ct
     ctx := ctxpkg.Background()
     if len(handles) > 0
         ctx = handles[0]
-    createResp, err := engine.cli.ContainerExecCreate(ctxpkg.Value(ctx), containerID, dockertypes.ExecConfig{
+    createResp := engine.cli.ContainerExecCreate(ctxpkg.Value(ctx), containerID, dockertypes.ExecConfig{
         Cmd: cmd,
         AttachStdout: true,
         AttachStderr: true,
-    })
-    if err != empty
-        return "", errors.Wrap(err, "container exec create")
-    attachResp, attachErr := engine.cli.ContainerExecAttach(ctxpkg.Value(ctx), createResp.ID, dockertypes.ExecStartCheck{})
-    if attachErr != empty
-        return "", errors.Wrap(attachErr, "container exec attach")
+    }) onerr explain "container exec create"
+
+    attachResp := engine.cli.ContainerExecAttach(ctxpkg.Value(ctx), createResp.ID, dockertypes.ExecStartCheck{}) onerr explain "container exec attach"
     defer attachResp.Close()
+
     stdout := bytes.Buffer{}
     stderr := bytes.Buffer{}
     _, copyErr := stdcopy.StdCopy(reference of stdout, reference of stderr, attachResp.Reader)
     if copyErr != empty
-        raw, readErr := io.ReadAll(attachResp.Reader)
-        if readErr != empty
-            return "", errors.Wrap(copyErr, "container exec read")
+        raw := io.ReadAll(attachResp.Reader) onerr explain "container exec read"
         return raw as string, empty
-    inspectResult, inspectErr := engine.cli.ContainerExecInspect(ctxpkg.Value(ctx), createResp.ID)
-    if inspectErr != empty
-        return "", errors.Wrap(inspectErr, "container exec inspect")
+
+    inspectResult := engine.cli.ContainerExecInspect(ctxpkg.Value(ctx), createResp.ID) onerr explain "container exec inspect"
+
     combined := stdout.String()
     if stderr.Len() > 0
         combined = combined + stderr.String()
@@ -357,15 +341,7 @@ func Wait(engine Engine, containerID string, timeoutSeconds int64) (int64, error
     if timeoutSeconds > 0
         h = h |> ctxpkg.WithTimeout(timeoutSeconds)
     defer ctxpkg.Cancel(h)
-    goCtx := ctxpkg.Value(h)
-    waitCh, errCh := engine.cli.ContainerWait(goCtx, containerID, dockercontainer.WaitConditionNotRunning)
-    select
-        when err := receive from errCh
-            if err != empty
-                return -1, fmt.Errorf("container wait: %w", err)
-            return -1, error "container wait: unknown wait error"
-        when res := receive from waitCh
-            return res.StatusCode, empty
+    return WaitCtx(engine, h, containerID)
 
 # WaitCtx blocks until a container exits or the provided context is canceled.
 func WaitCtx(engine Engine, h ctxpkg.Handle, containerID string) (int64, error)
@@ -436,18 +412,16 @@ func Pull(engine Engine, ref string, many handles ctxpkg.Handle) (string, error)
     bg := ctxpkg.Background()
     if len(handles) > 0
         bg = handles[0]
-    reader, err := engine.cli.ImagePull(ctxpkg.Value(bg), ref, dockerimage.PullOptions{})
-    if err != empty
-        return "", fmt.Errorf("container pull: %w", err)
+    reader := engine.cli.ImagePull(ctxpkg.Value(bg), ref, dockerimage.PullOptions{}) onerr explain "container pull"
     defer reader.Close()
     digest := ""
     scanner := bufio.NewScanner(reader)
     for scanner.Scan()
         msg := pullStatusMsg{}
-        unmarshalErr := json.Unmarshal(scanner.Bytes(), reference of msg)
-        if unmarshalErr == empty
-            if string.HasPrefix(msg.Status, "Digest:")
-                digest = string.TrimPrefix(msg.Status, "Digest: ")
+        json.Unmarshal(scanner.Bytes(), reference of msg) onerr
+            continue
+        if string.HasPrefix(msg.Status, "Digest:")
+            digest = string.TrimPrefix(msg.Status, "Digest: ")
     if digest == ""
         digest = ref
     return digest, empty
@@ -675,23 +649,15 @@ func extractTar(reader io.Reader, destPath string) error
             return fmt.Errorf("invalid archive path: %s", header.Name)
         switch header.Typeflag
             when tar.TypeDir
-                mkdirErr := os.MkdirAll(target, os.FileMode(header.Mode))
-                if mkdirErr != empty
-                    return mkdirErr
+                os.MkdirAll(target, os.FileMode(header.Mode)) onerr return
             when tar.TypeReg
-                parentErr := os.MkdirAll(filepath.Dir(target), 493)
-                if parentErr != empty
-                    return parentErr
-                f, openErr := os.OpenFile(target, os.O_CREATE | os.O_WRONLY | os.O_TRUNC, os.FileMode(header.Mode))
-                if openErr != empty
-                    return openErr
+                os.MkdirAll(filepath.Dir(target), 493) onerr return
+                f := os.OpenFile(target, os.O_CREATE | os.O_WRONLY | os.O_TRUNC, os.FileMode(header.Mode)) onerr return
                 _, copyErr := io.Copy(f, tr)
                 if copyErr != empty
                     f.Close()
                     return copyErr
-                closeErr := f.Close()
-                if closeErr != empty
-                    return closeErr
+                f.Close() onerr return
             when tar.TypeSymlink, tar.TypeLink
                 return fmt.Errorf("archive contains unsupported link entry: %s", header.Name)
             otherwise
@@ -700,72 +666,50 @@ func extractTar(reader io.Reader, destPath string) error
 
 # createTarFromPath creates a tar archive from a file or directory.
 func createTarFromPath(sourcePath string) (io.Reader, error)
-    absSourcePath, absErr := filepath.Abs(sourcePath)
-    if absErr != empty
-        return empty, fmt.Errorf("container copy to abs path: %w", absErr)
+    absSourcePath := filepath.Abs(sourcePath) onerr explain "container copy to abs path"
+
     # Use Lstat to detect symlinks at the top level
-    info, statErr := os.Lstat(absSourcePath)
-    if statErr != empty
-        return empty, fmt.Errorf("container copy to stat: %w", statErr)
+    info := os.Lstat(absSourcePath) onerr explain "container copy to stat"
+
     if info.Mode().Type() == os.ModeSymlink
         return empty, fmt.Errorf("container copy to: source path is a symlink: %s", absSourcePath)
     buf := bytes.Buffer{}
     tw := tar.NewWriter(reference of buf)
     if info.IsDir()
-        walkErr := filepath.WalkDir(absSourcePath, func(walkPath string, d os.DirEntry, err error) error
+        filepath.WalkDir(absSourcePath, func(walkPath string, d os.DirEntry, err error) error
             if err != empty
                 return err
             # Skip symlinks to prevent traversal outside the source tree
             if d.Type() == os.ModeSymlink
                 return empty
-            fi, fiErr := d.Info()
-            if fiErr != empty
-                return fiErr
+            fi := d.Info() onerr return
+
             # Skip symlinks in file info too
             if fi.Mode().Type() == os.ModeSymlink
                 return empty
-            header, headerErr := tar.FileInfoHeader(fi, "")
-            if headerErr != empty
-                return headerErr
-            rel, relErr := filepath.Rel(filepath.Dir(absSourcePath), walkPath)
-            if relErr != empty
-                return relErr
+            
+            rel := filepath.Rel(filepath.Dir(absSourcePath), walkPath) onerr return
+            header := tar.FileInfoHeader(fi, "") onerr return
             header.Name = filepath.ToSlash(rel)
             if fi.IsDir()
                 header.Name = header.Name + "/"
-            writeErr := tw.WriteHeader(header)
-            if writeErr != empty
-                return writeErr
+            tw.WriteHeader(header) onerr return
             if fi.Mode().IsRegular()
-                f, openErr := os.Open(walkPath)
-                if openErr != empty
-                    return openErr
+                f := os.Open(walkPath) onerr return
                 defer f.Close()
-                _, copyErr := io.Copy(tw, f)
-                if copyErr != empty
-                    return copyErr
+                _, err := io.Copy(tw, f) onerr return
             return empty
-        )
-        if walkErr != empty
-            return empty, fmt.Errorf("container copy to walk: %w", walkErr)
+        ) onerr explain "container copy to walk"
     else
-        header, headerErr := tar.FileInfoHeader(info, "")
-        if headerErr != empty
-            return empty, fmt.Errorf("container copy to header: %w", headerErr)
+        fi := os.Stat(absSourcePath) onerr explain "container copy to stat file"
+        header := tar.FileInfoHeader(fi, "") onerr explain "container copy to header"
         header.Name = filepath.ToSlash(filepath.Base(absSourcePath))
-        writeErr := tw.WriteHeader(header)
-        if writeErr != empty
-            return empty, fmt.Errorf("container copy to write header: %w", writeErr)
-        f, openErr := os.Open(absSourcePath)
-        if openErr != empty
-            return empty, fmt.Errorf("container copy to open: %w", openErr)
+        tw.WriteHeader(header) onerr explain "container copy to write header"
+        f := os.Open(absSourcePath) onerr explain "container copy to open"
         defer f.Close()
-        _, copyErr := io.Copy(tw, f)
-        if copyErr != empty
-            return empty, fmt.Errorf("container copy to write file: %w", copyErr)
-    closeErr := tw.Close()
-    if closeErr != empty
-        return empty, fmt.Errorf("container copy to close tar: %w", closeErr)
+        _, err := io.Copy(tw, f) onerr explain "container copy to write file"
+
+    tw.Close() onerr explain "container copy to close tar"
     return reference of buf, empty
 
 # CopyFrom copies files from a container path to a local destination path.
@@ -778,16 +722,10 @@ func CopyFrom(engine Engine, containerID string, sourcePath string, destPath str
 
 # copyFromWithContext copies files from a container with context support.
 func copyFromWithContext(engine Engine, ctx ctxpkg.Handle, containerID string, sourcePath string, destPath string) error
-    reader, _, err := engine.cli.CopyFromContainer(ctxpkg.Value(ctx), containerID, sourcePath)
-    if err != empty
-        return fmt.Errorf("container copy from: %w", err)
+    reader, _, err := engine.cli.CopyFromContainer(ctxpkg.Value(ctx), containerID, sourcePath) onerr explain "container copy from"
     defer reader.Close()
-    mkdirErr := os.MkdirAll(destPath, 493)
-    if mkdirErr != empty
-        return fmt.Errorf("container copy from mkdir: %w", mkdirErr)
-    extractErr := extractTar(reader, destPath)
-    if extractErr != empty
-        return fmt.Errorf("container copy from extract: %w", extractErr)
+    os.MkdirAll(destPath, 493) onerr explain "container copy from mkdir"
+    extractTar(reader, destPath) onerr explain "container copy from extract"
     return empty
 
 # CopyTo copies a local file or directory into a container destination directory.
@@ -800,11 +738,7 @@ func CopyTo(engine Engine, containerID string, sourcePath string, destPath strin
 
 # copyToWithContext copies files to a container with context support.
 func copyToWithContext(engine Engine, ctx ctxpkg.Handle, containerID string, sourcePath string, destPath string) error
-    archive, archiveErr := createTarFromPath(sourcePath)
-    if archiveErr != empty
-        return archiveErr
+    archive := createTarFromPath(sourcePath) onerr return
     copyOpts := dockercontainer.CopyToContainerOptions{AllowOverwriteDirWithFile: true}
-    err := engine.cli.CopyToContainer(ctxpkg.Value(ctx), containerID, destPath, archive, copyOpts)
-    if err != empty
-        return fmt.Errorf("container copy to: %w", err)
+    engine.cli.CopyToContainer(ctxpkg.Value(ctx), containerID, destPath, archive, copyOpts) onerr explain "container copy to"
     return empty

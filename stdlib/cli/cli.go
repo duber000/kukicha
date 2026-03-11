@@ -171,7 +171,5 @@ func GetInt(args Args, name string) (int, error) {
 		return 0, errors.New(fmt.Sprintf("argument %v not found", name))
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:130
-	val, err := cast.Atoi(strVal)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:131
-	return val, err
+	return cast.Atoi(strVal)
 }

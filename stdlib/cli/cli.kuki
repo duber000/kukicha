@@ -127,5 +127,4 @@ func GetInt(args Args, name string) (int, error)
     if strVal == ""
         return 0, error("argument {name} not found")
 
-    val, err := cast.Atoi(strVal)
-    return val, err
+    return cast.Atoi(strVal)

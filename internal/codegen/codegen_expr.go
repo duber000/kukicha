@@ -25,6 +25,39 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 				return g.currentOnErrVar
 			}
 		}
+
+		// Check if this is the "empty" keyword used as an identifier (e.g. passed as argument)
+		// If semantic analysis resolved it to TypeKindNil, it means it's not shadowed, so emit "nil".
+		if e.Value == "empty" {
+			if t, ok := g.exprTypes[e]; ok && t.Kind == semantic.TypeKindNil {
+				// In generic stdlib context, use *new(T) or *new(K) for zero value instead of nil
+				// But only if the return type at this position actually uses a placeholder type
+				if (g.isStdlibIter || g.isStdlibSlice()) && g.placeholderMap != nil {
+					// If we're in a return statement and know the return type, check if it's a placeholder
+					if g.currentReturnIndex >= 0 && g.currentReturnIndex < len(g.currentReturnTypes) {
+						retType := g.currentReturnTypes[g.currentReturnIndex]
+						if _, hasT := g.placeholderMap["any"]; hasT && g.typeContainsPlaceholder(retType, "any") {
+							return "*new(T)"
+						}
+						if _, hasK := g.placeholderMap["any2"]; hasK && g.typeContainsPlaceholder(retType, "any2") {
+							return "*new(K)"
+						}
+						// Return type doesn't use a placeholder — fall through to nil
+					} else {
+						// Not in a return statement context — use *new(T) as default
+						if _, hasT := g.placeholderMap["any"]; hasT {
+							return "*new(T)"
+						}
+						if _, hasK := g.placeholderMap["any2"]; hasK {
+							return "*new(K)"
+						}
+					}
+				}
+				return "nil"
+			}
+			return "empty"
+		}
+
 		return e.Value
 	case *ast.IntegerLiteral:
 		// Preserve original representation for octal (0...), hex (0x...), binary (0b...)

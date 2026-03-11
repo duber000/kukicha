@@ -28,6 +28,9 @@ func init() {
 	knownExternalReturns["fmt.Fprintf"] = 2
 	knownExternalReturns["fmt.Sprintf"] = 1
 	knownExternalReturns["net.ParseCIDR"] = 3
+	knownExternalReturns["io.Copy"] = 2
+	knownExternalReturns["io.WriteString"] = 2
+	knownExternalReturns["io.ReadFull"] = 2
 }
 
 func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*TypeInfo {
@@ -79,6 +82,15 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 		a.analyzeExpression(namedArg.Value)
 	}
 
+	// Always analyze positional arguments to ensure their types are recorded
+	var providedArgTypes []*TypeInfo
+	if pipedArg != nil {
+		providedArgTypes = append(providedArgTypes, pipedArg)
+	}
+	for _, arg := range expr.Arguments {
+		providedArgTypes = append(providedArgTypes, a.analyzeExpression(arg))
+	}
+
 	// Validate usage of named arguments (only supported for local functions)
 	if len(expr.NamedArguments) > 0 {
 		if funcType.Kind != TypeKindFunction {
@@ -128,15 +140,6 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 			if totalProvidedArgs > len(funcType.Params) {
 				a.error(expr.Pos(), fmt.Sprintf("expected at most %d arguments, got %d", len(funcType.Params), totalProvidedArgs))
 			}
-		}
-
-		// Collect all provided argument types in order
-		var providedArgTypes []*TypeInfo
-		if pipedArg != nil {
-			providedArgTypes = append(providedArgTypes, pipedArg)
-		}
-		for _, arg := range expr.Arguments {
-			providedArgTypes = append(providedArgTypes, a.analyzeExpression(arg))
 		}
 
 		// Validate positional argument types

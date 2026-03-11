@@ -62,6 +62,7 @@ const (
 	TypeKindInterface
 	TypeKindNamed
 	TypeKindPlaceholder // For generic type placeholders (element, item, etc.)
+	TypeKindNil         // For the 'empty' keyword (nil)
 )
 
 func (tk TypeKind) String() string {
@@ -94,6 +95,8 @@ func (tk TypeKind) String() string {
 		return "named"
 	case TypeKindPlaceholder:
 		return "placeholder"
+	case TypeKindNil:
+		return "empty"
 	default:
 		return "unknown"
 	}

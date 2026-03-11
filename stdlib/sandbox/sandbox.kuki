@@ -26,9 +26,7 @@ type Root
 # New creates a new sandboxed Root at the given directory path.
 # All file operations on the returned Root are confined to this directory.
 func New(path string) (Root, error)
-    r, err := os.OpenRoot(path)
-    if err != empty
-        return Root{}, fmt.Errorf("sandbox open: %w", err)
+    r := os.OpenRoot(path) onerr explain "sandbox open"
     return Root{root: r, path: path}, empty
 
 # Close releases the resources associated with the Root.
@@ -37,84 +35,56 @@ func Close(r Root) error
 
 # Read reads the entire contents of a file within the sandbox as bytes.
 func Read(r Root, path string) (list of byte, error)
-    data, err := r.root.ReadFile(path)
-    if err != empty
-        return empty, fmt.Errorf("sandbox read: %w", err)
+    data := r.root.ReadFile(path) onerr explain "sandbox read"
     return data, empty
 
 # ReadString reads the entire contents of a file within the sandbox as a string.
 func ReadString(r Root, path string) (string, error)
-    data, err := r.root.ReadFile(path)
-    if err != empty
-        return "", fmt.Errorf("sandbox read: %w", err)
+    data := r.root.ReadFile(path) onerr explain "sandbox read"
     return data as string, empty
 
 # WriteString writes a string to a file within the sandbox, creating it if needed.
 func WriteString(r Root, data string, path string) error
-    err := r.root.WriteFile(path, data as list of byte, 0644)
-    if err != empty
-        return fmt.Errorf("sandbox write: %w", err)
+    r.root.WriteFile(path, data as list of byte, 0644) onerr explain "sandbox write"
     return empty
 
 # Write marshals data to JSON and writes it to a file within the sandbox.
 func Write(r Root, data any, path string) error
-    jsonData, err := json.MarshalPretty(data)
-    if err != empty
-        return fmt.Errorf("sandbox write marshal: %w", err)
-    writeErr := r.root.WriteFile(path, jsonData, 0644)
-    if writeErr != empty
-        return fmt.Errorf("sandbox write: %w", writeErr)
+    jsonData := json.MarshalPretty(data) onerr explain "sandbox write marshal"
+    r.root.WriteFile(path, jsonData, 0644) onerr explain "sandbox write"
     return empty
 
 # AppendString appends a string to a file within the sandbox, creating it if needed.
 func AppendString(r Root, data string, path string) error
-    f, err := r.root.OpenFile(path, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644)
-    if err != empty
-        return fmt.Errorf("sandbox append: %w", err)
+    f := r.root.OpenFile(path, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644) onerr explain "sandbox append"
     defer f.Close()
-    _, writeErr := f.Write(data as list of byte)
-    if writeErr != empty
-        return fmt.Errorf("sandbox append: %w", writeErr)
+    _, err := f.Write(data as list of byte) onerr explain "sandbox append"
     return empty
 
 # Append marshals data to JSON and appends it (with newline) to a file within the sandbox.
 func Append(r Root, data any, path string) error
-    jsonData, err := json.Marshal(data)
-    if err != empty
-        return fmt.Errorf("sandbox append marshal: %w", err)
+    jsonData := json.Marshal(data) onerr explain "sandbox append marshal"
     jsonData = append(jsonData, '\n')
-    f, openErr := r.root.OpenFile(path, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644)
-    if openErr != empty
-        return fmt.Errorf("sandbox append: %w", openErr)
+    f := r.root.OpenFile(path, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644) onerr explain "sandbox append"
     defer f.Close()
-    _, writeErr := f.Write(jsonData)
-    if writeErr != empty
-        return fmt.Errorf("sandbox append: %w", writeErr)
+    _, err := f.Write(jsonData) onerr explain "sandbox append"
     return empty
 
 # MkDir creates a directory within the sandbox.
 func MkDir(r Root, path string) error
-    err := r.root.Mkdir(path, 0755)
-    if err != empty
-        return fmt.Errorf("sandbox mkdir: %w", err)
+    r.root.Mkdir(path, 0755) onerr explain "sandbox mkdir"
     return empty
 
 # MkDirAll creates a directory and all necessary parents within the sandbox.
 func MkDirAll(r Root, path string) error
-    err := r.root.MkdirAll(path, 0755)
-    if err != empty
-        return fmt.Errorf("sandbox mkdirall: %w", err)
+    r.root.MkdirAll(path, 0755) onerr explain "sandbox mkdirall"
     return empty
 
 # List returns the names of files and directories within a directory in the sandbox.
 func List(r Root, path string) (list of string, error)
-    f, err := r.root.Open(path)
-    if err != empty
-        return empty, fmt.Errorf("sandbox list: %w", err)
+    f := r.root.Open(path) onerr explain "sandbox list"
     defer f.Close()
-    entries, readErr := f.ReadDir(-1)
-    if readErr != empty
-        return empty, fmt.Errorf("sandbox list: %w", readErr)
+    entries := f.ReadDir(-1) onerr explain "sandbox list"
     names := make(list of string, len(entries))
     for i, e in entries
         names[i] = e.Name()
@@ -127,44 +97,32 @@ func Exists(r Root, path string) bool
 
 # IsDir checks if a path is a directory within the sandbox.
 func IsDir(r Root, path string) bool
-    info, err := r.root.Stat(path)
-    if err != empty
-        return false
+    info := r.root.Stat(path) onerr return false
     return info.IsDir()
 
 # IsFile checks if a path is a regular file within the sandbox.
 func IsFile(r Root, path string) bool
-    info, err := r.root.Stat(path)
-    if err != empty
-        return false
+    info := r.root.Stat(path) onerr return false
     return not info.IsDir()
 
 # Stat returns file info for a path within the sandbox.
 func Stat(r Root, path string) (os.FileInfo, error)
-    info, err := r.root.Stat(path)
-    if err != empty
-        return empty, fmt.Errorf("sandbox stat: %w", err)
+    info := r.root.Stat(path) onerr explain "sandbox stat"
     return info, empty
 
 # Delete removes a file or empty directory within the sandbox.
 func Delete(r Root, path string) error
-    err := r.root.Remove(path)
-    if err != empty
-        return fmt.Errorf("sandbox delete: %w", err)
+    r.root.Remove(path) onerr explain "sandbox delete"
     return empty
 
 # DeleteAll removes a file or directory tree within the sandbox.
 func DeleteAll(r Root, path string) error
-    err := r.root.RemoveAll(path)
-    if err != empty
-        return fmt.Errorf("sandbox deleteall: %w", err)
+    r.root.RemoveAll(path) onerr explain "sandbox deleteall"
     return empty
 
 # Rename renames a file or directory within the sandbox.
 func Rename(r Root, oldpath string, newpath string) error
-    err := r.root.Rename(oldpath, newpath)
-    if err != empty
-        return fmt.Errorf("sandbox rename: %w", err)
+    r.root.Rename(oldpath, newpath) onerr explain "sandbox rename"
     return empty
 
 # Path returns the root directory path of the sandbox.

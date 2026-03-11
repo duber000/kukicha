@@ -54,450 +54,421 @@ func Connect(url string) (Pool, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:65
 	bg := ctxpkg.Background()
 //line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:66
-	pool, err := pgxpool.New(ctxpkg.Value(bg), url)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:67
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:68
-		return Pool{}, errors.New(fmt.Sprintf("pg connect: %v", err))
+	pool, err_1 := pgxpool.New(ctxpkg.Value(bg), url)
+	if err_1 != nil {
+		err_1 = fmt.Errorf("pg connect: %w", err_1)
+		return *new(Pool), err_1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:69
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:67
 	return Pool{pool: pool}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:72
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:70
 func New(url string) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:73
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:71
 	return Config{url: url}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:76
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:74
 func MaxConns(cfg Config, n int32) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:77
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:75
 	cfg.maxConns = n
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:78
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:76
 	return cfg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:79
 func MinConns(cfg Config, n int32) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:82
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:80
 	cfg.minConns = n
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:83
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:81
 	return cfg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:84
 func MaxConnLifetime(cfg Config, d int64) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:85
 	cfg.maxConnLifetimeNs = d
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:88
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:86
 	return cfg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:89
 func MaxConnIdleTime(cfg Config, d int64) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:90
 	cfg.maxConnIdleTimeNs = d
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:91
 	return cfg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:98
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:96
 func Retry(cfg Config, maxAttempts int, delayMs int) Config {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:99
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:97
 	cfg.retryMaxAttempts = maxAttempts
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:100
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:98
 	cfg.retryDelayMs = delayMs
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:101
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:99
 	return cfg
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:102
 func Open(cfg Config) (Pool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:105
-	poolCfg, err := pgxpool.ParseConfig(cfg.url)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:106
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:107
-		return Pool{}, errors.New(fmt.Sprintf("pg config: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:103
+	poolCfg, err_2 := pgxpool.ParseConfig(cfg.url)
+	if err_2 != nil {
+		err_2 = fmt.Errorf("pg config: %w", err_2)
+		return *new(Pool), err_2
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:108
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:105
 	if cfg.maxConns > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:109
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:106
 		poolCfg.MaxConns = cfg.maxConns
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:107
 	if cfg.minConns > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:111
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:108
 		poolCfg.MinConns = cfg.minConns
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:112
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:109
 	if cfg.maxConnLifetimeNs > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:113
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:110
 		poolCfg.MaxConnLifetime = time.Duration(cfg.maxConnLifetimeNs)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:114
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:111
 	if cfg.maxConnIdleTimeNs > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:112
 		poolCfg.MaxConnIdleTime = time.Duration(cfg.maxConnIdleTimeNs)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:114
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:115
 	if cfg.retryMaxAttempts <= 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:119
-		pool, openErr := pgxpool.NewWithConfig(ctxpkg.Value(bg), poolCfg)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:120
-		if openErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:121
-			return Pool{}, errors.New(fmt.Sprintf("pg open: %v", openErr))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:116
+		pool, err_3 := pgxpool.NewWithConfig(ctxpkg.Value(bg), poolCfg)
+		if err_3 != nil {
+			err_3 = fmt.Errorf("pg open: %w", err_3)
+			return *new(Pool), err_3
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:122
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:117
 		return Pool{pool: pool}, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:124
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:119
 	delayMs := cfg.retryDelayMs
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:125
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:120
 	if delayMs <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:126
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:121
 		delayMs = 500
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:127
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:122
 	retryCfg := retry.Config{MaxAttempts: cfg.retryMaxAttempts, InitialDelay: delayMs, Strategy: 1}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:128
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:123
 	lastErr := errors.New("no attempts made")
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:129
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:124
 	for attempt := range retryCfg.MaxAttempts {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:130
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:125
 		pool, openErr := pgxpool.NewWithConfig(ctxpkg.Value(bg), poolCfg)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:131
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:126
 		if openErr == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:132
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:127
 			return Pool{pool: pool}, nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:133
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:128
 		lastErr = errors.New(fmt.Sprintf("pg open: %v", openErr))
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:134
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:129
 		retry.Sleep(retryCfg, attempt)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:135
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:130
 	return Pool{}, lastErr
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:138
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:133
 func Query(p Pool, sql string, args ...any) (Rows, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:139
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:134
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:140
-	rows, err := p.pool.Query(ctxpkg.Value(bg), sql, args...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:141
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:142
-		return Rows{}, errors.New(fmt.Sprintf("pg query: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:135
+	rows, err_4 := p.pool.Query(ctxpkg.Value(bg), sql, args...)
+	if err_4 != nil {
+		err_4 = fmt.Errorf("pg query: %w", err_4)
+		return *new(Rows), err_4
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:143
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:136
 	return Rows{rows: rows}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:146
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:139
 func QueryRow(p Pool, sql string, args ...any) (Row, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:147
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:140
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:148
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:141
 	row := p.pool.QueryRow(ctxpkg.Value(bg), sql, args...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:149
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:142
 	return Row{scanFn: row}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:152
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:145
 func Exec(p Pool, sql string, args ...any) (Result, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:153
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:146
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:154
-	tag, err := p.pool.Exec(ctxpkg.Value(bg), sql, args...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:155
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:156
-		return Result{}, errors.New(fmt.Sprintf("pg exec: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:147
+	tag, err_5 := p.pool.Exec(ctxpkg.Value(bg), sql, args...)
+	if err_5 != nil {
+		err_5 = fmt.Errorf("pg exec: %w", err_5)
+		return *new(Result), err_5
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:157
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:148
 	return Result{tag: tag}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:160
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:151
 func Scan(r Row, dest ...any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:161
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:152
 	row := r.scanFn.(pgx.Row)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:162
-	err := row.Scan(dest...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:163
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:164
-		return errors.New(fmt.Sprintf("pg scan: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:153
+	if err_6 := row.Scan(dest...); err_6 != nil {
+		err_6 = fmt.Errorf("pg scan: %w", err_6)
+		return err_6
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:165
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:154
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:168
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:157
 func ScanString(r Row) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:169
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:158
 	row := r.scanFn.(pgx.Row)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:170
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:159
 	v := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:171
-	err := row.Scan(&v)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:172
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:173
-		return "", errors.New(fmt.Sprintf("pg scan string: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:160
+	if err_7 := row.Scan(&v); err_7 != nil {
+		err_7 = fmt.Errorf("pg scan string: %w", err_7)
+		return "", err_7
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:174
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:161
 	return v, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:177
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:164
 func ScanInt(r Row) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:178
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:165
 	row := r.scanFn.(pgx.Row)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:179
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:166
 	v := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:180
-	err := row.Scan(&v)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:181
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:182
-		return 0, errors.New(fmt.Sprintf("pg scan int: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:167
+	if err_8 := row.Scan(&v); err_8 != nil {
+		err_8 = fmt.Errorf("pg scan int: %w", err_8)
+		return 0, err_8
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:183
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:168
 	return v, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:186
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:171
 func ScanInt64(r Row) (int64, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:187
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:172
 	row := r.scanFn.(pgx.Row)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:188
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:173
 	v := int64(0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:189
-	err := row.Scan(&v)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:190
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:191
-		return 0, errors.New(fmt.Sprintf("pg scan int64: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:174
+	if err_9 := row.Scan(&v); err_9 != nil {
+		err_9 = fmt.Errorf("pg scan int64: %w", err_9)
+		return 0, err_9
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:192
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:175
 	return v, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:195
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:178
 func ScanBool(r Row) (bool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:196
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:179
 	row := r.scanFn.(pgx.Row)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:197
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:180
 	v := false
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:198
-	err := row.Scan(&v)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:199
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:200
-		return false, errors.New(fmt.Sprintf("pg scan bool: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:181
+	if err_10 := row.Scan(&v); err_10 != nil {
+		err_10 = fmt.Errorf("pg scan bool: %w", err_10)
+		return false, err_10
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:201
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:182
 	return v, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:204
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:185
 func ScanFloat64(r Row) (float64, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:205
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:186
 	row := r.scanFn.(pgx.Row)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:206
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:187
 	v := 0.0
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:207
-	err := row.Scan(&v)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:208
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:209
-		return 0.0, errors.New(fmt.Sprintf("pg scan float64: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:188
+	if err_11 := row.Scan(&v); err_11 != nil {
+		err_11 = fmt.Errorf("pg scan float64: %w", err_11)
+		return 0, err_11
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:210
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:189
 	return v, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:213
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:192
 func Next(r Rows) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:214
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:193
 	rows := r.rows.(pgx.Rows)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:215
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:194
 	return rows.Next()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:218
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:197
 func ScanRow(r Rows, dest ...any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:219
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:198
 	rows := r.rows.(pgx.Rows)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:220
-	err := rows.Scan(dest...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:221
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:222
-		return errors.New(fmt.Sprintf("pg scan row: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:199
+	if err_12 := rows.Scan(dest...); err_12 != nil {
+		err_12 = fmt.Errorf("pg scan row: %w", err_12)
+		return err_12
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:223
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:200
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:226
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:203
 func Close(r Rows) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:227
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:204
 	rows := r.rows.(pgx.Rows)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:228
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:205
 	rows.Close()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:231
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:208
 func CollectRows(r Rows) ([]map[string]any, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:232
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:209
 	rows := r.rows.(pgx.Rows)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:233
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:210
 	defer rows.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:234
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:211
 	descs := rows.FieldDescriptions()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:235
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:212
 	results := make([]map[string]any, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:236
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:213
 	for rows.Next() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:237
-		values, err := rows.Values()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:238
-		if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:239
-			return nil, errors.New(fmt.Sprintf("pg collect rows: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:214
+		values, err_13 := rows.Values()
+		if err_13 != nil {
+			err_13 = fmt.Errorf("pg collect rows: %w", err_13)
+			return []map[string]any{}, err_13
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:240
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:215
 		row := make(map[string]any, len(descs))
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:241
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:216
 		for i, desc := range descs {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:242
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:217
 			row[desc.Name] = values[i]
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:243
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:218
 		results = append(results, row)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:244
-	rowsErr := rows.Err()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:245
-	if rowsErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:246
-		return nil, errors.New(fmt.Sprintf("pg collect rows: %v", rowsErr))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:219
+	if err_14 := rows.Err(); err_14 != nil {
+		err_14 = fmt.Errorf("pg collect rows: %w", err_14)
+		return []map[string]any{}, err_14
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:247
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:220
 	return results, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:250
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:223
 func Begin(p Pool) (Tx, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:251
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:224
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:252
-	tx, err := p.pool.Begin(ctxpkg.Value(bg))
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:253
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:254
-		return Tx{}, errors.New(fmt.Sprintf("pg begin: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:225
+	tx, err_15 := p.pool.Begin(ctxpkg.Value(bg))
+	if err_15 != nil {
+		err_15 = fmt.Errorf("pg begin: %w", err_15)
+		return *new(Tx), err_15
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:255
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:226
 	return Tx{tx: tx}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:258
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:229
 func TxQuery(t Tx, sql string, args ...any) (Rows, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:259
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:230
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:260
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:231
 	tx := t.tx.(pgx.Tx)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:261
-	rows, err := tx.Query(ctxpkg.Value(bg), sql, args...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:262
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:263
-		return Rows{}, errors.New(fmt.Sprintf("pg tx query: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:232
+	rows, err_16 := tx.Query(ctxpkg.Value(bg), sql, args...)
+	if err_16 != nil {
+		err_16 = fmt.Errorf("pg tx query: %w", err_16)
+		return *new(Rows), err_16
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:264
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:233
 	return Rows{rows: rows}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:267
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:236
 func TxQueryRow(t Tx, sql string, args ...any) (Row, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:268
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:237
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:269
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:238
 	tx := t.tx.(pgx.Tx)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:270
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:239
 	row := tx.QueryRow(ctxpkg.Value(bg), sql, args...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:271
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:240
 	return Row{scanFn: row}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:274
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:243
 func TxExec(t Tx, sql string, args ...any) (Result, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:275
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:244
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:276
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:245
 	tx := t.tx.(pgx.Tx)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:277
-	tag, err := tx.Exec(ctxpkg.Value(bg), sql, args...)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:278
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:279
-		return Result{}, errors.New(fmt.Sprintf("pg tx exec: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:246
+	tag, err_17 := tx.Exec(ctxpkg.Value(bg), sql, args...)
+	if err_17 != nil {
+		err_17 = fmt.Errorf("pg tx exec: %w", err_17)
+		return *new(Result), err_17
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:280
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:247
 	return Result{tag: tag}, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:283
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:250
 func Commit(t Tx) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:284
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:251
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:285
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:252
 	tx := t.tx.(pgx.Tx)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:286
-	err := tx.Commit(ctxpkg.Value(bg))
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:287
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:288
-		return errors.New(fmt.Sprintf("pg commit: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:253
+	if err_18 := tx.Commit(ctxpkg.Value(bg)); err_18 != nil {
+		err_18 = fmt.Errorf("pg commit: %w", err_18)
+		return err_18
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:289
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:254
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:292
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:257
 func Rollback(t Tx) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:293
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:258
 	bg := ctxpkg.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:294
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:259
 	tx := t.tx.(pgx.Tx)
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:295
-	err := tx.Rollback(ctxpkg.Value(bg))
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:296
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:297
-		return errors.New(fmt.Sprintf("pg rollback: %v", err))
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:260
+	if err_19 := tx.Rollback(ctxpkg.Value(bg)); err_19 != nil {
+		err_19 = fmt.Errorf("pg rollback: %w", err_19)
+		return err_19
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:298
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:261
 	return nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:301
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:264
 func RowsAffected(r Result) int64 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:302
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:265
 	return r.tag.RowsAffected()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:305
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:268
 func ClosePool(p Pool) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:306
+//line /var/home/tluker/repos/go/kukicha/stdlib/pg/pg.kuki:269
 	p.pool.Close()
 }

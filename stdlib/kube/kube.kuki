@@ -175,44 +175,31 @@ func nsItem(n NamespaceItem) reference corev1.Namespace
 
 # Connect creates a Cluster using the default kubeconfig (~/.kube/config).
 func Connect() (Cluster, error)
-    home, err := os.UserHomeDir()
-    if err != empty
-        return Cluster{}, fmt.Errorf("kube connect: %w", err)
+    home := os.UserHomeDir() onerr explain "kube connect"
     kubeconfig := filepath.Join(home, ".kube", "config")
-    config, cfgErr := clientcmd.BuildConfigFromFlags("", kubeconfig)
-    if cfgErr != empty
-        return Cluster{}, fmt.Errorf("kube connect: %w", cfgErr)
-    cs, csErr := kubernetes.NewForConfig(config)
-    if csErr != empty
-        return Cluster{}, fmt.Errorf("kube connect: %w", csErr)
+    config := clientcmd.BuildConfigFromFlags("", kubeconfig) onerr explain "kube connect"
+    cs := kubernetes.NewForConfig(config) onerr explain "kube connect"
     return Cluster{client: cs, namespace: "default"}, empty
 
 # openOnce performs a single connection attempt from the builder configuration.
 func openOnce(cfg Config) (Cluster, error)
     if cfg.inCluster
-        restConfig, err := rest.InClusterConfig()
-        if err != empty
-            return Cluster{}, fmt.Errorf("kube in-cluster: %w", err)
-        cs, csErr := kubernetes.NewForConfig(restConfig)
-        if csErr != empty
-            return Cluster{}, fmt.Errorf("kube open: %w", csErr)
+        restConfig := rest.InClusterConfig() onerr explain "kube in-cluster"
+        cs := kubernetes.NewForConfig(restConfig) onerr explain "kube open"
         return Cluster{client: cs, namespace: "default"}, empty
+    
     kubeconfig := cfg.kubeconfig
     if kubeconfig == ""
-        home, homeErr := os.UserHomeDir()
-        if homeErr != empty
-            return Cluster{}, fmt.Errorf("kube config: %w", homeErr)
+        home := os.UserHomeDir() onerr explain "kube config"
         kubeconfig = filepath.Join(home, ".kube", "config")
+    
     loadingRules := reference of clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig}
     overrides := reference of clientcmd.ConfigOverrides{}
     if cfg.context != ""
         overrides.CurrentContext = cfg.context
-    restConfig, rcErr := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides).ClientConfig()
-    if rcErr != empty
-        return Cluster{}, fmt.Errorf("kube open: %w", rcErr)
-    cs, csErr := kubernetes.NewForConfig(restConfig)
-    if csErr != empty
-        return Cluster{}, fmt.Errorf("kube open: %w", csErr)
+    
+    restConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides).ClientConfig() onerr explain "kube open"
+    cs := kubernetes.NewForConfig(restConfig) onerr explain "kube open"
     return Cluster{client: cs, namespace: "default"}, empty
 
 # Open creates a Cluster from the builder configuration.
@@ -238,64 +225,46 @@ func Open(cfg Config) (Cluster, error)
 
 # ListPods lists all pods in the cluster's current namespace.
 func ListPods(c Cluster) (PodList, error)
-    pods, err := clientset(c).CoreV1().Pods(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
-    if err != empty
-        return PodList{}, fmt.Errorf("kube list pods: %w", err)
+    pods := clientset(c).CoreV1().Pods(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{}) onerr explain "kube list pods"
     return PodList{items: pods}, empty
 
 # ListPodsLabeled lists pods matching a label selector.
 func ListPodsLabeled(c Cluster, selector string) (PodList, error)
-    pods, err := clientset(c).CoreV1().Pods(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{LabelSelector: selector})
-    if err != empty
-        return PodList{}, fmt.Errorf("kube list pods labeled: %w", err)
+    pods := clientset(c).CoreV1().Pods(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{LabelSelector: selector}) onerr explain "kube list pods labeled"
     return PodList{items: pods}, empty
 
 # GetPod retrieves a single pod by name.
 func GetPod(c Cluster, name string) (Pod, error)
-    p, err := clientset(c).CoreV1().Pods(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-    if err != empty
-        return Pod{}, fmt.Errorf("kube get pod: %w", err)
+    p := clientset(c).CoreV1().Pods(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{}) onerr explain "kube get pod"
     return Pod{pod: p}, empty
 
 # DeletePod deletes a pod by name.
 func DeletePod(c Cluster, name string) error
-    err := clientset(c).CoreV1().Pods(c.namespace).Delete(ctx.Value(ctx.Background()), name, metav1.DeleteOptions{})
-    if err != empty
-        return fmt.Errorf("kube delete pod: %w", err)
+    clientset(c).CoreV1().Pods(c.namespace).Delete(ctx.Value(ctx.Background()), name, metav1.DeleteOptions{}) onerr explain "kube delete pod"
     return empty
 
 # --- Deployments ---
 
 # ListDeployments lists all deployments in the cluster's current namespace.
 func ListDeployments(c Cluster) (DeploymentList, error)
-    deps, err := clientset(c).AppsV1().Deployments(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
-    if err != empty
-        return DeploymentList{}, fmt.Errorf("kube list deployments: %w", err)
+    deps := clientset(c).AppsV1().Deployments(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{}) onerr explain "kube list deployments"
     return DeploymentList{items: deps}, empty
 
 # GetDeployment retrieves a single deployment by name.
 func GetDeployment(c Cluster, name string) (Deployment, error)
-    dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-    if err != empty
-        return Deployment{}, fmt.Errorf("kube get deployment: %w", err)
+    dep := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{}) onerr explain "kube get deployment"
     return Deployment{dep: dep}, empty
 
 # ScaleDeployment updates the replica count of a deployment.
 func ScaleDeployment(c Cluster, name string, replicas int32) error
-    scale, err := clientset(c).AppsV1().Deployments(c.namespace).GetScale(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-    if err != empty
-        return fmt.Errorf("kube scale get: %w", err)
+    scale := clientset(c).AppsV1().Deployments(c.namespace).GetScale(ctx.Value(ctx.Background()), name, metav1.GetOptions{}) onerr explain "kube scale get"
     scale.Spec.Replicas = replicas
-    _, updateErr := clientset(c).AppsV1().Deployments(c.namespace).UpdateScale(ctx.Value(ctx.Background()), name, scale, metav1.UpdateOptions{})
-    if updateErr != empty
-        return fmt.Errorf("kube scale update: %w", updateErr)
+    _, err := clientset(c).AppsV1().Deployments(c.namespace).UpdateScale(ctx.Value(ctx.Background()), name, scale, metav1.UpdateOptions{}) onerr explain "kube scale update"
     return empty
 
 # DeleteDeployment deletes a deployment by name.
 func DeleteDeployment(c Cluster, name string) error
-    err := clientset(c).AppsV1().Deployments(c.namespace).Delete(ctx.Value(ctx.Background()), name, metav1.DeleteOptions{})
-    if err != empty
-        return fmt.Errorf("kube delete deployment: %w", err)
+    clientset(c).AppsV1().Deployments(c.namespace).Delete(ctx.Value(ctx.Background()), name, metav1.DeleteOptions{}) onerr explain "kube delete deployment"
     return empty
 
 # RolloutRestart triggers a rollout restart by patching the pod template annotation.
@@ -339,9 +308,7 @@ func WaitPodReady(c Cluster, name string, timeoutSeconds int64) error
         timeoutSeconds = 180
     deadline := time.Now().Add(time.Duration(timeoutSeconds) * time.Second)
     for
-        p, err := clientset(c).CoreV1().Pods(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-        if err != empty
-            return fmt.Errorf("kube wait pod get: %w", err)
+        p := clientset(c).CoreV1().Pods(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{}) onerr explain "kube wait pod get"
         ready := false
         for _, cond in p.Status.Conditions
             if cond.Type == corev1.PodReady
@@ -357,26 +324,20 @@ func WaitPodReady(c Cluster, name string, timeoutSeconds int64) error
 func WaitDeploymentReadyCtx(c Cluster, h ctx.Handle, name string) error
     goCtx := ctx.Value(h)
     for
-        dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(goCtx, name, metav1.GetOptions{})
-        if err != empty
-            return fmt.Errorf("kube wait deployment get: %w", err)
+        dep := clientset(c).AppsV1().Deployments(c.namespace).Get(goCtx, name, metav1.GetOptions{}) onerr explain "kube wait deployment get"
         desired := 1 as int32
         if dep.Spec.Replicas != empty
             desired = dereference dep.Spec.Replicas
         if dep.Status.ObservedGeneration >= dep.Generation and dep.Status.ReadyReplicas >= desired and dep.Status.UpdatedReplicas >= desired
             return empty
-        ctxErr := goCtx.Err()
-        if ctxErr != empty
-            return fmt.Errorf("kube wait deployment: %w", ctxErr)
+        goCtx.Err() onerr explain "kube wait deployment"
         time.Sleep(2 * time.Second)
 
 # WaitPodReadyCtx waits for pod readiness until the provided context is canceled.
 func WaitPodReadyCtx(c Cluster, h ctx.Handle, name string) error
     goCtx := ctx.Value(h)
     for
-        p, err := clientset(c).CoreV1().Pods(c.namespace).Get(goCtx, name, metav1.GetOptions{})
-        if err != empty
-            return fmt.Errorf("kube wait pod get: %w", err)
+        p := clientset(c).CoreV1().Pods(c.namespace).Get(goCtx, name, metav1.GetOptions{}) onerr explain "kube wait pod get"
         ready := false
         for _, cond in p.Status.Conditions
             if cond.Type == corev1.PodReady
@@ -384,50 +345,38 @@ func WaitPodReadyCtx(c Cluster, h ctx.Handle, name string) error
                 break
         if ready
             return empty
-        ctxErr := goCtx.Err()
-        if ctxErr != empty
-            return fmt.Errorf("kube wait pod: %w", ctxErr)
+        goCtx.Err() onerr explain "kube wait pod"
         time.Sleep(1 * time.Second)
 
 # --- Services ---
 
 # ListServices lists all services in the cluster's current namespace.
 func ListServices(c Cluster) (ServiceList, error)
-    svcs, err := clientset(c).CoreV1().Services(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{})
-    if err != empty
-        return ServiceList{}, fmt.Errorf("kube list services: %w", err)
+    svcs := clientset(c).CoreV1().Services(c.namespace).List(ctx.Value(ctx.Background()), metav1.ListOptions{}) onerr explain "kube list services"
     return ServiceList{items: svcs}, empty
 
 # GetService retrieves a single service by name.
 func GetService(c Cluster, name string) (Service, error)
-    svc, err := clientset(c).CoreV1().Services(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-    if err != empty
-        return Service{}, fmt.Errorf("kube get service: %w", err)
+    svc := clientset(c).CoreV1().Services(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{}) onerr explain "kube get service"
     return Service{svc: svc}, empty
 
 # --- Nodes ---
 
 # ListNodes lists all nodes in the cluster.
 func ListNodes(c Cluster) (NodeList, error)
-    nodes, err := clientset(c).CoreV1().Nodes().List(ctx.Value(ctx.Background()), metav1.ListOptions{})
-    if err != empty
-        return NodeList{}, fmt.Errorf("kube list nodes: %w", err)
+    nodes := clientset(c).CoreV1().Nodes().List(ctx.Value(ctx.Background()), metav1.ListOptions{}) onerr explain "kube list nodes"
     return NodeList{items: nodes}, empty
 
 # GetNode retrieves a single node by name.
 func GetNode(c Cluster, name string) (Node, error)
-    n, err := clientset(c).CoreV1().Nodes().Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-    if err != empty
-        return Node{}, fmt.Errorf("kube get node: %w", err)
+    n := clientset(c).CoreV1().Nodes().Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{}) onerr explain "kube get node"
     return Node{node: n}, empty
 
 # --- Namespaces ---
 
 # ListNamespaces lists all namespaces in the cluster.
 func ListNamespaces(c Cluster) (NamespaceList, error)
-    nsList, err := clientset(c).CoreV1().Namespaces().List(ctx.Value(ctx.Background()), metav1.ListOptions{})
-    if err != empty
-        return NamespaceList{}, fmt.Errorf("kube list namespaces: %w", err)
+    nsList := clientset(c).CoreV1().Namespaces().List(ctx.Value(ctx.Background()), metav1.ListOptions{}) onerr explain "kube list namespaces"
     return NamespaceList{items: nsList}, empty
 
 # --- List accessors ---

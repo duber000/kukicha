@@ -249,6 +249,7 @@ func (g *Generator) generateFunctionLiteral(lit *ast.FunctionLiteral) string {
 		autoImports:    g.autoImports,
 		isStdlibIter:   g.isStdlibIter,
 		sourceFile:     g.sourceFile,
+		exprTypes:      g.exprTypes,
 	}
 
 	var result strings.Builder
@@ -323,6 +324,7 @@ func (g *Generator) generateArrowLambda(lambda *ast.ArrowLambda) string {
 			funcDefaults:   g.funcDefaults,
 			isStdlibIter:   g.isStdlibIter,
 			sourceFile:     g.sourceFile,
+			exprTypes:      g.exprTypes,
 		}
 
 		for _, stmt := range lambda.Block.Statements {

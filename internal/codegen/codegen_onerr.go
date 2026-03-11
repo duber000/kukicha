@@ -581,8 +581,17 @@ func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClau
 	// Generate unique error variable name
 	errVar := g.uniqueId("err")
 
-	// Generate: if err := expression; err != nil { handler }
-	g.writeLine(fmt.Sprintf("if %s := %s; %s != nil {", errVar, g.exprToString(expr), errVar))
+	// Check if the expression returns multiple values (e.g. file.Write returns (n, err))
+	// If so, we need to discard the non-error values.
+	prefix := ""
+	if count, ok := g.inferReturnCount(expr); ok && count > 1 {
+		for i := 0; i < count-1; i++ {
+			prefix += "_, "
+		}
+	}
+
+	// Generate: if [_,] err := expression; err != nil { handler }
+	g.writeLine(fmt.Sprintf("if %s%s := %s; %s != nil {", prefix, errVar, g.exprToString(expr), errVar))
 	g.indent++
 
 	// Generate the error handler (no variable names for statement-level)

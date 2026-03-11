@@ -56,6 +56,7 @@ func TestSmartBoolAndString(t reference testing.T)
     str, err3 := cast.SmartString(10)
     if err3 != empty or str != "10"
         t.Fatalf("SmartString should convert int to string: {err3}")
+    
     str2, err4 := cast.SmartString(empty)
     if err4 != empty or str2 != ""
         t.Fatalf("SmartString should handle empty value: {err4}")

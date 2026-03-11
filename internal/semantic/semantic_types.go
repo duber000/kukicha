@@ -123,6 +123,43 @@ func (a *Analyzer) typeAnnotationToTypeInfo(typeAnn ast.TypeAnnotation) *TypeInf
 	}
 }
 
+// isReferenceType checks if a type can be nil
+func (a *Analyzer) isReferenceType(t *TypeInfo) bool {
+	if t == nil {
+		return false
+	}
+	switch t.Kind {
+	case TypeKindReference, TypeKindList, TypeKindMap, TypeKindChannel, TypeKindFunction, TypeKindInterface:
+		return true
+	case TypeKindNamed:
+		if t.Name == "any" || t.Name == "any2" || t.Name == "error" || t.Name == "interface{}" {
+			return true
+		}
+		
+		// If qualified name (contains dot), assume it might be a reference/interface (e.g. io.Reader)
+		// We can't verify external types, so be lenient and let Go compiler catch errors.
+		if strings.Contains(t.Name, ".") {
+			return true
+		}
+
+		// Resolve named type to see if it's an interface or reference type alias
+		sym := a.symbolTable.Resolve(t.Name)
+		if sym != nil {
+			if sym.Kind == SymbolInterface {
+				return true
+			}
+			if sym.Kind == SymbolType {
+				return a.isReferenceType(sym.Type)
+			}
+		}
+		return false
+	case TypeKindUnknown:
+		return true // Allow leniently
+	default:
+		return false
+	}
+}
+
 // typesCompatible checks if two types are compatible
 func (a *Analyzer) typesCompatible(t1, t2 *TypeInfo) bool {
 	if t1 == nil || t2 == nil {
@@ -142,6 +179,18 @@ func (a *Analyzer) typesCompatible(t1, t2 *TypeInfo) bool {
 		return true
 	}
 
+	// error interface accepts structs and named types (we defer implementation check to Go compiler)
+	if t1.Kind == TypeKindNamed && t1.Name == "error" {
+		if t2.Kind == TypeKindStruct || t2.Kind == TypeKindNamed || t2.Kind == TypeKindReference {
+			return true
+		}
+	}
+	if t2.Kind == TypeKindNamed && t2.Name == "error" {
+		if t1.Kind == TypeKindStruct || t1.Kind == TypeKindNamed || t1.Kind == TypeKindReference {
+			return true
+		}
+	}
+
 	// Special case: time.Duration is compatible with int64 (Duration is defined as int64 in Go)
 	if (t1.Kind == TypeKindNamed && t1.Name == "time.Duration" && t2.Kind == TypeKindInt) ||
 		(t2.Kind == TypeKindNamed && t2.Name == "time.Duration" && t1.Kind == TypeKindInt) {
@@ -150,6 +199,14 @@ func (a *Analyzer) typesCompatible(t1, t2 *TypeInfo) bool {
 
 	// Must be same kind
 	if t1.Kind != t2.Kind {
+		// Nil is compatible with reference types
+		if t1.Kind == TypeKindNil {
+			return a.isReferenceType(t2)
+		}
+		if t2.Kind == TypeKindNil {
+			return a.isReferenceType(t1)
+		}
+
 		return false
 	}
 

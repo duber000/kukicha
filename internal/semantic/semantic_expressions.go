@@ -64,7 +64,17 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) (result *TypeInfo) {
 		if e.Type != nil {
 			return a.typeAnnotationToTypeInfo(e.Type)
 		}
-		return &TypeInfo{Kind: TypeKindUnknown}
+		return &TypeInfo{Kind: TypeKindNil}
+	case *ast.StructLiteralExpr:
+		structType := a.typeAnnotationToTypeInfo(e.Type)
+
+		// Analyze fields to ensure their types are recorded and expressions validated
+		for _, field := range e.Fields {
+			// TODO: Validate field name and type against struct definition
+			a.analyzeExpression(field.Value)
+		}
+
+		return structType
 	case *ast.MakeExpr:
 		return a.typeAnnotationToTypeInfo(e.Type)
 	case *ast.ReceiveExpr:
@@ -246,6 +256,11 @@ func (a *Analyzer) analyzeIdentifier(ident *ast.Identifier) *TypeInfo {
 	symbol := a.symbolTable.Resolve(ident.Value)
 	if symbol != nil {
 		return symbol.Type
+	}
+
+	// empty keyword parsed as identifier (when used as argument)
+	if ident.Value == "empty" {
+		return &TypeInfo{Kind: TypeKindNil}
 	}
 
 	// min/max are builtins added in Go 1.21; allow them when not shadowed

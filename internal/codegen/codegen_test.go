@@ -2609,6 +2609,7 @@ func Run() int
 
 	gen := New(program)
 	gen.SetExprReturnCounts(analyzer.ReturnCounts())
+	gen.SetExprTypes(analyzer.ExprTypes())
 	output, err := gen.Generate()
 	if err != nil {
 		t.Fatalf("codegen error: %v", err)

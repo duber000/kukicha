@@ -109,11 +109,11 @@ func TestSmartBoolAndString(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:58
 		t.Fatalf("SmartString should convert int to string: %v", err3)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:59
-	str2, err4 := cast.SmartString(nil)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:60
-	if (err4 != nil) || (str2 != "") {
+	str2, err4 := cast.SmartString(nil)
 //line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:61
+	if (err4 != nil) || (str2 != "") {
+//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast_test.kuki:62
 		t.Fatalf("SmartString should handle empty value: %v", err4)
 	}
 }
