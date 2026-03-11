@@ -629,6 +629,40 @@ switch
         print("New")
 ```
 
+### Piped Switch — Routing Values Directly
+
+In the main loop, we piped the command directly into a `switch`:
+
+```kukicha
+command |> switch
+    when "quit", "exit", "q"
+        print("Goodbye!")
+        break
+    when "help"
+        PrintHelp()
+```
+
+This is equivalent to `switch command`, but uses the pipe `|>` to feed the value in. This is especially useful when the value comes from a chain of transformations — you can pipe and switch in one flow without an intermediate variable.
+
+### Typed Piped Switch (`|> switch as v`) — Branching on Type
+
+Sometimes you have a value whose exact type isn't known — for example, data from a JSON API where a field might be a string, a number, or a list. A **typed piped switch** lets you branch on what the value actually is:
+
+```kukicha
+response |> switch as v
+    when string
+        print("Got text: {v}")
+    when int
+        print("Got number: {v}")
+    when list of string
+        for item in v
+            print("  - {item}")
+    otherwise
+        print("Unknown type")
+```
+
+The `as v` binding gives you a correctly-typed variable in each branch — so in the `when string` branch, `v` is a `string` you can use directly. This avoids manual type assertions and makes the code easier to read.
+
 ### Arrow Lambdas (`=>`) — Concise Inline Functions
 
 ```kukicha
@@ -834,6 +868,7 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | **Arrow Lambdas** | Concise inline functions with `(r Repo) => expr` |
 | **`empty`** | Check for null/missing values |
 | **`switch`/`when`** | Clean command dispatch with multiple matches per branch |
+| **`\|> switch as v`** | Branch on a value's type with typed piped switch |
 | **Command Loop** | Read input, bare `for`, `break`, and `continue` |
 | **`fetch` + `json`** | Fetch and parse data from web APIs |
 | **`cli`** | Build one-shot command interfaces with args, flags, and actions |
