@@ -248,6 +248,15 @@ You need it (via `make generate`) when:
 You do **not** need it when:
 - Editing the body of an existing function without changing its signature
 
+### When to run `make gengostdlib`
+
+This regenerates `internal/semantic/go_stdlib_gen.go`, which contains return counts **and per-position type info** for Go stdlib functions (e.g., `os.ReadFile` → 2 returns: `[]byte`, `error`). The generator (`cmd/gengostdlib/main.go`) uses `go/importer` to extract signatures from Go's compiled export data.
+
+You need it when:
+- Adding a new Go stdlib function to the curated list in `cmd/gengostdlib/main.go`
+
+The curated list covers ~100 functions across `os`, `strconv`, `fmt`, `net`, `net/url`, `io`, `bufio`, `strings`, `bytes`, `time`, `sync`, and more. Instance methods (e.g., `bufio.Scanner.Scan`) remain hand-coded in `semantic_calls.go` since `go/importer` extracts package-level functions only.
+
 ### Adding a new stdlib package
 
 1. Create `stdlib/<pkg>/<pkg>.kuki` with a `petiole <pkg>` declaration
