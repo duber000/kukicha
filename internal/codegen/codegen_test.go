@@ -2378,6 +2378,48 @@ func Risky(value string) (any, error)
 	}
 }
 
+func TestTypedPipedSwitchComputedReturnCodegen(t *testing.T) {
+	input := `import "os/exec"
+
+func ExitCodeOrOne(err error) int
+    code := err |> switch as exitErr
+        when reference exec.ExitError
+            return exitErr.ExitCode()
+        otherwise
+            return 1
+    return code
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.New(program)
+	if semanticErrors := analyzer.Analyze(); len(semanticErrors) > 0 {
+		t.Fatalf("semantic errors: %v", semanticErrors)
+	}
+
+	gen := New(program)
+	gen.SetExprTypes(analyzer.ExprTypes())
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func() int {") {
+		t.Errorf("expected typed IIFE 'func() int {', got: %s", output)
+	}
+	if !strings.Contains(output, "return exitErr.ExitCode()") {
+		t.Errorf("expected computed return to be preserved, got: %s", output)
+	}
+}
+
 func TestOnErrPipeChainFull(t *testing.T) {
 	input := `import "stdlib/fetch"
 func Run()

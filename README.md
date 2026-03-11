@@ -155,7 +155,7 @@ import "stdlib/files"
 import "stdlib/string"
 
 func main()
-    content := files.Read("notes.txt") onerr panic "can't read file: {error}"
+    content := "notes.txt" |> files.Read() onerr panic "can't read file: {error}"
     lines := content |> string.Split("\n")
     for line in lines
         if line |> string.Contains("TODO")

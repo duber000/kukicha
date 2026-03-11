@@ -357,6 +357,36 @@ func TestTypedPipedSwitchSemantic(t *testing.T) {
 	}
 }
 
+func TestTypedPipedSwitchComputedReturnSemantic(t *testing.T) {
+	input := `import "os/exec"
+
+func ExitCodeOrOne(err error) int
+    code := err |> switch as exitErr
+        when reference exec.ExitError
+            return exitErr.ExitCode()
+        otherwise
+            return 1
+    return code
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	if len(errors) > 0 {
+		t.Fatalf("unexpected semantic errors: %v", errors)
+	}
+}
+
 func TestBooleanExpression(t *testing.T) {
 	input := `func Test(x int, y int) bool
     return x > 5 and y < 10

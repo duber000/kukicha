@@ -38,8 +38,7 @@ func Run(cmd string) (string, error)
 # Returns an error if the command fails
 # Example: out := shell.Output("git", "status")
 func Output(name string, many args string) (string, error)
-    cmd := New(name, many args)
-    result := Execute(cmd)
+    result := New(name, many args) |> Execute()
     if not Success(result)
         errStr := GetError(result) as string
         return "", error "{errStr}"
@@ -112,12 +111,12 @@ func buildExecCmd(cmd Command) reference exec.Cmd
 func getExitCode(err error) int
     if err == empty
         return 0
-
-    switch err as exitErr
+    code := err |> switch as exitErr
         when reference exec.ExitError
             return exitErr.ExitCode()
         otherwise
             return 1
+    return code
 
 # Result Helper Functions
 

@@ -87,30 +87,51 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 	}
 }
 
-func (a *Analyzer) analyzePipedSwitchReturns(body *ast.BlockStmt) {
+func (a *Analyzer) mergePipedSwitchReturnType(inferred, candidate *TypeInfo) *TypeInfo {
+	if candidate == nil {
+		return inferred
+	}
+	if inferred == nil || inferred.Kind == TypeKindUnknown {
+		return candidate
+	}
+	if candidate.Kind == TypeKindUnknown {
+		return inferred
+	}
+	if !a.typesCompatible(inferred, candidate) || !a.typesCompatible(candidate, inferred) {
+		return &TypeInfo{Kind: TypeKindUnknown}
+	}
+	return inferred
+}
+
+func (a *Analyzer) analyzePipedSwitchReturns(body *ast.BlockStmt) *TypeInfo {
 	if body == nil {
-		return
+		return nil
 	}
+	var inferred *TypeInfo
 	for _, s := range body.Statements {
-		if ret, ok := s.(*ast.ReturnStmt); ok {
-			for _, v := range ret.Values {
-				a.analyzeExpression(v)
-			}
+		ret, ok := s.(*ast.ReturnStmt)
+		if !ok || len(ret.Values) == 0 {
+			continue
 		}
+		retType := a.analyzeExpression(ret.Values[0])
+		inferred = a.mergePipedSwitchReturnType(inferred, retType)
 	}
+	return inferred
 }
 
 // analyzePipedSwitchBody analyzes only the return expressions inside a piped
-// switch body. Full statement analysis is skipped to avoid false errors from
-// the condition-switch bool check and outer-function return-count validation.
-func (a *Analyzer) analyzePipedSwitchBody(stmt ast.PipedSwitchBody) {
+// switch body and returns the inferred value type for the switch expression.
+// Full statement analysis is skipped to avoid false errors from the
+// condition-switch bool check and outer-function return-count validation.
+func (a *Analyzer) analyzePipedSwitchBody(stmt ast.PipedSwitchBody, leftType *TypeInfo) *TypeInfo {
+	var inferred *TypeInfo
 	switch s := stmt.(type) {
 	case *ast.SwitchStmt:
 		for _, c := range s.Cases {
-			a.analyzePipedSwitchReturns(c.Body)
+			inferred = a.mergePipedSwitchReturnType(inferred, a.analyzePipedSwitchReturns(c.Body))
 		}
 		if s.Otherwise != nil {
-			a.analyzePipedSwitchReturns(s.Otherwise.Body)
+			inferred = a.mergePipedSwitchReturnType(inferred, a.analyzePipedSwitchReturns(s.Otherwise.Body))
 		}
 	case *ast.TypeSwitchStmt:
 		for _, c := range s.Cases {
@@ -118,11 +139,11 @@ func (a *Analyzer) analyzePipedSwitchBody(stmt ast.PipedSwitchBody) {
 			bindingSymbol := &Symbol{
 				Name:    s.Binding.Value,
 				Kind:    SymbolVariable,
-				Type:    &TypeInfo{Kind: TypeKindUnknown},
+				Type:    a.typeAnnotationToTypeInfo(c.Type),
 				Defined: s.Binding.Pos(),
 			}
 			a.symbolTable.Define(bindingSymbol)
-			a.analyzePipedSwitchReturns(c.Body)
+			inferred = a.mergePipedSwitchReturnType(inferred, a.analyzePipedSwitchReturns(c.Body))
 			a.symbolTable.ExitScope()
 		}
 		if s.Otherwise != nil {
@@ -130,14 +151,18 @@ func (a *Analyzer) analyzePipedSwitchBody(stmt ast.PipedSwitchBody) {
 			bindingSymbol := &Symbol{
 				Name:    s.Binding.Value,
 				Kind:    SymbolVariable,
-				Type:    &TypeInfo{Kind: TypeKindUnknown},
+				Type:    leftType,
 				Defined: s.Binding.Pos(),
 			}
 			a.symbolTable.Define(bindingSymbol)
-			a.analyzePipedSwitchReturns(s.Otherwise.Body)
+			inferred = a.mergePipedSwitchReturnType(inferred, a.analyzePipedSwitchReturns(s.Otherwise.Body))
 			a.symbolTable.ExitScope()
 		}
 	}
+	if inferred == nil {
+		return &TypeInfo{Kind: TypeKindUnknown}
+	}
+	return inferred
 }
 
 func (a *Analyzer) analyzeSwitchStmt(stmt *ast.SwitchStmt) {

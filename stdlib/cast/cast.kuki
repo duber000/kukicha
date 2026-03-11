@@ -90,17 +90,19 @@ func SmartBool(value any) (bool, error)
 func SmartString(value any) (string, error)
     if value == empty
         return "", empty
-    switch value as v
+    result := value |> switch as v
         when string
-            return v, empty
+            return v
         when int
-            return strconv.Itoa(v), empty
+            return strconv.Itoa(v)
         when int64
-            return strconv.FormatInt(v, 10), empty
+            return strconv.FormatInt(v, 10)
         when float64
-            return fmt.Sprintf("%g", v), empty
+            return fmt.Sprintf("%g", v)
         when bool
-            return strconv.FormatBool(v), empty
+            return strconv.FormatBool(v)
         when list of byte
-            return v as string, empty
-    return fmt.Sprintf("%v", value), empty
+            return v as string
+        otherwise
+            return fmt.Sprintf("%v", value)
+    return result, empty

@@ -55,16 +55,17 @@ func Schema(props []SchemaProperty) map[string]any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:55
 func Required(schema any, names []string) any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:56
+	result := schema
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:57
 	switch s := schema.(type) {
 	case map[string]any:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:58
-		s["required"] = names
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:59
-		return s
-	default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:61
-		return schema
+		s["required"] = names
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:60
+		result = s
 	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:61
+	return result
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/mcp/mcp.kuki:65

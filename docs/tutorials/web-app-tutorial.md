@@ -145,7 +145,7 @@ function sendLink(response http.ResponseWriter, request reference http.Request)
     response |> .Header() |> .Set("Content-Type", "application/json")
 
     # Convert the link to JSON and write it to the response
-    json.MarshalWrite(response, link) onerr return
+    link |> json.MarshalWrite(response, _) onerr return
 ```
 
 **💡 Tip:** When piping into a method that belongs to the value itself, use the dot shorthand:
@@ -176,7 +176,7 @@ type ShortenRequest
 function handleShorten(response http.ResponseWriter, request reference http.Request)
     # Parse the incoming JSON — UnmarshalRead reads from any io.Reader
     input := ShortenRequest{}
-    json.UnmarshalRead(request.Body, reference of input) onerr
+    request.Body |> json.UnmarshalRead(reference of input) onerr
         response |> .WriteHeader(400)
         response |> fmt.Fprintln("Invalid JSON")
         return
@@ -271,7 +271,7 @@ function handleShorten on store reference LinkStore(response http.ResponseWriter
 
     # Parse the incoming JSON — limit to 64 KB to prevent OOM from huge bodies
     input := ShortenRequest{}
-    httphelper.ReadJSONLimit(request, 65536, reference of input) onerr
+    request |> httphelper.ReadJSONLimit(65536, reference of input) onerr
         httphelper.JSONBadRequest(response, "Invalid JSON")
         return
 

@@ -97,16 +97,14 @@ func Unmarshal(data list of byte, target any) error
 # Uses placeholder strategy: todo |> MarshalWrite(response, _)
 # Example: todo |> json.MarshalWrite(w, _) onerr return
 func MarshalWrite(writer io.Writer, value any) error
-    encoder := json.NewEncoder(writer)
-    return encoder.Encode(value)
+    return writer |> NewEncoder() |> Encode(value)
 
 # UnmarshalRead reads JSON directly from an io.Reader into the target value
 # Target must be a pointer (use "reference of" in Kukicha)
 # Perfect for HTTP request bodies with pipe placeholder strategy
 # Example: request.Body |> json.UnmarshalRead(_, reference todo) onerr return
 func UnmarshalRead(reader io.Reader, target any) error
-    decoder := json.NewDecoder(reader)
-    return decoder.Decode(target)
+    return reader |> NewDecoder() |> Decode(target)
 
 # DecodeRead reads JSON from an io.Reader into a typed value using the sample pattern.
 # Pass a typed empty value to drive type inference — no pre-declared variable needed.

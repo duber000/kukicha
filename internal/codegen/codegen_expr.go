@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
+	"github.com/duber000/kukicha/internal/semantic"
 )
 
 func (g *Generator) exprToString(expr ast.Expression) string {
@@ -185,7 +186,7 @@ func (g *Generator) generatePipedSwitchExpr(expr *ast.PipedSwitchExpr) string {
 		return ""
 	}
 
-	returnType := g.inferPipedSwitchReturnType(expr.Switch)
+	returnType := g.pipedSwitchReturnType(expr)
 
 	var result strings.Builder
 	if returnType != "" {
@@ -199,6 +200,15 @@ func (g *Generator) generatePipedSwitchExpr(expr *ast.PipedSwitchExpr) string {
 	}
 	result.WriteString("}()")
 	return result.String()
+}
+
+func (g *Generator) pipedSwitchReturnType(expr *ast.PipedSwitchExpr) string {
+	if g.exprTypes != nil {
+		if ti, ok := g.exprTypes[expr]; ok && ti != nil && ti.Kind != semantic.TypeKindUnknown {
+			return g.typeInfoToGoString(ti)
+		}
+	}
+	return g.inferPipedSwitchReturnType(expr.Switch)
 }
 
 // inferPipedSwitchReturnType scans a switch body for return statements and

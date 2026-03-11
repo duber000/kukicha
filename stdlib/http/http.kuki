@@ -89,7 +89,7 @@ func JSONInternalError(w http.ResponseWriter, message string) error
 # Target must be a pointer (use "reference of" in Kukicha)
 # Example: http.ReadJSON(r, reference user) onerr return http.JSONBadRequest(w, "invalid json")
 func ReadJSON(r reference http.Request, target any) error
-    return json.UnmarshalRead(r.Body, target)
+    return r.Body |> json.UnmarshalRead(target)
 
 # ReadJSONAndClose reads the request body as JSON and closes it
 # Target must be a pointer (use "reference of" in Kukicha)
@@ -97,14 +97,15 @@ func ReadJSON(r reference http.Request, target any) error
 # Example: http.ReadJSONAndClose(r, reference user) onerr return http.JSONBadRequest(w, "invalid json")
 func ReadJSONAndClose(r reference http.Request, target any) error
     defer r.Body.Close()
-    return json.UnmarshalRead(r.Body, target)
+    return r.Body |> json.UnmarshalRead(target)
 
 # ReadJSONLimit reads at most maxBytes from the request body and unmarshals as JSON
 # Use this instead of ReadJSON to prevent OOM from oversized request bodies
 # Example: http.ReadJSONLimit(r, 1 << 20, reference user) onerr return http.JSONBadRequest(w, "body too large or invalid json")
 func ReadJSONLimit(r reference http.Request, maxBytes int64, target any) error
-    limited := io.LimitReader(r.Body, maxBytes)
-    return json.UnmarshalRead(limited, target)
+    return r.Body
+        |> io.LimitReader(maxBytes)
+        |> json.UnmarshalRead(target)
 
 # GetQueryParam returns a query parameter value, or empty string if not present
 # Example: name := http.GetQueryParam(r, "name")

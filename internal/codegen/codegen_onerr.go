@@ -33,7 +33,7 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 		// inside a goto-label block, then assign the switch result only when
 		// the entire chain succeeded.
 		if ps, ok := values[0].(*ast.PipedSwitchExpr); ok {
-			returnType := g.inferPipedSwitchReturnType(ps.Switch)
+			returnType := g.pipedSwitchReturnType(ps)
 			if returnType == "" {
 				returnType = "any"
 			}

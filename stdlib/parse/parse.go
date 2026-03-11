@@ -40,93 +40,104 @@ func JsonLines(data string) ([]string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:33
 func JsonPretty(value any) ([]byte, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:34
-	bytes, err := json.MarshalPretty(value)
+	pipe_1 := value
+	pipe_2, err_3 := json.MarshalPretty(pipe_1)
+	if err_3 != nil {
+		return []byte{}, err_3
+	}
+	pretty := pipe_2
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:35
-	return bytes, err
+	return pretty, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:41
-func Csv(data string) ([][]string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:42
-	reader := csv.NewReader(bytes.NewBufferString(data))
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:43
-	records, err := reader.ReadAll()
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:37
+func readAllCSV(reader *csv.Reader) ([][]string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:38
+	return reader.ReadAll()
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:44
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:45
-		return nil, err
+func Csv(data string) ([][]string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:48
+	pipe_4 := data
+	pipe_5 := bytes.NewBufferString(pipe_4)
+	pipe_6 := csv.NewReader(pipe_5)
+	pipe_7, err_8 := readAllCSV(pipe_6)
+	if err_8 != nil {
+		return [][]string{}, err_8
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:46
+	records := pipe_7
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:50
 	return records, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:53
-func CsvWithHeader(data string) ([]map[string]string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:54
-	reader := csv.NewReader(bytes.NewBufferString(data))
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:55
-	records, err := reader.ReadAll()
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:56
-	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:57
-		return nil, err
+func CsvWithHeader(data string) ([]map[string]string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:61
+	pipe_9 := data
+	pipe_10 := bytes.NewBufferString(pipe_9)
+	pipe_11 := csv.NewReader(pipe_10)
+	pipe_12, err_13 := readAllCSV(pipe_11)
+	if err_13 != nil {
+		return []map[string]string{}, err_13
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:59
+	records := pipe_12
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:64
 	if len(records) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:60
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:65
 		return nil, errors.New("no data in CSV")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:62
-	headers := records[0]
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:63
-	result := make([]map[string]string, 0, (len(records) - 1))
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:66
-	numRecords := len(records)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:67
+	headers := records[0]
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:68
+	result := make([]map[string]string, 0, (len(records) - 1))
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:71
+	numRecords := len(records)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:72
 	{
 		_iStart, _iEnd, _iStep := 1, numRecords, 1
 		if _iStart > _iEnd {
 			_iStep = -1
 		}
 		for i := _iStart; i != _iEnd; i += _iStep {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:68
-			row := records[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:69
-			rowMap := make(map[string]string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:72
-			numHeaders := len(headers)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:73
-			numCols := len(row)
+			row := records[i]
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:74
-			maxCols := min(numCols, numHeaders)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:76
-			for j := range maxCols {
+			rowMap := make(map[string]string)
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:77
+			numHeaders := len(headers)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:78
+			numCols := len(row)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:79
+			maxCols := min(numCols, numHeaders)
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:81
+			for j := range maxCols {
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:82
 				rowMap[headers[j]] = row[j]
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:79
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:84
 			result = append(result, rowMap)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:81
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:86
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:86
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:91
 func Yaml(data string) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:87
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:92
 	return []byte(data), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:91
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:96
 func YamlPretty(value any) ([]byte, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:92
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:97
 	yamlData, err := yaml.Marshal(value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:93
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:98
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:94
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:99
 		return nil, err
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:95
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:100
 	return yamlData, nil
 }

@@ -188,9 +188,10 @@ func createHTTPRequest(method string, url string, bodyData any) (reference http.
 # Returns the HTTP response and any error that occurred
 # Example: resp, err := fetch.Get("https://api.example.com/data")
 func Get(url string) (reference http.Response, error)
-    req := New(url)
-    resp, err := Do(req)
-    return resp, err
+    resp := New(url)
+        |> Do()
+        onerr return
+    return resp, empty
 
 # SafeGet performs an SSRF-protected HTTP GET request
 # Uses netguard to block requests to internal IPs, cloud metadata endpoints,
@@ -199,21 +200,23 @@ func Get(url string) (reference http.Response, error)
 func SafeGet(url string) (reference http.Response, error)
     guard := netguard.NewSSRFGuard()
     transport := netguard.HTTPTransport(guard)
-    req := New(url)
-    req.transport = transport
-    resp, err := Do(req)
-    return resp, err
+    resp := New(url)
+        |> Transport(transport)
+        |> Do()
+        onerr return
+    return resp, empty
 
 # Post performs an HTTP POST request (quick function)
 # Automatically serializes data to JSON using stdlib/json
 # Returns the HTTP response and any error that occurred
 # Example: resp, err := fetch.Post(userData, "https://api.example.com/users")
 func Post(data any, url string) (reference http.Response, error)
-    req := New(url)
-    req = Method(req, "POST")
-    req.body = data  # Set the body data for automatic JSON serialization
-    resp, err := Do(req)
-    return resp, err
+    resp := New(url)
+        |> Method("POST")
+        |> Body(data)
+        |> Do()
+        onerr return
+    return resp, empty
 
 # CheckStatus checks if response status is successful (2xx)
 # Returns the response if successful, error otherwise

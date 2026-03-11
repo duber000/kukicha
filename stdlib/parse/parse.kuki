@@ -31,18 +31,22 @@ func JsonLines(data string) (list of string, error)
 # Uses encoding/json MarshalIndent for pretty-printing
 # Example: config |> parse.JsonPretty()
 func JsonPretty(value any) (list of byte, error)
-    bytes, err := json.MarshalPretty(value)
-    return bytes, err
+    pretty := value |> json.MarshalPretty() onerr return
+    return pretty, empty
+
+func readAllCSV(reader reference csv.Reader) (list of list of string, error)
+    return reader.ReadAll()
 
 # Csv parses a CSV string into a list of records
 # Each record is a list of strings representing the columns
 # Returns the parsed records and any error that occurred
 # Example: csvStr |> parse.Csv()
 func Csv(data string) (list of list of string, error)
-    reader := csv.NewReader(bytes.NewBufferString(data))
-    records, err := reader.ReadAll()
-    if err != empty
-        return empty, err
+    records := data
+        |> bytes.NewBufferString()
+        |> csv.NewReader()
+        |> readAllCSV()
+        onerr return
     return records, empty
 
 # CsvWithHeader parses a CSV string with headers
@@ -51,10 +55,11 @@ func Csv(data string) (list of list of string, error)
 # Returns the parsed records and any error that occurred
 # Example: csvStr |> parse.CsvWithHeader()
 func CsvWithHeader(data string) (list of map of string to string, error)
-    reader := csv.NewReader(bytes.NewBufferString(data))
-    records, err := reader.ReadAll()
-    if err != empty
-        return empty, err
+    records := data
+        |> bytes.NewBufferString()
+        |> csv.NewReader()
+        |> readAllCSV()
+        onerr return
 
     if len(records) == 0
         return empty, error "no data in CSV"

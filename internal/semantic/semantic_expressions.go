@@ -41,8 +41,7 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) (result *TypeInfo) {
 		// expressions in each case — full statement analysis would misfire on the
 		// bare switch / return-value checks that assume a function context.
 		leftType := a.analyzeExpression(e.Left)
-		a.analyzePipedSwitchBody(e.Switch)
-		return leftType
+		return a.analyzePipedSwitchBody(e.Switch, leftType)
 	case *ast.CallExpr:
 		types := a.analyzeCallExpr(e, nil)
 		if len(types) > 0 {

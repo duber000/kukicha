@@ -13,9 +13,7 @@ import "time"
 # Returns the file contents and any error that occurred
 # Example: "config.json" |> files.Read()
 func Read(path string) (list of byte, error)
-    data, err := os.ReadFile(path)
-    if err != empty
-        return empty, err
+    data := path |> os.ReadFile() onerr return
     return data, empty
 
 # ReadBytes reads the entire contents of a file as a byte slice

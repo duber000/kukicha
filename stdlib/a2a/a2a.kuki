@@ -208,13 +208,14 @@ func streamRequest(agent Agent, text string, contextID string, onText TextHandle
 
 # resultToTask converts a SendMessageResult (union of *Task or *Message) to our simplified Task.
 func resultToTask(result a2a.SendMessageResult) Task
-    switch result as r
+    task := result |> switch as r
         when reference a2a.Task
             return taskFromA2A(r)
         when reference a2a.Message
             return Task{ID: r.TaskID as string, ContextID: r.ContextID, Text: extractPartsText(r.Parts)}
         otherwise
             return empty Task
+    return task
 
 # taskFromA2A converts an a2a.Task to our simplified Task type.
 func taskFromA2A(t reference a2a.Task) Task

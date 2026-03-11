@@ -270,6 +270,22 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 		}
 	}
 
+	// exec.ExitError methods used by typed piped switch result inference
+	if objType != nil && objType.Kind == TypeKindNamed {
+		if objType.Name == "exec.ExitError" || objType.Name == "*exec.ExitError" {
+			switch methodName {
+			case "ExitCode":
+				types := []*TypeInfo{{Kind: TypeKindInt}}
+				a.recordReturnCount(expr, len(types))
+				return types
+			case "Error":
+				types := []*TypeInfo{{Kind: TypeKindString}}
+				a.recordReturnCount(expr, len(types))
+				return types
+			}
+		}
+	}
+
 	// bufio.Scanner methods (needed for SSE streaming in llm.kuki)
 	if objType != nil && objType.Kind == TypeKindNamed {
 		if objType.Name == "bufio.Scanner" || objType.Name == "*bufio.Scanner" {

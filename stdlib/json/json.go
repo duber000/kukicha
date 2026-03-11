@@ -112,30 +112,26 @@ func Unmarshal(data []byte, target any) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:99
 func MarshalWrite(writer io.Writer, value any) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:100
-	encoder := json.NewEncoder(writer)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:101
-	return encoder.Encode(value)
+	return Encode(NewEncoder(writer), value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:107
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:106
 func UnmarshalRead(reader io.Reader, target any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:108
-	decoder := json.NewDecoder(reader)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:109
-	return decoder.Decode(target)
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:107
+	return Decode(NewDecoder(reader), target)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:114
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:112
 func DecodeRead[T any](reader io.Reader, sample T) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:115
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:113
 	data := sample
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:116
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:114
 	decoder := json.NewDecoder(reader)
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:117
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:115
 	if err_1 := decoder.Decode(&data); err_1 != nil {
 		err_1 = fmt.Errorf("failed to decode json: %w", err_1)
 		return *new(T), err_1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:118
+//line /var/home/tluker/repos/go/kukicha/stdlib/json/json.kuki:116
 	return data, nil
 }
