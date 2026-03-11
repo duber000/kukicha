@@ -66,7 +66,7 @@ Add the keyword string → `TokenType` mapping in `token.go`'s `keywords` map an
 - Recursive descent
 - **Error collection** (not fail-fast): errors are appended to `p.errors`, parsing continues. This allows multiple errors per compile.
 - `peekToken()` calls `skipIgnoredTokens()` first, which skips `TOKEN_COMMENT` and `TOKEN_SEMICOLON`
-- Context-sensitive keywords: `list`, `map`, `channel` are only keywords when followed by `of` in a type context — this allows them as variable names elsewhere. `empty` and `error` are context-sensitive too: `isIdentifierFollower()` checks if the next token indicates identifier usage (assignment, operators, delimiters); if so, they parse as identifiers instead of `EmptyExpr`/`ErrorExpr`
+- Context-sensitive keywords: `list`, `map`, `channel` are only keywords when followed by `of` in a type context — this allows them as variable names elsewhere. `empty` and `error` are context-sensitive too: `isIdentifierFollower()` checks if the next token indicates identifier usage (assignment, operators, delimiters); if so, they parse as identifiers instead of `EmptyExpr`/`ErrorExpr`. For `empty` specifically, the parser also treats it as an identifier when followed by `|>`, `)`, or `,` — so `empty |> iterator.Values()` and `print(empty)` work when `empty` is a user-defined variable.
 
 ### Key helpers
 
@@ -159,6 +159,10 @@ In codegen, value-producing piped switches are wrapped in an IIFE. Regular piped
 | `symbols.go` | Symbol table and type info |
 | `stdlib_registry_gen.go` | Generated stdlib return-count registry |
 
+### TypeKind: `TypeKindNil`
+
+The `empty` keyword has its own type kind (`TypeKindNil`) in `symbols.go`. This distinguishes `empty`-as-nil-literal from `empty`-as-variable-name. When semantic analysis encounters an `EmptyExpr` or an `Identifier` named `"empty"` that isn't shadowed by a user variable, it records `TypeKindNil`. Codegen checks this to decide whether to emit `nil` or preserve the variable name `empty`. The `isReferenceType()` helper in `semantic_types.go` determines which types are nil-compatible (references, lists, maps, channels, functions, interfaces), and `typesCompatible()` uses it so `TypeKindNil` is accepted where a reference type is expected.
+
 ### Two-pass analysis
 
 1. **`collectDeclarations()`** — registers all top-level types, interfaces, and function signatures into the symbol table (so functions can call each other regardless of order)
@@ -231,6 +235,19 @@ Pipe chain onerr (`generateOnErrPipeChain`, `generateOnErrPipeChainWithLabels`) 
 Error-only detection uses `isErrorOnlyReturn()` which checks both `exprReturnCounts` (count == 1) and `exprTypes` (type is `error`). Known error-only Go stdlib functions (`os.WriteFile`, `os.Remove`, etc.) are registered in `knownExternalReturns` in `semantic_calls.go` with proper type info.
 
 Piped switches participate in the same machinery. For `pipe |> switch ... onerr ...`, codegen first lowers the upstream pipe chain with error checks, then runs either a regular switch or typed type-switch over the final pipe value. Typed piped switches are supported in both statement position and value-producing declarations/assignments.
+
+### `empty` keyword in codegen
+
+When codegen encounters an `Identifier` with value `"empty"`, it consults `exprTypes` to decide what to emit:
+
+- **`TypeKindNil`** (not shadowed) → emit `nil`. In generic stdlib context with a placeholder return type, emit `*new(T)` or `*new(K)` instead.
+- **Not `TypeKindNil`** (shadowed by a user variable) → emit `empty` as-is, preserving the variable name.
+
+This prevents `empty |> iterator.Values()` from silently becoming `iterator.Values(nil)` when the user declared `empty := list of int{}`.
+
+### Arrow lambdas: no implicit `it`
+
+Arrow lambdas do **not** support an implicit `it` parameter. This feature was removed — lambdas must declare their parameters explicitly. If you see `() => print(it)`, that's a bug; it should be `(it SomeType) => print(it)`. The removed code lived in `codegen_walk.go` (`exprHasItIdentifier`, `blockHasItIdentifier`) and `semantic_expressions.go` (`arrowLambdaHasIt`).
 
 ### Generics via placeholders
 
