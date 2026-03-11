@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -501,8 +502,9 @@ func TestPipeContinuation(t *testing.T) {
 
 func TestErrorCases(t *testing.T) {
 	tests := []struct {
-		name  string
-		input string
+		name        string
+		input       string
+		expectedMsg string // substring to assert in the error message; empty means just check err != nil
 	}{
 		{
 			name:  "unterminated string",
@@ -513,12 +515,28 @@ func TestErrorCases(t *testing.T) {
 			input: `func test()
 	print "bad"
 `,
+			expectedMsg: "tabs are not allowed",
 		},
 		{
-			name: "invalid indentation",
+			name: "invalid indentation 2 spaces",
 			input: `func test()
   print "bad"
 `,
+			expectedMsg: "found 2 spaces",
+		},
+		{
+			name: "invalid indentation 3 spaces",
+			input: `func test()
+   print "bad"
+`,
+			expectedMsg: "found 3 spaces, but Kukicha requires multiples of 4 spaces (nearest valid: 4)",
+		},
+		{
+			name: "inconsistent dedent (jump too large on indent)",
+			input: `func test()
+        x := 1
+`,
+			expectedMsg: "indentation error: indentation can only increase by 4 spaces at a time (jumped from 0 to 8)",
 		},
 	}
 
@@ -529,6 +547,10 @@ func TestErrorCases(t *testing.T) {
 
 			if err == nil {
 				t.Errorf("Expected error for %s, got none", tt.name)
+				return
+			}
+			if tt.expectedMsg != "" && !strings.Contains(err.Error(), tt.expectedMsg) {
+				t.Errorf("Expected error containing %q, got: %v", tt.expectedMsg, err)
 			}
 		})
 	}

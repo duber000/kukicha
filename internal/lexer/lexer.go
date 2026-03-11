@@ -312,7 +312,7 @@ func (l *Lexer) handleIndentation() {
 
 	// Check for tabs
 	if tabs > 0 {
-		l.error("Use 4 spaces for indentation, not tabs")
+		l.error("indentation error: tabs are not allowed — use 4 spaces per indent level")
 		return
 	}
 
@@ -323,7 +323,11 @@ func (l *Lexer) handleIndentation() {
 
 	// Must be multiple of 4
 	if spaces%4 != 0 {
-		l.error(fmt.Sprintf("Indentation must be multiple of 4 spaces, got %d", spaces))
+		nearest := ((spaces + 2) / 4) * 4
+		if nearest == 0 {
+			nearest = 4
+		}
+		l.error(fmt.Sprintf("indentation error: found %d spaces, but Kukicha requires multiples of 4 spaces (nearest valid: %d)", spaces, nearest))
 		return
 	}
 
@@ -332,12 +336,16 @@ func (l *Lexer) handleIndentation() {
 	if spaces > currentIndent {
 		// Indent
 		if spaces != currentIndent+4 {
-			l.error(fmt.Sprintf("Indentation can only increase by 4 spaces, got increase of %d", spaces-currentIndent))
+			l.error(fmt.Sprintf("indentation error: indentation can only increase by 4 spaces at a time (jumped from %d to %d)", currentIndent, spaces))
 			return
 		}
 		l.indentStack = append(l.indentStack, spaces)
 		l.addToken(TOKEN_INDENT)
 	} else if spaces < currentIndent {
+		// Capture valid levels before popping, for use in the error message.
+		validLevels := make([]int, len(l.indentStack))
+		copy(validLevels, l.indentStack)
+
 		// Dedent (possibly multiple levels)
 		for len(l.indentStack) > 1 && l.indentStack[len(l.indentStack)-1] > spaces {
 			l.addToken(TOKEN_DEDENT)
@@ -346,7 +354,11 @@ func (l *Lexer) handleIndentation() {
 
 		// Verify we landed on a valid indentation level
 		if l.indentStack[len(l.indentStack)-1] != spaces {
-			l.error("Indentation mismatch")
+			parts := make([]string, len(validLevels))
+			for i, v := range validLevels {
+				parts[i] = fmt.Sprintf("%d", v)
+			}
+			l.error(fmt.Sprintf("indentation error: dedent does not match any outer indent level (found %d spaces, expected one of: %s)", spaces, strings.Join(parts, ", ")))
 		}
 	}
 }
