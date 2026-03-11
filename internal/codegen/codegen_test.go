@@ -2293,6 +2293,91 @@ func ConvertEvent(event string) string
 	}
 }
 
+func TestTypedPipedSwitchCodegen(t *testing.T) {
+	input := `func Convert(value any) string
+    result := value |> switch as v
+        when string
+            return v
+        when int
+            return "number"
+        otherwise
+            return "other"
+    return result
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.New(program)
+	analyzer.Analyze()
+
+	gen := New(program)
+	gen.SetExprTypes(analyzer.ExprTypes())
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "func() string {") {
+		t.Errorf("expected typed IIFE 'func() string {', got: %s", output)
+	}
+	if !strings.Contains(output, "switch v := value.(type) {") {
+		t.Errorf("expected typed piped switch codegen, got: %s", output)
+	}
+	if !strings.Contains(output, "case string:") {
+		t.Errorf("expected string case, got: %s", output)
+	}
+}
+
+func TestOnErrTypedPipedSwitchCodegen(t *testing.T) {
+	input := `func Convert(value string) string
+    result := value |> Risky() |> switch as v
+        when string
+            return v
+        otherwise
+            return "other"
+    onerr "fallback"
+    return result
+
+func Risky(value string) (any, error)
+    return value, empty
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.New(program)
+	analyzer.Analyze()
+
+	gen := New(program)
+	gen.SetExprTypes(analyzer.ExprTypes())
+	gen.SetExprReturnCounts(analyzer.ReturnCounts())
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "switch v := pipe_") {
+		t.Errorf("expected typed switch over piped temp var, got: %s", output)
+	}
+	if !strings.Contains(output, "var result string = \"fallback\"") {
+		t.Errorf("expected onerr default initialization, got: %s", output)
+	}
+}
+
 func TestOnErrPipeChainFull(t *testing.T) {
 	input := `import "stdlib/fetch"
 func Run()
@@ -2306,7 +2391,7 @@ func Run()
 	if len(parseErrors) > 0 {
 		t.Fatalf("parse errors: %v", parseErrors)
 	}
-	
+
 	analyzer := semantic.New(program)
 	analyzer.Analyze()
 
@@ -2339,7 +2424,7 @@ func PrintActiveUsers(users list of string)
 	if len(parseErrors) > 0 {
 		t.Fatalf("parse errors: %v", parseErrors)
 	}
-	
+
 	gen := New(program)
 	output, err := gen.Generate()
 	if err != nil {

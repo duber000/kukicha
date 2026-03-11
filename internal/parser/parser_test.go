@@ -1711,6 +1711,55 @@ func TestParseTypeSwitchNoOtherwise(t *testing.T) {
 	}
 }
 
+func TestParseTypedPipedSwitchExpr(t *testing.T) {
+	input := `func Convert(value any) string
+    result := value |> switch as v
+        when string
+            return v
+        when int
+            return "number"
+        otherwise
+            return "other"
+    return result
+`
+
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	varDecl, ok := fn.Body.Statements[0].(*ast.VarDeclStmt)
+	if !ok {
+		t.Fatalf("expected VarDeclStmt, got %T", fn.Body.Statements[0])
+	}
+
+	ps, ok := varDecl.Values[0].(*ast.PipedSwitchExpr)
+	if !ok {
+		t.Fatalf("expected PipedSwitchExpr, got %T", varDecl.Values[0])
+	}
+
+	ts, ok := ps.Switch.(*ast.TypeSwitchStmt)
+	if !ok {
+		t.Fatalf("expected TypeSwitchStmt, got %T", ps.Switch)
+	}
+
+	if ts.Binding.Value != "v" {
+		t.Fatalf("expected binding 'v', got %s", ts.Binding.Value)
+	}
+	if len(ts.Cases) != 2 {
+		t.Fatalf("expected 2 type cases, got %d", len(ts.Cases))
+	}
+	if ts.Otherwise == nil {
+		t.Fatal("expected otherwise branch, got nil")
+	}
+}
+
 func TestParseSelectStatement(t *testing.T) {
 	input := `func Run(ch channel of string, done channel of string, out channel of string)
     select

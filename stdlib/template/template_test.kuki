@@ -30,6 +30,13 @@ func TestRenderSimple(t reference testing.T)
             want: "",
             wantErr: false,
         },
+        RenderSimpleCase{
+            name: "invalid template returns error",
+            template: "{{",
+            data: map of string to any{},
+            want: "",
+            wantErr: true,
+        },
     }
     for tc in cases
         t.Run(tc.name, (t reference testing.T) =>
@@ -64,6 +71,13 @@ func TestExecute(t reference testing.T)
             data: map of string to any{},
             want: "",
             wantErr: false,
+        },
+        ExecuteCase{
+            name: "invalid builder template returns error",
+            template: "{{",
+            data: map of string to any{},
+            want: "",
+            wantErr: true,
         },
     }
     for tc in cases
@@ -102,6 +116,13 @@ func TestHTMLRenderSimple(t reference testing.T)
             data: map of string to any{"Name": "World"},
             want: "Hello World",
             wantErr: false,
+        },
+        HTMLRenderSimpleCase{
+            name: "invalid html template returns error",
+            template: "{{",
+            data: map of string to any{},
+            want: "",
+            wantErr: true,
         },
     }
     for tc in cases

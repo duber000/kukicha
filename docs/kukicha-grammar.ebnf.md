@@ -281,8 +281,9 @@ OrExpression ::= PipeExpression { "or" PipeExpression }
 
 PipeExpression ::= AndExpression { "|>" ( AndExpression | PipedSwitch ) }
 
-PipedSwitch ::= "switch" NEWLINE INDENT { WhenClause } [ OtherwiseClause ] DEDENT
-    # Piped switch: expr |> switch ... when ... otherwise ...
+PipedSwitch ::= "switch" [ "as" Identifier ] NEWLINE INDENT { WhenClause | TypeWhenClause } [ OtherwiseClause ] DEDENT
+    # Regular piped switch: expr |> switch ... when ... otherwise ...
+    # Typed piped switch: expr |> switch as v ... when string / when reference T ...
     # The compiler wraps the switch in an IIFE and uses the piped value as the switch expression
 
 AndExpression ::= BitwiseOrExpression { "and" BitwiseOrExpression }

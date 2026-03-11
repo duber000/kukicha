@@ -327,6 +327,36 @@ func TestConditionSwitchRequiresBoolWhenBranches(t *testing.T) {
 	}
 }
 
+func TestTypedPipedSwitchSemantic(t *testing.T) {
+	input := `func Convert(value any) string
+    result := value |> switch as v
+        when string
+            return v
+        when int
+            return "number"
+        otherwise
+            return "other"
+    return result
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := New(program)
+	errors := analyzer.Analyze()
+
+	if len(errors) > 0 {
+		t.Fatalf("unexpected semantic errors: %v", errors)
+	}
+}
+
 func TestBooleanExpression(t *testing.T) {
 	input := `func Test(x int, y int) bool
     return x > 5 and y < 10

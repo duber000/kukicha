@@ -26,16 +26,11 @@ func Data(td TemplateData, data map of string to any) TemplateData
 # This is the final step in the pipeline that produces output
 # WARNING: Uses text/template — no HTML escaping. For HTML output use HTMLExecute.
 func Execute(td TemplateData) (string, error)
-    tmpl, err := template.New("template").Parse(td.Content)
-    if err != empty
-        return "", err
-
-    buf := bytes.Buffer{}
-    err = tmpl.Execute(reference of buf, td.Data)
-    if err != empty
-        return "", err
-
-    return buf.String(), empty
+    result := td.Content
+        |> parseTextTemplate()
+        |> executeTextTemplate(td.Data)
+        onerr return
+    return result, empty
 
 # Parse parses template content from a string
 # Returns a TemplateData for piping
@@ -55,48 +50,33 @@ func WithContent(td TemplateData, content string) TemplateData
 # RenderSimple is a convenience function that renders a template in one call
 # Takes a template string and data map, returns the rendered string
 func RenderSimple(tmplStr string, data map of string to any) (string, error)
-    tmpl, err := template.New("template").Parse(tmplStr)
-    if err != empty
-        return "", err
-
-    buf := bytes.Buffer{}
-    err = tmpl.Execute(reference of buf, data)
-    if err != empty
-        return "", err
-
-    return buf.String(), empty
+    result := Render(tmplStr)
+        |> Data(data)
+        |> Execute()
+        onerr return
+    return result, empty
 
 # HTMLExecute executes the template with HTML auto-escaping via html/template
 # Use this instead of Execute when the output is rendered in a browser
 # Prevents XSS by escaping {{ }} values that contain user-controlled content
 # Example: result, err := tmplData |> template.HTMLExecute()
 func HTMLExecute(td TemplateData) (string, error)
-    tmpl, err := htmltmpl.New("template").Parse(td.Content)
-    if err != empty
-        return "", err
-
-    buf := bytes.Buffer{}
-    err = tmpl.Execute(reference of buf, td.Data)
-    if err != empty
-        return "", err
-
-    return buf.String(), empty
+    result := td.Content
+        |> parseHTMLTemplate()
+        |> executeHTMLTemplate(td.Data)
+        onerr return
+    return result, empty
 
 # HTMLRenderSimple renders a template with HTML escaping in one call
 # Use this instead of RenderSimple when the output will be sent as HTML
 # Prevents XSS: values substituted via {{ }} are automatically escaped
 # Example: result, err := template.HTMLRenderSimple("<b>{{.Name}}</b>", data)
 func HTMLRenderSimple(tmplStr string, data map of string to any) (string, error)
-    tmpl, err := htmltmpl.New("template").Parse(tmplStr)
-    if err != empty
-        return "", err
-
-    buf := bytes.Buffer{}
-    err = tmpl.Execute(reference of buf, data)
-    if err != empty
-        return "", err
-
-    return buf.String(), empty
+    result := Render(tmplStr)
+        |> Data(data)
+        |> HTMLExecute()
+        onerr return
+    return result, empty
 
 # Must wraps a template execution result and panics on error
 # Useful for templates that should always work
@@ -112,3 +92,23 @@ func Funcs(td TemplateData, funcMap map of string to any) TemplateData
     # For now, we'll just return the template data as-is
     # Full implementation would require storing and applying funcMap
     return td
+
+func parseTextTemplate(content string) (reference template.Template, error)
+    return template.New("template").Parse(content)
+
+func executeTextTemplate(tmpl reference template.Template, data map of string to any) (string, error)
+    buf := bytes.Buffer{}
+    err := tmpl.Execute(reference of buf, data)
+    if err != empty
+        return "", err
+    return buf.String(), empty
+
+func parseHTMLTemplate(content string) (reference htmltmpl.Template, error)
+    return htmltmpl.New("template").Parse(content)
+
+func executeHTMLTemplate(tmpl reference htmltmpl.Template, data map of string to any) (string, error)
+    buf := bytes.Buffer{}
+    err := tmpl.Execute(reference of buf, data)
+    if err != empty
+        return "", err
+    return buf.String(), empty

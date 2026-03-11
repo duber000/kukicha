@@ -74,6 +74,12 @@ user.Role |> switch
         denyAccess()
     otherwise
         checkPermissions()
+
+event |> switch as e
+    when string
+        print(e)
+    when reference TaskEvent
+        print(e.Status)
 ```
 
 ### 4. Dot Shorthand

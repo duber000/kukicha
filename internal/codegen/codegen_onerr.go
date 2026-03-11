@@ -33,7 +33,7 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 		// inside a goto-label block, then assign the switch result only when
 		// the entire chain succeeded.
 		if ps, ok := values[0].(*ast.PipedSwitchExpr); ok {
-			returnType := g.inferPipedSwitchReturnType(ps.SwitchStmt)
+			returnType := g.inferPipedSwitchReturnType(ps.Switch)
 			if returnType == "" {
 				returnType = "any"
 			}
@@ -545,10 +545,18 @@ func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClau
 
 		if ok {
 			// Now run the switch
-			originalExpr := ps.SwitchStmt.Expression
-			ps.SwitchStmt.Expression = &ast.Identifier{Value: finalVal}
-			g.generateSwitchStmt(ps.SwitchStmt)
-			ps.SwitchStmt.Expression = originalExpr
+			switch stmt := ps.Switch.(type) {
+			case *ast.SwitchStmt:
+				originalExpr := stmt.Expression
+				stmt.Expression = &ast.Identifier{Value: finalVal}
+				g.generateSwitchStmt(stmt)
+				stmt.Expression = originalExpr
+			case *ast.TypeSwitchStmt:
+				originalExpr := stmt.Expression
+				stmt.Expression = &ast.Identifier{Value: finalVal}
+				g.generateTypeSwitchStmt(stmt)
+				stmt.Expression = originalExpr
+			}
 
 			g.writeLine(fmt.Sprintf("goto %s", endLabel))
 			g.indent--
@@ -702,4 +710,3 @@ func (g *Generator) stmtHasExplain(stmt ast.Statement) bool {
 	}
 	return false
 }
-

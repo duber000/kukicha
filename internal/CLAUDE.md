@@ -124,6 +124,17 @@ func (s *XxxStmt) stmtNode() {} // or declNode() / exprNode() / typeNode()
 
 Always store the keyword's `lexer.Token` as the first field — it carries line/column for error messages.
 
+### PipedSwitchExpr
+
+`PipedSwitchExpr` represents both regular and typed piped switches:
+
+- Regular: `expr |> switch`
+- Typed: `expr |> switch as v`
+
+The AST stores the body as a `PipedSwitchBody`, implemented by both `*SwitchStmt` and `*TypeSwitchStmt`. `parsePipeExpr()` creates a `PipedSwitchExpr` when it sees `TOKEN_SWITCH` after `|>`, and dispatches to `parseSwitchBody()` or `parseTypeSwitchBody()` depending on whether `as binding` is present.
+
+In codegen, value-producing piped switches are wrapped in an IIFE. Regular piped switches generate `switch left { ... }`; typed piped switches generate `switch v := left.(type) { ... }`. Return-type inference for typed piped switches special-cases `return v` so the IIFE can stay strongly typed instead of falling back to `any`.
+
 ### OnErrClause
 
 `OnErrClause` is **not** a standalone `Statement` or `Expression`. It is an optional field on `VarDeclStmt`, `AssignStmt`, and `ExpressionStmt`. The `Handler` field holds the parsed error handler expression (`PanicExpr`, `EmptyExpr`, `DiscardExpr`, `ReturnExpr`, or a default value expression).
@@ -156,6 +167,8 @@ Always store the keyword's `lexer.Token` as the first field — it carries line/
 ### exprReturnCounts
 
 The analyzer infers how many values an expression returns and stores it in `a.exprReturnCounts[expr]`. Codegen reads this to decide whether to emit `val, err := f()` (2-return) vs `val := f()` (1-return) for pipe + onerr chains.
+
+For typed piped switches, semantic analysis does not fully analyze the switch as a statement. Instead it analyzes the piped input expression plus the return expressions inside each case body, entering a fresh scope per case/otherwise branch so the `as` binding is defined there.
 
 When a new stdlib function is added to a `.kuki` file, run `make genstdlibregistry` to regenerate `stdlib_registry_gen.go` so the analyzer knows the function's return count.
 
@@ -208,6 +221,8 @@ make genstdlibregistry   # or: make generate (runs everything)
 ### onerr code generation
 
 `onerr` is the most complex part of codegen. The generator wraps the call in a temporary assignment, checks the error, and runs the handler. `currentOnErrVar` holds the generated error variable name so that `{error}` in string interpolation inside the block resolves to it.
+
+Piped switches participate in the same machinery. For `pipe |> switch ... onerr ...`, codegen first lowers the upstream pipe chain with error checks, then runs either a regular switch or typed type-switch over the final pipe value. Typed piped switches are supported in both statement position and value-producing declarations/assignments.
 
 ### Generics via placeholders
 

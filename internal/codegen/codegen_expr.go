@@ -157,9 +157,6 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 
 func (g *Generator) generatePipedSwitchExpr(expr *ast.PipedSwitchExpr) string {
 	left := g.exprToString(expr.Left)
-	originalExpr := expr.SwitchStmt.Expression
-	expr.SwitchStmt.Expression = &ast.Identifier{Value: left}
-
 	tempGen := &Generator{
 		program:        g.program,
 		output:         strings.Builder{},
@@ -173,10 +170,22 @@ func (g *Generator) generatePipedSwitchExpr(expr *ast.PipedSwitchExpr) string {
 		exprTypes:      g.exprTypes,
 	}
 
-	tempGen.generateSwitchStmt(expr.SwitchStmt)
-	expr.SwitchStmt.Expression = originalExpr
+	switch stmt := expr.Switch.(type) {
+	case *ast.SwitchStmt:
+		originalExpr := stmt.Expression
+		stmt.Expression = &ast.Identifier{Value: left}
+		tempGen.generateSwitchStmt(stmt)
+		stmt.Expression = originalExpr
+	case *ast.TypeSwitchStmt:
+		originalExpr := stmt.Expression
+		stmt.Expression = &ast.Identifier{Value: left}
+		tempGen.generateTypeSwitchStmt(stmt)
+		stmt.Expression = originalExpr
+	default:
+		return ""
+	}
 
-	returnType := g.inferPipedSwitchReturnType(expr.SwitchStmt)
+	returnType := g.inferPipedSwitchReturnType(expr.Switch)
 
 	var result strings.Builder
 	if returnType != "" {
@@ -197,25 +206,71 @@ func (g *Generator) generatePipedSwitchExpr(expr *ast.PipedSwitchExpr) string {
 // when no cases return a value (void IIFE). Returns "any" when returns exist
 // but types cannot be inferred consistently. Uses exprTypes populated by the
 // semantic analyzer to resolve expression types.
-func (g *Generator) inferPipedSwitchReturnType(stmt *ast.SwitchStmt) string {
+func (g *Generator) inferPipedSwitchReturnType(stmt ast.PipedSwitchBody) string {
 	var returnExprs []ast.Expression
-
-	for _, c := range stmt.Cases {
-		if c.Body == nil {
-			continue
+	inferTypedReturn := func(expr ast.Expression, binding string, typeAnn ast.TypeAnnotation) string {
+		if id, ok := expr.(*ast.Identifier); ok && id.Value == binding && typeAnn != nil {
+			return g.generateTypeAnnotation(typeAnn)
 		}
-		for _, s := range c.Body.Statements {
+		return g.inferExprType(expr)
+	}
+
+	collectReturns := func(body *ast.BlockStmt) {
+		if body == nil {
+			return
+		}
+		for _, s := range body.Statements {
 			if ret, ok := s.(*ast.ReturnStmt); ok && len(ret.Values) > 0 {
 				returnExprs = append(returnExprs, ret.Values[0])
 			}
 		}
 	}
-	if stmt.Otherwise != nil && stmt.Otherwise.Body != nil {
-		for _, s := range stmt.Otherwise.Body.Statements {
-			if ret, ok := s.(*ast.ReturnStmt); ok && len(ret.Values) > 0 {
-				returnExprs = append(returnExprs, ret.Values[0])
+
+	switch s := stmt.(type) {
+	case *ast.SwitchStmt:
+		for _, c := range s.Cases {
+			collectReturns(c.Body)
+		}
+		if s.Otherwise != nil {
+			collectReturns(s.Otherwise.Body)
+		}
+	case *ast.TypeSwitchStmt:
+		var inferredType string
+		collectTypedReturns := func(body *ast.BlockStmt, typeAnn ast.TypeAnnotation) bool {
+			if body == nil {
+				return true
+			}
+			for _, stmt := range body.Statements {
+				ret, ok := stmt.(*ast.ReturnStmt)
+				if !ok || len(ret.Values) == 0 {
+					continue
+				}
+				ts := inferTypedReturn(ret.Values[0], s.Binding.Value, typeAnn)
+				if ts == "" {
+					inferredType = "any"
+					return false
+				}
+				if inferredType == "" {
+					inferredType = ts
+				} else if ts != inferredType {
+					inferredType = "any"
+					return false
+				}
+			}
+			return true
+		}
+		for _, c := range s.Cases {
+			if !collectTypedReturns(c.Body, c.Type) {
+				return "any"
 			}
 		}
+		if s.Otherwise != nil && !collectTypedReturns(s.Otherwise.Body, nil) {
+			return "any"
+		}
+		if inferredType == "" {
+			return ""
+		}
+		return inferredType
 	}
 
 	if len(returnExprs) == 0 {
@@ -879,4 +934,3 @@ func (g *Generator) generateReturnExpr(expr *ast.ReturnExpr) string {
 	}
 	return "return " + strings.Join(values, ", ")
 }
-

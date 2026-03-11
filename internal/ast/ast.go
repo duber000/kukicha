@@ -103,7 +103,7 @@ func (d *ImportDecl) Pos() Position {
 func (d *ImportDecl) declNode() {}
 
 type TypeDecl struct {
-	Token     lexer.Token    // The 'type' token
+	Token     lexer.Token // The 'type' token
 	Name      *Identifier
 	Fields    []*FieldDecl   // nil for type aliases
 	AliasType TypeAnnotation // non-nil for type aliases (e.g., func(...) ...)
@@ -263,11 +263,11 @@ func (t *FunctionType) typeNode() {}
 // OnErrClause represents the error handling part of an onerr statement.
 // It is not an AST node itself — it is a field on VarDeclStmt, AssignStmt, and ExpressionStmt.
 type OnErrClause struct {
-	Token          lexer.Token // The 'onerr' token
-	Handler        Expression  // Error handler (panic, error, empty, discard, or default value)
-	Explain        string      // Optional explanation/hint for LLM (e.g., onerr explain "hint message")
-	ShorthandReturn bool       // True for bare "onerr return" — propagate error with zero values
-	Alias          string      // Named alias for the caught error in block handlers (e.g., "onerr as e")
+	Token           lexer.Token // The 'onerr' token
+	Handler         Expression  // Error handler (panic, error, empty, discard, or default value)
+	Explain         string      // Optional explanation/hint for LLM (e.g., onerr explain "hint message")
+	ShorthandReturn bool        // True for bare "onerr return" — propagate error with zero values
+	Alias           string      // Named alias for the caught error in block handlers (e.g., "onerr as e")
 }
 
 // ============================================================================
@@ -397,7 +397,8 @@ func (s *SwitchStmt) TokenLiteral() string { return s.Token.Lexeme }
 func (s *SwitchStmt) Pos() Position {
 	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
 }
-func (s *SwitchStmt) stmtNode() {}
+func (s *SwitchStmt) stmtNode()            {}
+func (s *SwitchStmt) pipedSwitchBodyNode() {}
 
 type WhenCase struct {
 	Token  lexer.Token // The 'when' or 'case' token
@@ -411,7 +412,7 @@ type OtherwiseCase struct {
 }
 
 type SelectStmt struct {
-	Token     lexer.Token    // The 'select' token
+	Token     lexer.Token // The 'select' token
 	Cases     []*SelectCase
 	Otherwise *OtherwiseCase // Optional default case
 }
@@ -443,7 +444,8 @@ func (s *TypeSwitchStmt) TokenLiteral() string { return s.Token.Lexeme }
 func (s *TypeSwitchStmt) Pos() Position {
 	return Position{Line: s.Token.Line, Column: s.Token.Column, File: s.Token.File}
 }
-func (s *TypeSwitchStmt) stmtNode() {}
+func (s *TypeSwitchStmt) stmtNode()            {}
+func (s *TypeSwitchStmt) pipedSwitchBodyNode() {}
 
 // TypeCase: when reference SomeType / when SomeType
 type TypeCase struct {
@@ -953,9 +955,9 @@ func (e *DerefExpr) Pos() Position {
 func (e *DerefExpr) exprNode() {}
 
 type PipedSwitchExpr struct {
-	Token      lexer.Token // The '|>' token
-	Left       Expression  // The value being piped into the switch
-	SwitchStmt *SwitchStmt // The switch block itself
+	Token  lexer.Token     // The '|>' token
+	Left   Expression      // The value being piped into the switch
+	Switch PipedSwitchBody // The switch block itself
 }
 
 func (e *PipedSwitchExpr) TokenLiteral() string { return e.Token.Lexeme }
@@ -964,6 +966,10 @@ func (e *PipedSwitchExpr) Pos() Position {
 }
 func (e *PipedSwitchExpr) exprNode() {}
 
+type PipedSwitchBody interface {
+	Node
+	pipedSwitchBodyNode()
+}
 
 type BlockExpr struct {
 	Token lexer.Token // The INDENT token

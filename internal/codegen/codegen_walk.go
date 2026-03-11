@@ -308,18 +308,30 @@ func (g *Generator) walkExpr(expr ast.Expression, visit func(ast.Expression) boo
 		if g.walkExpr(e.Left, visit) {
 			return true
 		}
-		for _, c := range e.SwitchStmt.Cases {
-			for _, v := range c.Values {
-				if g.walkExpr(v, visit) {
+		switch s := e.Switch.(type) {
+		case *ast.SwitchStmt:
+			for _, c := range s.Cases {
+				for _, v := range c.Values {
+					if g.walkExpr(v, visit) {
+						return true
+					}
+				}
+				if c.Body != nil && g.walkBlock(c.Body, visit) {
 					return true
 				}
 			}
-			if c.Body != nil && g.walkBlock(c.Body, visit) {
+			if s.Otherwise != nil && s.Otherwise.Body != nil && g.walkBlock(s.Otherwise.Body, visit) {
 				return true
 			}
-		}
-		if e.SwitchStmt.Otherwise != nil && e.SwitchStmt.Otherwise.Body != nil && g.walkBlock(e.SwitchStmt.Otherwise.Body, visit) {
-			return true
+		case *ast.TypeSwitchStmt:
+			for _, c := range s.Cases {
+				if c.Body != nil && g.walkBlock(c.Body, visit) {
+					return true
+				}
+			}
+			if s.Otherwise != nil && s.Otherwise.Body != nil && g.walkBlock(s.Otherwise.Body, visit) {
+				return true
+			}
 		}
 	}
 	return false
@@ -624,18 +636,30 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 		if g.exprHasNonPrintfInterpolation(e.Left) {
 			return true
 		}
-		for _, c := range e.SwitchStmt.Cases {
-			for _, v := range c.Values {
-				if g.exprHasNonPrintfInterpolation(v) {
+		switch s := e.Switch.(type) {
+		case *ast.SwitchStmt:
+			for _, c := range s.Cases {
+				for _, v := range c.Values {
+					if g.exprHasNonPrintfInterpolation(v) {
+						return true
+					}
+				}
+				if c.Body != nil && g.blockHasNonPrintfInterpolation(c.Body) {
 					return true
 				}
 			}
-			if c.Body != nil && g.blockHasNonPrintfInterpolation(c.Body) {
+			if s.Otherwise != nil && s.Otherwise.Body != nil && g.blockHasNonPrintfInterpolation(s.Otherwise.Body) {
 				return true
 			}
-		}
-		if e.SwitchStmt.Otherwise != nil && e.SwitchStmt.Otherwise.Body != nil && g.blockHasNonPrintfInterpolation(e.SwitchStmt.Otherwise.Body) {
-			return true
+		case *ast.TypeSwitchStmt:
+			for _, c := range s.Cases {
+				if c.Body != nil && g.blockHasNonPrintfInterpolation(c.Body) {
+					return true
+				}
+			}
+			if s.Otherwise != nil && s.Otherwise.Body != nil && g.blockHasNonPrintfInterpolation(s.Otherwise.Body) {
+				return true
+			}
 		}
 	}
 	return false
@@ -662,5 +686,3 @@ func (g *Generator) needsErrorsPackage() bool {
 		return ok
 	})
 }
-
-

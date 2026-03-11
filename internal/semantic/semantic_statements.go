@@ -87,27 +87,56 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 	}
 }
 
-// analyzePipedSwitchBody analyzes only the return expressions inside a piped
-// switch body. Full statement analysis is skipped to avoid false errors from
-// the condition-switch bool check and outer-function return-count validation.
-func (a *Analyzer) analyzePipedSwitchBody(stmt *ast.SwitchStmt) {
-	analyzeBodyReturns := func(body *ast.BlockStmt) {
-		if body == nil {
-			return
-		}
-		for _, s := range body.Statements {
-			if ret, ok := s.(*ast.ReturnStmt); ok {
-				for _, v := range ret.Values {
-					a.analyzeExpression(v)
-				}
+func (a *Analyzer) analyzePipedSwitchReturns(body *ast.BlockStmt) {
+	if body == nil {
+		return
+	}
+	for _, s := range body.Statements {
+		if ret, ok := s.(*ast.ReturnStmt); ok {
+			for _, v := range ret.Values {
+				a.analyzeExpression(v)
 			}
 		}
 	}
-	for _, c := range stmt.Cases {
-		analyzeBodyReturns(c.Body)
-	}
-	if stmt.Otherwise != nil {
-		analyzeBodyReturns(stmt.Otherwise.Body)
+}
+
+// analyzePipedSwitchBody analyzes only the return expressions inside a piped
+// switch body. Full statement analysis is skipped to avoid false errors from
+// the condition-switch bool check and outer-function return-count validation.
+func (a *Analyzer) analyzePipedSwitchBody(stmt ast.PipedSwitchBody) {
+	switch s := stmt.(type) {
+	case *ast.SwitchStmt:
+		for _, c := range s.Cases {
+			a.analyzePipedSwitchReturns(c.Body)
+		}
+		if s.Otherwise != nil {
+			a.analyzePipedSwitchReturns(s.Otherwise.Body)
+		}
+	case *ast.TypeSwitchStmt:
+		for _, c := range s.Cases {
+			a.symbolTable.EnterScope()
+			bindingSymbol := &Symbol{
+				Name:    s.Binding.Value,
+				Kind:    SymbolVariable,
+				Type:    &TypeInfo{Kind: TypeKindUnknown},
+				Defined: s.Binding.Pos(),
+			}
+			a.symbolTable.Define(bindingSymbol)
+			a.analyzePipedSwitchReturns(c.Body)
+			a.symbolTable.ExitScope()
+		}
+		if s.Otherwise != nil {
+			a.symbolTable.EnterScope()
+			bindingSymbol := &Symbol{
+				Name:    s.Binding.Value,
+				Kind:    SymbolVariable,
+				Type:    &TypeInfo{Kind: TypeKindUnknown},
+				Defined: s.Binding.Pos(),
+			}
+			a.symbolTable.Define(bindingSymbol)
+			a.analyzePipedSwitchReturns(s.Otherwise.Body)
+			a.symbolTable.ExitScope()
+		}
 	}
 }
 

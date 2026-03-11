@@ -33,17 +33,16 @@ func ReadBytes(path string) ([]byte, error) {
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:32
 func Write(data any, path string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:33
-	jsonData, err := json.MarshalPretty(data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:34
-	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:35
-		return err
+	pipe_1 := data
+	pipe_2, err_3 := json.MarshalPretty(pipe_1)
+	if err_3 != nil {
+		return err_3
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:36
-	writeErr := os.WriteFile(path, jsonData, 0644)
+	pipe_4 := os.WriteFile(path, pipe_2, 0644)
+	_ = pipe_4
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:37
-	return writeErr
+	return nil
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:42

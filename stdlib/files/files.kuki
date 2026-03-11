@@ -30,11 +30,11 @@ func ReadBytes(path string) (list of byte, error)
 # Returns any error that occurred
 # Example: data |> files.Write("output.json")
 func Write(data any, path string) error
-    jsonData, err := json.MarshalPretty(data)
-    if err != empty
-        return err
-    writeErr := os.WriteFile(path, jsonData, 0644)
-    return writeErr
+    data
+        |> json.MarshalPretty()
+        |> os.WriteFile(path, _, 0644)
+        onerr return
+    return empty
 
 # WriteString writes a string to a file
 # Returns any error that occurred
@@ -286,4 +286,3 @@ func Watch(pattern string, callback func(string))
                         # File modified
                         lastModified[match] = currentModTime
                         callback(match)
-

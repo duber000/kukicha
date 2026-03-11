@@ -30,125 +30,141 @@ func Data(td TemplateData, data map[string]any) TemplateData {
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:28
 func Execute(td TemplateData) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:29
-	tmpl, err := template.New("template").Parse(td.Content)
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:30
-	if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:31
-		return "", err
+	pipe_1 := td.Content
+	pipe_2, err_3 := parseTextTemplate(pipe_1)
+	if err_3 != nil {
+		return "", err_3
 	}
+	pipe_4, err_5 := executeTextTemplate(pipe_2, td.Data)
+	if err_5 != nil {
+		return "", err_5
+	}
+	result := pipe_4
 //line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:33
-	buf := bytes.Buffer{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:34
-	err = tmpl.Execute(&buf, td.Data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:35
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:36
-		return "", err
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:38
-	return buf.String(), nil
+	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:42
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:37
 func Parse(content string) TemplateData {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:43
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:38
 	return TemplateData{Content: content, Data: make(map[string]any)}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:47
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:42
 func New() TemplateData {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:48
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:43
 	return TemplateData{Content: "", Data: make(map[string]any)}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:46
 func WithContent(td TemplateData, content string) TemplateData {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:47
 	td.Content = content
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:48
 	return td
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:57
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:52
 func RenderSimple(tmplStr string, data map[string]any) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:58
-	tmpl, err := template.New("template").Parse(tmplStr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:59
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:60
-		return "", err
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:55
+	pipe_6 := Render(tmplStr)
+	pipe_7 := Data(pipe_6, data)
+	pipe_8, err_9 := Execute(pipe_7)
+	if err_9 != nil {
+		return "", err_9
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:62
-	buf := bytes.Buffer{}
+	result := pipe_8
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:57
+	return result, nil
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:63
-	err = tmpl.Execute(&buf, data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:64
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:65
-		return "", err
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:67
-	return buf.String(), nil
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:73
 func HTMLExecute(td TemplateData) (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:66
+	pipe_10 := td.Content
+	pipe_11, err_12 := parseHTMLTemplate(pipe_10)
+	if err_12 != nil {
+		return "", err_12
+	}
+	pipe_13, err_14 := executeHTMLTemplate(pipe_11, td.Data)
+	if err_14 != nil {
+		return "", err_14
+	}
+	result := pipe_13
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:68
+	return result, nil
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:74
-	tmpl, err := htmltmpl.New("template").Parse(td.Content)
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:75
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:76
-		return "", err
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:78
-	buf := bytes.Buffer{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:79
-	err = tmpl.Execute(&buf, td.Data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:80
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:81
-		return "", err
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:83
-	return buf.String(), nil
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:89
 func HTMLRenderSimple(tmplStr string, data map[string]any) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:90
-	tmpl, err := htmltmpl.New("template").Parse(tmplStr)
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:91
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:92
-		return "", err
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:77
+	pipe_15 := Render(tmplStr)
+	pipe_16 := Data(pipe_15, data)
+	pipe_17, err_18 := HTMLExecute(pipe_16)
+	if err_18 != nil {
+		return "", err_18
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:94
-	buf := bytes.Buffer{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:95
-	err = tmpl.Execute(&buf, data)
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:96
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:97
-		return "", err
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:99
-	return buf.String(), nil
+	result := pipe_17
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:79
+	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:103
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:83
 func Must(result string, err error) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:104
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:84
 	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:105
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:85
 		panic(err)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:106
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:86
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:110
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:90
 func Funcs(td TemplateData, funcMap map[string]any) TemplateData {
-//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:114
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:94
 	return td
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:96
+func parseTextTemplate(content string) (*template.Template, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:97
+	return template.New("template").Parse(content)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:99
+func executeTextTemplate(tmpl *template.Template, data map[string]any) (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:100
+	buf := bytes.Buffer{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:101
+	err := tmpl.Execute(&buf, data)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:102
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:103
+		return "", err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:104
+	return buf.String(), nil
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:106
+func parseHTMLTemplate(content string) (*htmltmpl.Template, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:107
+	return htmltmpl.New("template").Parse(content)
+}
+
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:109
+func executeHTMLTemplate(tmpl *htmltmpl.Template, data map[string]any) (string, error) {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:110
+	buf := bytes.Buffer{}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:111
+	err := tmpl.Execute(&buf, data)
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:112
+	if err != nil {
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:113
+		return "", err
+	}
+//line /var/home/tluker/repos/go/kukicha/stdlib/template/template.kuki:114
+	return buf.String(), nil
 }
