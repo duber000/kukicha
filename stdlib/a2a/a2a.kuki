@@ -179,7 +179,7 @@ func streamRequest(agent Agent, text string, contextID string, onText TextHandle
     for event, err in agent.Client.SendStreamingMessage(ctxpkg.Value(bg), reference of params)
         if err != empty
             return result, error("a2a stream: {err}")
-        switch event as e
+        event |> switch as e
             when reference a2a.TaskStatusUpdateEvent
                 if onStatus != empty
                     statusMsg := ""
@@ -241,7 +241,7 @@ func taskFromA2A(t reference a2a.Task) Task
 func extractPartsText(parts list of a2a.Part) string
     texts := empty list of string
     for _, p in parts
-        switch p as tp
+        p |> switch as tp
             when a2a.TextPart
                 texts = append(texts, tp.Text)
     return string.Join(texts, "")

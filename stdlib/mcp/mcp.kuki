@@ -97,7 +97,7 @@ func Tool(server reference mcp.Server, name string, description string, schema a
                 Content: list of mcp.Content{reference of mcp.TextContent{Text: handlerErr.Error()}},
                 IsError: true,
             }, empty
-        switch res as r
+        res |> switch as r
             when reference mcp.CallToolResult
                 return r, empty
             when string

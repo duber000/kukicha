@@ -1149,12 +1149,12 @@ func GetResponseText(resp Response) string
     for _, item in resp.Output
         if item.Type == "message"
             for _, content in item.Content
-                switch content as contentMap
+                content |> switch as contentMap
                     when map of string to any
-                        switch contentMap["type"] as contentTypeStr
+                        contentMap["type"] |> switch as contentTypeStr
                             when string
                                 if contentTypeStr == "output_text"
-                                    switch contentMap["text"] as textStr
+                                    contentMap["text"] |> switch as textStr
                                         when string
                                             return textStr
     return ""

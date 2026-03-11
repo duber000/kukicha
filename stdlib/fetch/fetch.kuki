@@ -115,7 +115,7 @@ func doOnce(req Request) (reference http.Response, error)
     bodyData := empty
     if req.body != empty
         # Check if body is already a string (form data) or needs JSON marshaling
-        switch req.body as bodyStr
+        req.body |> switch as bodyStr
             when string
                 bodyData = bodyStr as list of byte
             otherwise
@@ -387,7 +387,7 @@ func SessionDo(s Session, req Request) (reference http.Response, error)
     bodyData := empty
     if req.body != empty
         # Check if body is already a string (form data) or needs JSON marshaling
-        switch req.body as bodyStr
+        req.body |> switch as bodyStr
             when string
                 bodyData = bodyStr as list of byte
             otherwise
