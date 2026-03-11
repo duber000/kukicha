@@ -213,8 +213,16 @@ func (a *Analyzer) typesCompatible(t1, t2 *TypeInfo) bool {
 	// Check nested types for compound types
 	switch t1.Kind {
 	case TypeKindList, TypeKindChannel, TypeKindReference:
+		// If either side has no element type info (e.g., from Go stdlib registry),
+		// treat as compatible — the Go compiler will catch any real mismatch.
+		if t1.ElementType == nil || t2.ElementType == nil {
+			return true
+		}
 		return a.typesCompatible(t1.ElementType, t2.ElementType)
 	case TypeKindMap:
+		if t1.KeyType == nil || t2.KeyType == nil || t1.ValueType == nil || t2.ValueType == nil {
+			return true
+		}
 		return a.typesCompatible(t1.KeyType, t2.KeyType) && a.typesCompatible(t1.ValueType, t2.ValueType)
 	case TypeKindNamed:
 		return t1.Name == t2.Name
