@@ -27,66 +27,13 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 		}
 
 		// Handle: result := A |> B() |> switch ... onerr handler
-		// The piped switch must resolve its upstream pipe chain errors before
-		// the switch IIFE runs. We declare the result variable up-front (using
-		// the handler default if provided), run the error-checked pipe chain
-		// inside a goto-label block, then assign the switch result only when
-		// the entire chain succeeded.
 		if ps, ok := values[0].(*ast.PipedSwitchExpr); ok {
-			returnType := g.pipedSwitchReturnType(ps)
-			if returnType == "" {
-				returnType = "any"
+			l := newLowerer(g)
+			block := l.lowerPipedSwitchVarDecl(names[0].Value, ps, clause, names)
+			if block != nil {
+				g.emitIR(block)
+				return
 			}
-			varName := names[0].Value
-
-			onErrLabel := g.uniqueId("onerr")
-			endLabel := g.uniqueId("end")
-
-			// Declare result before the block; pre-initialise to the handler
-			// default so the onerr label just falls through without touching it.
-			handlerDefault := g.extractDefaultValue(clause, returnType)
-			if handlerDefault != "" {
-				g.writeLine(fmt.Sprintf("var %s %s = %s", varName, returnType, handlerDefault))
-			} else {
-				g.writeLine(fmt.Sprintf("var %s %s", varName, returnType))
-			}
-
-			g.writeLine("{")
-			g.indent++
-
-			// Generate the upstream pipe chain using goto labels so any error
-			// in the chain jumps straight to onErrLabel, skipping the switch.
-			var finalPipeVar string
-			var pipeOk bool
-			if pipe, ok2 := ps.Left.(*ast.PipeExpr); ok2 {
-				finalPipeVar, pipeOk = g.generateOnErrPipeChainWithLabels(pipe, clause, []*ast.Identifier{}, onErrLabel, endLabel)
-			} else {
-				finalPipeVar = g.exprToString(ps.Left)
-				pipeOk = true
-			}
-
-			if pipeOk {
-				// Run the switch IIFE and assign only on the success path.
-				savedLeft := ps.Left
-				ps.Left = &ast.Identifier{Value: finalPipeVar}
-				switchStr := g.generatePipedSwitchExpr(ps)
-				ps.Left = savedLeft
-				g.writeLine(fmt.Sprintf("%s = %s", varName, switchStr))
-				g.writeLine(fmt.Sprintf("goto %s", endLabel))
-			}
-
-			g.indent--
-			g.writeLine("}")
-			g.writeLine(fmt.Sprintf("%s:", onErrLabel))
-			// Result is already pre-initialised to the default; for terminating
-			// handlers (panic/return) emit the handler body here.
-			if handlerDefault == "" {
-				g.indent++
-				g.generateOnErrHandler(names, clause.Handler, g.currentOnErrVar)
-				g.indent--
-			}
-			g.writeLine(fmt.Sprintf("%s:", endLabel))
-			return
 		}
 	}
 
@@ -95,67 +42,22 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 		return
 	}
 
+	l := newLowerer(g)
+
 	// Special case: if we have multiple names (e.g., x, err) and a single value expression,
 	// the single expression likely returns multiple values including an error.
 	// In this case, use the names as-is without adding an extra error variable.
 	// This handles cases like: x, err := Parse() onerr handler
 	// where Parse() returns (int, error) and names are [x, err]
 	if len(names) > 1 && len(values) == 1 {
-		lhsParts := identNames(names)
-		g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), valueExpr))
-
-		// The last name is assumed to be the error variable
-		errVar := names[len(names)-1].Value
-		g.writeOnErrCheck(clause, errVar, names[:len(names)-1])
+		block := l.lowerOnErrWithExplicitErr(identNames(names), valueExpr, clause, true)
+		g.emitIR(block)
 		return
 	}
 
-	// Generate unique error variable name to prevent shadowing
-	errVar := g.uniqueId("err")
-
-	// Build the LHS: user variables + error variable
-	lhsParts := append(identNames(names), errVar)
-
-	// Generate: names..., err := expression
-	g.writeLine(fmt.Sprintf("%s := %s", strings.Join(lhsParts, ", "), valueExpr))
-
-	// Generate error check block
-	g.writeOnErrCheck(clause, errVar, names)
-}
-
-// generateOnErrExplainWrap emits err = fmt.Errorf("hint: %w", err) if explain is set.
-// For standalone explain (nil handler), it also generates the return statement.
-func (g *Generator) generateOnErrExplainWrap(clause *ast.OnErrClause, errVar string) {
-	if clause.Explain == "" {
-		return
-	}
-	g.addImport("fmt")
-	g.writeLine(fmt.Sprintf(`%s = fmt.Errorf("%s: %%w", %s)`, errVar, clause.Explain, errVar))
-
-	// Standalone explain (nil handler): generate return with zero values + wrapped error
-	if clause.Handler == nil {
-		g.generateStandaloneExplainReturn(errVar)
-	}
-}
-
-// generateStandaloneExplainReturn generates a return statement with zero values for
-// all non-error return types, plus the wrapped error variable.
-func (g *Generator) generateStandaloneExplainReturn(errVar string) {
-	if g.currentReturnTypes == nil || len(g.currentReturnTypes) == 0 {
-		g.writeLine(fmt.Sprintf("return %s", errVar))
-		return
-	}
-
-	var parts []string
-	for i, ret := range g.currentReturnTypes {
-		if i == len(g.currentReturnTypes)-1 {
-			// Last return type is assumed to be error
-			parts = append(parts, errVar)
-		} else {
-			parts = append(parts, g.zeroValueForType(ret))
-		}
-	}
-	g.writeLine(fmt.Sprintf("return %s", strings.Join(parts, ", ")))
+	// Single-return with auto-generated error variable
+	block := l.lowerOnErr(valueExpr, 0, clause, identNames(names), true)
+	g.emitIR(block)
 }
 
 // generateOnErrHandler generates code for the onerr handler expression
@@ -205,11 +107,10 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 		}
 		g.writeLine(fmt.Sprintf("return %s", strings.Join(values, ", ")))
 	case *ast.BlockExpr:
-		// onerr block handler: generate the block body with {error} mapped to errVar
-		prevOnErrVar := g.currentOnErrVar
-		g.currentOnErrVar = errVar
+		// onerr block handler: generate the block body.
+		// The caller (renderHandler) sets currentOnErrVar so that
+		// exprToString resolves "error" / alias to the actual error variable.
 		g.generateBlock(h.Body)
-		g.currentOnErrVar = prevOnErrVar
 		return
 	case *ast.EmptyExpr:
 		// onerr return empty - generate bare return (for named return values)
@@ -287,30 +188,6 @@ func (g *Generator) exprStrings(exprs []ast.Expression) []string {
 		parts[i] = g.exprToString(e)
 	}
 	return parts
-}
-
-func (g *Generator) writeOnErrCheck(clause *ast.OnErrClause, errVar string, names []*ast.Identifier) {
-	g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
-	g.indent++
-
-	// "onerr return" shorthand: propagate error as-is with zero-value returns.
-	if clause.ShorthandReturn {
-		g.generateStandaloneExplainReturn(errVar)
-		g.indent--
-		g.writeLine("}")
-		return
-	}
-
-	// Set alias for block-style handlers that use "onerr as <ident>".
-	prevAlias := g.currentOnErrAlias
-	g.currentOnErrAlias = clause.Alias
-
-	g.generateOnErrExplainWrap(clause, errVar)
-	g.generateOnErrHandler(names, clause.Handler, errVar)
-
-	g.currentOnErrAlias = prevAlias
-	g.indent--
-	g.writeLine("}")
 }
 
 // extractDefaultValue returns the Go literal string for a handler's default value
@@ -434,104 +311,15 @@ func (g *Generator) buildPipeArgs(leftExpr string, arguments []ast.Expression) [
 	return args
 }
 
-func (g *Generator) generateOnErrPipeChainWithLabels(pipe *ast.PipeExpr, clause *ast.OnErrClause, names []*ast.Identifier, onErrLabel, endLabel string) (string, bool) {
-	base, steps, ok := flattenPipeChain(pipe)
-	if !ok {
-		return "", false
-	}
-
-	// Generate base expression
-	baseExpr := g.exprToString(base)
-	current := g.uniqueId("pipe")
-
-	if count, ok := g.inferReturnCount(base); ok && count >= 2 {
-		errVar := g.uniqueId("err")
-		g.writeLine(fmt.Sprintf("%s, %s := %s", current, errVar, baseExpr))
-		g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
-		g.indent++
-		g.writeLine(fmt.Sprintf("goto %s", onErrLabel))
-		g.indent--
-		g.writeLine("}")
-	} else {
-		g.writeLine(fmt.Sprintf("%s := %s", current, baseExpr))
-	}
-
-	// Generate intermediate steps
-	for _, step := range steps {
-		next := g.uniqueId("pipe")
-		callExpr, ok := g.generatePipedStepCall(step, current)
-		if !ok {
-			return "", false
-		}
-
-		if count, ok := g.inferReturnCount(step); ok && count >= 2 {
-			errVar := g.uniqueId("err")
-			g.writeLine(fmt.Sprintf("%s, %s := %s", next, errVar, callExpr))
-			g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
-			g.indent++
-			g.writeLine(fmt.Sprintf("goto %s", onErrLabel))
-			g.indent--
-			g.writeLine("}")
-		} else if g.isErrorOnlyReturn(step) {
-			// Error-only return: check the error, keep current pipe variable.
-			errVar := g.uniqueId("err")
-			g.writeLine(fmt.Sprintf("%s := %s", errVar, callExpr))
-			g.writeLine(fmt.Sprintf("if %s != nil {", errVar))
-			g.indent++
-			g.writeLine(fmt.Sprintf("goto %s", onErrLabel))
-			g.indent--
-			g.writeLine("}")
-			continue
-		} else {
-			g.writeLine(fmt.Sprintf("%s := %s", next, callExpr))
-		}
-		current = next
-	}
-
-	return current, true
-}
-
 func (g *Generator) generateOnErrPipeChain(pipe *ast.PipeExpr, clause *ast.OnErrClause, names []*ast.Identifier) (string, bool) {
-	base, steps, ok := flattenPipeChain(pipe)
-	if !ok || base == nil || len(steps) == 0 {
+	l := newLowerer(g)
+	nameStrs := identNames(names)
+	block, finalVar := l.lowerOnErrPipeChain(pipe, clause, nameStrs)
+	if block == nil {
 		return "", false
 	}
-
-	current := g.uniqueId("pipe")
-	baseExpr := g.exprToString(base)
-	if count, ok := g.inferReturnCount(base); ok && count >= 2 {
-		errVar := g.uniqueId("err")
-		g.writeLine(fmt.Sprintf("%s, %s := %s", current, errVar, baseExpr))
-		g.writeOnErrCheck(clause, errVar, names)
-	} else {
-		g.writeLine(fmt.Sprintf("%s := %s", current, baseExpr))
-	}
-
-	for _, step := range steps {
-		callExpr, ok := g.generatePipedStepCall(step, current)
-		if !ok {
-			return "", false
-		}
-
-		next := g.uniqueId("pipe")
-		if count, ok := g.inferReturnCount(step); ok && count >= 2 {
-			errVar := g.uniqueId("err")
-			g.writeLine(fmt.Sprintf("%s, %s := %s", next, errVar, callExpr))
-			g.writeOnErrCheck(clause, errVar, names)
-		} else if g.isErrorOnlyReturn(step) {
-			// Error-only return (e.g., os.WriteFile): check the error,
-			// keep the current pipe variable unchanged.
-			errVar := g.uniqueId("err")
-			g.writeLine(fmt.Sprintf("%s := %s", errVar, callExpr))
-			g.writeOnErrCheck(clause, errVar, names)
-			continue
-		} else {
-			g.writeLine(fmt.Sprintf("%s := %s", next, callExpr))
-		}
-		current = next
-	}
-
-	return current, true
+	g.emitIR(block)
+	return finalVar, true
 }
 
 // generateOnErrStmt handles statement-level onerr
@@ -544,49 +332,11 @@ func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClau
 			return
 		}
 	} else if ps, ok := expr.(*ast.PipedSwitchExpr); ok {
-		// Handle piped switch as statement: pipe |> switch ... onerr handler
-		onErrLabel := g.uniqueId("onerr")
-		endLabel := g.uniqueId("end")
-
-		g.writeLine("{")
-		g.indent++
-
-		var finalVal string
-		var ok bool
-		if pipe, ok2 := ps.Left.(*ast.PipeExpr); ok2 {
-			finalVal, ok = g.generateOnErrPipeChainWithLabels(pipe, clause, []*ast.Identifier{}, onErrLabel, endLabel)
-		} else {
-			finalVal = g.exprToString(ps.Left)
-			ok = true
+		l := newLowerer(g)
+		block := l.lowerPipedSwitchStmt(ps, clause)
+		if block != nil {
+			g.emitIR(block)
 		}
-
-		if ok {
-			// Now run the switch
-			switch stmt := ps.Switch.(type) {
-			case *ast.SwitchStmt:
-				originalExpr := stmt.Expression
-				stmt.Expression = &ast.Identifier{Value: finalVal}
-				g.generateSwitchStmt(stmt)
-				stmt.Expression = originalExpr
-			case *ast.TypeSwitchStmt:
-				originalExpr := stmt.Expression
-				stmt.Expression = &ast.Identifier{Value: finalVal}
-				g.generateTypeSwitchStmt(stmt)
-				stmt.Expression = originalExpr
-			}
-
-			g.writeLine(fmt.Sprintf("goto %s", endLabel))
-			g.indent--
-			g.writeLine("}")
-			g.writeLine(fmt.Sprintf("%s:", onErrLabel))
-			g.indent++
-			g.generateOnErrHandler([]*ast.Identifier{{Value: finalVal}}, clause.Handler, g.currentOnErrVar)
-			g.indent--
-			g.writeLine(fmt.Sprintf("%s:", endLabel))
-			return
-		}
-		g.indent--
-		g.writeLine("}")
 		return
 	}
 
@@ -595,35 +345,10 @@ func (g *Generator) generateOnErrStmt(expr ast.Expression, clause *ast.OnErrClau
 		return
 	}
 
-	// Generate unique error variable name
-	errVar := g.uniqueId("err")
-
-	// Check if the expression returns multiple values (e.g. file.Write returns (n, err))
-	// If so, we need to discard the non-error values.
-	prefix := ""
-	if count, ok := g.inferReturnCount(expr); ok && count > 1 {
-		for i := 0; i < count-1; i++ {
-			prefix += "_, "
-		}
-	}
-
-	// Generate: if [_,] err := expression; err != nil { handler }
-	g.writeLine(fmt.Sprintf("if %s%s := %s; %s != nil {", prefix, errVar, g.exprToString(expr), errVar))
-	g.indent++
-
-	// Generate the error handler (no variable names for statement-level)
-	if clause.ShorthandReturn {
-		g.generateStandaloneExplainReturn(errVar)
-	} else {
-		prevAlias := g.currentOnErrAlias
-		g.currentOnErrAlias = clause.Alias
-		g.generateOnErrExplainWrap(clause, errVar)
-		g.generateOnErrHandler([]*ast.Identifier{}, clause.Handler, errVar)
-		g.currentOnErrAlias = prevAlias
-	}
-
-	g.indent--
-	g.writeLine("}")
+	// Lower statement-level onerr via IR
+	l := newLowerer(g)
+	block := l.lowerOnErrStmt(g.exprToString(expr), expr, clause)
+	g.emitIR(block)
 }
 
 // generateOnErrAssign handles assignment statements with onerr
@@ -656,34 +381,20 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 		return
 	}
 
+	l := newLowerer(g)
+
 	// Special case: if we have multiple targets (e.g., x, err) and a single value expression,
 	// the single expression likely returns multiple values including an error.
 	if len(stmt.Targets) > 1 && len(stmt.Values) == 1 {
 		lhsParts := g.exprStrings(stmt.Targets)
-		g.writeLine(fmt.Sprintf("%s = %s", strings.Join(lhsParts, ", "), valueExpr))
-
-		// The last target is assumed to be the error variable
-		if len(names) > 0 {
-			errVar := g.exprToString(stmt.Targets[len(stmt.Targets)-1])
-			g.writeOnErrCheck(clause, errVar, names[:len(names)-1])
-		}
+		block := l.lowerOnErrWithExplicitErr(lhsParts, valueExpr, clause, false)
+		g.emitIR(block)
 		return
 	}
 
-	// Generate unique error variable name for single-return-value cases
-	errVar := g.uniqueId("err")
-
-	// Declare the error variable before assignment (since = requires prior declaration)
-	g.writeLine(fmt.Sprintf("var %s error", errVar))
-
-	// Build the LHS: targets + error variable
-	lhsParts := append(g.exprStrings(stmt.Targets), errVar)
-
-	// Generate: targets..., err = expression
-	g.writeLine(fmt.Sprintf("%s = %s", strings.Join(lhsParts, ", "), valueExpr))
-
-	// Generate error check block
-	g.writeOnErrCheck(clause, errVar, names)
+	// Single-return with auto-generated error variable
+	block := l.lowerOnErr(valueExpr, 0, clause, g.exprStrings(stmt.Targets), false)
+	g.emitIR(block)
 }
 
 func (g *Generator) needsExplain() bool {

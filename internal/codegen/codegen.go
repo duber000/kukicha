@@ -63,8 +63,8 @@ type Generator struct {
 	// available for future contextual type inference.
 	exprTypes            map[ast.Expression]*semantic.TypeInfo
 	mcpTarget            bool                        // True if targeting MCP (Model Context Protocol)
-	currentOnErrVar      string                   // Current onerr error variable name (for block-style onerr {error} references)
-	currentOnErrAlias    string                   // Named alias for caught error in current onerr block (e.g., "e" for "onerr as e")
+	currentOnErrVar      string                   // Render-time context: set/restored only by renderHandler in lower.go
+	currentOnErrAlias    string                   // Render-time context: set/restored only by renderHandler in lower.go
 	currentReturnIndex   int                      // Index of return value being generated (-1 if not in return)
 	stdlibModuleBase     string                   // Base module path for rewriting "stdlib/X" imports (default: defaultStdlibModuleBase)
 }
