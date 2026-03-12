@@ -115,6 +115,7 @@ type TypeInfo struct {
 	Variadic     bool        // For functions: true if last param is variadic
 	ParamNames   []string    // For functions: parameter names (for named argument validation)
 	DefaultCount int         // For functions: number of parameters with default values
+	Fields       map[string]*TypeInfo // For structs: field name → field type
 }
 
 func (ti *TypeInfo) String() string {

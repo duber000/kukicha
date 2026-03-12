@@ -128,11 +128,22 @@ func (a *Analyzer) collectTypeDecl(decl *ast.TypeDecl) {
 		typeKind = TypeKindFunction
 	}
 
+	// Build fields map for struct types so struct literals can validate field names.
+	// typeAnnotationToTypeInfo is safe to call here (first pass) because it only
+	// records names without resolving them — validation happens in analyzeTypeDecl.
+	var fields map[string]*TypeInfo
+	if decl.AliasType == nil && len(decl.Fields) > 0 {
+		fields = make(map[string]*TypeInfo, len(decl.Fields))
+		for _, f := range decl.Fields {
+			fields[f.Name.Value] = a.typeAnnotationToTypeInfo(f.Type)
+		}
+	}
+
 	// Add type to symbol table
 	symbol := &Symbol{
 		Name:     decl.Name.Value,
 		Kind:     SymbolType,
-		Type:     &TypeInfo{Kind: typeKind, Name: decl.Name.Value},
+		Type:     &TypeInfo{Kind: typeKind, Name: decl.Name.Value, Fields: fields},
 		Defined:  decl.Name.Pos(),
 		Exported: isExported(decl.Name.Value),
 	}

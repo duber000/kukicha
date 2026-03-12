@@ -1557,3 +1557,106 @@ func Wrap(handler http.Handler) http.Handler
 		}
 	}
 }
+
+func TestStructLiteralValidFields(t *testing.T) {
+input := `type Person
+    Name string
+    Age int
+
+func Test() Person
+    return Person{Name: "Alice", Age: 30}
+`
+
+p, err := parser.New(input, "test.kuki")
+if err != nil {
+t.Fatalf("parser error: %v", err)
+}
+
+program, parseErrors := p.Parse()
+if len(parseErrors) > 0 {
+t.Fatalf("parse errors: %v", parseErrors)
+}
+
+analyzer := New(program)
+errors := analyzer.Analyze()
+
+if len(errors) > 0 {
+t.Fatalf("unexpected errors for valid struct literal: %v", errors)
+}
+}
+
+func TestStructLiteralUnknownField(t *testing.T) {
+input := `type Person
+    Name string
+    Age int
+
+func Test() Person
+    return Person{Name: "Alice", Score: 42}
+`
+
+p, err := parser.New(input, "test.kuki")
+if err != nil {
+t.Fatalf("parser error: %v", err)
+}
+
+program, parseErrors := p.Parse()
+if len(parseErrors) > 0 {
+t.Fatalf("parse errors: %v", parseErrors)
+}
+
+analyzer := New(program)
+errors := analyzer.Analyze()
+
+if len(errors) == 0 {
+t.Fatal("expected error for unknown struct field, got none")
+}
+
+found := false
+for _, e := range errors {
+if strings.Contains(e.Error(), "unknown field 'Score' on struct 'Person'") {
+found = true
+break
+}
+}
+if !found {
+t.Errorf("expected 'unknown field' error, got: %v", errors)
+}
+}
+
+func TestStructLiteralFieldTypeMismatch(t *testing.T) {
+input := `type Point
+    X int
+    Y int
+
+func Test() Point
+    return Point{X: "not-an-int", Y: 2}
+`
+
+p, err := parser.New(input, "test.kuki")
+if err != nil {
+t.Fatalf("parser error: %v", err)
+}
+
+program, parseErrors := p.Parse()
+if len(parseErrors) > 0 {
+t.Fatalf("parse errors: %v", parseErrors)
+}
+
+analyzer := New(program)
+errors := analyzer.Analyze()
+
+if len(errors) == 0 {
+t.Fatal("expected type mismatch error for struct field, got none")
+}
+
+found := false
+for _, e := range errors {
+if strings.Contains(e.Error(), "cannot use") && strings.Contains(e.Error(), "field 'X'") {
+found = true
+break
+}
+}
+if !found {
+t.Errorf("expected type mismatch error for field 'X', got: %v", errors)
+}
+}

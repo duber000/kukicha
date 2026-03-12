@@ -68,10 +68,29 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) (result *TypeInfo) {
 	case *ast.StructLiteralExpr:
 		structType := a.typeAnnotationToTypeInfo(e.Type)
 
-		// Analyze fields to ensure their types are recorded and expressions validated
+		// Resolve the struct's symbol to access its field definitions.
+		var structFields map[string]*TypeInfo
+		if structType.Kind == TypeKindNamed {
+			if sym := a.symbolTable.Resolve(structType.Name); sym != nil && sym.Type != nil {
+				structFields = sym.Type.Fields
+			}
+		}
+
 		for _, field := range e.Fields {
-			// TODO: Validate field name and type against struct definition
-			a.analyzeExpression(field.Value)
+			valueType := a.analyzeExpression(field.Value)
+
+			if structFields != nil {
+				fieldType, ok := structFields[field.Name.Value]
+				if !ok {
+					a.error(field.Name.Pos(), fmt.Sprintf("unknown field '%s' on struct '%s'", field.Name.Value, structType.Name))
+				} else {
+					// Record the field's resolved type and check value compatibility.
+					a.recordType(field.Value, fieldType)
+					if !a.typesCompatible(fieldType, valueType) {
+						a.error(field.Name.Pos(), fmt.Sprintf("cannot use %s as %s in field '%s' of struct '%s'", valueType, fieldType, field.Name.Value, structType.Name))
+					}
+				}
+			}
 		}
 
 		return structType
