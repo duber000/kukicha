@@ -14,7 +14,7 @@ func Filter(seq iter.Seq, keep func(any) bool) iter.Seq
     return func(yield func(any) bool)
         for item in seq
             if keep(item)
-                if !yield(item)
+                if not yield(item)
                     return
         return
 
@@ -24,7 +24,7 @@ func Filter(seq iter.Seq, keep func(any) bool) iter.Seq
 func Map(seq iter.Seq, transform func(any) any2) iter.SeqU
     return func(yield func(any2) bool)
         for item in seq
-            if !yield(transform(item))
+            if not yield(transform(item))
                 return
         return
 
@@ -33,7 +33,7 @@ func FlatMap(seq iter.Seq, transform func(any) iter.Seq) iter.Seq
     return func(yield func(any) bool)
         for item in seq
             for subItem in transform(item)
-                if !yield(subItem)
+                if not yield(subItem)
                     return
         return
 
@@ -44,7 +44,7 @@ func Take(seq iter.Seq, n int) iter.Seq
         for item in seq
             if count >= n
                 return
-            if !yield(item)
+            if not yield(item)
                 return
             count++
         return
@@ -55,7 +55,7 @@ func Skip(seq iter.Seq, n int) iter.Seq
         count := 0
         for item in seq
             if count >= n
-                if !yield(item)
+                if not yield(item)
                     return
             count++
         return
@@ -65,7 +65,7 @@ func Enumerate(seq iter.Seq) iter.Seq2
     return func(yield func(int, any) bool)
         i := 0
         for item in seq
-            if !yield(i, item)
+            if not yield(i, item)
                 return
             i++
         return
@@ -77,7 +77,7 @@ func Chunk(seq iter.Seq, n int) iter.SeqSlice
         for item in seq
             chunk = append(chunk, item)
             if len(chunk) == n
-                if !yield(chunk)
+                if not yield(chunk)
                     return
                 chunk = make(list of any, 0)
 
@@ -130,7 +130,7 @@ func Any(seq iter.Seq, predicate func(any) bool) bool
 # All returns true if all elements satisfy the predicate
 func All(seq iter.Seq, predicate func(any) bool) bool
     for item in seq
-        if !predicate(item)
+        if not predicate(item)
             return false
     return true
 
