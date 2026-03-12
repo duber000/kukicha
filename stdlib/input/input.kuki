@@ -4,9 +4,10 @@
 petiole input
 
 import "bufio"
-import "os"
-import "stdlib/string"
 import "fmt"
+import "os"
+import "strconv"
+import "stdlib/string"
 
 # ReadLine reads a line from standard input
 # It optionally prints a prompt if provided
@@ -29,3 +30,41 @@ func Prompt(prompt string) string
     if err != empty
         panic(err)
     return result
+
+# Confirm asks a yes/no question and returns true for y/yes, false otherwise
+# Returns an error only if reading stdin fails
+# Example: ok := input.Confirm("Proceed?") onerr return
+func Confirm(prompt string) (bool, error)
+    answer := ReadLine("{prompt} [y/N]: ") onerr return false, error "{error}"
+    lower := string.ToLower(string.TrimSpace(answer))
+    return lower == "y" or lower == "yes", empty
+
+# Choose presents a numbered list of options and returns the 0-based index of the selection.
+# Returns an error if the user cancels (q/Q/empty) or enters an invalid number.
+# Example:
+#   repos := list of string{"myorg/api", "myorg/web"}
+#   i := input.Choose("Select repo:", repos) onerr return
+#   print("You chose: {repos[i]}")
+func Choose(prompt string, options list of string) (int, error)
+    if len(options) == 0
+        return -1, error "no options provided"
+
+    print(prompt)
+    print("")
+    for i, opt in options
+        fmt.Printf("  %d) %s\n", i + 1, opt)
+    print("")
+
+    raw := ReadLine("Enter number (or q to quit): ") onerr return -1, error "{error}"
+    trimmed := string.TrimSpace(raw)
+
+    if trimmed == "" or trimmed == "q" or trimmed == "Q"
+        return -1, error "cancelled"
+
+    n, err := strconv.Atoi(trimmed)
+    if err != empty
+        return -1, error "invalid selection: {trimmed}"
+    if n < 1 or n > len(options)
+        return -1, error "selection out of range: {n}"
+
+    return n - 1, empty

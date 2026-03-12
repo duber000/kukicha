@@ -12,7 +12,7 @@ import "os"
 import "regexp"
 import "stdlib/cast"
 import "stdlib/env"
-import "stdlib/files"
+import "stdlib/input"
 import "stdlib/shell"
 import "stdlib/slice"
 import "stdlib/string"
@@ -266,18 +266,19 @@ func doRelease(opts Options)
         os.Exit(1)
 
 func doPick(opts Options)
-    if not shell.Which("fzf")
-        fmt.Fprintln(os.Stderr, "Missing required command: fzf")
-        os.Exit(1)
-
     initialTag := env.GetOr("INITIAL_TAG", "v0.0.1")
 
     repos := listReposWhereICommitted(opts.org) onerr
         fmt.Fprintln(os.Stderr, "Failed to list repos: {error}")
         os.Exit(1)
 
-    # Build tab-separated lines for fzf
-    lines := make(list of string, 0)
+    # Collect repos with their computed next tags
+    type RepoEntry
+        name string
+        current string
+        next string
+
+    entries := make(list of RepoEntry, 0)
     for repo in repos
         current := highestSemverTag(repo) onerr
             continue
@@ -289,36 +290,25 @@ func doPick(opts Options)
             next = bumpSemver(current, opts.bump) onerr
                 continue
 
-        display := current
-        if display == ""
-            display = "<none>"
+        entries = append(entries, RepoEntry{name: repo, current: current, next: next})
 
-        lines = append(lines, "{repo}\t{display}\t{next}")
-
-    if slice.IsEmpty(lines)
+    if slice.IsEmpty(entries)
         print("No repos found.")
         os.Exit(1)
 
-    # Write choices to a temp file so we can pipe to fzf safely
-    content := lines |> string.Join("\n")
-    tmpPath := "/tmp/gh-semver-pick.tsv"
-    files.WriteString(content, tmpPath) onerr
-        fmt.Fprintln(os.Stderr, "Failed to write temp file: {error}")
-        os.Exit(1)
-    defer os.Remove(tmpPath)
+    # Build display lines: "myorg/repo          v1.2.3  →  v1.2.4"
+    labels := make(list of string, 0)
+    for entry in entries
+        displayCurrent := entry.current
+        if displayCurrent == ""
+            displayCurrent = "<none>"
+        labels = append(labels, fmt.Sprintf("%-40s  %-12s  →  %s", entry.name, displayCurrent, entry.next))
 
-    # Pipe temp file into fzf (safe: tmpPath is a constant we control)
-    fzfCmd := "cat " + tmpPath + " | fzf --header='repo\tcurrent_tag\tnext_tag' --with-nth=1,2,3 | cut -f1"
-    selected := shell.Output("bash", "-c", fzfCmd) onerr
-        print("No repo selected.")
-        os.Exit(1)
+    i := input.Choose("Select a repo to release:", labels) onerr
+        print("Cancelled.")
+        os.Exit(0)
 
-    selectedRepo := selected |> string.TrimSpace()
-    if selectedRepo == ""
-        print("No repo selected.")
-        os.Exit(1)
-
-    opts.repo = selectedRepo
+    opts.repo = entries[i].name
     doRelease(opts)
 
 # ── CLI parsing ────────────────────────────────────────────────

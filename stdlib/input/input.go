@@ -7,6 +7,7 @@ import (
 	"fmt"
 	kukistring "github.com/duber000/kukicha/stdlib/string"
 	"os"
+	"strconv"
 )
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:14
@@ -40,4 +41,41 @@ func Prompt(prompt string) string {
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/input/input.kuki:31
 	return result
+}
+
+func Confirm(prompt string) (bool, error) {
+	answer, err := ReadLine(fmt.Sprintf("%s [y/N]: ", prompt))
+	if err != nil {
+		return false, err
+	}
+	lower := kukistring.ToLower(kukistring.TrimSpace(answer))
+	return lower == "y" || lower == "yes", nil
+}
+
+func Choose(prompt string, options []string) (int, error) {
+	if len(options) == 0 {
+		return -1, fmt.Errorf("no options provided")
+	}
+	fmt.Println(prompt)
+	fmt.Println()
+	for i, opt := range options {
+		fmt.Printf("  %d) %s\n", i+1, opt)
+	}
+	fmt.Println()
+	raw, err := ReadLine("Enter number (or q to quit): ")
+	if err != nil {
+		return -1, err
+	}
+	trimmed := kukistring.TrimSpace(raw)
+	if trimmed == "" || trimmed == "q" || trimmed == "Q" {
+		return -1, fmt.Errorf("cancelled")
+	}
+	n, err := strconv.Atoi(trimmed)
+	if err != nil {
+		return -1, fmt.Errorf("invalid selection: %s", trimmed)
+	}
+	if n < 1 || n > len(options) {
+		return -1, fmt.Errorf("selection out of range: %d", n)
+	}
+	return n - 1, nil
 }
