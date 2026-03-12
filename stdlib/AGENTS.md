@@ -463,7 +463,7 @@ When updating stdlib dependencies (the `stdlibGoMod` constant in `cmd/kukicha/st
 ## Critical Rules
 
 1. **Never edit generated `*.go` files in stdlib** — edit `.kuki` source, then `make generate`
-2. **Never edit `internal/semantic/stdlib_registry_gen.go`** — it is auto-generated from stdlib `.kuki` signatures; `make generate` regenerates it automatically
+2. **Never edit `internal/semantic/stdlib_registry_gen.go` or `go_stdlib_gen.go`** — both are auto-generated; `make generate` regenerates `stdlib_registry_gen.go` automatically, and `make gengostdlib` regenerates `go_stdlib_gen.go` from Go stdlib signatures via `go/importer`
 3. **Types must be defined in `.kuki`** — so the Kukicha compiler knows about them
 4. **After adding an exported function to a stdlib `.kuki` file**, run `make genstdlibregistry` (or just `make generate`) so `onerr` and pipe expressions work correctly with the new function
 5. **Every stdlib package must have a `*_test.kuki` file** using the table-driven pattern (see "Testing Stdlib Packages" above)

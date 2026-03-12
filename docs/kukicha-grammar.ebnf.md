@@ -1126,6 +1126,5 @@ func main()
 - Comprehensive test coverage
 
 **Related Documentation:**
-- [Compiler Architecture](kukicha-compiler-architecture.md) - Implementation details
-- [Language Syntax Reference](kukicha-syntax-v1.0.md) - Complete syntax guide with examples
+- [Compiler Internals](../internal/CLAUDE.md) - Implementation details
 - [Quick Reference](kukicha-quick-reference.md) - Developer cheat sheet

@@ -321,6 +321,7 @@ make build                # Build the kukicha compiler
 make test                 # Run all tests
 make generate             # Regenerate stdlib_registry_gen.go + all stdlib .go files
 make genstdlibregistry    # Regenerate only internal/semantic/stdlib_registry_gen.go
+make gengostdlib          # Regenerate only internal/semantic/go_stdlib_gen.go
 kukicha check file.kuki   # Validate syntax without compiling
 kukicha build file.kuki   # Transpile and compile to binary
 kukicha build --vulncheck file.kuki  # Build + check for vulnerabilities
@@ -336,13 +337,16 @@ kukicha audit --json      # Audit with JSON output
 ```
 cmd/kukicha/              # CLI entry point
 cmd/genstdlibregistry/    # Generator: scans stdlib/*.kuki → stdlib_registry_gen.go
+cmd/gengostdlib/          # Generator: Go stdlib signatures via go/importer → go_stdlib_gen.go
 internal/
   lexer/                  # Tokenization (INDENT/DEDENT handling)
   parser/                 # Recursive descent parser → AST
   ast/                    # AST node definitions
   semantic/               # Type checking, validation
     stdlib_registry_gen.go  # GENERATED — auto-updated by "make build" via go generate
-  codegen/                # AST → Go code generation
+    go_stdlib_gen.go        # GENERATED — auto-updated by "make build" via go generate
+  ir/                     # Intermediate representation (Go-level imperative nodes)
+  codegen/                # AST → IR (lower.go) → Go source (emit.go)
   formatter/              # Code formatting
 stdlib/                   # Standard library (.kuki source files)
   slice/                  # Filter, Map, GroupBy, etc.
@@ -401,5 +405,4 @@ Import with: `import "stdlib/slice"`
 - `.agent/skills/kukicha/` - Comprehensive syntax reference, examples, and troubleshooting (for all AI tools)
 - `.claude/skills/kukicha/` - Same content, Claude Code-specific location
 - `docs/kukicha-grammar.ebnf.md` - Formal grammar
-- `docs/kukicha-compiler-architecture.md` - Compiler internals
 - `docs/tutorials/` - Progressive tutorials

@@ -345,7 +345,8 @@ internal/
   semantic/               # Type checking, validation
     stdlib_registry_gen.go  # GENERATED — auto-updated by "make build" via go generate
     go_stdlib_gen.go        # GENERATED — auto-updated by "make build" via go generate
-  codegen/                # AST → Go code generation
+  ir/                     # Intermediate representation (Go-level imperative nodes)
+  codegen/                # AST → IR (lower.go) → Go source (emit.go)
   formatter/              # Code formatting
 stdlib/                   # Standard library (.kuki source files)
   slice/                  # Filter, Map, GroupBy, etc.
@@ -401,5 +402,4 @@ Import with: `import "stdlib/slice"`
 - `.agent/skills/kukicha/` - Comprehensive syntax reference, examples, and troubleshooting (for all AI tools)
 - `.claude/skills/kukicha/` - Same content, Claude Code-specific location
 - `docs/kukicha-grammar.ebnf.md` - Formal grammar
-- `docs/kukicha-compiler-architecture.md` - Compiler internals
 - `docs/tutorials/` - Progressive tutorials
