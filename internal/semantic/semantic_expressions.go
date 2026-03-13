@@ -211,22 +211,6 @@ func (a *Analyzer) analyzeExpressionMulti(expr ast.Expression) []*TypeInfo {
 	}
 }
 
-// isInPipeExpression checks if an identifier is used within a pipe expression
-func (a *Analyzer) isInPipeExpression(ident *ast.Identifier) bool {
-	// Check if any parent node in the AST is a PipeExpr
-	current := ident
-	for current != nil {
-		// Check if current node is part of a pipe expression
-		// We need to traverse up the AST to find if we're inside a pipe expression
-		// For now, we'll use a simpler approach: check if we're in a call expression
-		// that's part of a pipe expression
-
-		// This is a simplified check - a more robust implementation would
-		// track the AST context properly
-		return true // For now, allow "_" in all contexts to unblock testing
-	}
-	return false
-}
 
 func (a *Analyzer) analyzeIdentifier(ident *ast.Identifier) *TypeInfo {
 	// Check for builtin functions first
@@ -260,14 +244,8 @@ func (a *Analyzer) analyzeIdentifier(ident *ast.Identifier) *TypeInfo {
 		}
 	}
 
-	// Special handling for placeholder "_" in pipe expressions
+	// "_" is the pipe placeholder; treat as unknown in all contexts.
 	if ident.Value == "_" {
-		// Check if this identifier is used within a pipe expression
-		if a.isInPipeExpression(ident) {
-			// Placeholder is valid in pipe expressions - it will be replaced by the piped value
-			return &TypeInfo{Kind: TypeKindUnknown} // Type will be determined by context
-		}
-		// Outside of pipe expressions, "_" is treated as a discard (blank identifier)
 		return &TypeInfo{Kind: TypeKindUnknown}
 	}
 
