@@ -5,7 +5,7 @@
 petiole validate
 
 import "regexp"
-import "slices"
+import "stdlib/slice"
 import "stdlib/string"
 import "unicode"
 import "net/url"
@@ -139,7 +139,7 @@ func Contains(s string, substr string) (string, error)
 # OneOf checks that a string is one of the allowed values
 # Example: status |> validate.OneOf("pending", "active", "done") onerr return
 func OneOf(s string, many allowed string) (string, error)
-    if slices.Contains(allowed, s)
+    if slice.Contains(allowed, s)
         return s, empty
     return s, error "value must be one of the allowed options"
 

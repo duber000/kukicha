@@ -7,9 +7,9 @@ import "net/http"
 import "stdlib/json"
 import "stdlib/string"
 import "stdlib/fetch"
+import "stdlib/validate"
 import "io"
 import "stdlib/cast"
-import "fmt"
 import "html"
 import "net/url"
 
@@ -152,12 +152,10 @@ func GetQueryBool(r reference http.Request, key string) (bool, error)
     value := r.URL.Query().Get(key)
     if value == ""
         return false, error("query parameter '{key}' is required")
-    lower := value
-    if lower == "true" or lower == "1" or lower == "yes"
-        return true, empty
-    if lower == "false" or lower == "0" or lower == "no"
-        return false, empty
-    return false, error("query parameter '{key}' must be a boolean")
+    result, err := validate.ParseBool(value)
+    if err != empty
+        return false, error("query parameter '{key}' must be a boolean")
+    return result, empty
 
 # GetQueryBoolOr returns a query parameter as a boolean, or default if not present/invalid
 # Never fails - returns default on any error
@@ -166,11 +164,10 @@ func GetQueryBoolOr(r reference http.Request, key string, defaultValue bool) boo
     value := r.URL.Query().Get(key)
     if value == ""
         return defaultValue
-    if value == "true" or value == "1" or value == "yes"
-        return true
-    if value == "false" or value == "0" or value == "no"
-        return false
-    return defaultValue
+    result, err := validate.ParseBool(value)
+    if err != empty
+        return defaultValue
+    return result
 
 # GetHeader returns a header value, or empty string if not present
 # Example: token := http.GetHeader(r, "Authorization")
@@ -309,11 +306,7 @@ func IsPatch(r reference http.Request) bool
 # Sets the Allow header with permitted methods
 # Example: http.MethodNotAllowed(w, "GET", "POST")
 func MethodNotAllowed(w http.ResponseWriter, many allowed string)
-    parts := list of string{}
-    for method in allowed
-        parts = append(parts, method)
-    allowHeader := string.Join(parts, ", ")
-    w.Header().Set("Allow", allowHeader)
+    w.Header().Set("Allow", string.Join(allowed, ", "))
     w.WriteHeader(405)
 
 # SecureHeaders returns middleware that injects security response headers
