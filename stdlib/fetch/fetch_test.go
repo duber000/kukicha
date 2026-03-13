@@ -4,7 +4,6 @@ package fetch_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/duber000/kukicha/stdlib/fetch"
 	"github.com/duber000/kukicha/stdlib/test"
 	"net/http"
@@ -206,7 +205,7 @@ type URLTemplateCase struct {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:138
 func TestURLTemplate(t *testing.T) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:139
-	tmpl := fmt.Sprintf("https://api.example.com/users/%cusername%c/repos/%crepo%c", 123, 125, 123, 125)
+	tmpl := "https://api.example.com/users/{username}/repos/{repo}"
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:156
 	cases := []URLTemplateCase{URLTemplateCase{name: "success with encoding", tmpl: tmpl, args: map[string]string{"username": "acme/dev team", "repo": "hello world"}, want: "https://api.example.com/users/acme%2Fdev%20team/repos/hello%20world", wantErr: false}, URLTemplateCase{name: "missing placeholder", tmpl: tmpl, args: map[string]string{"username": "golang"}, want: "", wantErr: true}}
 //line /var/home/tluker/repos/go/kukicha/stdlib/fetch/fetch_test.kuki:157

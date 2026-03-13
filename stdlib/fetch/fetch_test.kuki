@@ -8,7 +8,6 @@ import "stdlib/fetch"
 import "net/http"
 import "net/http/httptest"
 import "encoding/json"
-import "fmt"
 
 type TestData
     Message string as "message"
@@ -136,7 +135,7 @@ type URLTemplateCase
     wantErr bool
 
 func TestURLTemplate(t reference testing.T)
-    tmpl := fmt.Sprintf("https://api.example.com/users/%cusername%c/repos/%crepo%c", 123, 125, 123, 125)
+    tmpl := "https://api.example.com/users/\{username\}/repos/\{repo\}"
     
     cases := list of URLTemplateCase{
         URLTemplateCase{
