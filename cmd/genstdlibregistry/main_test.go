@@ -30,16 +30,16 @@ func Divide(a int, b int) (int, error)
     return a / b, empty
 `)
 
-	registry, errs := scanRegistry([]string{path})
+	result, errs := scanRegistry([]string{path})
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if registry["mylib.Add"] != 1 {
-		t.Errorf("expected mylib.Add=1, got %d", registry["mylib.Add"])
+	if result.registry["mylib.Add"] != 1 {
+		t.Errorf("expected mylib.Add=1, got %d", result.registry["mylib.Add"])
 	}
-	if registry["mylib.Divide"] != 2 {
-		t.Errorf("expected mylib.Divide=2, got %d", registry["mylib.Divide"])
+	if result.registry["mylib.Divide"] != 2 {
+		t.Errorf("expected mylib.Divide=2, got %d", result.registry["mylib.Divide"])
 	}
 }
 
@@ -54,15 +54,15 @@ func Public(x int) int
     return x
 `)
 
-	registry, errs := scanRegistry([]string{path})
+	result, errs := scanRegistry([]string{path})
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if _, ok := registry["mylib.helper"]; ok {
+	if _, ok := result.registry["mylib.helper"]; ok {
 		t.Error("unexported 'helper' should not be in registry")
 	}
-	if _, ok := registry["mylib.Public"]; !ok {
+	if _, ok := result.registry["mylib.Public"]; !ok {
 		t.Error("exported 'Public' should be in registry")
 	}
 }
@@ -81,16 +81,16 @@ func NewCounter() Counter
     return Counter{}
 `)
 
-	registry, errs := scanRegistry([]string{path})
+	result, errs := scanRegistry([]string{path})
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if _, ok := registry["mylib.Increment"]; ok {
+	if _, ok := result.registry["mylib.Increment"]; ok {
 		t.Error("method 'Increment' should not be in registry")
 	}
-	if registry["mylib.NewCounter"] != 1 {
-		t.Errorf("expected mylib.NewCounter=1, got %d", registry["mylib.NewCounter"])
+	if result.registry["mylib.NewCounter"] != 1 {
+		t.Errorf("expected mylib.NewCounter=1, got %d", result.registry["mylib.NewCounter"])
 	}
 }
 
@@ -105,16 +105,16 @@ func GetValue() string
     return "ok"
 `)
 
-	registry, errs := scanRegistry([]string{path})
+	result, errs := scanRegistry([]string{path})
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if _, ok := registry["mylib.DoSomething"]; ok {
+	if _, ok := result.registry["mylib.DoSomething"]; ok {
 		t.Error("void function 'DoSomething' should not be in registry")
 	}
-	if registry["mylib.GetValue"] != 1 {
-		t.Errorf("expected mylib.GetValue=1, got %d", registry["mylib.GetValue"])
+	if result.registry["mylib.GetValue"] != 1 {
+		t.Errorf("expected mylib.GetValue=1, got %d", result.registry["mylib.GetValue"])
 	}
 }
 
@@ -131,42 +131,41 @@ func TestHelper() int
     return 42
 `)
 
-	registry, errs := scanRegistry([]string{srcPath, testPath})
+	result, errs := scanRegistry([]string{srcPath, testPath})
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if _, ok := registry["mylib.Real"]; !ok {
+	if _, ok := result.registry["mylib.Real"]; !ok {
 		t.Error("expected 'Real' from source file in registry")
 	}
-	if _, ok := registry["mylib.TestHelper"]; ok {
+	if _, ok := result.registry["mylib.TestHelper"]; ok {
 		t.Error("function from _test.kuki should not be in registry")
 	}
 }
 
 func TestScanRegistry_NoPetioleSkipsFile(t *testing.T) {
 	dir := t.TempDir()
-	// A file without a petiole declaration
 	path := writeKukiFile(t, dir, "orphan/orphan.kuki", `func Orphan() int
     return 42
 `)
 
-	registry, errs := scanRegistry([]string{path})
+	result, errs := scanRegistry([]string{path})
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if len(registry) != 0 {
-		t.Errorf("expected empty registry for file without petiole, got %d entries", len(registry))
+	if len(result.registry) != 0 {
+		t.Errorf("expected empty registry for file without petiole, got %d entries", len(result.registry))
 	}
 }
 
 func TestScanRegistry_NonExistentFile(t *testing.T) {
-	registry, errs := scanRegistry([]string{"/nonexistent/file.kuki"})
+	result, errs := scanRegistry([]string{"/nonexistent/file.kuki"})
 	if len(errs) == 0 {
 		t.Fatal("expected error for non-existent file")
 	}
-	if len(registry) != 0 {
+	if len(result.registry) != 0 {
 		t.Error("expected empty registry on read error")
 	}
 }
@@ -187,26 +186,24 @@ func Second() (string, error)
     return "two", empty
 `)
 
-	registry, errs := scanRegistry([]string{path1, path2})
+	result, errs := scanRegistry([]string{path1, path2})
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if registry["alpha.First"] != 1 {
-		t.Errorf("expected alpha.First=1, got %d", registry["alpha.First"])
+	if result.registry["alpha.First"] != 1 {
+		t.Errorf("expected alpha.First=1, got %d", result.registry["alpha.First"])
 	}
-	if registry["beta.First"] != 1 {
-		t.Errorf("expected beta.First=1, got %d", registry["beta.First"])
+	if result.registry["beta.First"] != 1 {
+		t.Errorf("expected beta.First=1, got %d", result.registry["beta.First"])
 	}
-	if registry["beta.Second"] != 2 {
-		t.Errorf("expected beta.Second=2, got %d", registry["beta.Second"])
+	if result.registry["beta.Second"] != 2 {
+		t.Errorf("expected beta.Second=2, got %d", result.registry["beta.Second"])
 	}
 }
 
 func TestScanRegistry_KeepsLargerReturnCount(t *testing.T) {
 	dir := t.TempDir()
-	// Two files in the same package with the same function name but different return counts.
-	// This shouldn't happen in practice, but the code handles it by keeping the larger count.
 	path1 := writeKukiFile(t, dir, "pkg/a.kuki", `petiole pkg
 
 func Ambiguous() int
@@ -218,23 +215,23 @@ func Ambiguous() (int, error)
     return 1, empty
 `)
 
-	registry, errs := scanRegistry([]string{path1, path2})
+	result, errs := scanRegistry([]string{path1, path2})
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if registry["pkg.Ambiguous"] != 2 {
-		t.Errorf("expected pkg.Ambiguous=2 (larger count wins), got %d", registry["pkg.Ambiguous"])
+	if result.registry["pkg.Ambiguous"] != 2 {
+		t.Errorf("expected pkg.Ambiguous=2 (larger count wins), got %d", result.registry["pkg.Ambiguous"])
 	}
 }
 
 func TestScanRegistry_EmptyInput(t *testing.T) {
-	registry, errs := scanRegistry(nil)
+	result, errs := scanRegistry(nil)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors for empty input: %v", errs)
 	}
-	if len(registry) != 0 {
-		t.Errorf("expected empty registry, got %d entries", len(registry))
+	if len(result.registry) != 0 {
+		t.Errorf("expected empty registry, got %d entries", len(result.registry))
 	}
 }
 
@@ -250,17 +247,81 @@ func NewConfig() Config
     return Config{}
 `)
 
-	registry, errs := scanRegistry([]string{path})
+	result, errs := scanRegistry([]string{path})
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	// Only the function should appear, not the type
-	if len(registry) != 1 {
-		t.Errorf("expected 1 entry, got %d: %v", len(registry), registry)
+	if len(result.registry) != 1 {
+		t.Errorf("expected 1 entry, got %d: %v", len(result.registry), result.registry)
 	}
-	if registry["mylib.NewConfig"] != 1 {
-		t.Errorf("expected mylib.NewConfig=1, got %d", registry["mylib.NewConfig"])
+	if result.registry["mylib.NewConfig"] != 1 {
+		t.Errorf("expected mylib.NewConfig=1, got %d", result.registry["mylib.NewConfig"])
+	}
+}
+
+// =============================================================================
+// Deprecated directive scanning tests
+// =============================================================================
+
+func TestScanRegistry_DeprecatedFunction(t *testing.T) {
+	dir := t.TempDir()
+	path := writeKukiFile(t, dir, "mylib/mylib.kuki", `petiole mylib
+
+# kuki:deprecated "Use NewFunc instead"
+func OldFunc() string
+    return "old"
+
+func NewFunc() string
+    return "new"
+`)
+
+	result, errs := scanRegistry([]string{path})
+	if len(errs) > 0 {
+		t.Fatalf("unexpected errors: %v", errs)
+	}
+
+	// Both should be in the registry
+	if result.registry["mylib.OldFunc"] != 1 {
+		t.Errorf("expected mylib.OldFunc=1, got %d", result.registry["mylib.OldFunc"])
+	}
+	if result.registry["mylib.NewFunc"] != 1 {
+		t.Errorf("expected mylib.NewFunc=1, got %d", result.registry["mylib.NewFunc"])
+	}
+
+	// Only OldFunc should be deprecated
+	if msg, ok := result.deprecated["mylib.OldFunc"]; !ok {
+		t.Error("expected mylib.OldFunc to be in deprecated map")
+	} else if msg != "Use NewFunc instead" {
+		t.Errorf("expected deprecation message 'Use NewFunc instead', got %q", msg)
+	}
+	if _, ok := result.deprecated["mylib.NewFunc"]; ok {
+		t.Error("NewFunc should not be in deprecated map")
+	}
+}
+
+func TestScanRegistry_DeprecatedVoidFunction(t *testing.T) {
+	dir := t.TempDir()
+	path := writeKukiFile(t, dir, "mylib/mylib.kuki", `petiole mylib
+
+# kuki:deprecated "Use DoNew instead"
+func DoOld()
+    print("old")
+`)
+
+	result, errs := scanRegistry([]string{path})
+	if len(errs) > 0 {
+		t.Fatalf("unexpected errors: %v", errs)
+	}
+
+	// Void functions are not in the return-count registry but should still be in deprecated
+	if _, ok := result.registry["mylib.DoOld"]; ok {
+		t.Error("void function should not be in return-count registry")
+	}
+	if msg, ok := result.deprecated["mylib.DoOld"]; !ok {
+		t.Error("expected mylib.DoOld to be in deprecated map")
+	} else if msg != "Use DoNew instead" {
+		t.Errorf("expected deprecation message, got %q", msg)
 	}
 }
 
@@ -269,7 +330,10 @@ func NewConfig() Config
 // =============================================================================
 
 func TestFormatRegistry_Empty(t *testing.T) {
-	output := formatRegistry(map[string]int{})
+	output := formatRegistry(scanResult{
+		registry:   map[string]int{},
+		deprecated: map[string]string{},
+	})
 
 	src := string(output)
 	if !strings.Contains(src, "package semantic") {
@@ -278,21 +342,26 @@ func TestFormatRegistry_Empty(t *testing.T) {
 	if !strings.Contains(src, "generatedStdlibRegistry") {
 		t.Error("expected 'generatedStdlibRegistry' in output")
 	}
+	if !strings.Contains(src, "generatedStdlibDeprecated") {
+		t.Error("expected 'generatedStdlibDeprecated' in output")
+	}
 	if !strings.Contains(src, "DO NOT EDIT") {
 		t.Error("expected 'DO NOT EDIT' comment in output")
 	}
 }
 
 func TestFormatRegistry_SortedEntries(t *testing.T) {
-	registry := map[string]int{
-		"z.Zebra":   1,
-		"a.Alpha":   2,
-		"m.Middle":  1,
+	result := scanResult{
+		registry: map[string]int{
+			"z.Zebra":  1,
+			"a.Alpha":  2,
+			"m.Middle": 1,
+		},
+		deprecated: map[string]string{},
 	}
 
-	output := string(formatRegistry(registry))
+	output := string(formatRegistry(result))
 
-	// Entries should be sorted
 	alphaIdx := strings.Index(output, `"a.Alpha"`)
 	middleIdx := strings.Index(output, `"m.Middle"`)
 	zebraIdx := strings.Index(output, `"z.Zebra"`)
@@ -307,16 +376,16 @@ func TestFormatRegistry_SortedEntries(t *testing.T) {
 }
 
 func TestFormatRegistry_ValidGo(t *testing.T) {
-	registry := map[string]int{
-		"slice.Filter": 1,
-		"pg.Query":     2,
-		"fetch.Get":    2,
+	result := scanResult{
+		registry: map[string]int{
+			"slice.Filter": 1,
+			"pg.Query":     2,
+			"fetch.Get":    2,
+		},
+		deprecated: map[string]string{},
 	}
 
-	output := formatRegistry(registry)
-
-	// Should be valid Go (gofmt'd). Check for presence of entries.
-	// gofmt uses tabs for indentation, so use tab-prefixed checks.
+	output := formatRegistry(result)
 	src := string(output)
 	if !strings.Contains(src, `"slice.Filter"`) || !strings.Contains(src, "1") {
 		t.Errorf("expected 'slice.Filter' with value 1 in output:\n%s", src)
@@ -330,13 +399,16 @@ func TestFormatRegistry_ValidGo(t *testing.T) {
 }
 
 func TestFormatRegistry_ReturnCountValues(t *testing.T) {
-	registry := map[string]int{
-		"pkg.Single": 1,
-		"pkg.Double": 2,
-		"pkg.Triple": 3,
+	result := scanResult{
+		registry: map[string]int{
+			"pkg.Single": 1,
+			"pkg.Double": 2,
+			"pkg.Triple": 3,
+		},
+		deprecated: map[string]string{},
 	}
 
-	output := string(formatRegistry(registry))
+	output := string(formatRegistry(result))
 
 	if !strings.Contains(output, `"pkg.Single": 1`) {
 		t.Error("expected Single: 1")
@@ -346,5 +418,22 @@ func TestFormatRegistry_ReturnCountValues(t *testing.T) {
 	}
 	if !strings.Contains(output, `"pkg.Triple": 3`) {
 		t.Error("expected Triple: 3")
+	}
+}
+
+func TestFormatRegistry_WithDeprecated(t *testing.T) {
+	result := scanResult{
+		registry: map[string]int{
+			"pkg.OldFunc": 1,
+			"pkg.NewFunc": 1,
+		},
+		deprecated: map[string]string{
+			"pkg.OldFunc": "Use NewFunc instead",
+		},
+	}
+
+	output := string(formatRegistry(result))
+	if !strings.Contains(output, `"pkg.OldFunc": "Use NewFunc instead"`) {
+		t.Errorf("expected deprecated entry in output:\n%s", output)
 	}
 }

@@ -520,14 +520,21 @@ func (l *Lexer) scanIdentifier() {
 	}
 }
 
-// scanComment scans a comment and emits a TOKEN_COMMENT
+// scanComment scans a comment. If the comment starts with "# kuki:", it is
+// emitted as TOKEN_DIRECTIVE so the parser can attach it to a declaration.
+// Otherwise it is emitted as a regular TOKEN_COMMENT.
 func (l *Lexer) scanComment() {
 	// Consume the rest of the comment line
 	for !l.isAtEnd() && l.peek() != '\n' {
 		l.advance()
 	}
-	// The lexeme includes the # and the comment text
-	l.addToken(TOKEN_COMMENT)
+	// Check if this is a directive comment (# kuki:...)
+	lexeme := string(l.source[l.start:l.current])
+	if strings.HasPrefix(lexeme, "# kuki:") {
+		l.addToken(TOKEN_DIRECTIVE)
+	} else {
+		l.addToken(TOKEN_COMMENT)
+	}
 }
 
 // Helper methods
@@ -588,7 +595,7 @@ func (l *Lexer) addTokenWithLexeme(tokenType TokenType, lexeme string) {
 	// Track last emitted type for pipe-continuation logic.  Comments are
 	// excluded so that a comment on the same line as a trailing |> does not
 	// break the continuation (the parser already skips TOKEN_COMMENT).
-	if tokenType != TOKEN_COMMENT {
+	if tokenType != TOKEN_COMMENT && tokenType != TOKEN_DIRECTIVE {
 		l.lastTokenType = tokenType
 	}
 }

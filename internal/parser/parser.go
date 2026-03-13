@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
 	"github.com/duber000/kukicha/internal/lexer"
@@ -18,9 +19,10 @@ import (
 // `list`, `map`, and `channel` are keywords only when followed by `of` in a
 // type context. This lets users use these as variable names in expressions.
 type Parser struct {
-	tokens []lexer.Token
-	pos    int
-	errors []error // Collected errors - parsing continues after errors for better diagnostics
+	tokens            []lexer.Token
+	pos               int
+	errors            []error           // Collected errors - parsing continues after errors for better diagnostics
+	pendingDirectives []ast.Directive    // Directives collected before the next declaration
 }
 
 // New creates a new parser from a source string
@@ -99,16 +101,76 @@ func (p *Parser) isAtEnd() bool {
 	return p.pos >= len(p.tokens) || p.peekToken().Type == lexer.TOKEN_EOF
 }
 
-// skipIgnoredTokens advances past comments and semicolons
+// skipIgnoredTokens advances past comments, semicolons, and collects directives.
+// Directive tokens are parsed and accumulated in pendingDirectives for the next declaration.
 func (p *Parser) skipIgnoredTokens() {
 	for p.pos < len(p.tokens) {
 		t := p.tokens[p.pos]
 		if t.Type == lexer.TOKEN_COMMENT || t.Type == lexer.TOKEN_SEMICOLON {
 			p.pos++
+		} else if t.Type == lexer.TOKEN_DIRECTIVE {
+			p.pendingDirectives = append(p.pendingDirectives, parseDirective(t))
+			p.pos++
 		} else {
 			break
 		}
 	}
+}
+
+// parseDirective extracts the directive name and arguments from a TOKEN_DIRECTIVE lexeme.
+// Format: "# kuki:name arg1 arg2 ..." or "# kuki:name \"quoted arg\""
+func parseDirective(t lexer.Token) ast.Directive {
+	// Strip "# kuki:" prefix
+	content := strings.TrimPrefix(t.Lexeme, "# kuki:")
+	content = strings.TrimSpace(content)
+
+	// Split into name and remaining args
+	name := content
+	var args []string
+	if idx := strings.IndexByte(content, ' '); idx >= 0 {
+		name = content[:idx]
+		argStr := strings.TrimSpace(content[idx+1:])
+		if argStr != "" {
+			// Parse quoted strings as single args, unquoted as space-split
+			args = parseDirectiveArgs(argStr)
+		}
+	}
+
+	return ast.Directive{
+		Token: t,
+		Name:  name,
+		Args:  args,
+	}
+}
+
+// parseDirectiveArgs splits a directive argument string, respecting quoted strings.
+func parseDirectiveArgs(s string) []string {
+	var args []string
+	for len(s) > 0 {
+		s = strings.TrimLeft(s, " \t")
+		if len(s) == 0 {
+			break
+		}
+		if s[0] == '"' {
+			// Find closing quote
+			end := strings.IndexByte(s[1:], '"')
+			if end < 0 {
+				args = append(args, s[1:]) // unterminated quote — take rest
+				break
+			}
+			args = append(args, s[1:end+1])
+			s = s[end+2:]
+		} else {
+			end := strings.IndexByte(s, ' ')
+			if end < 0 {
+				args = append(args, s)
+				break
+			}
+			args = append(args, s[:end])
+			s = s[end+1:]
+		}
+	}
+	return args
 }
 
 func (p *Parser) peekToken() lexer.Token {
@@ -191,6 +253,16 @@ func (p *Parser) error(token lexer.Token, message string) error {
 func (p *Parser) skipNewlines() {
 	for p.match(lexer.TOKEN_NEWLINE) {
 	}
+}
+
+// drainDirectives returns any pending directives and clears the buffer.
+func (p *Parser) drainDirectives() []ast.Directive {
+	if len(p.pendingDirectives) == 0 {
+		return nil
+	}
+	dirs := p.pendingDirectives
+	p.pendingDirectives = nil
+	return dirs
 }
 
 // isIdentifierFollower returns true if the next token indicates that the current

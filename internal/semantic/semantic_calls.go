@@ -43,6 +43,9 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 		}
 	}
 
+	// Check for deprecated function calls
+	a.checkDeprecatedCall(expr)
+
 	funcType := a.analyzeExpression(expr.Function)
 
 	// Analyze named arguments (check for duplicates)
@@ -307,4 +310,34 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 	// Record a return count of 1 so codegen's onerr discard path has a safe default
 	a.recordReturnCount(expr, 1)
 	return []*TypeInfo{{Kind: TypeKindUnknown}}
+}
+
+// checkDeprecatedCall emits a warning if the called function is marked # kuki:deprecated.
+func (a *Analyzer) checkDeprecatedCall(expr *ast.CallExpr) {
+	var name, qualifiedName string
+	switch fn := expr.Function.(type) {
+	case *ast.Identifier:
+		name = fn.Value
+	case *ast.MethodCallExpr:
+		name = fn.Method.Value
+		// Build qualified name for stdlib lookup (e.g., "slice.Filter")
+		if objID, ok := fn.Object.(*ast.Identifier); ok {
+			qualifiedName = objID.Value + "." + fn.Method.Value
+		}
+	default:
+		return
+	}
+
+	// Check local deprecated functions (from same-file directives)
+	if msg, ok := a.deprecatedFuncs[name]; ok {
+		a.warn(expr.Pos(), fmt.Sprintf("'%s' is deprecated: %s", name, msg))
+		return
+	}
+
+	// Check stdlib deprecated functions (from generated registry)
+	if qualifiedName != "" {
+		if msg, ok := generatedStdlibDeprecated[qualifiedName]; ok {
+			a.warn(expr.Pos(), fmt.Sprintf("'%s' is deprecated: %s", qualifiedName, msg))
+		}
+	}
 }

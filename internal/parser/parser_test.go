@@ -1995,3 +1995,136 @@ func TestErrorKeywordStillWorks(t *testing.T) {
 		t.Fatalf("expected ErrorExpr (keyword), got %T", varDecl.Values[0])
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Directive parsing tests (Phase 3A)
+// ---------------------------------------------------------------------------
+
+func TestDirectiveAttachedToFunction(t *testing.T) {
+	input := `# kuki:deprecated "Use NewFunc instead"
+func OldFunc() string
+    return "old"
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+	if len(program.Declarations) != 1 {
+		t.Fatalf("expected 1 declaration, got %d", len(program.Declarations))
+	}
+	fn, ok := program.Declarations[0].(*ast.FunctionDecl)
+	if !ok {
+		t.Fatalf("expected FunctionDecl, got %T", program.Declarations[0])
+	}
+	if len(fn.Directives) != 1 {
+		t.Fatalf("expected 1 directive, got %d", len(fn.Directives))
+	}
+	d := fn.Directives[0]
+	if d.Name != "deprecated" {
+		t.Errorf("expected directive name 'deprecated', got %q", d.Name)
+	}
+	if len(d.Args) != 1 || d.Args[0] != "Use NewFunc instead" {
+		t.Errorf("expected args [\"Use NewFunc instead\"], got %v", d.Args)
+	}
+}
+
+func TestDirectiveAttachedToType(t *testing.T) {
+	input := `# kuki:deprecated "Use NewUser instead"
+type OldUser
+    name string
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+	if len(program.Declarations) != 1 {
+		t.Fatalf("expected 1 declaration, got %d", len(program.Declarations))
+	}
+	td, ok := program.Declarations[0].(*ast.TypeDecl)
+	if !ok {
+		t.Fatalf("expected TypeDecl, got %T", program.Declarations[0])
+	}
+	if len(td.Directives) != 1 {
+		t.Fatalf("expected 1 directive, got %d", len(td.Directives))
+	}
+	if td.Directives[0].Name != "deprecated" {
+		t.Errorf("expected directive name 'deprecated', got %q", td.Directives[0].Name)
+	}
+}
+
+func TestMultipleDirectivesOnFunction(t *testing.T) {
+	input := `# kuki:deprecated "Use NewFunc"
+# kuki:fix inline
+func OldFunc() string
+    return "old"
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	if len(fn.Directives) != 2 {
+		t.Fatalf("expected 2 directives, got %d", len(fn.Directives))
+	}
+	if fn.Directives[0].Name != "deprecated" {
+		t.Errorf("expected first directive 'deprecated', got %q", fn.Directives[0].Name)
+	}
+	if fn.Directives[1].Name != "fix" {
+		t.Errorf("expected second directive 'fix', got %q", fn.Directives[1].Name)
+	}
+	if len(fn.Directives[1].Args) != 1 || fn.Directives[1].Args[0] != "inline" {
+		t.Errorf("expected fix args [\"inline\"], got %v", fn.Directives[1].Args)
+	}
+}
+
+func TestCommentBeforeDirectiveNotAttached(t *testing.T) {
+	input := `# regular comment
+# kuki:deprecated "msg"
+func Foo() string
+    return "foo"
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	program, errors := p.Parse()
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+	fn := program.Declarations[0].(*ast.FunctionDecl)
+	// Only the directive should attach, not the plain comment
+	if len(fn.Directives) != 1 {
+		t.Fatalf("expected 1 directive, got %d", len(fn.Directives))
+	}
+	if fn.Directives[0].Name != "deprecated" {
+		t.Errorf("expected directive name 'deprecated', got %q", fn.Directives[0].Name)
+	}
+}
+
+func TestNoDirectiveOnInterface(t *testing.T) {
+	// Directives on interfaces are silently ignored (not attached) for now
+	input := `# kuki:deprecated "old"
+interface Foo
+    Bar() string
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+	_, errors := p.Parse()
+	if len(errors) > 0 {
+		t.Fatalf("parser errors: %v", errors)
+	}
+}

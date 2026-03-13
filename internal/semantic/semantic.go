@@ -25,6 +25,8 @@ type Analyzer struct {
 	inOnerr             bool                   // True while analyzing an onerr handler
 	currentOnerrrAlias  string                 // Named alias for caught error in current onerr block (e.g., "e" for "onerr as e")
 	inPipedSwitch       bool                   // True while analyzing piped switch case bodies (suppresses return-count checks)
+	deprecatedFuncs     map[string]string      // Function name → deprecation message (from # kuki:deprecated directives)
+	deprecatedTypes     map[string]string      // Type name → deprecation message
 }
 
 // New creates a new semantic analyzer
@@ -66,12 +68,17 @@ func (a *Analyzer) ReturnCounts() map[ast.Expression]int {
 func (a *Analyzer) Analyze() []error {
 	a.exprReturnCounts = make(map[ast.Expression]int)
 	a.exprTypes = make(map[ast.Expression]*TypeInfo)
+	a.deprecatedFuncs = make(map[string]string)
+	a.deprecatedTypes = make(map[string]string)
 
 	// Check package name for collisions with Go stdlib
 	a.checkPackageName()
 
 	// Validate skill declaration if present
 	a.checkSkillDecl()
+
+	// Pre-pass: collect deprecation directives from declarations
+	a.collectDeprecations()
 
 	// First pass: Collect all type and interface declarations
 	a.collectDeclarations()
@@ -80,6 +87,36 @@ func (a *Analyzer) Analyze() []error {
 	a.analyzeDeclarations()
 
 	return a.errors
+}
+
+// collectDeprecations scans all declarations for # kuki:deprecated directives
+// and populates the deprecatedFuncs/deprecatedTypes maps.
+func (a *Analyzer) collectDeprecations() {
+	for _, decl := range a.program.Declarations {
+		switch d := decl.(type) {
+		case *ast.FunctionDecl:
+			if msg := deprecatedMessage(d.Directives); msg != "" {
+				a.deprecatedFuncs[d.Name.Value] = msg
+			}
+		case *ast.TypeDecl:
+			if msg := deprecatedMessage(d.Directives); msg != "" {
+				a.deprecatedTypes[d.Name.Value] = msg
+			}
+		}
+	}
+}
+
+// deprecatedMessage returns the message from a # kuki:deprecated directive, or "".
+func deprecatedMessage(dirs []ast.Directive) string {
+	for _, d := range dirs {
+		if d.Name == "deprecated" {
+			if len(d.Args) > 0 {
+				return d.Args[0]
+			}
+			return "deprecated"
+		}
+	}
+	return ""
 }
 
 func (a *Analyzer) recordReturnCount(expr ast.Expression, count int) {

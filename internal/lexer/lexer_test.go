@@ -340,6 +340,62 @@ func Hello()
 	}
 }
 
+func TestDirectiveToken(t *testing.T) {
+	input := `# kuki:deprecated "Use NewFunc instead"
+func OldFunc()
+    return
+`
+	lexer := NewLexer(input, "test.kuki")
+	tokens, err := lexer.ScanTokens()
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	// First meaningful token should be TOKEN_DIRECTIVE
+	found := false
+	for _, tok := range tokens {
+		if tok.Type == TOKEN_DIRECTIVE {
+			found = true
+			if tok.Lexeme != `# kuki:deprecated "Use NewFunc instead"` {
+				t.Errorf("unexpected directive lexeme: %q", tok.Lexeme)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Error("expected TOKEN_DIRECTIVE but none found")
+	}
+}
+
+func TestDirectiveVsComment(t *testing.T) {
+	input := `# regular comment
+# kuki:fix inline
+func Foo()
+    return
+`
+	lexer := NewLexer(input, "test.kuki")
+	tokens, err := lexer.ScanTokens()
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	var comments, directives int
+	for _, tok := range tokens {
+		if tok.Type == TOKEN_COMMENT {
+			comments++
+		}
+		if tok.Type == TOKEN_DIRECTIVE {
+			directives++
+		}
+	}
+	if comments != 1 {
+		t.Errorf("expected 1 comment, got %d", comments)
+	}
+	if directives != 1 {
+		t.Errorf("expected 1 directive, got %d", directives)
+	}
+}
+
 func TestRealWorldExample(t *testing.T) {
 	input := `petiole todo
 

@@ -102,11 +102,19 @@ func (d *ImportDecl) Pos() Position {
 }
 func (d *ImportDecl) declNode() {}
 
+// Directive represents a `# kuki:name args...` annotation attached to a declaration.
+type Directive struct {
+	Token lexer.Token // The TOKEN_DIRECTIVE token
+	Name  string      // Directive name (e.g., "deprecated", "fix")
+	Args  []string    // Arguments (e.g., ["Use NewFunc instead"])
+}
+
 type TypeDecl struct {
-	Token     lexer.Token // The 'type' token
-	Name      *Identifier
-	Fields    []*FieldDecl   // nil for type aliases
-	AliasType TypeAnnotation // non-nil for type aliases (e.g., func(...) ...)
+	Token      lexer.Token // The 'type' token
+	Name       *Identifier
+	Fields     []*FieldDecl   // nil for type aliases
+	AliasType  TypeAnnotation // non-nil for type aliases (e.g., func(...) ...)
+	Directives []Directive    // Attached `# kuki:` directives
 }
 
 func (d *TypeDecl) TokenLiteral() string { return d.Token.Lexeme }
@@ -145,7 +153,8 @@ type FunctionDecl struct {
 	Parameters []*Parameter
 	Returns    []TypeAnnotation
 	Body       *BlockStmt
-	Receiver   *Receiver // For methods (optional)
+	Receiver   *Receiver   // For methods (optional)
+	Directives []Directive // Attached `# kuki:` directives
 }
 
 func (d *FunctionDecl) TokenLiteral() string { return d.Token.Lexeme }

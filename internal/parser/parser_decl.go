@@ -112,15 +112,19 @@ func (p *Parser) parseImportDecl() *ast.ImportDecl {
 func (p *Parser) parseDeclaration() ast.Declaration {
 	p.skipNewlines()
 
+	// Drain any directives collected before this declaration.
+	dirs := p.drainDirectives()
+
+	var decl ast.Declaration
 	switch p.peekToken().Type {
 	case lexer.TOKEN_TYPE:
-		return p.parseTypeDecl()
+		decl = p.parseTypeDecl()
 	case lexer.TOKEN_INTERFACE:
-		return p.parseInterfaceDecl()
+		decl = p.parseInterfaceDecl()
 	case lexer.TOKEN_FUNC:
-		return p.parseFunctionDecl()
+		decl = p.parseFunctionDecl()
 	case lexer.TOKEN_VAR:
-		return p.parseVarDeclaration()
+		decl = p.parseVarDeclaration()
 	default:
 		if !p.isAtEnd() {
 			p.error(p.peekToken(), fmt.Sprintf("unexpected token %s, expected declaration", p.peekToken().Type))
@@ -128,6 +132,18 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 		}
 		return nil
 	}
+
+	// Attach directives to declarations that support them.
+	if decl != nil && len(dirs) > 0 {
+		switch d := decl.(type) {
+		case *ast.FunctionDecl:
+			d.Directives = dirs
+		case *ast.TypeDecl:
+			d.Directives = dirs
+		}
+	}
+
+	return decl
 }
 
 func (p *Parser) parseTypeDecl() ast.Declaration {

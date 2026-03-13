@@ -265,6 +265,8 @@ var generatedStdlibRegistry = map[string]int{
 	"http.Text":                       1,
 	"http.TextStatus":                 1,
 	"http.WithCSRF":                   1,
+	"input.Choose":                    2,
+	"input.Confirm":                   2,
 	"input.Prompt":                    1,
 	"input.ReadLine":                  2,
 	"iterator.All":                    1,
@@ -707,3 +709,7 @@ var generatedStdlibRegistry = map[string]int{
 	"validate.URL":                    2,
 	"validate.WithMessage":            2,
 }
+
+// generatedStdlibDeprecated maps qualified Kukicha stdlib function names to their
+// deprecation messages. Populated from # kuki:deprecated directives in stdlib .kuki files.
+var generatedStdlibDeprecated = map[string]string{}

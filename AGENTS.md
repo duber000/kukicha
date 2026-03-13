@@ -310,6 +310,22 @@ select
         print("nothing ready")
 ```
 
+## Compiler Directives
+
+Directives are special comments starting with `# kuki:` that annotate the next declaration.
+
+```kukicha
+# kuki:deprecated "Use NewFunc instead"
+func OldFunc() string
+    return "old"
+```
+
+| Directive | Target | Effect |
+|-----------|--------|--------|
+| `# kuki:deprecated "msg"` | `func`, `type` | Emits a warning at each call site |
+
+Directives on stdlib `.kuki` files are automatically picked up by `make genstdlibregistry` and checked at compile time.
+
 ## Security Checks (Compiler-Enforced)
 
 The compiler enforces SQL injection, XSS, SSRF, path traversal, command injection, and open redirect checks at compile time. See **[`stdlib/CLAUDE.md`](stdlib/CLAUDE.md)** for the full check table and safe alternatives.
@@ -353,9 +369,6 @@ stdlib/                   # Standard library (.kuki source files)
   json/                   # encoding/json wrapper
   fetch/                  # HTTP client (Auth, Sessions)
   files/                  # File I/O
-  infer/                  # ONNX Runtime inference (CPU; Phase 1)
-  webinfer/               # ONNX inference via headless Chromium (Playwright)
-  accel/                  # Smart inference fallback (native → web)
   shell/                  # Command execution
   ...
 examples/                 # Example programs

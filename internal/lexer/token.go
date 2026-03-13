@@ -110,6 +110,7 @@ const (
 	TOKEN_DEDENT
 	TOKEN_EOF
 	TOKEN_COMMENT   // # comment (standalone on its own line)
+	TOKEN_DIRECTIVE // # kuki:deprecated "msg" or # kuki:fix inline
 	TOKEN_SEMICOLON // ; (for Go-style syntax support)
 )
 
