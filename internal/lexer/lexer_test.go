@@ -195,6 +195,16 @@ func TestStrings(t *testing.T) {
 			input:    `"line1\nline2"`,
 			expected: "line1\nline2",
 		},
+		{
+			name:     "escaped left brace",
+			input:    `"hello \{world\}"`,
+			expected: "hello \uE000world\uE001",
+		},
+		{
+			name:     "escaped braces mixed with interpolation",
+			input:    `"\{key\}: {value}"`,
+			expected: "\uE000key\uE001: {value}",
+		},
 	}
 
 	for _, tt := range tests {

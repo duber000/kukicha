@@ -391,6 +391,10 @@ func (l *Lexer) scanString() {
 					value.WriteRune('"')
 				case '\'':
 					value.WriteRune('\'')
+				case '{':
+					value.WriteRune('\uE000') // PUA sentinel for literal {
+				case '}':
+					value.WriteRune('\uE001') // PUA sentinel for literal }
 				case 'x':
 					// Hex escape: \xHH
 					if !l.isAtEnd() {

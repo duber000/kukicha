@@ -398,6 +398,10 @@ func (g *Generator) escapeString(s string) string {
 			result.WriteString("\\\"")
 		case '\x00':
 			result.WriteString("\\x00")
+		case '\uE000':
+			result.WriteRune('{') // PUA sentinel → literal {
+		case '\uE001':
+			result.WriteRune('}') // PUA sentinel → literal }
 		default:
 			result.WriteRune(r)
 		}

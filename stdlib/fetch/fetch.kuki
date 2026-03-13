@@ -20,7 +20,6 @@ import "encoding/base64"
 import "time"
 import "io"
 import "bytes"
-import "fmt"
 import "stdlib/json"
 import "stdlib/string"
 import "stdlib/retry"
@@ -282,7 +281,7 @@ func QueryEscape(value string) string
 func URLTemplate(tmpl string, params map of string to string) (string, error)
     result := tmpl
     for key, value in params
-        placeholder := fmt.Sprintf("%c%s%c", 123, key, 125)
+        placeholder := "\{{key}\}"
         result = string.ReplaceAll(result, placeholder, url.PathEscape(value))
 
     if string.Contains(result, "{") or string.Contains(result, "}")

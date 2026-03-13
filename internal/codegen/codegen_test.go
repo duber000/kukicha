@@ -711,6 +711,75 @@ func TestStringInterpolation(t *testing.T) {
 	}
 }
 
+func TestEscapedBracesLiteral(t *testing.T) {
+	// \{ and \} should produce literal braces in output, not interpolation
+	input := `func Format() string
+    return "json: \{key: value\}"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	t.Logf("Generated output:\n%s", output)
+
+	// Should produce a plain string with literal braces, NOT fmt.Sprintf
+	if strings.Contains(output, "fmt.Sprintf") {
+		t.Errorf("escaped braces should not trigger fmt.Sprintf, got: %s", output)
+	}
+
+	if !strings.Contains(output, "{key: value}") {
+		t.Errorf("expected literal braces in output, got: %s", output)
+	}
+}
+
+func TestEscapedBracesMixedWithInterpolation(t *testing.T) {
+	// \{ and \} should produce literal braces even when mixed with {expr} interpolation
+	input := `func Format(name string) string
+    return "\{name\}: {name}"
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	gen := New(program)
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	t.Logf("Generated output:\n%s", output)
+
+	// Should have fmt.Sprintf for the interpolated part
+	if !strings.Contains(output, "fmt.Sprintf") {
+		t.Errorf("expected fmt.Sprintf for interpolated part, got: %s", output)
+	}
+
+	// The literal braces should appear as { and } in the format string
+	if !strings.Contains(output, "{name}") {
+		t.Errorf("expected literal {name} in format string, got: %s", output)
+	}
+}
+
 func TestPrintfStyleMethodInterpolation(t *testing.T) {
 	// Test that t.Errorf with interpolation generates inline format args (not fmt.Sprintf)
 	input := `import "testing"

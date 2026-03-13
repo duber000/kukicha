@@ -74,6 +74,15 @@ count = 100              # Reassignment
 val, error := f()        # 'error' and 'empty' can be used as variable names
 ```
 
+### Strings and Interpolation
+```kukicha
+greeting := "Hello {name}!"          # String interpolation with {expr}
+json := "key: \{value\}"             # Literal braces with \{ and \}
+mixed := "\{{key}\}: {value}"        # Escaped + interpolated: produces "{key_val}: value_val"
+```
+
+Use `\{` and `\}` to produce literal `{` and `}` characters in strings. Without escaping, `{identifier}` is treated as string interpolation.
+
 ### Functions (explicit types required)
 ```kukicha
 func Add(a int, b int) int
