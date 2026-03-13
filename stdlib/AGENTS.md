@@ -25,7 +25,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/files` | File I/O operations | Read, Write, Append, Exists, Copy, Move, Delete, Watch |
 | `stdlib/http` | HTTP response/request helpers + security | JSON, JSONError, JSONNotFound, ReadJSON, ReadJSONLimit, SafeURL, HTML, SafeHTML, Redirect, SafeRedirect, SetSecureHeaders, SecureHeaders |
 | `stdlib/infer` | ONNX Runtime inference (CPU; Phase 1) | Init, InitWithPath, Cleanup, IsAvailable, Version, New/Threads/InterOpThreads/OptLevel/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
-| `stdlib/input` | User input utilities | Line, Confirm, Choose |
+| `stdlib/input` | User input utilities | ReadLine, Prompt, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration (Go 1.23 iter.Seq) | Values, Filter, Map, FlatMap, Take, Skip, Enumerate, Chunk, Zip, Reduce, Collect, Any, All, Find |
 | `stdlib/json` | encoding/json wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
 | `stdlib/kube` | Kubernetes client via client-go | Connect, New/Kubeconfig/Context/InCluster/Retry/Open, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs |
@@ -104,6 +104,23 @@ port := must.EnvIntOr("PORT", 8080)
 # Runtime config (returns error for onerr)
 import "stdlib/env"
 debug := env.GetBoolOrDefault("DEBUG", false)
+
+# Interactive user input (CLI scripts)
+import "stdlib/input"
+# ReadLine: read a line with optional prompt (returns error)
+name := input.ReadLine("Enter name: ") onerr return
+# Prompt: panics on error — for simple scripts where stdin failure is fatal
+name := input.Prompt("Enter name: ")
+# Confirm: yes/no prompt — returns false on 'n', error only if stdin fails
+ok := input.Confirm("Proceed?") onerr return
+if not ok
+    return
+# Choose: numbered menu, returns 0-based index; error on cancel or bad input
+repos := list of string{"myorg/api", "myorg/web"}
+i := input.Choose("Select a repo:", repos) onerr
+    print("Cancelled.")
+    return
+print("You chose: {repos[i]}")
 
 # Structured logs with correlation IDs
 import "stdlib/obs"

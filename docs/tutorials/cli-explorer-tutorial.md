@@ -328,7 +328,7 @@ Think of it like a shared document: without `reference`, you'd get a photocopy �
 
 Now let's put it all together into a working application!
 
-> **Note:** The final program uses `stdlib/input` for reading console input. This replaces the `bufio`/`os` boilerplate you'd need in plain Go.
+> **Note:** The final program uses `stdlib/input` for reading console input. This replaces the `bufio`/`os` boilerplate you'd need in plain Go. The package also provides `input.Confirm(prompt)` for yes/no questions and `input.Choose(prompt, options)` for numbered menus — both return errors you can handle with `onerr`.
 
 Replace the contents of `explorer.kuki` with the complete program:
 
@@ -478,7 +478,22 @@ function main()
 
             when "filter"
                 if len(parts) < 2
-                    print("Usage: filter <language>")
+                    # No argument — build a menu from languages in the current repo list
+                    languages := make(list of string, 0)
+                    for repo in ex.repos
+                        if repo.Language != "" and not slice.Contains(languages, repo.Language)
+                            languages = append(languages, repo.Language)
+                    if slice.IsEmpty(languages)
+                        print("No language data in current repos.")
+                        continue
+                    idx := input.Choose("Filter by language:", languages) onerr
+                        print("Cancelled.")
+                        continue
+                    filtered := FilterByLanguage(ex.repos, languages[idx])
+                    print("\nShowing {len(filtered)} repos in {languages[idx]}")
+                    for i, repo in filtered
+                        print(repo.Summary(i + 1))
+                    print("")
                     continue
                 filtered := FilterByLanguage(ex.repos, parts[1])
                 print("\nShowing {len(filtered)} repos matching '{parts[1]}'")
@@ -549,6 +564,18 @@ Found 30 repos!
 > filter python
 Showing 2 repos matching 'python'
   1. example  ⭐ 200  Python  Example Python bindings
+...
+
+> filter
+Filter by language:
+
+  1) Go
+  2) Python
+  3) Shell
+
+Enter number (or q to quit): 1
+Showing 3 repos in Go
+  1. go  ⭐ 125000  Go  The Go programming language
 ...
 
 > fav 1

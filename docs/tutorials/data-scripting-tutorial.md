@@ -227,6 +227,7 @@ Create `autocommit.kuki`:
 import "stdlib/shell"
 import "stdlib/llm"
 import "stdlib/string"
+import "stdlib/input"
 
 function main()
     # 1. Get the staged changes
@@ -245,9 +246,22 @@ function main()
             print("LLM Error: {error}")
             return
 
-    # 3. Print the result
+    # 3. Show the suggestion and ask before committing
     print("\nSuggested Commit Message:")
     print(message)
+    print("")
+
+    ok := input.Confirm("Use this message?") onerr return
+    if not ok
+        print("Cancelled. You can commit manually with: git commit -m '...'")
+        return
+
+    # 4. Commit
+    shell.Run("git", "commit", "-m", message) onerr
+        print("Commit failed: {error}")
+        return
+
+    print("Committed!")
 ```
 
 **Run it:**

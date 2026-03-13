@@ -32,6 +32,11 @@ type Options
     dryRun bool
     draft bool
 
+type RepoEntry
+    name string
+    current string
+    next string
+
 # ── Semver helpers ─────────────────────────────────────────────
 
 func validateSemver(tag string) bool
@@ -273,11 +278,6 @@ func doPick(opts Options)
         os.Exit(1)
 
     # Collect repos with their computed next tags
-    type RepoEntry
-        name string
-        current string
-        next string
-
     entries := make(list of RepoEntry, 0)
     for repo in repos
         current := highestSemverTag(repo) onerr
