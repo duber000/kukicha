@@ -318,15 +318,8 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 		}
 	}
 
-	// Handle pipedArg for method calls too?
-	// Currently method analysis is mostly "Unknown", but we should at least not crash/error on count if we implemented it.
-	// Since we return Unknown anyway, ignoring pipedArg here is safe for now,
-	// UNLESS we add argument validation logic for methods later.
-	// But wait, the previous code didn't validate method arguments at all (loop just calls analyzeExpression).
-	// So just updating signature is enough.
-
-	// For now, return unknown - full method resolution requires more complex type system
-	// Record a return count of 1 so codegen's onerr discard path has a safe default
+	// Full method resolution (non-stdlib) requires a richer type system; return Unknown for now.
+	// Return count of 1 gives codegen's onerr path a safe default.
 	a.recordReturnCount(expr, 1)
 	return []*TypeInfo{{Kind: TypeKindUnknown}}
 }
