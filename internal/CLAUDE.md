@@ -52,6 +52,27 @@ Add the keyword string → `TokenType` mapping in `token.go`'s `keywords` map an
 
 Comments starting with `# kuki:` are emitted as `TOKEN_DIRECTIVE` instead of `TOKEN_COMMENT`. The lexer's `scanComment` checks the prefix and selects the token type. `TOKEN_DIRECTIVE` is excluded from `lastTokenType` tracking (like `TOKEN_COMMENT`).
 
+### String escape sequences and PUA sentinels
+
+`scanString` handles escape sequences in the switch on the character after `\`. Two kinds of escapes exist:
+
+**Compile-time (character substitution):** The escaped sequence maps directly to a Unicode Private Use Area (PUA) sentinel stored in the token value. Codegen's `escapeString` converts the sentinel back to the literal character when emitting Go string literals — no `fmt.Sprintf` needed.
+
+| Escape | PUA sentinel | Emitted as |
+|--------|-------------|-----------|
+| `\{`   | `\uE000`    | literal `{` |
+| `\}`   | `\uE001`    | literal `}` |
+
+**Runtime (expression injection):** The escape expands to a Go expression evaluated at runtime. The sentinel passes through `escapeString` unchanged, but `parseStringInterpolation` pre-processes it before the regex runs, replacing it with an interpolation expression (`{expr}`) that gets emitted as a `fmt.Sprintf` arg.
+
+| Escape  | PUA sentinel | Emitted as |
+|---------|-------------|-----------|
+| `\sep`  | `\uE002`    | `string(filepath.Separator)` — auto-imports `path/filepath` |
+
+`\sep` is a multi-character escape: `scanString` checks `l.peek() == 'e' && l.peekNext() == 'p'` before consuming the `ep` suffix.
+
+`generateStringLiteral` and `exprHasNonPrintfInterpolation` (in `codegen_walk.go`) both check `strings.ContainsRune(value, '\uE002')` to correctly handle strings that contain `\sep` but no `{expr}` interpolation (i.e., where `StringLiteral.Interpolated` is `false`).
+
 ---
 
 ## Parser (`internal/parser/`)
@@ -326,6 +347,19 @@ When `isStdlibIter` is true (or per-function for `stdlib/slice`), the generator 
 All `stdlib/slice` functions are generic: `genericSafe` map lists `[T any]` functions, `comparableSafe` map lists `[K comparable]` functions (`Unique`, `Contains`, `IndexOf`), and `GroupBy` gets both `[T any, K comparable]`.
 
 Application code never sees this — it just calls functions normally.
+
+### String literal codegen (`codegen_expr.go`)
+
+`generateStringLiteral` routes to one of two paths:
+- **Plain string** (`Interpolated == false` and no `\uE002` sentinel): emits `"escaped"` via `escapeString`
+- **Interpolated / runtime-escape** (`Interpolated == true` OR contains `\uE002`): calls `generateStringInterpolation` → `parseStringInterpolation`
+
+`parseStringInterpolation` flow:
+1. Pre-process `\uE002` → `{string(filepath.Separator)}` (adds `path/filepath` auto-import)
+2. Run regex `\{([a-zA-Z_][^}]*)\}` to find all `{expr}` sites
+3. Build `fmt.Sprintf("...%v...", arg, ...)` format string and args list
+
+`escapeString` handles compile-time PUA sentinels (`\uE000` → `{`, `\uE001` → `}`) and standard Go escapes (`\n`, `\t`, `\\`, `\"`, `\x00`). It is **not** responsible for `\uE002` — that sentinel is expanded before `escapeString` sees it.
 
 ### Writing to output
 
