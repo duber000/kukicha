@@ -31,16 +31,42 @@ type Options
     format string
     dryRun bool
     draft bool
+    initialTag string
 
 type RepoEntry
     name string
     current string
     next string
 
+# ── Helpers ───────────────────────────────────────────────────
+
+func fatal(msg string)
+    fmt.Fprintln(os.Stderr, msg)
+    os.Exit(1)
+
+func warn(msg string)
+    fmt.Fprintln(os.Stderr, "Warning: {msg}")
+
 # ── Semver helpers ─────────────────────────────────────────────
 
 func validateSemver(tag string) bool
     return semverPattern.MatchString(tag)
+
+func parseSemverParts(tag string) (int, int, int)
+    parts := tag |> string.TrimPrefix("v") |> string.Split(".")
+    major := cast.Atoi(parts[0]) onerr 0
+    minor := cast.Atoi(parts[1]) onerr 0
+    patch := cast.Atoi(parts[2]) onerr 0
+    return major, minor, patch
+
+func semverGreater(a string, b string) bool
+    aMaj, aMin, aPat := parseSemverParts(a)
+    bMaj, bMin, bPat := parseSemverParts(b)
+    if aMaj != bMaj
+        return aMaj > bMaj
+    if aMin != bMin
+        return aMin > bMin
+    return aPat > bPat
 
 func bumpSemver(tag string, bump string) (string, error)
     prefix := ""
@@ -70,6 +96,12 @@ func bumpSemver(tag string, bump string) (string, error)
 
     return fmt.Sprintf("%s%d.%d.%d", prefix, major, minor, patch), empty
 
+# nextTag computes the next semver tag from the current one, falling back to initialTag
+func nextTag(current string, bump string, initialTag string) (string, error)
+    if current == ""
+        return initialTag, empty
+    return bumpSemver(current, bump)
+
 # ── GitHub helpers ─────────────────────────────────────────────
 
 func highestSemverTag(repo string) (string, error)
@@ -78,7 +110,6 @@ func highestSemverTag(repo string) (string, error)
     if raw |> string.IsBlank()
         return "", empty
 
-    # Filter to strict semver tags, find highest via simple comparison
     tags := raw
         |> string.Lines()
         |> slice.Filter(validateSemver)
@@ -86,30 +117,12 @@ func highestSemverTag(repo string) (string, error)
     if slice.IsEmpty(tags)
         return "", empty
 
-    # Sort tags by version (manual semver comparison)
     best := tags[0]
     for i from 1 to len(tags)
         if semverGreater(tags[i], best)
             best = tags[i]
 
     return best, empty
-
-func semverGreater(a string, b string) bool
-    aMaj, aMin, aPat := parseSemverParts(a)
-    bMaj, bMin, bPat := parseSemverParts(b)
-    if aMaj != bMaj
-        return aMaj > bMaj
-    if aMin != bMin
-        return aMin > bMin
-    return aPat > bPat
-
-func parseSemverParts(tag string) (int, int, int)
-    version := tag |> string.TrimPrefix("v")
-    parts := version |> string.Split(".")
-    major := cast.Atoi(parts[0]) onerr 0
-    minor := cast.Atoi(parts[1]) onerr 0
-    patch := cast.Atoi(parts[2]) onerr 0
-    return major, minor, patch
 
 func defaultBranch(repo string) (string, error)
     branch := shell.Output("gh", "repo", "view", repo, "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name") onerr return "", error "{error}"
@@ -130,20 +143,19 @@ func currentUser() (string, error)
 # ── Repo discovery ─────────────────────────────────────────────
 
 func listReposWhereICommitted(org string) (list of string, error)
-    me := currentUser() onerr return empty list of string, error "failed to get current user: {error}"
+    me := currentUser() onerr return list of string{}, error "failed to get current user: {error}"
 
     query := "query($login: String!, $endCursor: String) { user(login: $login) { repositoriesContributedTo( contributionTypes: [COMMIT] includeUserRepositories: true first: 100 after: $endCursor ) { nodes { nameWithOwner viewerPermission isArchived isDisabled } pageInfo { hasNextPage endCursor } } } }"
 
     jqFilter := ".data.user.repositoriesContributedTo.nodes[] | select(.isArchived == false and .isDisabled == false) | select(.viewerPermission == \"ADMIN\" or .viewerPermission == \"MAINTAIN\" or .viewerPermission == \"WRITE\") | .nameWithOwner"
 
-    raw := shell.Output("gh", "api", "graphql", "--paginate", "-f", "login={me}", "-f", "query={query}", "--jq", jqFilter) onerr return empty list of string, error "failed to list repos: {error}"
+    raw := shell.Output("gh", "api", "graphql", "--paginate", "-f", "login={me}", "-f", "query={query}", "--jq", jqFilter) onerr return list of string{}, error "failed to list repos: {error}"
 
     repos := raw
         |> string.Lines()
         |> slice.Filter((r string) => not string.IsBlank(r))
         |> slice.Unique()
 
-    # Filter by org if specified
     if org != ""
         repos = repos |> slice.Filter((r string) => r |> string.HasPrefix("{org}/"))
 
@@ -152,11 +164,8 @@ func listReposWhereICommitted(org string) (list of string, error)
 # ── Commands ───────────────────────────────────────────────────
 
 func doList(opts Options)
-    initialTag := env.GetOr("INITIAL_TAG", "v0.0.1")
-
     repos := listReposWhereICommitted(opts.org) onerr
-        fmt.Fprintln(os.Stderr, "Error: {error}")
-        os.Exit(1)
+        fatal("Error: {error}")
 
     # Header
     if opts.format == "csv"
@@ -166,55 +175,40 @@ func doList(opts Options)
 
     for repo in repos
         current := highestSemverTag(repo) onerr
-            fmt.Fprintln(os.Stderr, "Warning: {error}")
+            warn("{error}")
             continue
 
-        next := ""
-        if current == ""
-            next = initialTag
-        else
-            next = bumpSemver(current, opts.bump) onerr
-                fmt.Fprintln(os.Stderr, "Warning: {error}")
-                continue
+        next := nextTag(current, opts.bump, opts.initialTag) onerr
+            warn("{error}")
+            continue
 
         display := current
         if display == ""
             display = "<none>"
 
         if opts.format == "csv"
-            fmt.Printf("\"%s\",\"%s\",\"%s\"\n", repo, display, next)
+            print("\"{repo}\",\"{display}\",\"{next}\"")
         else
-            fmt.Printf("%s\t%s\t%s\n", repo, display, next)
+            print("{repo}\t{display}\t{next}")
 
 func doRelease(opts Options)
-    initialTag := env.GetOr("INITIAL_TAG", "v0.0.1")
     generateNotes := env.GetBoolOrDefault("GENERATE_NOTES", true)
 
     if opts.repo == ""
-        fmt.Fprintln(os.Stderr, "release requires --repo OWNER/REPO")
-        os.Exit(1)
+        fatal("release requires --repo OWNER/REPO")
 
-    # Verify org filter
     if opts.org != "" and not (opts.repo |> string.HasPrefix("{opts.org}/"))
-        fmt.Fprintln(os.Stderr, "Repo '{opts.repo}' is not under org '{opts.org}'")
-        os.Exit(1)
+        fatal("Repo '{opts.repo}' is not under org '{opts.org}'")
 
     # Verify repo exists
     _ := shell.Output("gh", "repo", "view", opts.repo) onerr
-        fmt.Fprintln(os.Stderr, "Failed to access repo: {error}")
-        os.Exit(1)
+        fatal("Failed to access repo: {error}")
 
     current := highestSemverTag(opts.repo) onerr
-        fmt.Fprintln(os.Stderr, "Error: {error}")
-        os.Exit(1)
+        fatal("Error: {error}")
 
-    next := ""
-    if current == ""
-        next = initialTag
-    else
-        next = bumpSemver(current, opts.bump) onerr
-            fmt.Fprintln(os.Stderr, "Error: {error}")
-            os.Exit(1)
+    next := nextTag(current, opts.bump, opts.initialTag) onerr
+        fatal("Error: {error}")
 
     if releaseExists(opts.repo, next)
         print("Release already exists:")
@@ -223,8 +217,7 @@ func doRelease(opts Options)
         return
 
     branch := defaultBranch(opts.repo) onerr
-        fmt.Fprintln(os.Stderr, "Error: {error}")
-        os.Exit(1)
+        fatal("Error: {error}")
 
     tagAlreadyExists := tagExists(opts.repo, next)
 
@@ -256,10 +249,8 @@ func doRelease(opts Options)
         cmdArgs = append(cmdArgs, "--draft")
 
     # Display the command
-    fmt.Printf("Command:\n  gh")
-    for arg in cmdArgs
-        fmt.Printf(" %s", arg)
-    print("")
+    print("Command:")
+    print("  gh {cmdArgs |> string.Join(\" \")}")
     print("")
 
     if opts.dryRun
@@ -269,28 +260,20 @@ func doRelease(opts Options)
     _ := shell.Output("gh", many cmdArgs) onerr
         fmt.Fprintln(os.Stderr, "")
         fmt.Fprintln(os.Stderr, "Release creation failed. This may indicate a race condition")
-        fmt.Fprintln(os.Stderr, "(another process may have created the release or tag).")
-        os.Exit(1)
+        fatal("(another process may have created the release or tag).")
 
 func doPick(opts Options)
-    initialTag := env.GetOr("INITIAL_TAG", "v0.0.1")
-
     repos := listReposWhereICommitted(opts.org) onerr
-        fmt.Fprintln(os.Stderr, "Failed to list repos: {error}")
-        os.Exit(1)
+        fatal("Failed to list repos: {error}")
 
     # Collect repos with their computed next tags
-    entries := make(list of RepoEntry, 0)
+    entries := list of RepoEntry{}
     for repo in repos
         current := highestSemverTag(repo) onerr
             continue
 
-        next := ""
-        if current == ""
-            next = initialTag
-        else
-            next = bumpSemver(current, opts.bump) onerr
-                continue
+        next := nextTag(current, opts.bump, opts.initialTag) onerr
+            continue
 
         entries = append(entries, RepoEntry{name: repo, current: current, next: next})
 
@@ -299,12 +282,12 @@ func doPick(opts Options)
         os.Exit(1)
 
     # Build display lines: "myorg/repo          v1.2.3  →  v1.2.4"
-    labels := make(list of string, 0)
-    for entry in entries
+    labels := entries |> slice.Map((entry RepoEntry) =>
         displayCurrent := entry.current
         if displayCurrent == ""
             displayCurrent = "<none>"
-        labels = append(labels, fmt.Sprintf("%-40s  %-12s  →  %s", entry.name, displayCurrent, entry.next))
+        return entry.name |> string.PadRight(40) + "  " + displayCurrent |> string.PadRight(12) + "  →  " + entry.next
+    )
 
     i := input.Choose("Select a repo to release:", labels) onerr
         print("Cancelled.")
@@ -342,17 +325,15 @@ func usage()
 
 func nextFlagValue(args list of string, i int, flag string) string
     if i + 1 >= len(args) or args[i + 1] |> string.HasPrefix("--")
-        fmt.Fprintln(os.Stderr, "{flag} requires a value")
-        os.Exit(1)
+        fatal("{flag} requires a value")
     return args[i + 1]
 
 func validateBump(bump string)
     validBumps := list of string{"patch", "minor", "major"}
     if not slice.Contains(validBumps, bump)
-        fmt.Fprintln(os.Stderr, "Invalid bump type: {bump}")
-        os.Exit(1)
+        fatal("Invalid bump type: {bump}")
 
-func parseArgs() Options
+func parseArgs(initialTag string) Options
     args := os.Args
     if len(args) < 2
         usage()
@@ -360,12 +341,10 @@ func parseArgs() Options
 
     command := args[1]
 
-    # Handle help
     if command == "-h" or command == "--help"
         usage()
         os.Exit(0)
 
-    # Validate command
     validCommands := list of string{"list", "release", "pick"}
     if not slice.Contains(validCommands, command)
         fmt.Fprintln(os.Stderr, "Unknown command: {command}")
@@ -373,7 +352,7 @@ func parseArgs() Options
         usage()
         os.Exit(1)
 
-    opts := Options{command: command, bump: "patch", format: "tsv", dryRun: false, draft: true}
+    opts := Options{command: command, bump: "patch", format: "tsv", dryRun: false, draft: true, initialTag: initialTag}
 
     i := 2
     for i < len(args)
@@ -414,17 +393,13 @@ func main()
     # Validate env config
     initialTag := env.GetOr("INITIAL_TAG", "v0.0.1")
     if not validateSemver(initialTag)
-        fmt.Fprintln(os.Stderr, "INITIAL_TAG '{initialTag}' is not valid semver (expected e.g. v0.0.1)")
-        os.Exit(1)
+        fatal("INITIAL_TAG '{initialTag}' is not valid semver (expected e.g. v0.0.1)")
 
     # Check required tools
-    requiredTools := list of string{"gh", "grep", "sort", "awk"}
-    for tool in requiredTools
-        if not shell.Which(tool)
-            fmt.Fprintln(os.Stderr, "Missing required command: {tool}")
-            os.Exit(1)
+    if not shell.Which("gh")
+        fatal("Missing required command: gh")
 
-    opts := parseArgs()
+    opts := parseArgs(initialTag)
 
     opts.command |> switch
         when "list"
