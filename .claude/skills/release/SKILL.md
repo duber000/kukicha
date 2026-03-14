@@ -22,9 +22,8 @@ const Version = "0.0.X"   # new version
 
 ### 3. Update version references in docs
 
-**README.md** — exactly three occurrences (grep for the old version to confirm):
+**README.md** — exactly two occurrences (grep for the old version to confirm):
 - `go install github.com/duber000/kukicha/cmd/kukicha@vOLD`
-- `VERSION=vOLD`
 - `**Version:** OLD — Ready for testing`
 
 **CLAUDE.md** and **AGENTS.md** — one occurrence each near the top (must stay in sync):
@@ -34,8 +33,25 @@ Replace all with the new version.
 
 ### 4. Regenerate and rebuild
 
+> **Important:** `make generate` uses `--if-changed` and skips `.kuki` files whose
+> source hasn't changed. A version bump alone doesn't touch `.kuki` sources, so most
+> `.go` files will keep their old version header. After `make generate`, force-regenerate
+> all stdlib files without `--if-changed`:
+
 ```bash
 make generate && make build
+
+# Force-regenerate ALL stdlib .go files (updates version headers):
+for f in stdlib/*/*.kuki; do
+    [[ "$f" == *_test.kuki ]] && continue
+    [[ "$f" == stdlib/test/test.kuki ]] && continue
+    ./kukicha build --skip-build "$f"
+done
+for f in stdlib/*/*_test.kuki; do
+    ./kukicha build --skip-build "$f"
+done
+
+make build   # re-embed the updated .go files
 ```
 
 This regenerates `internal/semantic/stdlib_registry_gen.go`, all `stdlib/*/*.go`, all `stdlib/*/*_test.go`, then rebuilds the compiler with the updated files embedded.
@@ -80,7 +96,7 @@ git push origin vX.X.X
 ## Checklist
 
 - [ ] `internal/version/version.go` bumped
-- [ ] `README.md` — all 3 version strings updated
+- [ ] `README.md` — both version strings updated
 - [ ] `CLAUDE.md` — version line updated
 - [ ] `AGENTS.md` — version line updated (must match CLAUDE.md)
 - [ ] `make generate && make build` succeeded
