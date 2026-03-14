@@ -494,7 +494,7 @@ func (g *Generator) inferReturnCount(expr ast.Expression) (int, bool) {
 			return g.returnCountForFunctionName(id.Value)
 		}
 	case *ast.MethodCallExpr:
-		// Method return counts require type info; skip for now.
+		// Fall through — if exprReturnCounts didn't have it, we can't infer from AST alone.
 		return 0, false
 	}
 	return 0, false

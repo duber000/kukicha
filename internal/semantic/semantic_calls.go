@@ -14,7 +14,7 @@ var knownExternalReturns map[string]int
 func init() {
 	knownExternalReturns = make(map[string]int, len(generatedStdlibRegistry)+len(generatedGoStdlib))
 	for k, v := range generatedStdlibRegistry {
-		knownExternalReturns[k] = v
+		knownExternalReturns[k] = v.Count
 	}
 	for k, v := range generatedGoStdlib {
 		knownExternalReturns[k] = v.Count
@@ -67,14 +67,26 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 		providedArgTypes = append(providedArgTypes, a.analyzeExpression(arg))
 	}
 
-	// Validate usage of named arguments (only supported for local functions)
+	// Validate usage of named arguments
 	if len(expr.NamedArguments) > 0 {
 		if funcType.Kind != TypeKindFunction {
-			name := "function"
-			if id, ok := expr.Function.(*ast.Identifier); ok {
-				name = fmt.Sprintf("function '%s'", id.Value)
+			// Check if the Kukicha stdlib registry has parameter names for this function
+			qualifiedName := ""
+			if methodCall, ok := expr.Function.(*ast.MethodCallExpr); ok {
+				if objID, ok := methodCall.Object.(*ast.Identifier); ok {
+					qualifiedName = objID.Value + "." + methodCall.Method.Value
+				}
 			}
-			a.error(expr.Pos(), fmt.Sprintf("named arguments are not supported for imported or unknown %s (please use positional arguments)", name))
+			if entry, ok := generatedStdlibRegistry[qualifiedName]; ok && len(entry.ParamNames) > 0 {
+				// Stdlib function with known param names — validate named args
+				a.validateNamedArgs(expr, entry.ParamNames)
+			} else {
+				name := "function"
+				if id, ok := expr.Function.(*ast.Identifier); ok {
+					name = fmt.Sprintf("function '%s'", id.Value)
+				}
+				a.error(expr.Pos(), fmt.Sprintf("named arguments are not supported for imported or unknown %s (please use positional arguments)", name))
+			}
 		}
 	}
 
@@ -180,9 +192,9 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 	// Analyze object
 	objType := a.analyzeExpression(expr.Object)
 
-	// Method support is currently limited to positional arguments
-	if len(expr.NamedArguments) > 0 {
-		a.error(expr.Pos(), "named arguments are not supported for method calls (please use positional arguments)")
+	// Analyze named arguments
+	for _, namedArg := range expr.NamedArguments {
+		a.analyzeExpression(namedArg.Value)
 	}
 
 	// Analyze arguments
@@ -222,13 +234,10 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 			return types
 		}
 
-		// Fall back to Kukicha stdlib registry (count only, no type info)
-		if count, ok := knownExternalReturns[qualifiedName]; ok {
-			types := make([]*TypeInfo, count)
-			for i := range types {
-				types[i] = &TypeInfo{Kind: TypeKindUnknown}
-			}
-			a.recordReturnCount(expr, count)
+		// Fall back to Kukicha stdlib registry (now has per-position type info)
+		if entry, ok := generatedStdlibRegistry[qualifiedName]; ok {
+			types := goStdlibEntryToTypeInfos(entry)
+			a.recordReturnCount(expr, entry.Count)
 			return types
 		}
 	}
@@ -350,6 +359,19 @@ func (a *Analyzer) checkDeprecatedCall(expr *ast.CallExpr) {
 	if qualifiedName != "" {
 		if msg, ok := generatedStdlibDeprecated[qualifiedName]; ok {
 			a.warn(expr.Pos(), fmt.Sprintf("'%s' is deprecated: %s", qualifiedName, msg))
+		}
+	}
+}
+
+// validateNamedArgs checks that named arguments match known parameter names.
+func (a *Analyzer) validateNamedArgs(expr *ast.CallExpr, paramNames []string) {
+	paramSet := make(map[string]bool, len(paramNames))
+	for _, name := range paramNames {
+		paramSet[name] = true
+	}
+	for _, namedArg := range expr.NamedArguments {
+		if !paramSet[namedArg.Name.Value] {
+			a.error(namedArg.Pos(), fmt.Sprintf("unknown parameter name '%s'", namedArg.Name.Value))
 		}
 	}
 }

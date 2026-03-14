@@ -2172,9 +2172,8 @@ func Foo() string
 	}
 }
 
-func TestNoDirectiveOnInterface(t *testing.T) {
-	// Directives on interfaces are silently ignored (not attached) for now
-	input := `# kuki:deprecated "old"
+func TestDirectiveAttachedToInterface(t *testing.T) {
+	input := `# kuki:deprecated "Use NewFoo instead"
 interface Foo
     Bar() string
 `
@@ -2182,8 +2181,25 @@ interface Foo
 	if err != nil {
 		t.Fatalf("lexer error: %v", err)
 	}
-	_, errors := p.Parse()
+	program, errors := p.Parse()
 	if len(errors) > 0 {
 		t.Fatalf("parser errors: %v", errors)
+	}
+	if len(program.Declarations) != 1 {
+		t.Fatalf("expected 1 declaration, got %d", len(program.Declarations))
+	}
+	iface, ok := program.Declarations[0].(*ast.InterfaceDecl)
+	if !ok {
+		t.Fatalf("expected InterfaceDecl, got %T", program.Declarations[0])
+	}
+	if len(iface.Directives) != 1 {
+		t.Fatalf("expected 1 directive, got %d", len(iface.Directives))
+	}
+	d := iface.Directives[0]
+	if d.Name != "deprecated" {
+		t.Errorf("expected directive name 'deprecated', got %q", d.Name)
+	}
+	if len(d.Args) != 1 || d.Args[0] != "Use NewFoo instead" {
+		t.Errorf("expected args [\"Use NewFoo instead\"], got %v", d.Args)
 	}
 }

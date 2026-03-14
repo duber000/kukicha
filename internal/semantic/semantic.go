@@ -102,6 +102,10 @@ func (a *Analyzer) collectDeprecations() {
 			if msg := deprecatedMessage(d.Directives); msg != "" {
 				a.deprecatedTypes[d.Name.Value] = msg
 			}
+		case *ast.InterfaceDecl:
+			if msg := deprecatedMessage(d.Directives); msg != "" {
+				a.deprecatedTypes[d.Name.Value] = msg
+			}
 		}
 	}
 }

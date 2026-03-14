@@ -1,6 +1,7 @@
 // genstdlibregistry generates internal/semantic/stdlib_registry_gen.go by
 // scanning all stdlib/*.kuki source files and extracting exported function
-// return counts. Run via "make genstdlibregistry" or "go run ./cmd/genstdlibregistry".
+// signatures: return counts, per-position return types, and parameter names.
+// Run via "make genstdlibregistry" or "go run ./cmd/genstdlibregistry".
 //
 // This implements the "Automatic Inference" improvement described in COMPILER-FIX.md:
 // instead of maintaining a hand-written registry in semantic.go, the registry is
@@ -47,19 +48,32 @@ func main() {
 	fmt.Printf("Generated %s with %d entries (%d deprecated).\n", outPath, len(result.registry), len(result.deprecated))
 }
 
+// registryEntry holds the full signature info for a stdlib function.
+type registryEntry struct {
+	count      int
+	types      []typeRepr   // per-position return types
+	paramNames []string     // parameter names (for named argument support)
+}
+
+// typeRepr is the generator's representation of a type, emitted as goStdlibType.
+type typeRepr struct {
+	kind string // TypeKind constant name (e.g., "TypeKindInt")
+	name string // For TypeKindNamed (e.g., "error", "time.Time")
+}
+
 // scanResult holds the scanned registry and deprecated map.
 type scanResult struct {
-	registry   map[string]int
+	registry   map[string]registryEntry
 	deprecated map[string]string // qualified name → deprecation message
 }
 
 // scanRegistry reads and parses all .kuki files in paths, returning a map of
-// qualified function name → return count plus a map of deprecated functions.
+// qualified function name → signature info plus a map of deprecated functions.
 // Skips _test.kuki files, unexported functions, methods, and void functions.
 // Returns accumulated errors.
 func scanRegistry(paths []string) (scanResult, []error) {
 	result := scanResult{
-		registry:   map[string]int{},
+		registry:   map[string]registryEntry{},
 		deprecated: map[string]string{},
 	}
 	var errs []error
@@ -132,8 +146,24 @@ func scanRegistry(paths []string) (scanResult, []error) {
 				continue
 			}
 
-			if existing, exists := result.registry[key]; !exists || returnCount > existing {
-				result.registry[key] = returnCount
+			// Extract per-position return types
+			types := make([]typeRepr, returnCount)
+			for i, ret := range fd.Returns {
+				types[i] = typeAnnotationToRepr(ret)
+			}
+
+			// Extract parameter names
+			paramNames := make([]string, len(fd.Parameters))
+			for i, param := range fd.Parameters {
+				paramNames[i] = param.Name.Value
+			}
+
+			if existing, exists := result.registry[key]; !exists || returnCount > existing.count {
+				result.registry[key] = registryEntry{
+					count:      returnCount,
+					types:      types,
+					paramNames: paramNames,
+				}
 			}
 		}
 	}
@@ -141,12 +171,72 @@ func scanRegistry(paths []string) (scanResult, []error) {
 	return result, errs
 }
 
+// typeAnnotationToRepr converts a Kukicha AST type annotation to a typeRepr.
+func typeAnnotationToRepr(ann ast.TypeAnnotation) typeRepr {
+	switch t := ann.(type) {
+	case *ast.PrimitiveType:
+		switch t.Name {
+		case "int", "int8", "int16", "int32", "int64",
+			"uint", "uint8", "uint16", "uint32", "uint64",
+			"byte", "rune":
+			return typeRepr{kind: "TypeKindInt"}
+		case "float32", "float64":
+			return typeRepr{kind: "TypeKindFloat"}
+		case "string":
+			return typeRepr{kind: "TypeKindString"}
+		case "bool":
+			return typeRepr{kind: "TypeKindBool"}
+		default:
+			return typeRepr{kind: "TypeKindUnknown"}
+		}
+	case *ast.NamedType:
+		return typeRepr{kind: "TypeKindNamed", name: t.Name}
+	case *ast.ListType:
+		return typeRepr{kind: "TypeKindList"}
+	case *ast.MapType:
+		return typeRepr{kind: "TypeKindMap"}
+	case *ast.ChannelType:
+		return typeRepr{kind: "TypeKindChannel"}
+	case *ast.ReferenceType:
+		return typeRepr{kind: "TypeKindReference"}
+	case *ast.FunctionType:
+		return typeRepr{kind: "TypeKindFunction"}
+	default:
+		return typeRepr{kind: "TypeKindUnknown"}
+	}
+}
+
+// formatTypeRepr formats a typeRepr as a Go source literal for goStdlibType.
+func formatTypeRepr(tr typeRepr) string {
+	if tr.name != "" {
+		return fmt.Sprintf("{Kind: %s, Name: %q}", tr.kind, tr.name)
+	}
+	return fmt.Sprintf("{Kind: %s}", tr.kind)
+}
+
 // formatRegistry generates the Go source code for stdlib_registry_gen.go from
 // the scan result. Returns gofmt'd source.
 func formatRegistry(result scanResult) []byte {
 	entries := make([]string, 0, len(result.registry))
 	for k, v := range result.registry {
-		entries = append(entries, fmt.Sprintf("\t%q: %d,", k, v))
+		// Build the types slice literal
+		typeParts := make([]string, len(v.types))
+		for i, tr := range v.types {
+			typeParts[i] = formatTypeRepr(tr)
+		}
+		typesLiteral := strings.Join(typeParts, ", ")
+
+		// Build the param names slice literal
+		paramParts := make([]string, len(v.paramNames))
+		for i, name := range v.paramNames {
+			paramParts[i] = fmt.Sprintf("%q", name)
+		}
+		paramsLiteral := strings.Join(paramParts, ", ")
+
+		entries = append(entries, fmt.Sprintf(
+			"\t%q: {Count: %d, Types: []goStdlibType{%s}, ParamNames: []string{%s}},",
+			k, v.count, typesLiteral, paramsLiteral,
+		))
 	}
 	sort.Strings(entries)
 
@@ -162,12 +252,13 @@ func formatRegistry(result scanResult) []byte {
 package semantic
 
 // generatedStdlibRegistry maps qualified Kukicha stdlib function names (pkg.Func)
-// to the number of return values they produce. The semantic analyzer uses this
-// to correctly decompose pipe expressions and onerr clauses for imported functions.
+// to their return signature (count, per-position types, and parameter names).
+// The semantic analyzer uses this to correctly decompose pipe expressions and
+// onerr clauses, provide type info for imported functions, and support named arguments.
 //
 // Generated from: stdlib/*/*.kuki (excludes *_test.kuki, methods, unexported funcs,
 // and void functions).
-var generatedStdlibRegistry = map[string]int{
+var generatedStdlibRegistry = map[string]goStdlibEntry{
 %s
 }
 

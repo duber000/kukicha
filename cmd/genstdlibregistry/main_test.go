@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/duber000/kukicha/internal/ast"
+	"github.com/duber000/kukicha/internal/parser"
 )
 
 func writeKukiFile(t *testing.T, dir, name, content string) string {
@@ -35,11 +38,63 @@ func Divide(a int, b int) (int, error)
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if result.registry["mylib.Add"] != 1 {
-		t.Errorf("expected mylib.Add=1, got %d", result.registry["mylib.Add"])
+	if result.registry["mylib.Add"].count != 1 {
+		t.Errorf("expected mylib.Add count=1, got %d", result.registry["mylib.Add"].count)
 	}
-	if result.registry["mylib.Divide"] != 2 {
-		t.Errorf("expected mylib.Divide=2, got %d", result.registry["mylib.Divide"])
+	if result.registry["mylib.Divide"].count != 2 {
+		t.Errorf("expected mylib.Divide count=2, got %d", result.registry["mylib.Divide"].count)
+	}
+}
+
+func TestScanRegistry_ReturnTypes(t *testing.T) {
+	dir := t.TempDir()
+	path := writeKukiFile(t, dir, "mylib/mylib.kuki", `petiole mylib
+
+func GetName() string
+    return "test"
+
+func ReadFile(path string) (list of byte, error)
+    return empty, empty
+`)
+
+	result, errs := scanRegistry([]string{path})
+	if len(errs) > 0 {
+		t.Fatalf("unexpected errors: %v", errs)
+	}
+
+	entry := result.registry["mylib.GetName"]
+	if len(entry.types) != 1 || entry.types[0].kind != "TypeKindString" {
+		t.Errorf("expected GetName return TypeKindString, got %v", entry.types)
+	}
+
+	entry = result.registry["mylib.ReadFile"]
+	if len(entry.types) != 2 {
+		t.Fatalf("expected ReadFile 2 return types, got %d", len(entry.types))
+	}
+	if entry.types[0].kind != "TypeKindList" {
+		t.Errorf("expected ReadFile[0] TypeKindList, got %s", entry.types[0].kind)
+	}
+	if entry.types[1].kind != "TypeKindNamed" || entry.types[1].name != "error" {
+		t.Errorf("expected ReadFile[1] TypeKindNamed/error, got %s/%s", entry.types[1].kind, entry.types[1].name)
+	}
+}
+
+func TestScanRegistry_ParamNames(t *testing.T) {
+	dir := t.TempDir()
+	path := writeKukiFile(t, dir, "mylib/mylib.kuki", `petiole mylib
+
+func Greet(name string, greeting string) string
+    return greeting
+`)
+
+	result, errs := scanRegistry([]string{path})
+	if len(errs) > 0 {
+		t.Fatalf("unexpected errors: %v", errs)
+	}
+
+	entry := result.registry["mylib.Greet"]
+	if len(entry.paramNames) != 2 || entry.paramNames[0] != "name" || entry.paramNames[1] != "greeting" {
+		t.Errorf("expected param names [name, greeting], got %v", entry.paramNames)
 	}
 }
 
@@ -89,8 +144,8 @@ func NewCounter() Counter
 	if _, ok := result.registry["mylib.Increment"]; ok {
 		t.Error("method 'Increment' should not be in registry")
 	}
-	if result.registry["mylib.NewCounter"] != 1 {
-		t.Errorf("expected mylib.NewCounter=1, got %d", result.registry["mylib.NewCounter"])
+	if result.registry["mylib.NewCounter"].count != 1 {
+		t.Errorf("expected mylib.NewCounter count=1, got %d", result.registry["mylib.NewCounter"].count)
 	}
 }
 
@@ -113,8 +168,8 @@ func GetValue() string
 	if _, ok := result.registry["mylib.DoSomething"]; ok {
 		t.Error("void function 'DoSomething' should not be in registry")
 	}
-	if result.registry["mylib.GetValue"] != 1 {
-		t.Errorf("expected mylib.GetValue=1, got %d", result.registry["mylib.GetValue"])
+	if result.registry["mylib.GetValue"].count != 1 {
+		t.Errorf("expected mylib.GetValue count=1, got %d", result.registry["mylib.GetValue"].count)
 	}
 }
 
@@ -191,14 +246,14 @@ func Second() (string, error)
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if result.registry["alpha.First"] != 1 {
-		t.Errorf("expected alpha.First=1, got %d", result.registry["alpha.First"])
+	if result.registry["alpha.First"].count != 1 {
+		t.Errorf("expected alpha.First count=1, got %d", result.registry["alpha.First"].count)
 	}
-	if result.registry["beta.First"] != 1 {
-		t.Errorf("expected beta.First=1, got %d", result.registry["beta.First"])
+	if result.registry["beta.First"].count != 1 {
+		t.Errorf("expected beta.First count=1, got %d", result.registry["beta.First"].count)
 	}
-	if result.registry["beta.Second"] != 2 {
-		t.Errorf("expected beta.Second=2, got %d", result.registry["beta.Second"])
+	if result.registry["beta.Second"].count != 2 {
+		t.Errorf("expected beta.Second count=2, got %d", result.registry["beta.Second"].count)
 	}
 }
 
@@ -220,8 +275,8 @@ func Ambiguous() (int, error)
 		t.Fatalf("unexpected errors: %v", errs)
 	}
 
-	if result.registry["pkg.Ambiguous"] != 2 {
-		t.Errorf("expected pkg.Ambiguous=2 (larger count wins), got %d", result.registry["pkg.Ambiguous"])
+	if result.registry["pkg.Ambiguous"].count != 2 {
+		t.Errorf("expected pkg.Ambiguous count=2 (larger count wins), got %d", result.registry["pkg.Ambiguous"].count)
 	}
 }
 
@@ -255,8 +310,8 @@ func NewConfig() Config
 	if len(result.registry) != 1 {
 		t.Errorf("expected 1 entry, got %d: %v", len(result.registry), result.registry)
 	}
-	if result.registry["mylib.NewConfig"] != 1 {
-		t.Errorf("expected mylib.NewConfig=1, got %d", result.registry["mylib.NewConfig"])
+	if result.registry["mylib.NewConfig"].count != 1 {
+		t.Errorf("expected mylib.NewConfig count=1, got %d", result.registry["mylib.NewConfig"].count)
 	}
 }
 
@@ -282,11 +337,11 @@ func NewFunc() string
 	}
 
 	// Both should be in the registry
-	if result.registry["mylib.OldFunc"] != 1 {
-		t.Errorf("expected mylib.OldFunc=1, got %d", result.registry["mylib.OldFunc"])
+	if result.registry["mylib.OldFunc"].count != 1 {
+		t.Errorf("expected mylib.OldFunc count=1, got %d", result.registry["mylib.OldFunc"].count)
 	}
-	if result.registry["mylib.NewFunc"] != 1 {
-		t.Errorf("expected mylib.NewFunc=1, got %d", result.registry["mylib.NewFunc"])
+	if result.registry["mylib.NewFunc"].count != 1 {
+		t.Errorf("expected mylib.NewFunc count=1, got %d", result.registry["mylib.NewFunc"].count)
 	}
 
 	// Only OldFunc should be deprecated
@@ -331,7 +386,7 @@ func DoOld()
 
 func TestFormatRegistry_Empty(t *testing.T) {
 	output := formatRegistry(scanResult{
-		registry:   map[string]int{},
+		registry:   map[string]registryEntry{},
 		deprecated: map[string]string{},
 	})
 
@@ -352,10 +407,10 @@ func TestFormatRegistry_Empty(t *testing.T) {
 
 func TestFormatRegistry_SortedEntries(t *testing.T) {
 	result := scanResult{
-		registry: map[string]int{
-			"z.Zebra":  1,
-			"a.Alpha":  2,
-			"m.Middle": 1,
+		registry: map[string]registryEntry{
+			"z.Zebra":  {count: 1, types: []typeRepr{{kind: "TypeKindInt"}}, paramNames: []string{"x"}},
+			"a.Alpha":  {count: 2, types: []typeRepr{{kind: "TypeKindString"}, {kind: "TypeKindNamed", name: "error"}}, paramNames: []string{"s"}},
+			"m.Middle": {count: 1, types: []typeRepr{{kind: "TypeKindBool"}}, paramNames: []string{"v"}},
 		},
 		deprecated: map[string]string{},
 	}
@@ -377,55 +432,38 @@ func TestFormatRegistry_SortedEntries(t *testing.T) {
 
 func TestFormatRegistry_ValidGo(t *testing.T) {
 	result := scanResult{
-		registry: map[string]int{
-			"slice.Filter": 1,
-			"pg.Query":     2,
-			"fetch.Get":    2,
-		},
-		deprecated: map[string]string{},
-	}
-
-	output := formatRegistry(result)
-	src := string(output)
-	if !strings.Contains(src, `"slice.Filter"`) || !strings.Contains(src, "1") {
-		t.Errorf("expected 'slice.Filter' with value 1 in output:\n%s", src)
-	}
-	if !strings.Contains(src, `"pg.Query"`) || !strings.Contains(src, "2") {
-		t.Errorf("expected 'pg.Query' with value 2 in output:\n%s", src)
-	}
-	if !strings.Contains(src, `"fetch.Get"`) {
-		t.Errorf("expected 'fetch.Get' in output:\n%s", src)
-	}
-}
-
-func TestFormatRegistry_ReturnCountValues(t *testing.T) {
-	result := scanResult{
-		registry: map[string]int{
-			"pkg.Single": 1,
-			"pkg.Double": 2,
-			"pkg.Triple": 3,
+		registry: map[string]registryEntry{
+			"slice.Filter": {count: 1, types: []typeRepr{{kind: "TypeKindList"}}, paramNames: []string{"items", "predicate"}},
+			"pg.Query":     {count: 2, types: []typeRepr{{kind: "TypeKindNamed", name: "Rows"}, {kind: "TypeKindNamed", name: "error"}}, paramNames: []string{"pool", "query"}},
+			"fetch.Get":    {count: 2, types: []typeRepr{{kind: "TypeKindReference"}, {kind: "TypeKindNamed", name: "error"}}, paramNames: []string{"url"}},
 		},
 		deprecated: map[string]string{},
 	}
 
 	output := string(formatRegistry(result))
-
-	if !strings.Contains(output, `"pkg.Single": 1`) {
-		t.Error("expected Single: 1")
+	if !strings.Contains(output, `"slice.Filter"`) {
+		t.Errorf("expected 'slice.Filter' in output:\n%s", output)
 	}
-	if !strings.Contains(output, `"pkg.Double": 2`) {
-		t.Error("expected Double: 2")
+	if !strings.Contains(output, `"pg.Query"`) {
+		t.Errorf("expected 'pg.Query' in output:\n%s", output)
 	}
-	if !strings.Contains(output, `"pkg.Triple": 3`) {
-		t.Error("expected Triple: 3")
+	if !strings.Contains(output, `"fetch.Get"`) {
+		t.Errorf("expected 'fetch.Get' in output:\n%s", output)
+	}
+	// Verify type info is present
+	if !strings.Contains(output, "TypeKindList") {
+		t.Errorf("expected TypeKindList in output:\n%s", output)
+	}
+	if !strings.Contains(output, "TypeKindReference") {
+		t.Errorf("expected TypeKindReference in output:\n%s", output)
 	}
 }
 
 func TestFormatRegistry_WithDeprecated(t *testing.T) {
 	result := scanResult{
-		registry: map[string]int{
-			"pkg.OldFunc": 1,
-			"pkg.NewFunc": 1,
+		registry: map[string]registryEntry{
+			"pkg.OldFunc": {count: 1, types: []typeRepr{{kind: "TypeKindString"}}, paramNames: []string{}},
+			"pkg.NewFunc": {count: 1, types: []typeRepr{{kind: "TypeKindString"}}, paramNames: []string{}},
 		},
 		deprecated: map[string]string{
 			"pkg.OldFunc": "Use NewFunc instead",
@@ -435,5 +473,50 @@ func TestFormatRegistry_WithDeprecated(t *testing.T) {
 	output := string(formatRegistry(result))
 	if !strings.Contains(output, `"pkg.OldFunc": "Use NewFunc instead"`) {
 		t.Errorf("expected deprecated entry in output:\n%s", output)
+	}
+}
+
+func TestTypeAnnotationToRepr(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantKind string
+		wantName string
+	}{
+		{"int", "int", "TypeKindInt", ""},
+		{"string", "string", "TypeKindString", ""},
+		{"bool", "bool", "TypeKindBool", ""},
+		{"float64", "float64", "TypeKindFloat", ""},
+		{"error", "error", "TypeKindNamed", "error"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse a minimal .kuki with the return type
+			src := "petiole test\nfunc F() " + tt.input + "\n    return empty\n"
+			p, err := parser.New(src, "test.kuki")
+			if err != nil {
+				t.Fatalf("parser init error: %v", err)
+			}
+			prog, parseErrs := p.Parse()
+			if len(parseErrs) > 0 {
+				t.Fatalf("parse errors: %v", parseErrs)
+			}
+
+			result, scanErrs := scanRegistry([]string{})
+			_ = result
+			_ = scanErrs
+
+			// Get the function declaration
+			fd := prog.Declarations[0].(*ast.FunctionDecl)
+			repr := typeAnnotationToRepr(fd.Returns[0])
+
+			if repr.kind != tt.wantKind {
+				t.Errorf("kind = %q, want %q", repr.kind, tt.wantKind)
+			}
+			if repr.name != tt.wantName {
+				t.Errorf("name = %q, want %q", repr.name, tt.wantName)
+			}
+		})
 	}
 }

@@ -74,6 +74,18 @@ count = 100              # Reassignment
 val, error := f()        # 'error' and 'empty' can be used as variable names
 ```
 
+### Strings and Interpolation
+```kukicha
+greeting := "Hello {name}!"          # String interpolation with {expr}
+json := "key: \{value\}"             # Literal braces with \{ and \}
+mixed := "\{{key}\}: {value}"        # Escaped + interpolated: produces "{key_val}: value_val"
+path := "{dir}\sep{file}"            # OS path separator (filepath.Separator at runtime)
+```
+
+Use `\{` and `\}` to produce literal `{` and `}` characters in strings. Without escaping, `{identifier}` is treated as string interpolation.
+
+Use `\sep` to produce the OS-specific path separator (`/` on Unix, `\` on Windows) at runtime. It expands to `string(filepath.Separator)` in generated Go and auto-imports `path/filepath`.
+
 ### Functions (explicit types required)
 ```kukicha
 func Add(a int, b int) int

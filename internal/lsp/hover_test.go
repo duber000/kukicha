@@ -211,6 +211,110 @@ func TestLookupBuiltin_AllBuiltins(t *testing.T) {
 	}
 }
 
+func TestGetHoverContent_Parameter(t *testing.T) {
+	s := NewServer(nil, nil)
+	store := s.documents
+	uri := lsp.DocumentURI("file:///tmp/test.kuki")
+	store.Open(uri, "func Greet(name string)\n    print(name)\n", 1)
+
+	doc := store.Get(uri)
+	// Hover over "name" on line 1 (inside the function body)
+	content := s.getHoverContent(doc, "name", lsp.Position{Line: 1, Character: 10})
+
+	if content == "" {
+		t.Fatal("expected hover content for parameter 'name'")
+	}
+	if !strings.Contains(content, "name") {
+		t.Errorf("expected 'name' in hover, got: %s", content)
+	}
+	if !strings.Contains(content, "string") {
+		t.Errorf("expected 'string' type in hover, got: %s", content)
+	}
+	if !strings.Contains(content, "parameter") {
+		t.Errorf("expected '(parameter)' label in hover, got: %s", content)
+	}
+}
+
+func TestGetHoverContent_LocalVariable(t *testing.T) {
+	s := NewServer(nil, nil)
+	store := s.documents
+	uri := lsp.DocumentURI("file:///tmp/test.kuki")
+	store.Open(uri, "func main()\n    count := 42\n    print(count)\n", 1)
+
+	doc := store.Get(uri)
+	// Hover over "count" on line 2 (after declaration)
+	content := s.getHoverContent(doc, "count", lsp.Position{Line: 2, Character: 10})
+
+	if content == "" {
+		t.Fatal("expected hover content for variable 'count'")
+	}
+	if !strings.Contains(content, "count") {
+		t.Errorf("expected 'count' in hover, got: %s", content)
+	}
+	if !strings.Contains(content, "variable") {
+		t.Errorf("expected '(variable)' label in hover, got: %s", content)
+	}
+}
+
+func TestGetHoverContent_ForRangeVariable(t *testing.T) {
+	s := NewServer(nil, nil)
+	store := s.documents
+	uri := lsp.DocumentURI("file:///tmp/test.kuki")
+	store.Open(uri, "func main()\n    items := list of string{\"a\"}\n    for item in items\n        print(item)\n", 1)
+
+	doc := store.Get(uri)
+	// Hover over "item" inside the for body
+	content := s.getHoverContent(doc, "item", lsp.Position{Line: 3, Character: 14})
+
+	if content == "" {
+		t.Fatal("expected hover content for range variable 'item'")
+	}
+	if !strings.Contains(content, "item") {
+		t.Errorf("expected 'item' in hover, got: %s", content)
+	}
+	if !strings.Contains(content, "range variable") {
+		t.Errorf("expected '(range variable)' label in hover, got: %s", content)
+	}
+}
+
+func TestGetHoverContent_Receiver(t *testing.T) {
+	s := NewServer(nil, nil)
+	store := s.documents
+	uri := lsp.DocumentURI("file:///tmp/test.kuki")
+	store.Open(uri, "type Counter\n    value int\n\nfunc Inc on c reference Counter\n    c.value = c.value + 1\n", 1)
+
+	doc := store.Get(uri)
+	// Hover over "c" inside the method body
+	content := s.getHoverContent(doc, "c", lsp.Position{Line: 4, Character: 4})
+
+	if content == "" {
+		t.Fatal("expected hover content for receiver 'c'")
+	}
+	if !strings.Contains(content, "receiver") {
+		t.Errorf("expected '(receiver)' label in hover, got: %s", content)
+	}
+}
+
+func TestGetHoverContent_VariadicParameter(t *testing.T) {
+	s := NewServer(nil, nil)
+	store := s.documents
+	uri := lsp.DocumentURI("file:///tmp/test.kuki")
+	store.Open(uri, "func Sum(many numbers int) int\n    total := 0\n    return total\n", 1)
+
+	doc := store.Get(uri)
+	content := s.getHoverContent(doc, "numbers", lsp.Position{Line: 1, Character: 4})
+
+	if content == "" {
+		t.Fatal("expected hover content for variadic parameter 'numbers'")
+	}
+	if !strings.Contains(content, "many") {
+		t.Errorf("expected 'many' prefix in hover, got: %s", content)
+	}
+	if !strings.Contains(content, "parameter") {
+		t.Errorf("expected '(parameter)' label in hover, got: %s", content)
+	}
+}
+
 func TestLookupBuiltin_Unknown(t *testing.T) {
 	result := lookupBuiltin("nonexistent_builtin")
 	if result != "" {

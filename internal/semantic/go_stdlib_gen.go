@@ -6,18 +6,6 @@
 
 package semantic
 
-// goStdlibType holds the TypeKind and optional name for one return position.
-type goStdlibType struct {
-	Kind TypeKind
-	Name string // non-empty for TypeKindNamed (e.g. "error")
-}
-
-// goStdlibEntry holds the return count and per-position type info.
-type goStdlibEntry struct {
-	Count int
-	Types []goStdlibType
-}
-
 // generatedGoStdlib maps qualified Go stdlib function names to their return
 // signature. Consumed by analyzeMethodCallExpr to determine return counts
 // and type info without hand-maintained switch statements.

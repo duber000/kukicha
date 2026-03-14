@@ -130,9 +130,10 @@ type FieldDecl struct {
 }
 
 type InterfaceDecl struct {
-	Token   lexer.Token // The 'interface' token
-	Name    *Identifier
-	Methods []*MethodSignature
+	Token      lexer.Token // The 'interface' token
+	Name       *Identifier
+	Methods    []*MethodSignature
+	Directives []Directive // Attached `# kuki:` directives
 }
 
 func (d *InterfaceDecl) TokenLiteral() string { return d.Token.Lexeme }

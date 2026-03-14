@@ -51,6 +51,11 @@ func (a *Analyzer) validateTypeAnnotation(typeAnn ast.TypeAnnotation) {
 		if symbol == nil || (symbol.Kind != SymbolType && symbol.Kind != SymbolInterface) {
 			a.error(t.Pos(), fmt.Sprintf("undefined type '%s'", t.Name))
 		}
+
+		// Warn if the type is deprecated
+		if msg, ok := a.deprecatedTypes[t.Name]; ok {
+			a.warn(t.Pos(), fmt.Sprintf("'%s' is deprecated: %s", t.Name, msg))
+		}
 	case *ast.ReferenceType:
 		a.validateTypeAnnotation(t.ElementType)
 	case *ast.ListType:

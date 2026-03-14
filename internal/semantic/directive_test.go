@@ -91,15 +91,53 @@ func main()
 	}
 }
 
-func TestDeprecatedTypeWarning(t *testing.T) {
-	// For now, type deprecation is tracked but not yet warned on at usage sites.
-	// This test documents the current behavior.
+func TestDeprecatedTypeWarningAtUsageSite(t *testing.T) {
+	input := `# kuki:deprecated "Use NewUser instead"
+type OldUser
+    name string
+
+func MakeUser() OldUser
+    return OldUser{name: "test"}
+`
+	_, warnings := analyzeInputWithFile(t, input, "test.kuki")
+	found := false
+	for _, w := range warnings {
+		if strings.Contains(w.Error(), "deprecated") && strings.Contains(w.Error(), "OldUser") {
+			found = true
+			if !strings.Contains(w.Error(), "Use NewUser instead") {
+				t.Errorf("expected deprecation message, got: %s", w)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected deprecation warning for OldUser usage, got warnings: %v", warnings)
+	}
+}
+
+func TestDeprecatedTypeNotUsedNoWarning(t *testing.T) {
 	input := `# kuki:deprecated "Use NewUser instead"
 type OldUser
     name string
 
 func main()
     print("hello")
+`
+	_, warnings := analyzeInputWithFile(t, input, "test.kuki")
+	for _, w := range warnings {
+		if strings.Contains(w.Error(), "deprecated") && strings.Contains(w.Error(), "OldUser") {
+			t.Errorf("unexpected deprecation warning when type not used: %v", w)
+		}
+	}
+}
+
+func TestDeprecatedInterfaceWarning(t *testing.T) {
+	input := `# kuki:deprecated "Use NewHandler instead"
+interface OldHandler
+    Handle(msg string) string
+
+func Process(h OldHandler) string
+    return h.Handle("test")
 `
 	p, err := parser.New(input, "test.kuki")
 	if err != nil {
@@ -111,10 +149,24 @@ func main()
 	}
 	analyzer := NewWithFile(program, "test.kuki")
 	_ = analyzer.Analyze()
-	// Verify the type was registered as deprecated
-	if msg, ok := analyzer.deprecatedTypes["OldUser"]; !ok {
-		t.Error("expected OldUser to be in deprecatedTypes map")
-	} else if msg != "Use NewUser instead" {
-		t.Errorf("expected deprecation message 'Use NewUser instead', got %q", msg)
+
+	// Verify the interface was registered as deprecated
+	if msg, ok := analyzer.deprecatedTypes["OldHandler"]; !ok {
+		t.Error("expected OldHandler to be in deprecatedTypes map")
+	} else if msg != "Use NewHandler instead" {
+		t.Errorf("expected deprecation message 'Use NewHandler instead', got %q", msg)
+	}
+
+	// Verify warning is emitted at usage site
+	warnings := analyzer.Warnings()
+	found := false
+	for _, w := range warnings {
+		if strings.Contains(w.Error(), "deprecated") && strings.Contains(w.Error(), "OldHandler") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected deprecation warning for OldHandler usage, got warnings: %v", warnings)
 	}
 }

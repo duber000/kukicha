@@ -140,6 +140,8 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 			d.Directives = dirs
 		case *ast.TypeDecl:
 			d.Directives = dirs
+		case *ast.InterfaceDecl:
+			d.Directives = dirs
 		}
 	}
 
