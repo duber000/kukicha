@@ -327,7 +327,25 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 		}
 	}
 
-	// Full method resolution (non-stdlib) requires a richer type system; return Unknown for now.
+	// Field access (no parentheses): resolve struct field type
+	if !expr.IsCall && objType != nil {
+		fieldType := a.resolveFieldType(objType, methodName)
+		if fieldType != nil {
+			a.recordReturnCount(expr, 1)
+			a.recordType(expr, fieldType)
+			return []*TypeInfo{fieldType}
+		}
+	}
+
+	// Method call on user-defined type: look up method signature
+	if expr.IsCall && objType != nil {
+		methodType := a.resolveMethodType(objType, methodName)
+		if methodType != nil && len(methodType.Returns) > 0 {
+			a.recordReturnCount(expr, len(methodType.Returns))
+			return methodType.Returns
+		}
+	}
+
 	// Return count of 1 gives codegen's onerr path a safe default.
 	a.recordReturnCount(expr, 1)
 	return []*TypeInfo{{Kind: TypeKindUnknown}}
@@ -361,6 +379,62 @@ func (a *Analyzer) checkDeprecatedCall(expr *ast.CallExpr) {
 			a.warn(expr.Pos(), fmt.Sprintf("'%s' is deprecated: %s", qualifiedName, msg))
 		}
 	}
+}
+
+// resolveFieldType looks up a field's type on a struct or reference-to-struct type.
+func (a *Analyzer) resolveFieldType(objType *TypeInfo, fieldName string) *TypeInfo {
+	typeInfo := objType
+	// Dereference pointer/reference types
+	if typeInfo.Kind == TypeKindReference && typeInfo.ElementType != nil {
+		typeInfo = typeInfo.ElementType
+	}
+
+	// Look up in struct fields
+	if typeInfo.Fields != nil {
+		if fieldType, ok := typeInfo.Fields[fieldName]; ok {
+			return fieldType
+		}
+	}
+
+	// Try resolving via the symbol table (for named types)
+	if typeInfo.Kind == TypeKindNamed || typeInfo.Kind == TypeKindStruct {
+		name := typeInfo.Name
+		if sym := a.symbolTable.Resolve(name); sym != nil && sym.Type != nil && sym.Type.Fields != nil {
+			if fieldType, ok := sym.Type.Fields[fieldName]; ok {
+				return fieldType
+			}
+		}
+	}
+
+	return nil
+}
+
+// resolveMethodType looks up a method's function type on a struct type.
+func (a *Analyzer) resolveMethodType(objType *TypeInfo, methodName string) *TypeInfo {
+	typeInfo := objType
+	// Dereference pointer/reference types
+	if typeInfo.Kind == TypeKindReference && typeInfo.ElementType != nil {
+		typeInfo = typeInfo.ElementType
+	}
+
+	// Look up in type's methods
+	if typeInfo.Methods != nil {
+		if methodType, ok := typeInfo.Methods[methodName]; ok {
+			return methodType
+		}
+	}
+
+	// Try resolving via the symbol table (for named types)
+	if typeInfo.Kind == TypeKindNamed || typeInfo.Kind == TypeKindStruct {
+		name := typeInfo.Name
+		if sym := a.symbolTable.Resolve(name); sym != nil && sym.Type != nil && sym.Type.Methods != nil {
+			if methodType, ok := sym.Type.Methods[methodName]; ok {
+				return methodType
+			}
+		}
+	}
+
+	return nil
 }
 
 // validateNamedArgs checks that named arguments match known parameter names.

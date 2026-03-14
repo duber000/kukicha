@@ -201,6 +201,10 @@ The `empty` keyword has its own type kind (`TypeKindNil`) in `symbols.go`. This 
 
 The semantic analyzer validates struct literal field names and types at compile time. During `collectDeclarations()`, each struct type's field names and types are stored in `TypeInfo.Fields`. When a `StructLiteralExpr` is analyzed, the analyzer resolves the struct's symbol and checks that every field name exists on the struct and that the value type is compatible with the declared field type. Unknown fields produce `unknown field 'x' on struct 'Y'` errors; type mismatches produce `cannot use T1 as T2 in field 'x' of struct 'Y'`.
 
+### Method and field resolution
+
+`TypeInfo.Methods` (added alongside `Fields`) maps method names to their function `TypeInfo`. During `collectDeclarations()`, `registerMethod()` attaches each method's signature to its receiver type's symbol. At analysis time, `resolveFieldType()` and `resolveMethodType()` in `semantic_calls.go` distinguish field access from method calls using `MethodCallExpr.IsCall` — field accesses resolve the field's type from `Fields`, while method calls resolve return types from `Methods`. Both handle pointer/reference receivers by dereferencing first.
+
 ### Analysis passes
 
 0. **`collectDeprecations()`** — scans all declarations for `# kuki:deprecated` directives, populating `deprecatedFuncs`/`deprecatedTypes` maps

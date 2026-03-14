@@ -99,27 +99,40 @@ func (a *Analyzer) analyzeStringInterpolation(lit *ast.StringLiteral) {
 			continue
 		}
 
-		if !identifierPattern.MatchString(exprStr) {
-			continue
-		}
-
+		// Skip known onerr error variables — they're injected by codegen, not user-defined
 		if a.inOnerr && (exprStr == "error" || exprStr == a.currentOnerrrAlias) {
 			continue
 		}
 
 		expr, err := parseInterpolationExpression(exprStr, lit.Token.File)
 		if err != nil {
-			a.error(lit.Pos(), fmt.Sprintf("invalid expression in string interpolation: %s", exprStr))
+			// Only report for expressions that look intentional (not format specifiers etc.)
+			if identifierPattern.MatchString(exprStr) || strings.Contains(exprStr, ".") || strings.Contains(exprStr, "(") {
+				a.error(lit.Pos(), fmt.Sprintf("invalid expression in string interpolation: %s", exprStr))
+			}
 			continue
 		}
 
-		if ident, ok := expr.(*ast.Identifier); ok {
-			ident.Token.File = lit.Token.File
-			ident.Token.Line = lit.Token.Line
-			ident.Token.Column = lit.Token.Column + match[2]
-		}
+		// Patch position info for better error reporting
+		patchExprPosition(expr, lit.Token.File, lit.Token.Line, lit.Token.Column+match[2])
 
 		a.analyzeExpression(expr)
+	}
+}
+
+// patchExprPosition updates position info on an expression for error reporting.
+func patchExprPosition(expr ast.Expression, file string, line, column int) {
+	switch e := expr.(type) {
+	case *ast.Identifier:
+		e.Token.File = file
+		e.Token.Line = line
+		e.Token.Column = column
+	case *ast.MethodCallExpr:
+		if obj, ok := e.Object.(*ast.Identifier); ok {
+			obj.Token.File = file
+			obj.Token.Line = line
+			obj.Token.Column = column
+		}
 	}
 }
 

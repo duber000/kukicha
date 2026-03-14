@@ -116,6 +116,7 @@ type TypeInfo struct {
 	ParamNames   []string    // For functions: parameter names (for named argument validation)
 	DefaultCount int         // For functions: number of parameters with default values
 	Fields       map[string]*TypeInfo // For structs: field name → field type
+	Methods      map[string]*TypeInfo // For structs: method name → function TypeInfo
 }
 
 func (ti *TypeInfo) String() string {

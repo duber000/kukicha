@@ -211,6 +211,12 @@ func (a *Analyzer) collectFunctionDecl(decl *ast.FunctionDecl) {
 		DefaultCount: defaultCount,
 	}
 
+	// If this is a method (has receiver), register it on the receiver type
+	if decl.Receiver != nil {
+		a.registerMethod(decl, funcType)
+		return
+	}
+
 	// Add function to symbol table
 	symbol := &Symbol{
 		Name:     decl.Name.Value,
@@ -223,6 +229,41 @@ func (a *Analyzer) collectFunctionDecl(decl *ast.FunctionDecl) {
 	if err := a.symbolTable.Define(symbol); err != nil {
 		a.error(decl.Name.Pos(), err.Error())
 	}
+}
+
+// registerMethod adds a method's type info to its receiver type's Methods map.
+func (a *Analyzer) registerMethod(decl *ast.FunctionDecl, funcType *TypeInfo) {
+	// Extract the receiver type name (strip "reference" if pointer receiver)
+	typeName := ""
+	switch rt := decl.Receiver.Type.(type) {
+	case *ast.NamedType:
+		typeName = rt.Name
+	case *ast.PrimitiveType:
+		typeName = rt.Name
+	case *ast.ReferenceType:
+		// reference Type → extract inner type name
+		switch inner := rt.ElementType.(type) {
+		case *ast.NamedType:
+			typeName = inner.Name
+		case *ast.PrimitiveType:
+			typeName = inner.Name
+		}
+	}
+
+	if typeName == "" {
+		return
+	}
+
+	// Find the type symbol and attach the method
+	sym := a.symbolTable.Resolve(typeName)
+	if sym == nil || sym.Type == nil {
+		return
+	}
+
+	if sym.Type.Methods == nil {
+		sym.Type.Methods = make(map[string]*TypeInfo)
+	}
+	sym.Type.Methods[decl.Name.Value] = funcType
 }
 
 // analyzeDeclarations performs deep analysis of declarations
