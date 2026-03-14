@@ -76,7 +76,7 @@ When adding new language features, follow this process:
 
 1. Update the grammar in `docs/kukicha-grammar.ebnf.md`
 2. Update  `docs/kukicha-quick-reference.md`
-3. Update `AGENTS.md` we are in their world now.
+3. Update the relevant `AGENTS.md` files (root, `stdlib/`, `internal/`) with any new syntax or API changes.
 
 ### Step 2: Implement in the Compiler
 

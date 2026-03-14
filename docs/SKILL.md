@@ -14,6 +14,11 @@ Kukicha transpiles to Go. Write `.kuki` files with Kukicha syntax — not Go.
 | `reference User` | `*User` |
 | `reference of x` | `&x` |
 | `dereference ptr` | `*ptr` |
+| `func Method on t T` | `func (t T) Method()` |
+| `many args` | `args...` |
+| `make channel of T` | `make(chan T)` |
+| `send val to ch` / `receive from ch` | `ch <- val` / `<-ch` |
+| `defer f()` | `defer f()` (same keyword) |
 | 4-space indentation | `{ }` braces |
 
 ### Variables and Functions
@@ -39,6 +44,14 @@ result := Greet("Alice", greeting: "Hi")
 files.Copy(from: src, to: dst)
 ```
 
+### Strings and Interpolation
+
+```kukicha
+greeting := "Hello {name}!"          # {expr} is interpolated
+json := "key: \{value\}"             # \{ and \} produce literal braces
+path := "{dir}\sep{file}"            # \sep → OS path separator at runtime
+```
+
 ### Types
 
 ```kukicha
@@ -47,6 +60,16 @@ type Repo
     stars int    as "stargazers_count"
     tags  list of string
     meta  map of string to string
+```
+
+### Methods
+
+```kukicha
+func Display on todo Todo string
+    return "{todo.id}: {todo.title}"
+
+func SetDone on todo reference Todo       # pointer receiver
+    todo.done = true
 ```
 
 ### Error Handling (`onerr`)
@@ -112,6 +135,7 @@ for item in items
 
 for i from 0 to 10        # 0..9 (exclusive)
 for i from 0 through 10   # 0..10 (inclusive)
+for i from 10 through 0   # 10..0 (descending)
 
 switch command
     when "fetch", "pull"
@@ -127,6 +151,15 @@ switch
         print("popular")
     otherwise
         print("new")
+
+# Type switch
+switch event as e
+    when string
+        print(e)
+    when reference TaskEvent
+        print(e.Status)
+    otherwise
+        print("unknown")
 ```
 
 ### Lambdas
@@ -153,6 +186,59 @@ config := map of string to int{"port": 8080}
 last   := items[-1]    # negative indexing
 ```
 
+### Variadic Arguments (`many`)
+
+```kukicha
+func Sum(many numbers int) int
+    total := 0
+    for n in numbers
+        total = total + n
+    return total
+
+result := Sum(1, 2, 3)
+nums := list of int{1, 2, 3}
+result := Sum(many nums)              # spread a slice
+```
+
+### Type Assertions
+
+```kukicha
+result, ok := value.(string)          # safe (two-value)
+s := value.(string)                   # panics if wrong type
+```
+
+### Concurrency
+
+```kukicha
+ch := make channel of string
+send "message" to ch
+msg := receive from ch
+go doWork()
+
+# Multi-statement goroutine
+go
+    mu.Lock()
+    doWork()
+    mu.Unlock()
+
+# Select (channel multiplexing)
+select
+    when receive from done
+        return
+    when msg := receive from ch
+        print(msg)
+    when send "ping" to out
+        print("sent")
+    otherwise
+        print("nothing ready")
+```
+
+### Defer
+
+```kukicha
+defer resource.Close()                # runs when enclosing function exits
+```
+
 ### Imports and Canonical Aliases
 
 ```kukicha
@@ -169,6 +255,22 @@ import "github.com/jackc/pgx/v5" as pgx  # external package
 ```
 
 Always use these aliases — clashes cause compile errors.
+
+### Project Structure and Commands
+
+```kukicha
+petiole main                   # package declaration (Go's `package main`)
+```
+
+`petiole` is optional for single-file programs but required for multi-file packages and tests.
+
+```bash
+kukicha init [module]          # initialize project (go mod init + extract stdlib)
+kukicha check file.kuki        # validate syntax without compiling
+kukicha run file.kuki          # transpile, compile, and run
+kukicha build file.kuki        # transpile and compile to binary
+kukicha fmt -w file.kuki       # format in place
+```
 
 ---
 
@@ -367,6 +469,127 @@ template.Execute(tmpl, data) onerr return
 html := template.HTMLRenderSimple(tmplStr, map of string to any{"name": username}) onerr return
 ```
 
+**stdlib/string** (import as `strpkg`) — String utilities
+
+```kukicha
+import "stdlib/string" as strpkg
+parts  := strpkg.Split(line, ",")
+joined := strpkg.Join(parts, " | ")
+lower  := strpkg.ToLower(name)
+ok     := strpkg.Contains(text, "TODO")
+clean  := strpkg.Replace(raw, "\t", " ")
+```
+
+**stdlib/errors** (import as `errs`) — Error wrapping
+
+```kukicha
+import "stdlib/errors" as errs
+wrapped := errs.Wrap(err, "loading config")   # preserves Is/As chain
+opaque  := errs.Opaque(pgErr, "db connect")   # breaks chain at boundaries
+if errs.Is(err, io.EOF)
+    return
+# Dual-message: internal detail + user-safe message
+e := errs.NewPublic("pg: refused 10.0.0.1", "database unavailable")
+print(errs.Public(e))   # "database unavailable"
+```
+
+**stdlib/input** — Interactive CLI input
+
+```kukicha
+name := input.ReadLine("Enter name: ") onerr return
+name := input.Prompt("Enter name: ")            # panics on stdin failure
+ok   := input.Confirm("Proceed?") onerr return
+idx  := input.Choose("Select:", options) onerr return
+```
+
+**stdlib/concurrent** — Parallel execution
+
+```kukicha
+results := concurrent.Parallel(tasks, (t Task) => process(t)) onerr panic "{error}"
+results := concurrent.ParallelWithLimit(tasks, 4, (t Task) => process(t)) onerr panic "{error}"
+```
+
+**stdlib/datetime** — Time formatting and durations
+
+```kukicha
+formatted := datetime.Format(t, "iso8601")     # not Go's "2006-01-02"!
+timeout   := datetime.Seconds(30)
+```
+
+**stdlib/encoding** — Base64 and hex
+
+```kukicha
+encoded := encoding.Base64Encode(data)
+decoded := encoding.Base64Decode(encoded) onerr panic "{error}"
+hex     := encoding.HexEncode(hashBytes)
+```
+
+**stdlib/retry** — Retry with backoff
+
+```kukicha
+cfg := retry.New() |> retry.Attempts(5) |> retry.Delay(200)
+for attempt from 0 to cfg.MaxAttempts
+    result, err := doWork()
+    if err equals empty
+        break
+    retry.Sleep(cfg, attempt)
+```
+
+**stdlib/sandbox** — Filesystem sandboxing (use in HTTP handlers)
+
+```kukicha
+box     := sandbox.New("/var/data") onerr return
+content := sandbox.Read(box, userPath) onerr return   # can't escape root
+sandbox.Write(box, "out.txt", data) onerr return
+```
+
+**stdlib/math** — Math operations
+
+```kukicha
+val    := math.Clamp(input, 0.0, 100.0)
+abs    := math.Abs(-5.0)
+bigger := math.Max(a, b)
+```
+
+**stdlib/ctx** (import as `ctxpkg`) — Context helpers
+
+```kukicha
+import "stdlib/ctx" as ctxpkg
+c := ctxpkg.Background() |> ctxpkg.WithTimeout(30)
+defer ctxpkg.Cancel(c)
+```
+
+**stdlib/cast** — Type coercion
+
+```kukicha
+n := cast.SmartInt(value) onerr 0
+s := cast.SmartString(value) onerr ""
+```
+
+**stdlib/maps** — Map utilities
+
+```kukicha
+keys := maps.Keys(config)
+vals := maps.Values(config)
+ok   := maps.Contains(config, "port")
+```
+
+**stdlib/random** — Random generation
+
+```kukicha
+token := random.String(32)
+```
+
+**stdlib/net** (import as `netutil`) — IP/CIDR utilities
+
+```kukicha
+import "stdlib/net" as netutil
+ip      := netutil.ParseIP("192.168.1.100")
+network := netutil.ParseCIDR("192.168.0.0/16") onerr panic "{error}"
+if netutil.Contains(network, ip) and netutil.IsPrivate(ip)
+    print("private range")
+```
+
 ---
 
 ### Security — Compiler-Enforced Checks
@@ -402,4 +625,38 @@ Functions: `Values`, `Filter`, `Map`, `FlatMap`, `Take`, `Skip`, `Enumerate`, `C
 
 ---
 
-**All available packages:** `a2a`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`, `http`, `input`, `iterator`, `json`, `kube`, `llm`, `math`, `maps`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`, `random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `validate`
+### Testing
+
+Test files use the `*_test.kuki` suffix and the table-driven pattern:
+
+```kukicha
+petiole math_test
+
+import "stdlib/math"
+import "stdlib/test"
+import "testing"
+
+type ClampCase
+    name string
+    val  float64
+    lo   float64
+    hi   float64
+    want float64
+
+func TestClamp(t reference testing.T)
+    cases := list of ClampCase{
+        ClampCase{name: "within range", val: 5.0, lo: 0.0, hi: 10.0, want: 5.0},
+        ClampCase{name: "below min", val: -5.0, lo: 0.0, hi: 10.0, want: 0.0},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := math.Clamp(tc.val, tc.lo, tc.hi)
+            test.AssertEqual(t, got, tc.want)
+        )
+```
+
+Assertions: `test.AssertEqual`, `test.AssertTrue`, `test.AssertFalse`, `test.AssertNoError`, `test.AssertError`, `test.AssertNotEmpty`.
+
+---
+
+**All available packages:** `a2a`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`, `http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`, `random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `test`, `validate`

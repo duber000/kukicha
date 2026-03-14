@@ -280,7 +280,6 @@ Now let's put it all together into a production-ready server:
 
 ```kukicha
 # Standard library
-import "fmt"
 import "log"
 import "net/http"
 import "sync"

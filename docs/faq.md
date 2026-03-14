@@ -71,13 +71,13 @@ Everything else is the same: full Go stdlib access, `go mod`, goroutines, channe
 **The pipe operator** is probably the biggest addition. Instead of:
 
 ```go
-result := strings.Title(strings.ToLower(strings.TrimSpace(text)))
+result := strings.ToUpper(strings.TrimSpace(strings.ReplaceAll(text, "\t", " ")))
 ```
 
 You write:
 
 ```kukicha
-result := text |> string.TrimSpace() |> string.ToLower() |> string.Title()
+result := text |> strpkg.Replace("\t", " ") |> strpkg.TrimSpace() |> strpkg.ToUpper()
 ```
 
 Use `_` to control where the piped value lands when it isn't the first argument:

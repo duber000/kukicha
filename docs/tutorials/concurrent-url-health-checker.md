@@ -23,7 +23,6 @@ Let's start with a version that checks URLs one at a time. This gives us working
 Create `health.kuki`:
 
 ```kukicha
-import "fmt"
 import "time"
 import "stdlib/fetch"
 

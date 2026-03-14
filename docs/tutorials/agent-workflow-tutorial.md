@@ -81,7 +81,7 @@ type Repo
     name string as "name"
     stars int as "stargazers_count"
 
-func main()
+function main()
     # Fetch the repos list from the GitHub API
     repos := fetch.Get("https://api.github.com/users/golang/repos")
         |> fetch.CheckStatus()
@@ -212,11 +212,11 @@ Agent adds:
 ```kukicha
 import "stdlib/cli"
 
-func run(args cli.Args)
+function run(args cli.Args)
     minStars := cli.GetInt(args, "min-stars")
     # ... use minStars instead of the hardcoded 1000 ...
 
-func main()
+function main()
     app := cli.New("repos")
         |> cli.AddFlag("min-stars", "Minimum star count", "1000")
         |> cli.Action(run)
@@ -259,7 +259,7 @@ Agent output:
 ```kukicha
 import "stdlib/mcp"
 
-func getPrice(symbol string) string
+function getPrice(symbol string) string
     # Replace with a real API call in production
     if symbol equals "GOOG"
         return "GOOG: $180.00"
@@ -267,7 +267,7 @@ func getPrice(symbol string) string
         return "AAPL: $220.00"
     return "{symbol}: price unavailable"
 
-func main()
+function main()
     server := mcp.NewServer()
     server |> mcp.Tool("get_price", "Get stock price by ticker symbol", getPrice)
     server |> mcp.Serve()

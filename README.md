@@ -71,6 +71,8 @@ When AI writes Kukicha for you, here's the decoder ring:
 | `(x) => x + 1` | A shorthand function: given x, return x + 1 |
 | `for item in items` | Do this for each item |
 | `:=` | Create a new variable |
+| `defer f()` | Clean up when this function exits |
+| `petiole main` | This file belongs to the `main` package |
 
 **Key question when reviewing:** Does each `onerr` say what to do when something fails? If it panics, is that appropriate? If it returns an error, will the caller handle it?
 
@@ -204,12 +206,13 @@ Every Kukicha concept maps 1:1 to Go and Python — see the [Quick Reference](do
 
 | Category | Packages |
 |---------|---------|
-| **Data** | `fetch`, `files`, `json`, `parse`, `encoding` |
-| **Logic** | `slice`, `maps`, `string`, `math`, `iterator` (lazy iter.Seq pipelines) |
-| **Infrastructure** | `pg`, `kube`, `container`, `shell` |
+| **Data** | `fetch`, `files`, `json`, `parse`, `encoding`, `cast` |
+| **Logic** | `slice`, `maps`, `string`, `math`, `iterator` (lazy iter.Seq pipelines), `random` |
+| **Infrastructure** | `pg`, `kube`, `container`, `shell`, `net` |
 | **AI & Agents** | `llm`, `mcp`, `a2a` |
-| **Web** | `http`, `fetch`, `validate`, `netguard` |
-| **Config & Ops** | `env`, `must`, `cli`, `obs`, `retry`, `ctx` |
+| **Web** | `http`, `fetch`, `validate`, `netguard`, `sandbox`, `template` |
+| **Config & Ops** | `env`, `must`, `cli`, `obs`, `retry`, `ctx`, `datetime`, `concurrent` |
+| **Errors & Testing** | `errors`, `test`, `input` |
 
 See the full [Stdlib Reference](stdlib/AGENTS.md).
 
