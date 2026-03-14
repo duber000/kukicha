@@ -267,91 +267,12 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 		}
 	}
 
-	// time.Time methods with known return types
-	if objType != nil && objType.Kind == TypeKindNamed && objType.Name == "time.Time" {
-		switch methodName {
-		case "Equal", "Before", "After":
-			types := []*TypeInfo{{Kind: TypeKindBool}}
-			a.recordReturnCount(expr, len(types))
-			return types
-		case "Year":
-			types := []*TypeInfo{{Kind: TypeKindInt}}
-			a.recordReturnCount(expr, len(types))
-			return types
-		case "Month":
-			types := []*TypeInfo{{Kind: TypeKindNamed, Name: "time.Month"}}
-			a.recordReturnCount(expr, len(types))
-			return types
-		case "Day", "Hour", "Minute", "Second", "Nanosecond", "YearDay":
-			types := []*TypeInfo{{Kind: TypeKindInt}}
-			a.recordReturnCount(expr, len(types))
-			return types
-		case "Unix", "UnixMilli", "UnixMicro", "UnixNano":
-			types := []*TypeInfo{{Kind: TypeKindInt}}
-			a.recordReturnCount(expr, len(types))
-			return types
-		case "Weekday":
-			types := []*TypeInfo{{Kind: TypeKindNamed, Name: "time.Weekday"}}
-			a.recordReturnCount(expr, len(types))
-			return types
-		}
-	}
-
-	// exec.ExitError methods used by typed piped switch result inference
-	if objType != nil && objType.Kind == TypeKindNamed {
-		if objType.Name == "exec.ExitError" || objType.Name == "*exec.ExitError" {
-			switch methodName {
-			case "ExitCode":
-				types := []*TypeInfo{{Kind: TypeKindInt}}
-				a.recordReturnCount(expr, len(types))
-				return types
-			case "Error":
-				types := []*TypeInfo{{Kind: TypeKindString}}
-				a.recordReturnCount(expr, len(types))
-				return types
-			}
-		}
-	}
-
-	// bufio.Scanner methods (needed for SSE streaming in llm.kuki)
-	if objType != nil && objType.Kind == TypeKindNamed {
-		if objType.Name == "bufio.Scanner" || objType.Name == "*bufio.Scanner" {
-			switch methodName {
-			case "Scan":
-				types := []*TypeInfo{{Kind: TypeKindBool}}
-				a.recordReturnCount(expr, len(types))
-				return types
-			case "Text":
-				types := []*TypeInfo{{Kind: TypeKindString}}
-				a.recordReturnCount(expr, len(types))
-				return types
-			case "Bytes":
-				types := []*TypeInfo{{Kind: TypeKindList, ElementType: &TypeInfo{Kind: TypeKindNamed, Name: "byte"}}}
-				a.recordReturnCount(expr, len(types))
-				return types
-			case "Err":
-				types := []*TypeInfo{{Kind: TypeKindNamed, Name: "error"}}
-				a.recordReturnCount(expr, len(types))
-				return types
-			}
-		}
-	}
-
-	// regexp.Regexp instance methods
-	if objType != nil && objType.Kind == TypeKindReference &&
-		(objType.Name == "*regexp.Regexp" || objType.Name == "regexp.Regexp") {
-		switch methodName {
-		case "MatchString", "Match", "MatchReader":
-			types := []*TypeInfo{{Kind: TypeKindBool}, {Kind: TypeKindNamed, Name: "error"}}
-			a.recordReturnCount(expr, len(types))
-			return types
-		case "FindString", "ReplaceAllString", "ReplaceAllLiteralString", "String":
-			types := []*TypeInfo{{Kind: TypeKindString}}
-			a.recordReturnCount(expr, 1)
-			return types
-		case "FindStringSubmatch", "FindAllString":
-			types := []*TypeInfo{{Kind: TypeKindList, ElementType: &TypeInfo{Kind: TypeKindString}}}
-			a.recordReturnCount(expr, 1)
+	// Check generated Go stdlib registry for method calls
+	if objType != nil && (objType.Kind == TypeKindNamed || objType.Kind == TypeKindReference) && objType.Name != "" {
+		qualifiedMethodName := objType.Name + "." + methodName
+		if entry, ok := generatedGoStdlib[qualifiedMethodName]; ok {
+			types := goStdlibEntryToTypeInfos(entry)
+			a.recordReturnCount(expr, entry.Count)
 			return types
 		}
 	}

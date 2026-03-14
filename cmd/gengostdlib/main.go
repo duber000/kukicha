@@ -93,6 +93,9 @@ var packages = []funcSpec{
 	{pkg: "math", funcs: []string{
 		"Abs", "Ceil", "Floor", "Round", "Max", "Min", "Pow", "Sqrt", "Log",
 	}},
+	{pkg: "os/exec", funcs: []string{
+		"Command", "CommandContext",
+	}},
 }
 
 func main() {
@@ -147,32 +150,78 @@ func extractSignatures(imp types.Importer, specs []funcSpec) ([]entry, []error) 
 
 		scope := pkg.Scope()
 		for _, name := range scope.Names() {
-			if !wantAll && !wanted[name] {
-				continue
-			}
 			obj := scope.Lookup(name)
-			fn, ok := obj.(*types.Func)
-			if !ok {
-				continue
-			}
 
-			sig := fn.Type().(*types.Signature)
-			results := sig.Results()
-			if results.Len() == 0 {
-				continue // skip void functions
-			}
+			if fn, ok := obj.(*types.Func); ok {
+				if !wantAll && !wanted[name] {
+					continue
+				}
 
-			// Build qualified name using the alias Kukicha uses
-			qualName := kukichaAlias(spec.pkg) + "." + name
+				sig := fn.Type().(*types.Signature)
+				results := sig.Results()
+				if results.Len() == 0 {
+					continue // skip void functions
+				}
 
-			e := entry{
-				QualifiedName: qualName,
-				ReturnCount:   results.Len(),
+				// Build qualified name using the alias Kukicha uses
+				qualName := kukichaAlias(spec.pkg) + "." + name
+
+				e := entry{
+					QualifiedName: qualName,
+					ReturnCount:   results.Len(),
+				}
+				for i := 0; i < results.Len(); i++ {
+					e.Returns = append(e.Returns, goTypeToRepr(results.At(i).Type()))
+				}
+				entries = append(entries, e)
+			} else if typeName, ok := obj.(*types.TypeName); ok {
+				if !typeName.Exported() {
+					continue
+				}
+				named, ok := typeName.Type().(*types.Named)
+				if !ok {
+					continue
+				}
+
+				// Extract all exported methods for this type
+				// Use MethodSet on pointer type to get both pointer and value methods
+				ptr := types.NewPointer(named)
+				mset := types.NewMethodSet(ptr)
+				for i := 0; i < mset.Len(); i++ {
+					m := mset.At(i).Obj().(*types.Func)
+					if !m.Exported() {
+						continue
+					}
+					sig := m.Type().(*types.Signature)
+					results := sig.Results()
+					if results.Len() == 0 {
+						continue // skip void methods
+					}
+
+					// Register under both value type and pointer type
+					// This matches how analyzeMethodCallExpr handles objType.Name
+					pkgAlias := kukichaAlias(spec.pkg)
+					valName := pkgAlias + "." + named.Obj().Name() + "." + m.Name()
+					ptrName := "*" + valName
+
+					eVal := entry{
+						QualifiedName: valName,
+						ReturnCount:   results.Len(),
+					}
+					ePtr := entry{
+						QualifiedName: ptrName,
+						ReturnCount:   results.Len(),
+					}
+
+					for j := 0; j < results.Len(); j++ {
+						repr := goTypeToRepr(results.At(j).Type())
+						eVal.Returns = append(eVal.Returns, repr)
+						ePtr.Returns = append(ePtr.Returns, repr)
+					}
+
+					entries = append(entries, eVal, ePtr)
+				}
 			}
-			for i := 0; i < results.Len(); i++ {
-				e.Returns = append(e.Returns, goTypeToRepr(results.At(i).Type()))
-			}
-			entries = append(entries, e)
 		}
 	}
 

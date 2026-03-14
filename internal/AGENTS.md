@@ -228,7 +228,7 @@ When a new stdlib function is added to a `.kuki` file, run `make genstdlibregist
 
 Both registries use the `goStdlibEntry` and `goStdlibType` types defined in `stdlib_types.go`. The Kukicha registry additionally populates `ParamNames` for named argument support.
 
-In `analyzeMethodCallExpr`, the Go stdlib registry is checked first, then the Kukicha registry. Both now provide full type info. Named arguments on Kukicha stdlib calls are resolved using `ParamNames` from the registry. Instance method type info (e.g., `time.Time.Year`, `bufio.Scanner.Scan`) remains hand-coded since `go/importer` extracts package-level functions, not methods.
+In `analyzeMethodCallExpr`, the Go stdlib registry is checked first, then the Kukicha registry. Both provide full type info for package-level functions and methods. Named arguments on Kukicha stdlib calls are resolved using `ParamNames` from the registry.
 
 To add a new Go stdlib function: add it to the curated list in `cmd/gengostdlib/main.go` and run `make gengostdlib`.
 
