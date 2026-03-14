@@ -127,10 +127,8 @@ func GetQueryInt(r reference http.Request, key string) (int, error)
     value := r.URL.Query().Get(key)
     if value == ""
         return 0, error("query parameter '{key}' is required")
-    n, err := cast.Atoi(value)
-    if err != empty
-        return 0, error("query parameter '{key}' must be an integer")
-    return n, empty
+    val := cast.Atoi(value) onerr return 0, error "query parameter '{key}' must be an integer"
+    return val, empty
 
 # GetQueryIntOr returns a query parameter as an integer, or default if not present/invalid
 # Never fails - returns default on any error
@@ -139,10 +137,8 @@ func GetQueryIntOr(r reference http.Request, key string, defaultValue int) int
     value := r.URL.Query().Get(key)
     if value == ""
         return defaultValue
-    n, err := cast.Atoi(value)
-    if err != empty
-        return defaultValue
-    return n
+    val := cast.Atoi(value) onerr return defaultValue
+    return val
 
 # GetQueryBool returns a query parameter as a boolean
 # Accepts: "true", "false", "1", "0" (case insensitive)
@@ -152,10 +148,8 @@ func GetQueryBool(r reference http.Request, key string) (bool, error)
     value := r.URL.Query().Get(key)
     if value == ""
         return false, error("query parameter '{key}' is required")
-    result, err := validate.ParseBool(value)
-    if err != empty
-        return false, error("query parameter '{key}' must be a boolean")
-    return result, empty
+    val := validate.ParseBool(value) onerr return false, error "query parameter '{key}' must be a boolean"
+    return val, empty
 
 # GetQueryBoolOr returns a query parameter as a boolean, or default if not present/invalid
 # Never fails - returns default on any error
@@ -164,10 +158,8 @@ func GetQueryBoolOr(r reference http.Request, key string, defaultValue bool) boo
     value := r.URL.Query().Get(key)
     if value == ""
         return defaultValue
-    result, err := validate.ParseBool(value)
-    if err != empty
-        return defaultValue
-    return result
+    val := validate.ParseBool(value) onerr return defaultValue
+    return val
 
 # GetHeader returns a header value, or empty string if not present
 # Example: token := http.GetHeader(r, "Authorization")
@@ -205,9 +197,7 @@ func RedirectPermanent(w http.ResponseWriter, r reference http.Request, url stri
 # Returns an error if the redirect would go to an unexpected host.
 # Example: http.SafeRedirect(w, r, returnURL, "example.com", "api.example.com") onerr return
 func SafeRedirect(w http.ResponseWriter, r reference http.Request, redirectURL string, many allowedHosts string) error
-    parsed, err := url.Parse(redirectURL)
-    if err != empty
-        return err
+    parsed := url.Parse(redirectURL) onerr return
     if parsed.Host == ""
         # Relative URL — always safe
         http.Redirect(w, r, redirectURL, 302)
@@ -224,9 +214,7 @@ func SafeRedirect(w http.ResponseWriter, r reference http.Request, redirectURL s
 # Example:
 #   safeURL := http.SafeURL("/users/{name}", map of string to string{"name": user}, map of string to string{"tab": "repos"}) onerr return
 func SafeURL(tmpl string, pathParams map of string to string, queryParams map of string to string) (string, error)
-    base, err := fetch.URLTemplate(tmpl, pathParams)
-    if err != empty
-        return "", err
+    base := fetch.URLTemplate(tmpl, pathParams) onerr return
     return fetch.URLWithQuery(base, queryParams)
 
 # Text writes a plain text response with status 200

@@ -122,12 +122,10 @@ func Yaml(data string) ([]byte, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:96
 func YamlPretty(value any) ([]byte, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:97
-	yamlData, err := yaml.Marshal(value)
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:98
-	if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:99
-		return nil, err
+	val, err_7 := yaml.Marshal(value)
+	if err_7 != nil {
+		return []byte{}, err_7
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:100
-	return yamlData, nil
+//line /var/home/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:98
+	return val, nil
 }

@@ -21,15 +21,13 @@ func TestIPAndCIDRHelpers(t reference testing.T)
     if not netutil.IsMulticast(multicast)
         t.Errorf("Multicast detection failed")
 
-    cidr, err := netutil.ParseCIDR("192.0.2.0/24")
-    if err != empty
-        t.Fatalf("ParseCIDR failed: {err}")
+    cidr := netutil.ParseCIDR("192.0.2.0/24") onerr
+        t.Fatalf("ParseCIDR failed: {error}")
     if not netutil.Contains(cidr, netutil.ParseIP("192.0.2.5"))
         t.Errorf("CIDR should contain 192.0.2.5")
 
-    host, port, splitErr := netutil.SplitHostPort("example.com:8080")
-    if splitErr != empty
-        t.Fatalf("SplitHostPort failed: {splitErr}")
+    host, port, _ := netutil.SplitHostPort("example.com:8080") onerr
+        t.Fatalf("SplitHostPort failed: {error}")
     if host != "example.com" or port != "8080"
         t.Errorf("SplitHostPort returned wrong parts")
 

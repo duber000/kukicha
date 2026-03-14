@@ -94,7 +94,5 @@ func Yaml(data string) (list of byte, error)
 # YamlPretty formats a value as YAML bytes
 # Example: config |> parse.YamlPretty()
 func YamlPretty(value any) (list of byte, error)
-    yamlData, err := yaml.Marshal(value)
-    if err != empty
-        return empty, err
-    return yamlData, empty
+    val := yaml.Marshal(value) onerr return
+    return val, empty

@@ -17,10 +17,7 @@ func ReadLine(prompt string) (string, error)
         fmt.Print(prompt)
 
     reader := bufio.NewReader(os.Stdin)
-    text, err := reader.ReadString('\n')
-    if err != empty
-        return "", err
-
+    text := reader.ReadString('\n') onerr return
     return string.TrimSpace(text), empty
 
 # Prompt is a helper that prints a prompt and reads a line
@@ -61,10 +58,8 @@ func Choose(prompt string, options list of string) (int, error)
     if trimmed == "" or trimmed == "q" or trimmed == "Q"
         return -1, error "cancelled"
 
-    n, err := strconv.Atoi(trimmed)
-    if err != empty
-        return -1, error "invalid selection: {trimmed}"
-    if n < 1 or n > len(options)
-        return -1, error "selection out of range: {n}"
+    val := strconv.Atoi(trimmed) onerr return -1, error "invalid selection: {trimmed}"
+    if val < 1 or val > len(options)
+        return -1, error "selection out of range: {val}"
 
-    return n - 1, empty
+    return val - 1, empty

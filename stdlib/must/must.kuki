@@ -11,10 +11,6 @@ import "stdlib/env"
 import "stdlib/cast"
 import "fmt"
 
-# Do executes a function that returns (T, error) and panics if there's an error
-# Returns the value if successful
-# Example: config := must.Do(loadConfig())
-# Example: db := must.Do(connectDB())
 func Do(value any, err error) any
     if err != empty
         panic("must: {err}")
@@ -64,11 +60,8 @@ func EnvInt(key string) int
     value := env.GetOr(key, "")
     if value == ""
         panic("must: environment variable {key} is required but not set")
-    n, err := cast.Atoi(value)
-    if err != empty
-        panic("must: environment variable {key} must be a valid integer")
-    return n
-
+    val := cast.Atoi(value) onerr panic "must: environment variable {key} must be a valid integer"
+    return val
 # EnvIntOr returns an environment variable as an integer, or default if not set
 # Panics only if the value is set but not a valid integer
 # Example: port := must.EnvIntOr("PORT", 8080)
@@ -76,10 +69,8 @@ func EnvIntOr(key string, defaultValue int) int
     value := env.GetOr(key, "")
     if value == ""
         return defaultValue
-    n, err := cast.Atoi(value)
-    if err != empty
-        panic("must: environment variable {key} must be a valid integer")
-    return n
+    val := cast.Atoi(value) onerr panic "must: environment variable {key} must be a valid integer"
+    return val
 
 # EnvBool returns an environment variable as a boolean, panics if not set or invalid
 # Accepts: "true", "false", "1", "0", "yes", "no" (case insensitive)
@@ -88,10 +79,8 @@ func EnvBool(key string) bool
     value := env.GetOr(key, "")
     if value == ""
         panic("must: environment variable {key} is required but not set")
-    result, err := env.ParseBool(value)
-    if err != empty
-        panic("must: environment variable {key} must be a valid boolean")
-    return result
+    val := env.ParseBool(value) onerr panic "must: environment variable {key} must be a valid boolean"
+    return val
 
 # EnvBoolOr returns an environment variable as a boolean, or default if not set
 # Panics only if the value is set but not a valid boolean
@@ -100,10 +89,8 @@ func EnvBoolOr(key string, defaultValue bool) bool
     value := env.GetOr(key, "")
     if value == ""
         return defaultValue
-    result, err := env.ParseBool(value)
-    if err != empty
-        panic("must: environment variable {key} must be a valid boolean")
-    return result
+    val := env.ParseBool(value) onerr panic "must: environment variable {key} must be a valid boolean"
+    return val
 
 # EnvList returns an environment variable as a list split by separator
 # Panics if the variable is not set

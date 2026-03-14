@@ -442,10 +442,16 @@ func (l *Lowerer) lowerOnErrStmt(exprStr string, expr ast.Expression, clause *as
 
 // lowerOnErrWithExplicitErr produces IR for onerr where the user provides
 // the error variable as the last name (multi-return case).
+// When the last name is "_", a unique error variable is generated instead,
+// since Go does not allow reading the blank identifier as a value.
 func (l *Lowerer) lowerOnErrWithExplicitErr(nameStrs []string, expr string, clause *ast.OnErrClause, walrus bool) *ir.Block {
 	block := &ir.Block{}
-	block.Add(&ir.Assign{Names: nameStrs, Expr: expr, Walrus: walrus})
 	errVar := nameStrs[len(nameStrs)-1]
+	if errVar == "_" {
+		errVar = l.uniqueId("err")
+		nameStrs = append(nameStrs[:len(nameStrs)-1:len(nameStrs)-1], errVar)
+	}
+	block.Add(&ir.Assign{Names: nameStrs, Expr: expr, Walrus: walrus})
 	handlerNames := nameStrs[:len(nameStrs)-1]
 	handlerBlock := l.lowerOnErrHandler(clause, handlerNames, errVar)
 	block.Add(&ir.IfErrCheck{ErrVar: errVar, Body: handlerBlock})

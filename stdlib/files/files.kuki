@@ -105,14 +105,14 @@ func List(path string) (list of string, error)
 # Example: files.ListRecursive("/var/log")
 func ListRecursive(path string) (list of string, error)
     result := make(list of string, 0)
-    walkErr := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error
+    filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error
         if err != empty
             return err
         if not info.IsDir()
             result = append(result, filePath)
         return empty
-    )
-    return result, walkErr
+    ) onerr return
+    return result, empty
 
 # Delete removes a file or empty directory
 # Returns any error that occurred

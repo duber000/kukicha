@@ -33,9 +33,7 @@ func Parse(value string, format string) (time.Time, error)
 # Example: t := datetime.ParseInLocation("2024-01-15 14:30", "datetime", "America/New_York") onerr return
 func ParseInLocation(value string, format string, location string) (time.Time, error)
     layout := getLayout(format)
-    loc, err := time.LoadLocation(location)
-    if err != empty
-        return time.Time{}, err
+    loc := time.LoadLocation(location) onerr return
     return time.ParseInLocation(layout, value, loc)
 
 # Now returns the current time
@@ -297,9 +295,7 @@ func InLocal(t time.Time) time.Time
 # InLocation converts a time to a specific timezone
 # Example: ny := datetime.InLocation(t, "America/New_York") onerr return
 func InLocation(t time.Time, location string) (time.Time, error)
-    loc, err := time.LoadLocation(location)
-    if err != empty
-        return t, err
+    loc := time.LoadLocation(location) onerr return
     return t.In(loc), empty
 
 # Internal helper to convert format names to Go layouts

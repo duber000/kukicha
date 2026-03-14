@@ -269,15 +269,11 @@ func DeleteDeployment(c Cluster, name string) error
 
 # RolloutRestart triggers a rollout restart by patching the pod template annotation.
 func RolloutRestart(c Cluster, name string) error
-    dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-    if err != empty
-        return fmt.Errorf("kube rollout restart get: %w", err)
+    dep := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{}) onerr explain "kube rollout restart get"
     if dep.Spec.Template.ObjectMeta.Annotations == empty
         dep.Spec.Template.ObjectMeta.Annotations = map of string to string{}
     dep.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().UTC().Format(time.RFC3339)
-    _, updateErr := clientset(c).AppsV1().Deployments(c.namespace).Update(ctx.Value(ctx.Background()), dep, metav1.UpdateOptions{})
-    if updateErr != empty
-        return fmt.Errorf("kube rollout restart update: %w", updateErr)
+    _ := clientset(c).AppsV1().Deployments(c.namespace).Update(ctx.Value(ctx.Background()), dep, metav1.UpdateOptions{}) onerr explain "kube rollout restart update"
     return empty
 
 # --- Wait / Poll ---
@@ -289,16 +285,14 @@ func WaitDeploymentReady(c Cluster, name string, timeoutSeconds int64) error
         timeoutSeconds = 300
     deadline := time.Now().Add(time.Duration(timeoutSeconds) * time.Second)
     for
-        dep, err := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{})
-        if err != empty
-            return fmt.Errorf("kube wait deployment get: %w", err)
+        dep := clientset(c).AppsV1().Deployments(c.namespace).Get(ctx.Value(ctx.Background()), name, metav1.GetOptions{}) onerr explain "kube wait deployment get"
         desired := 1 as int32
         if dep.Spec.Replicas != empty
             desired = dereference dep.Spec.Replicas
         if dep.Status.ObservedGeneration >= dep.Generation and dep.Status.ReadyReplicas >= desired and dep.Status.UpdatedReplicas >= desired
             return empty
         if time.Now().After(deadline)
-            return fmt.Errorf("kube wait deployment: timed out after %ds (ready=%d desired=%d updated=%d)", timeoutSeconds, dep.Status.ReadyReplicas, desired, dep.Status.UpdatedReplicas)
+            return error "kube wait deployment: timed out after {timeoutSeconds}s (ready={dep.Status.ReadyReplicas} desired={desired} updated={dep.Status.UpdatedReplicas})"
         time.Sleep(2 * time.Second)
 
 # WaitPodReady waits for a pod to become Ready.
@@ -553,9 +547,7 @@ func NamespaceName(n NamespaceItem) string
 # watchPodsWithContext streams pod events until the context is canceled.
 func watchPodsWithContext(h ctx.Handle, c Cluster) (list of PodEvent, error)
     goCtx := ctx.Value(h)
-    watcher, err := clientset(c).CoreV1().Pods(c.namespace).Watch(goCtx, metav1.ListOptions{})
-    if err != empty
-        return empty, fmt.Errorf("kube watch pods: %w", err)
+    watcher := clientset(c).CoreV1().Pods(c.namespace).Watch(goCtx, metav1.ListOptions{}) onerr explain "kube watch pods"
     defer watcher.Stop()
     events := make(list of PodEvent, 0)
     for
@@ -604,23 +596,15 @@ func PodLogs(c Cluster, name string, many handles ctx.Handle) (string, error)
     if len(handles) > 0
         goCtx = ctx.Value(handles[0])
     req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, reference of corev1.PodLogOptions{})
-    stream, err := req.Stream(goCtx)
-    if err != empty
-        return "", fmt.Errorf("kube pod logs: %w", err)
+    stream := req.Stream(goCtx) onerr explain "kube pod logs"
     defer stream.Close()
-    data, readErr := io.ReadAll(stream)
-    if readErr != empty
-        return "", fmt.Errorf("kube pod logs read: %w", readErr)
+    data := io.ReadAll(stream) onerr explain "kube pod logs read"
     return data as string, empty
 
 # PodLogsTail retrieves the last N lines of log output from a pod.
 func PodLogsTail(c Cluster, name string, lines int64) (string, error)
     req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, reference of corev1.PodLogOptions{TailLines: reference of lines})
-    stream, err := req.Stream(ctx.Value(ctx.Background()))
-    if err != empty
-        return "", fmt.Errorf("kube pod logs tail: %w", err)
+    stream := req.Stream(ctx.Value(ctx.Background())) onerr explain "kube pod logs tail"
     defer stream.Close()
-    data, readErr := io.ReadAll(stream)
-    if readErr != empty
-        return "", fmt.Errorf("kube pod logs tail read: %w", readErr)
+    data := io.ReadAll(stream) onerr explain "kube pod logs tail read"
     return data as string, empty

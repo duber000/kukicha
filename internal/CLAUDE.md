@@ -324,6 +324,10 @@ The IR is intentionally thin — it models only the constructs needed by the one
 
 Simple onerr cases (single call, no pipe) still use direct emission in `codegen_onerr.go`. Pipe chain and piped switch onerr delegate to the Lowerer. `currentOnErrVar` holds the generated error variable name so that `{error}` in string interpolation inside the block resolves to it.
 
+`lowerOnErrWithExplicitErr` handles multi-return cases where the user provides the error variable as the last LHS name (e.g., `a, b, err := f() onerr ...`). If the last name is `_`, it replaces it with a generated unique error variable, since Go's blank identifier cannot be read as a value in `if _ != nil`.
+
+For statement-level multi-return calls with `onerr` (no LHS capture), `lowerOnErrStmt` uses `inferReturnCount` to add `_` discard variables for non-error return values. When `inferReturnCount` fails (e.g., external method calls), the `.kuki` source should use `_ :=` to explicitly capture the non-error return value (e.g., `_ := f() onerr ...`).
+
 The Lowerer handles three cases per pipe step:
 1. **Multi-return** (count ≥ 2): split into `val, err := call()`; check err
 2. **Error-only** (count == 1 and type is `error`): `err := call()`; check err; keep current pipe variable unchanged (the step produces no data value)

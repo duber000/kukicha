@@ -152,7 +152,7 @@ func ListRecursive(path string) ([]string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:107
 	result := make([]string, 0)
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:108
-	walkErr := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+	err_13 := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:109
 		if err != nil {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:110
@@ -166,8 +166,11 @@ func ListRecursive(path string) ([]string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:113
 		return nil
 	})
+	if err_13 != nil {
+		return []string{}, err_13
+	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:115
-	return result, walkErr
+	return result, nil
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:120
@@ -185,16 +188,16 @@ func DeleteAll(path string) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:134
 func Copy(src string, dst string) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:135
-	sourceFile, err_13 := os.Open(src)
-	if err_13 != nil {
-		return err_13
+	sourceFile, err_14 := os.Open(src)
+	if err_14 != nil {
+		return err_14
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:136
 	defer sourceFile.Close()
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:138
-	destFile, err_14 := os.Create(dst)
-	if err_14 != nil {
-		return err_14
+	destFile, err_15 := os.Create(dst)
+	if err_15 != nil {
+		return err_15
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:139
 	defer destFile.Close()
@@ -228,16 +231,16 @@ func MkDirAll(path string) error {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:166
 func TempFile(prefix string) (string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:167
-	file, err_15 := os.CreateTemp("", prefix)
-	if err_15 != nil {
-		return "", err_15
+	file, err_16 := os.CreateTemp("", prefix)
+	if err_16 != nil {
+		return "", err_16
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:168
 	path := file.Name()
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:169
-	err_16 := file.Close()
-	if err_16 != nil {
-		return "", err_16
+	err_17 := file.Close()
+	if err_17 != nil {
+		return "", err_17
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:170
 	return path, nil
@@ -252,9 +255,9 @@ func TempDir(prefix string) (string, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:182
 func Size(path string) (int64, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:183
-	info, err_17 := os.Stat(path)
-	if err_17 != nil {
-		return 0, err_17
+	info, err_18 := os.Stat(path)
+	if err_18 != nil {
+		return 0, err_18
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:184
 	return info.Size(), nil
@@ -263,9 +266,9 @@ func Size(path string) (int64, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:189
 func ModTime(path string) (int64, error) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:190
-	info, err_18 := os.Stat(path)
-	if err_18 != nil {
-		return 0, err_18
+	info, err_19 := os.Stat(path)
+	if err_19 != nil {
+		return 0, err_19
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:191
 	return info.ModTime().Unix(), nil
@@ -314,8 +317,8 @@ func Watch(pattern string, callback func(string)) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:230
 	lastModified := make(map[string]int64)
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:233
-	matches, err_19 := filepath.Glob(pattern)
-	if err_19 != nil {
+	matches, err_20 := filepath.Glob(pattern)
+	if err_20 != nil {
 		return
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:234
@@ -323,8 +326,8 @@ func Watch(pattern string, callback func(string)) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:235
 		for _, match := range matches {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:236
-			info, err_20 := os.Stat(match)
-			if err_20 != nil {
+			info, err_21 := os.Stat(match)
+			if err_21 != nil {
 				//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:237
 				continue
 			}
@@ -337,16 +340,16 @@ func Watch(pattern string, callback func(string)) {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:241
 		time.Sleep((500 * time.Millisecond))
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:243
-		matches, err_21 := filepath.Glob(pattern)
-		if err_21 != nil {
+		matches, err_22 := filepath.Glob(pattern)
+		if err_22 != nil {
 			//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:244
 			continue
 		}
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:246
 		for _, match := range matches {
 //line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:247
-			info, err_22 := os.Stat(match)
-			if err_22 != nil {
+			info, err_23 := os.Stat(match)
+			if err_23 != nil {
 				//line /var/home/tluker/repos/go/kukicha/stdlib/files/files.kuki:248
 				continue
 			}

@@ -118,15 +118,10 @@ func doOnce(req Request) (reference http.Response, error)
             when string
                 bodyData = bodyStr as list of byte
             otherwise
-                # Marshal body to JSON (stdlib/json uses jsonv2 for performance)
-                jsonBytes, marshalErr := json.Marshal(req.body)
-                if marshalErr != empty
-                    return empty, marshalErr
-                bodyData = jsonBytes
+                # Marshal body to JSON
+                bodyData = json.Marshal(req.body) onerr return
 
-    httpReq, reqErr := createHTTPRequest(req.method, req.url, bodyData)
-    if reqErr != empty
-        return empty, reqErr
+    httpReq := createHTTPRequest(req.method, req.url, bodyData) onerr return
 
     # Add headers to request
     for name, value in req.headers
@@ -138,9 +133,7 @@ func doOnce(req Request) (reference http.Response, error)
         if contentType == ""
             httpReq.Header.Set("Content-Type", "application/json")
 
-    resp, doErr := client.Do(httpReq)
-    if doErr != empty
-        return empty, doErr
+    resp := client.Do(httpReq) onerr return
     if req.maxBodySize > 0
         resp.Body = io.NopCloser(io.LimitReader(resp.Body, req.maxBodySize))
     return resp, empty
@@ -229,9 +222,7 @@ func CheckStatus(resp reference http.Response) (reference http.Response, error)
 # Example: resp |> fetch.Text()
 func Text(resp reference http.Response) (string, error)
     defer resp.Body.Close()
-    bodyBytes, err := io.ReadAll(resp.Body)
-    if err != empty
-        return "", err
+    bodyBytes := io.ReadAll(resp.Body) onerr return "", error "{error}"
     # Convert bytes to string using Go's built-in conversion
     text := bodyBytes as string
     return text, empty
@@ -241,9 +232,7 @@ func Text(resp reference http.Response) (string, error)
 # Example: resp |> fetch.Bytes()
 func Bytes(resp reference http.Response) (list of byte, error)
     defer resp.Body.Close()
-    bodyBytes, err := io.ReadAll(resp.Body)
-    if err != empty
-        return empty, err
+    bodyBytes := io.ReadAll(resp.Body) onerr return empty, error "{error}"
     return bodyBytes, empty
 
 # Json reads the response body and unmarshals it as typed JSON.
@@ -292,9 +281,7 @@ func URLTemplate(tmpl string, params map of string to string) (string, error)
 # Example:
 #   withQuery := fetch.URLWithQuery(base, map of string to string{"q": search}) onerr panic "{error}"
 func URLWithQuery(baseURL string, params map of string to string) (string, error)
-    parsed, err := url.Parse(baseURL)
-    if err != empty
-        return "", err
+    parsed := url.Parse(baseURL) onerr return "", error "{error}"
     query := parsed.Query()
     for key, value in params
         query.Set(key, value)
