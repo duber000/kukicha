@@ -58,12 +58,30 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 		a.analyzeExpression(namedArg.Value)
 	}
 
+	// Check if any argument is a "_" placeholder (piped value position marker).
+	// When present, the piped arg occupies the placeholder slot — don't double-count.
+	hasPlaceholder := false
+	for _, arg := range expr.Arguments {
+		if ident, ok := arg.(*ast.Identifier); ok && ident.Value == "_" {
+			hasPlaceholder = true
+			break
+		}
+	}
+
 	// Always analyze positional arguments to ensure their types are recorded
 	var providedArgTypes []*TypeInfo
-	if pipedArg != nil {
+	if pipedArg != nil && !hasPlaceholder {
 		providedArgTypes = append(providedArgTypes, pipedArg)
 	}
 	for _, arg := range expr.Arguments {
+		if hasPlaceholder && pipedArg != nil {
+			if ident, ok := arg.(*ast.Identifier); ok && ident.Value == "_" {
+				// Placeholder takes the piped arg's type and records it in exprTypes
+				providedArgTypes = append(providedArgTypes, pipedArg)
+				a.recordType(ident, pipedArg)
+				continue
+			}
+		}
 		providedArgTypes = append(providedArgTypes, a.analyzeExpression(arg))
 	}
 
@@ -94,7 +112,7 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 	if funcType.Kind == TypeKindFunction {
 		// Validate argument count
 		totalProvidedArgs := len(expr.Arguments) + len(expr.NamedArguments)
-		if pipedArg != nil {
+		if pipedArg != nil && !hasPlaceholder {
 			totalProvidedArgs++
 		}
 
@@ -162,8 +180,9 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 			}
 		}
 
-		// Named arguments validation would require parameter name information
-		// which is tracked in ParamNames field
+		// Record expected param types on pipe placeholder "_" arguments
+		// so that exprTypes contains typed info rather than TypeKindUnknown.
+		a.typePlaceholderArgs(expr, funcType, pipedArg != nil && !hasPlaceholder)
 
 		// Return all return types
 		if len(funcType.Returns) > 0 {
@@ -435,6 +454,31 @@ func (a *Analyzer) resolveMethodType(objType *TypeInfo, methodName string) *Type
 	}
 
 	return nil
+}
+
+// typePlaceholderArgs records expected parameter types on "_" placeholder
+// arguments so exprTypes contains typed info rather than TypeKindUnknown.
+func (a *Analyzer) typePlaceholderArgs(expr *ast.CallExpr, funcType *TypeInfo, hasPipedArg bool) {
+	offset := 0
+	if hasPipedArg {
+		offset = 1 // piped arg occupies the first parameter position
+	}
+	for i, arg := range expr.Arguments {
+		ident, ok := arg.(*ast.Identifier)
+		if !ok || ident.Value != "_" {
+			continue
+		}
+		paramIndex := i + offset
+		if funcType.Variadic && paramIndex >= len(funcType.Params)-1 {
+			paramIndex = len(funcType.Params) - 1
+		}
+		if paramIndex < len(funcType.Params) {
+			paramType := funcType.Params[paramIndex]
+			if paramType.Kind != TypeKindUnknown {
+				a.recordType(ident, paramType)
+			}
+		}
+	}
 }
 
 // validateNamedArgs checks that named arguments match known parameter names.

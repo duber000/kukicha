@@ -17,9 +17,9 @@ type Analyzer struct {
 	switchDepth      int                    // Track switch nesting for break
 	exprReturnCounts    map[ast.Expression]int // Inferred return counts for expressions (used by codegen for onerr multi-value split)
 	// exprTypes maps each analyzed expression to its inferred TypeInfo.
-	// Currently populated during analysis but not yet consumed by codegen.
-	// Planned uses: contextual type inference for untyped arrow lambda parameters,
-	// smarter pipe chain error handling, and typed zero-value generation.
+	// Consumed by codegen for: error-only pipe step detection (isErrorOnlyReturn),
+	// piped switch return type inference, empty keyword resolution, expression
+	// return type inference, and typed zero-value generation (zeroValueForTypeInfo).
 	exprTypes           map[ast.Expression]*TypeInfo
 	sourceFile          string                 // Source file path, used to detect stdlib context
 	inOnerr             bool                   // True while analyzing an onerr handler
@@ -50,10 +50,7 @@ func NewWithFile(program *ast.Program, sourceFile string) *Analyzer {
 }
 
 // ExprTypes returns the inferred types for expressions.
-// Call after Analyze() to pass these to codegen.
-// Currently populated but not yet consumed by codegen — infrastructure
-// for future contextual type inference (e.g., typed lambda parameters,
-// smarter zero-value generation in pipe chains).
+// Call after Analyze() to pass these to codegen via SetExprTypes.
 func (a *Analyzer) ExprTypes() map[ast.Expression]*TypeInfo {
 	return a.exprTypes
 }

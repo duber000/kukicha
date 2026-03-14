@@ -59,8 +59,8 @@ type Generator struct {
 	tempCounter          int                      // Counter for generating unique temporary variable names
 	exprReturnCounts     map[ast.Expression]int      // Semantic return counts passed from analyzer (drives onerr multi-value split)
 	// exprTypes holds per-expression type info from semantic analysis.
-	// Used by isErrorOnlyReturn to detect error-only pipe steps, and
-	// available for future contextual type inference.
+	// Used by isErrorOnlyReturn, inferExprReturnType, inferExprType,
+	// pipedSwitchReturnType, empty keyword resolution, and zeroValueForTypeInfo.
 	exprTypes            map[ast.Expression]*semantic.TypeInfo
 	mcpTarget            bool                        // True if targeting MCP (Model Context Protocol)
 	currentOnErrVar      string                   // Render-time context: set/restored only by renderHandler in lower.go
@@ -104,8 +104,8 @@ func (g *Generator) SetExprReturnCounts(counts map[ast.Expression]int) {
 }
 
 // SetExprTypes passes semantic analysis expression types to the generator.
-// Used by isErrorOnlyReturn for pipe chain error detection, and wired through
-// for future features (contextual type inference, typed zero values).
+// Used by isErrorOnlyReturn, inferExprReturnType, empty keyword resolution,
+// piped switch return type inference, and zeroValueForTypeInfo.
 func (g *Generator) SetExprTypes(types map[ast.Expression]*semantic.TypeInfo) {
 	g.exprTypes = types
 }

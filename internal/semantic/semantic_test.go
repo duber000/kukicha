@@ -3,6 +3,8 @@ package semantic
 import (
 	"strings"
 	"testing"
+
+	"github.com/duber000/kukicha/internal/ast"
 )
 
 func TestSimpleFunctionAnalysis(t *testing.T) {
@@ -310,5 +312,34 @@ func someFunc(x int) (int, error)
 
 	if !strings.Contains(errors[0].Error(), "cannot return") {
 		t.Errorf("expected type mismatch error, got: %v", errors[0])
+	}
+}
+
+func TestPlaceholderTypingInPipedCall(t *testing.T) {
+	input := `func WriteJSON(w string, data string) error
+    return empty
+
+func Process(w string, data string) error
+    data |> WriteJSON(w, _)
+    return empty
+`
+	analyzer, errors := analyzeSource(t, input)
+	if len(errors) > 0 {
+		t.Fatalf("unexpected errors: %v", errors)
+	}
+
+	// Walk exprTypes looking for a "_" identifier with a resolved type
+	found := false
+	for expr, ti := range analyzer.ExprTypes() {
+		if ident, ok := expr.(*ast.Identifier); ok && ident.Value == "_" {
+			if ti.Kind == TypeKindString {
+				found = true
+			} else if ti.Kind != TypeKindUnknown {
+				t.Errorf("expected string type for _, got %v", ti)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected _ placeholder to be typed as string from WriteJSON's second parameter")
 	}
 }
