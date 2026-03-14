@@ -9,149 +9,149 @@ import (
 	"strconv"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:18
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:18
 func Atoi(s string) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:19
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:19
 	return strconv.Atoi(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:24
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:24
 func ParseFloat(s string, bitSize int) (float64, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:25
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:25
 	return strconv.ParseFloat(s, bitSize)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:29
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:29
 func SmartInt(value any) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:30
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:30
 	switch v := value.(type) {
 	case int:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:32
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:32
 		return v, nil
 	case int64:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:34
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:34
 		return int(v), nil
 	case float64:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:36
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:36
 		return int(v), nil
 	case string:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:38
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:38
 		n, err := strconv.Atoi(v)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:39
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:39
 		return n, err
 	case jsonpkg.Number:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:41
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:41
 		i, err := v.Int64()
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:42
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:42
 		return int(i), err
 	case bool:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:44
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:44
 		if v {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:45
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:45
 			return 1, nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:46
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:46
 		return 0, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:47
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:47
 	return 0, errors.New("cannot convert to int")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:51
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:51
 func SmartFloat64(value any) (float64, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:52
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:52
 	switch v := value.(type) {
 	case float64:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:54
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:54
 		return v, nil
 	case float32:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:56
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:56
 		return float64(v), nil
 	case int:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:58
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:58
 		return float64(v), nil
 	case int64:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:60
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:60
 		return float64(v), nil
 	case string:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:62
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:62
 		f, err := strconv.ParseFloat(v, 64)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:63
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:63
 		return f, err
 	case jsonpkg.Number:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:65
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:65
 		f, err := v.Float64()
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:66
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:66
 		return f, err
 	case bool:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:68
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:68
 		if v {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:69
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:69
 			return 1.0, nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:70
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:70
 		return 0.0, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:71
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:71
 	return 0.0, errors.New("cannot convert to float64")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:75
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:75
 func SmartBool(value any) (bool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:76
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:76
 	switch v := value.(type) {
 	case bool:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:78
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:78
 		return v, nil
 	case int:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:80
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:80
 		return (v != 0), nil
 	case float64:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:82
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:82
 		return (v != 0.0), nil
 	case string:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:84
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:84
 		b, err := strconv.ParseBool(v)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:85
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:85
 		return b, err
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:86
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:86
 	return false, errors.New("cannot convert to bool")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:90
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:90
 func SmartString(value any) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:91
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:91
 	if value == nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:92
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:92
 		return "", nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:93
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:93
 	result := func() string {
 		switch v := value.(type) {
 		case string:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:95
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:95
 			return v
 		case int:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:97
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:97
 			return strconv.Itoa(v)
 		case int64:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:99
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:99
 			return strconv.FormatInt(v, 10)
 		case float64:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:101
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:101
 			return fmt.Sprintf("%g", v)
 		case bool:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:103
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:103
 			return strconv.FormatBool(v)
 		case []byte:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:105
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:105
 			return string(v)
 		default:
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:107
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:107
 			return fmt.Sprintf("%v", value)
 		}
 	}()
-//line /var/home/tluker/repos/go/kukicha/stdlib/cast/cast.kuki:108
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cast/cast.kuki:108
 	return result, nil
 }

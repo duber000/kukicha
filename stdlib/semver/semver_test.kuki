@@ -1,0 +1,148 @@
+# Semver Package Tests
+
+petiole semver_test
+
+import "stdlib/semver"
+import "stdlib/test"
+import "testing"
+
+# --- TestParse ---
+type ParseCase
+    name    string
+    tag     string
+    want    string
+    wantErr bool
+
+func TestParse(t reference testing.T)
+    cases := list of ParseCase{
+        ParseCase{name: "v prefix", tag: "v1.2.3", want: "v1.2.3", wantErr: false},
+        ParseCase{name: "no prefix", tag: "1.2.3", want: "1.2.3", wantErr: false},
+        ParseCase{name: "zeros", tag: "v0.0.0", want: "v0.0.0", wantErr: false},
+        ParseCase{name: "large numbers", tag: "v10.20.30", want: "v10.20.30", wantErr: false},
+        ParseCase{name: "invalid abc", tag: "abc", want: "", wantErr: true},
+        ParseCase{name: "too few parts", tag: "v1.2", want: "", wantErr: true},
+        ParseCase{name: "too many parts", tag: "v1.2.3.4", want: "", wantErr: true},
+        ParseCase{name: "empty string", tag: "", want: "", wantErr: true},
+        ParseCase{name: "non-numeric", tag: "v1.x.3", want: "", wantErr: true},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            v, err := semver.Parse(tc.tag)
+            if tc.wantErr
+                test.AssertError(t, err)
+            else
+                test.AssertNoError(t, err)
+                test.AssertEqual(t, semver.Format(v), tc.want)
+        )
+
+# --- TestBump ---
+type BumpCase
+    name  string
+    tag   string
+    level string
+    want  string
+
+func TestBump(t reference testing.T)
+    cases := list of BumpCase{
+        BumpCase{name: "patch", tag: "v1.2.3", level: "patch", want: "v1.2.4"},
+        BumpCase{name: "minor", tag: "v1.2.3", level: "minor", want: "v1.3.0"},
+        BumpCase{name: "major", tag: "v1.2.3", level: "major", want: "v2.0.0"},
+        BumpCase{name: "patch from zero", tag: "v0.0.0", level: "patch", want: "v0.0.1"},
+        BumpCase{name: "minor from zero", tag: "v0.0.0", level: "minor", want: "v0.1.0"},
+        BumpCase{name: "no prefix patch", tag: "1.2.3", level: "patch", want: "1.2.4"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            v := semver.Parse(tc.tag) onerr panic "{error}"
+            got := v |> semver.Bump(tc.level) |> semver.Format()
+            test.AssertEqual(t, got, tc.want)
+        )
+
+# --- TestFormat ---
+type FormatCase
+    name string
+    tag  string
+    want string
+
+func TestFormat(t reference testing.T)
+    cases := list of FormatCase{
+        FormatCase{name: "with prefix", tag: "v1.2.3", want: "v1.2.3"},
+        FormatCase{name: "without prefix", tag: "1.2.3", want: "1.2.3"},
+        FormatCase{name: "zeros", tag: "v0.0.0", want: "v0.0.0"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            v := semver.Parse(tc.tag) onerr panic "{error}"
+            got := semver.Format(v)
+            test.AssertEqual(t, got, tc.want)
+        )
+
+# --- TestValid ---
+type ValidCase
+    name string
+    tag  string
+    want bool
+
+func TestValid(t reference testing.T)
+    cases := list of ValidCase{
+        ValidCase{name: "valid with v", tag: "v1.2.3", want: true},
+        ValidCase{name: "valid without v", tag: "1.2.3", want: true},
+        ValidCase{name: "invalid", tag: "abc", want: false},
+        ValidCase{name: "too few parts", tag: "v1.2", want: false},
+        ValidCase{name: "empty", tag: "", want: false},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := semver.Valid(tc.tag)
+            test.AssertEqual(t, got, tc.want)
+        )
+
+# --- TestCompare ---
+type CompareCase
+    name string
+    a    string
+    b    string
+    want int
+
+func TestCompare(t reference testing.T)
+    cases := list of CompareCase{
+        CompareCase{name: "equal", a: "v1.2.3", b: "v1.2.3", want: 0},
+        CompareCase{name: "a greater major", a: "v2.0.0", b: "v1.9.9", want: 1},
+        CompareCase{name: "b greater major", a: "v1.0.0", b: "v2.0.0", want: -1},
+        CompareCase{name: "a greater minor", a: "v1.3.0", b: "v1.2.9", want: 1},
+        CompareCase{name: "b greater minor", a: "v1.2.0", b: "v1.3.0", want: -1},
+        CompareCase{name: "a greater patch", a: "v1.2.4", b: "v1.2.3", want: 1},
+        CompareCase{name: "b greater patch", a: "v1.2.3", b: "v1.2.4", want: -1},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            a := semver.Parse(tc.a) onerr panic "{error}"
+            b := semver.Parse(tc.b) onerr panic "{error}"
+            got := semver.Compare(a, b)
+            test.AssertEqual(t, got, tc.want)
+        )
+
+# --- TestHighest ---
+type HighestCase
+    name    string
+    tags    list of string
+    want    string
+    wantErr bool
+
+func TestHighest(t reference testing.T)
+    cases := list of HighestCase{
+        HighestCase{name: "mixed tags", tags: list of string{"v1.0.0", "v2.1.0", "v1.5.3"}, want: "v2.1.0", wantErr: false},
+        HighestCase{name: "single tag", tags: list of string{"v1.0.0"}, want: "v1.0.0", wantErr: false},
+        HighestCase{name: "with invalid", tags: list of string{"v1.0.0", "not-semver", "v2.0.0"}, want: "v2.0.0", wantErr: false},
+        HighestCase{name: "no valid tags", tags: list of string{"abc", "def"}, want: "", wantErr: true},
+        HighestCase{name: "empty list", tags: list of string{}, want: "", wantErr: true},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got, err := semver.Highest(tc.tags)
+            if tc.wantErr
+                test.AssertError(t, err)
+            else
+                test.AssertNoError(t, err)
+                test.AssertEqual(t, got, tc.want)
+        )

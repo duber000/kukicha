@@ -18,11 +18,21 @@ type FlagDef
     description string
     defaultValue string
 
+# SubcommandDef represents a subcommand definition
+type SubcommandDef
+    name string
+    description string
+    flags list of FlagDef
+    action func(Args)
+
 # App represents a CLI application builder
 type App
     name string
+    description string
     args list of ArgDef
     flags list of FlagDef
+    globalFlags list of FlagDef
+    subcommands list of SubcommandDef
     action func(Args)
 
 # Args represents parsed command-line arguments
@@ -39,7 +49,13 @@ func NewArgs(values map of string to string) Args
 # New creates a new CLI application builder
 # Example: app := cli.New("myapp")
 func New(name string) App
-    return App{name: name, args: make(list of ArgDef), flags: make(list of FlagDef), action: empty}
+    return App{name: name, description: "", args: make(list of ArgDef), flags: make(list of FlagDef), globalFlags: make(list of FlagDef), subcommands: make(list of SubcommandDef), action: empty}
+
+# Description sets the app description shown in help text
+# Example: app |> cli.Description("A tool for managing releases")
+func Description(app App, desc string) App
+    app.description = desc
+    return app
 
 # Arg adds a positional argument to the app
 # Example: app |> cli.Arg("input", "Input file path")
@@ -59,10 +75,54 @@ func Action(app App, handler func(Args)) App
     app.action = handler
     return app
 
+# Command registers a subcommand with the given name and description
+# Example: app |> cli.Command("list", "List all items")
+func Command(app App, name string, desc string) App
+    app.subcommands = append(app.subcommands, SubcommandDef{name: name, description: desc, flags: make(list of FlagDef), action: empty})
+    return app
+
+# CommandFlag adds a flag to a specific subcommand
+# Example: app |> cli.CommandFlag("list", "csv", "CSV output", "false")
+func CommandFlag(app App, cmd string, name string, desc string, defaultValue string) App
+    for i from 0 to len(app.subcommands)
+        if app.subcommands[i].name == cmd
+            app.subcommands[i].flags = append(app.subcommands[i].flags, FlagDef{name: name, description: desc, defaultValue: defaultValue})
+            return app
+    return app
+
+# CommandAction sets the handler for a specific subcommand
+# Example: app |> cli.CommandAction("list", doList)
+func CommandAction(app App, cmd string, handler func(Args)) App
+    for i from 0 to len(app.subcommands)
+        if app.subcommands[i].name == cmd
+            app.subcommands[i].action = handler
+            return app
+    return app
+
+# GlobalFlag adds a flag available to all subcommands
+# Example: app |> cli.GlobalFlag("verbose", "Enable verbose output", "false")
+func GlobalFlag(app App, name string, desc string, defaultValue string) App
+    app.globalFlags = append(app.globalFlags, FlagDef{name: name, description: desc, defaultValue: defaultValue})
+    return app
+
+# CommandName returns the subcommand name from parsed args
+# Example: cmd := cli.CommandName(args)
+func CommandName(args Args) string
+    return args.values["__command__"]
+
 # RunApp executes the CLI application
-# Example: app |> cli.RunApp() onerr panic
+# Example: app |> cli.RunApp() onerr panic "{error}"
 func RunApp(app App) error
-    # Parse command-line arguments
+    # If subcommands are registered, use subcommand dispatch
+    if len(app.subcommands) > 0
+        return runWithSubcommands(app)
+
+    # Original flat parsing for backwards compatibility
+    return runFlat(app)
+
+# --- Internal: flat parsing (original behavior) ---
+
+func runFlat(app App) error
     values := make(map of string to string)
 
     # Parse positional args
@@ -78,7 +138,6 @@ func RunApp(app App) error
     for i < len(args)
         arg := args[i]
         if string.HasPrefix(arg, "--")
-            # Parse flag
             parts := string.SplitN(arg, "=", 2)
             flagName := string.TrimPrefix(parts[0], "--")
             flagValue := ""
@@ -107,21 +166,144 @@ func RunApp(app App) error
 
     return error("no action defined")
 
+# --- Internal: subcommand dispatch ---
+
+func runWithSubcommands(app App) error
+    args := os.Args
+
+    if len(args) < 2 or args[1] == "-h" or args[1] == "--help"
+        printHelp(app)
+        return empty
+
+    cmdName := args[1]
+
+    # Find the matching subcommand
+    cmdIndex := -1
+    for i from 0 to len(app.subcommands)
+        if app.subcommands[i].name == cmdName
+            cmdIndex = i
+
+    if cmdIndex == -1
+        fmt.Fprintln(os.Stderr, "Unknown command: {cmdName}")
+        fmt.Fprintln(os.Stderr, "")
+        printHelp(app)
+        return error("unknown command: {cmdName}")
+
+    cmd := app.subcommands[cmdIndex]
+
+    # Check for subcommand-level help
+    if len(args) > 2 and (args[2] == "-h" or args[2] == "--help")
+        printCommandHelp(app, cmd)
+        return empty
+
+    # Parse flags from remaining args
+    values := make(map of string to string)
+    values["__command__"] = cmdName
+
+    i := 2
+    for i < len(args)
+        arg := args[i]
+        if string.HasPrefix(arg, "--")
+            parts := string.SplitN(arg, "=", 2)
+            flagName := string.TrimPrefix(parts[0], "--")
+            flagValue := ""
+            if len(parts) > 1
+                flagValue = parts[1]
+            else
+                i = i + 1
+                if i < len(args) and not string.HasPrefix(args[i], "--")
+                    flagValue = args[i]
+                else
+                    flagValue = "true"
+                    i = i - 1
+            values[flagName] = flagValue
+        i = i + 1
+
+    # Set defaults for global flags
+    for flagDef in app.globalFlags
+        if values[flagDef.name] == ""
+            values[flagDef.name] = flagDef.defaultValue
+
+    # Set defaults for command-specific flags
+    for flagDef in cmd.flags
+        if values[flagDef.name] == ""
+            values[flagDef.name] = flagDef.defaultValue
+
+    if cmd.action == empty
+        return error("no action defined for command: {cmdName}")
+
+    parsedArgs := Args{values: values}
+    cmd.action(parsedArgs)
+    return empty
+
+# --- Internal: help text generation ---
+
+func printHelp(app App)
+    if app.description != ""
+        print(app.description)
+        print("")
+
+    print("Usage:")
+    print("  {app.name} <command> [flags]")
+    print("")
+    print("Commands:")
+    for cmd in app.subcommands
+        padded := string.PadRight(cmd.name, 14, " ")
+        print("  {padded}{cmd.description}")
+
+    if len(app.globalFlags) > 0
+        print("")
+        print("Global Flags:")
+        for flag in app.globalFlags
+            label := string.PadRight("--{flag.name}", 20, " ")
+            if flag.defaultValue != ""
+                print("  {label}{flag.description} (default: {flag.defaultValue})")
+            else
+                print("  {label}{flag.description}")
+
+    print("")
+    print("Use \"{app.name} <command> --help\" for more information about a command.")
+
+func printCommandHelp(app App, cmd SubcommandDef)
+    print("Usage:")
+    print("  {app.name} {cmd.name} [flags]")
+    print("")
+    if cmd.description != ""
+        print(cmd.description)
+        print("")
+
+    if len(app.globalFlags) > 0 or len(cmd.flags) > 0
+        print("Flags:")
+
+    for flag in app.globalFlags
+        label := string.PadRight("--{flag.name}", 20, " ")
+        if flag.defaultValue != ""
+            print("  {label}{flag.description} (default: {flag.defaultValue})")
+        else
+            print("  {label}{flag.description}")
+
+    for flag in cmd.flags
+        label := string.PadRight("--{flag.name}", 20, " ")
+        if flag.defaultValue != ""
+            print("  {label}{flag.description} (default: {flag.defaultValue})")
+        else
+            print("  {label}{flag.description}")
+
 # Args helper methods
 
 # GetString returns the value of a named argument or flag
-# Example: input := args.GetString("input")
+# Example: input := cli.GetString(args, "input")
 func GetString(args Args, name string) string
     return args.values[name]
 
 # GetBool returns the boolean value of a flag
-# Example: verbose := args.GetBool("verbose")
+# Example: verbose := cli.GetBool(args, "verbose")
 func GetBool(args Args, name string) bool
     val := args.values[name]
     return val == "true" or val == "1" or val == "yes"
 
 # GetInt returns the integer value of an argument
-# Example: count := args.GetInt("count")
+# Example: count := cli.GetInt(args, "count")
 func GetInt(args Args, name string) (int, error)
     strVal := args.values[name]
     if strVal == ""

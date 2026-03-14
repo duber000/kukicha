@@ -8,432 +8,432 @@ import (
 	"slices"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:10
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:10
 func First[T any](items []T, n int) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:11
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:11
 	if n <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:12
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:12
 		return make([]T, 0)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:13
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:13
 	if n >= len(items) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:14
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:14
 		return items
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:15
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:15
 	return items[:n]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:19
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:19
 func Last[T any](items []T, n int) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:20
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:20
 	length := len(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:21
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:21
 	if n <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:22
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:22
 		return make([]T, 0)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:23
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:23
 	if n >= length {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:24
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:24
 		return items
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:25
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:25
 	return items[(length - n):]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:29
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:29
 func Drop[T any](items []T, n int) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:30
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:30
 	if n <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:31
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:31
 		return items
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:32
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:32
 	if n >= len(items) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:33
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:33
 		return make([]T, 0)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:34
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:34
 	return items[n:]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:38
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:38
 func DropLast[T any](items []T, n int) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:39
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:39
 	length := len(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:40
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:40
 	if n <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:41
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:41
 		return items
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:42
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:42
 	if n >= length {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:43
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:43
 		return make([]T, 0)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:44
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:44
 	return items[:(length - n)]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:48
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:48
 func Reverse[T any](items []T) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:49
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:49
 	result := slices.Clone(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:50
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:50
 	slices.Reverse(result)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:51
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:51
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:56
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:56
 func Unique[K comparable](items []K) []K {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:57
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:57
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:58
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:58
 		return items
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:60
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:60
 	seen := make(map[K]bool)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:61
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:61
 	result := make([]K, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:63
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:63
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:64
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:64
 		if !seen[item] {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:65
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:65
 			seen[item] = true
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:66
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:66
 			result = append(result, item)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:68
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:68
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:72
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:72
 func Chunk[T any](items []T, size int) [][]T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:73
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:73
 	if size <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:74
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:74
 		return make([][]T, 0)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:76
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:76
 	result := make([][]T, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:77
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:77
 	length := len(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:78
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:78
 	i := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:80
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:80
 	for i < length {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:81
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:81
 		end := min((i + size), length)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:82
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:82
 		chunk := items[i:end]
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:83
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:83
 		result = append(result, chunk)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:84
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:84
 		i = (i + size)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:86
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:86
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:90
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:90
 func Contains[K comparable](items []K, value K) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:91
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:91
 	return slices.Contains(items, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:96
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:96
 func IndexOf[K comparable](items []K, value K) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:97
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:97
 	return slices.Index(items, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:101
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:101
 func Concat[T any](slices [][]T) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:102
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:102
 	totalLength := 0
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:103
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:103
 	for _, slice := range slices {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:104
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:104
 		totalLength = (totalLength + len(slice))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:106
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:106
 	result := make([]T, 0, totalLength)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:107
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:107
 	for _, slice := range slices {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:108
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:108
 		for _, item := range slice {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:109
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:109
 			result = append(result, item)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:111
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:111
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:115
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:115
 func Filter[T any](items []T, predicate func(T) bool) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:116
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:116
 	result := make([]T, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:117
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:117
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:118
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:118
 		if predicate(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:119
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:119
 			result = append(result, item)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:120
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:120
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:124
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:124
 func Map[T any](items []T, transform func(T) T) []T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:125
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:125
 	result := make([]T, len(items))
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:126
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:126
 	for i, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:127
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:127
 		result[i] = transform(item)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:128
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:128
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:137
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:137
 func GroupBy[T any, K comparable](items []T, keyFunc func(T) K) map[K][]T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:138
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:138
 	result := make(map[K][]T)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:139
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:139
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:140
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:140
 		key := keyFunc(item)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:141
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:141
 		result[key] = append(result[key], item)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:142
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:142
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:150
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:150
 func Get[T any](items []T, index int) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:151
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:151
 	length := len(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:152
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:152
 	if length == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:153
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:153
 		return *new(T), errors.New("slice is empty")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:156
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:156
 	actualIndex := index
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:157
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:157
 	if index < 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:158
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:158
 		actualIndex = (length + index)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:160
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:160
 	if (actualIndex < 0) || (actualIndex >= length) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:161
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:161
 		return *new(T), errors.New(fmt.Sprintf("index %v out of bounds for slice of length %v", index, length))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:163
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:163
 	return items[actualIndex], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:169
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:169
 func GetOr[T any](items []T, index int, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:170
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:170
 	length := len(items)
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:171
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:171
 	if length == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:172
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:172
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:175
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:175
 	actualIndex := index
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:176
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:176
 	if index < 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:177
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:177
 		actualIndex = (length + index)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:179
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:179
 	if (actualIndex < 0) || (actualIndex >= length) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:180
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:180
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:182
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:182
 	return items[actualIndex]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:186
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:186
 func FirstOne[T any](items []T) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:187
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:187
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:188
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:188
 		return *new(T), errors.New("slice is empty")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:189
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:189
 	return items[0], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:194
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:194
 func FirstOr[T any](items []T, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:195
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:195
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:196
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:196
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:197
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:197
 	return items[0]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:201
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:201
 func LastOne[T any](items []T) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:202
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:202
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:203
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:203
 		return *new(T), errors.New("slice is empty")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:204
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:204
 	return items[(len(items) - 1)], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:209
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:209
 func LastOr[T any](items []T, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:210
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:210
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:211
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:211
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:212
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:212
 	return items[(len(items) - 1)]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:216
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:216
 func Find[T any](items []T, predicate func(T) bool) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:217
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:217
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:218
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:218
 		if predicate(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:219
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:219
 			return item, nil
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:220
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:220
 	return *new(T), errors.New("no matching element found")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:225
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:225
 func FindOr[T any](items []T, predicate func(T) bool, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:226
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:226
 	for _, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:227
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:227
 		if predicate(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:228
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:228
 			return item
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:229
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:229
 	return defaultValue
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:234
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:234
 func FindIndex[T any](items []T, predicate func(T) bool) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:235
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:235
 	for i, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:236
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:236
 		if predicate(item) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:237
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:237
 			return i
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:238
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:238
 	return -1
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:242
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:242
 func FindLast[T any](items []T, predicate func(T) bool) (T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:243
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:243
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:244
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:244
 		return *new(T), errors.New("no matching element found")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:245
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:245
 	{
 		_iStart, _iEnd, _iStep := (len(items) - 1), 0, 1
 		if _iStart > _iEnd {
 			_iStep = -1
 		}
 		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:246
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:246
 			if predicate(items[i]) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:247
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:247
 				return items[i], nil
 			}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:248
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:248
 	return *new(T), errors.New("no matching element found")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:252
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:252
 func FindLastOr[T any](items []T, predicate func(T) bool, defaultValue T) T {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:253
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:253
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:254
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:254
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:255
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:255
 	{
 		_iStart, _iEnd, _iStep := (len(items) - 1), 0, 1
 		if _iStart > _iEnd {
 			_iStep = -1
 		}
 		for i := _iStart; i != _iEnd+_iStep; i += _iStep {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:256
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:256
 			if predicate(items[i]) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:257
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:257
 				return items[i]
 			}
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:258
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:258
 	return defaultValue
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:262
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:262
 func IsEmpty[T any](items []T) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:263
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:263
 	return (len(items) == 0)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:267
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:267
 func IsNotEmpty[T any](items []T) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:268
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:268
 	return (len(items) > 0)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:273
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:273
 func Pop[T any](items []T) (T, []T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:274
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:274
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:275
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:275
 		return *new(T), items, errors.New("cannot pop from empty slice")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:276
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:276
 	return items[(len(items) - 1)], items[:(len(items) - 1)], nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:281
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:281
 func Shift[T any](items []T) (T, []T, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:282
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:282
 	if len(items) == 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:283
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:283
 		return *new(T), items, errors.New("cannot shift from empty slice")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/slice/slice.kuki:284
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/slice/slice.kuki:284
 	return items[0], items[1:], nil
 }

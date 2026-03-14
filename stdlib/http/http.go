@@ -16,378 +16,378 @@ import (
 	"net/url"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:19
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:19
 func WithCSRF(handler http.Handler) http.Handler {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:20
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:20
 	protection := http.NewCrossOriginProtection()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:21
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:21
 	return protection.Handler(handler)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:25
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:25
 func Serve(addr string, handler http.Handler) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:26
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:26
 	return http.ListenAndServe(addr, handler)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:34
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:34
 func JSON(w http.ResponseWriter, value any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:35
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:35
 	w.Header().Set("Content-Type", "application/json")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:36
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:36
 	return json.MarshalWrite(w, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:41
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:41
 func JSONStatus(w http.ResponseWriter, value any, status int) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:42
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:42
 	w.Header().Set("Content-Type", "application/json")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:43
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:43
 	w.WriteHeader(status)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:44
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:44
 	return json.MarshalWrite(w, value)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:48
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:48
 func JSONCreated(w http.ResponseWriter, value any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:49
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:49
 	return JSONStatus(w, value, 201)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:54
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:54
 func JSONError(w http.ResponseWriter, message string, status int) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:55
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:55
 	w.Header().Set("Content-Type", "application/json")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:56
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:56
 	w.WriteHeader(status)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:57
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:57
 	errorBody := map[string]string{"error": message}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:58
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:58
 	return json.MarshalWrite(w, errorBody)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:62
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:62
 func JSONBadRequest(w http.ResponseWriter, message string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:63
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:63
 	return JSONError(w, message, 400)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:67
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:67
 func JSONUnauthorized(w http.ResponseWriter, message string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:68
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:68
 	return JSONError(w, message, 401)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:72
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:72
 func JSONForbidden(w http.ResponseWriter, message string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:73
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:73
 	return JSONError(w, message, 403)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:77
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:77
 func JSONNotFound(w http.ResponseWriter, message string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:78
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:78
 	return JSONError(w, message, 404)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:82
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:82
 func JSONInternalError(w http.ResponseWriter, message string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:83
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:83
 	return JSONError(w, message, 500)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:91
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:91
 func ReadJSON(r *http.Request, target any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:92
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:92
 	return json.UnmarshalRead(r.Body, target)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:98
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:98
 func ReadJSONAndClose(r *http.Request, target any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:99
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:99
 	defer r.Body.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:100
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:100
 	return json.UnmarshalRead(r.Body, target)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:105
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:105
 func ReadJSONLimit(r *http.Request, maxBytes int64, target any) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:106
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:106
 	return json.UnmarshalRead(io.LimitReader(r.Body, maxBytes), target)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:112
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:112
 func GetQueryParam(r *http.Request, key string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:113
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:113
 	return r.URL.Query().Get(key)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:117
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:117
 func GetQueryParamOr(r *http.Request, key string, defaultValue string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:118
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:118
 	value := r.URL.Query().Get(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:119
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:119
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:120
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:120
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:121
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:121
 	return value
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:126
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:126
 func GetQueryInt(r *http.Request, key string) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:127
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:127
 	value := r.URL.Query().Get(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:128
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:128
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:129
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:129
 		return 0, errors.New(fmt.Sprintf("query parameter '%v' is required", key))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:130
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:130
 	val, err_1 := cast.Atoi(value)
 	if err_1 != nil {
 		return 0, errors.New(fmt.Sprintf("query parameter '%v' must be an integer", key))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:131
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:131
 	return val, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:136
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:136
 func GetQueryIntOr(r *http.Request, key string, defaultValue int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:137
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:137
 	value := r.URL.Query().Get(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:138
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:138
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:139
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:139
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:140
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:140
 	val, err_2 := cast.Atoi(value)
 	if err_2 != nil {
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:141
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:141
 	return val
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:147
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:147
 func GetQueryBool(r *http.Request, key string) (bool, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:148
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:148
 	value := r.URL.Query().Get(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:149
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:149
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:150
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:150
 		return false, errors.New(fmt.Sprintf("query parameter '%v' is required", key))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:151
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:151
 	val, err_3 := validate.ParseBool(value)
 	if err_3 != nil {
 		return false, errors.New(fmt.Sprintf("query parameter '%v' must be a boolean", key))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:152
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:152
 	return val, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:157
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:157
 func GetQueryBoolOr(r *http.Request, key string, defaultValue bool) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:158
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:158
 	value := r.URL.Query().Get(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:159
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:159
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:160
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:160
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:161
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:161
 	val, err_4 := validate.ParseBool(value)
 	if err_4 != nil {
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:162
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:162
 	return val
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:166
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:166
 func GetHeader(r *http.Request, key string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:167
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:167
 	return r.Header.Get(key)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:171
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:171
 func GetHeaderOr(r *http.Request, key string, defaultValue string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:172
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:172
 	value := r.Header.Get(key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:173
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:173
 	if value == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:174
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:174
 		return defaultValue
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:175
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:175
 	return value
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:181
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:181
 func NoContent(w http.ResponseWriter) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:182
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:182
 	w.WriteHeader(204)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:186
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:186
 func Redirect(w http.ResponseWriter, r *http.Request, url string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:187
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:187
 	http.Redirect(w, r, url, 302)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:191
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:191
 func RedirectPermanent(w http.ResponseWriter, r *http.Request, url string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:192
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:192
 	http.Redirect(w, r, url, 301)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:199
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:199
 func SafeRedirect(w http.ResponseWriter, r *http.Request, redirectURL string, allowedHosts ...string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:200
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:200
 	parsed, err_5 := url.Parse(redirectURL)
 	if err_5 != nil {
 		return err_5
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:201
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:201
 	if parsed.Host == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:203
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:203
 		http.Redirect(w, r, redirectURL, 302)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:204
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:204
 		return nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:206
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:206
 	for _, host := range allowedHosts {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:207
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:207
 		if parsed.Host == host {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:208
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:208
 			http.Redirect(w, r, redirectURL, 302)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:209
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:209
 			return nil
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:210
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:210
 	return errors.New(fmt.Sprintf("redirect to '%v' is not in the allowed hosts list", parsed.Host))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:216
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:216
 func SafeURL(tmpl string, pathParams map[string]string, queryParams map[string]string) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:217
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:217
 	base, err_6 := fetch.URLTemplate(tmpl, pathParams)
 	if err_6 != nil {
 		return "", err_6
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:218
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:218
 	return fetch.URLWithQuery(base, queryParams)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:223
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:223
 func Text(w http.ResponseWriter, content string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:224
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:224
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:225
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:225
 	_, err := io.WriteString(w, content)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:226
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:226
 	return err
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:230
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:230
 func TextStatus(w http.ResponseWriter, content string, status int) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:231
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:231
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:232
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:232
 	w.WriteHeader(status)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:233
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:233
 	_, err := io.WriteString(w, content)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:234
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:234
 	return err
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:241
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:241
 func HTML(w http.ResponseWriter, content string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:242
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:242
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:243
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:243
 	_, err := io.WriteString(w, content)
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:244
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:244
 	return err
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:250
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:250
 func SafeHTML(w http.ResponseWriter, content string) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:251
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:251
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:252
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:252
 	_, err := io.WriteString(w, html.EscapeString(content))
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:253
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:253
 	return err
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:260
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:260
 func SetSecureHeaders(w http.ResponseWriter) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:261
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:261
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:262
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:262
 	w.Header().Set("X-Frame-Options", "DENY")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:263
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:263
 	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:264
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:264
 	w.Header().Set("Content-Security-Policy", "default-src 'self'")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:270
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:270
 func IsGet(r *http.Request) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:271
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:271
 	return (r.Method == "GET")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:275
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:275
 func IsPost(r *http.Request) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:276
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:276
 	return (r.Method == "POST")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:280
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:280
 func IsPut(r *http.Request) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:281
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:281
 	return (r.Method == "PUT")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:285
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:285
 func IsDelete(r *http.Request) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:286
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:286
 	return (r.Method == "DELETE")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:290
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:290
 func IsPatch(r *http.Request) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:291
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:291
 	return (r.Method == "PATCH")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:296
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:296
 func MethodNotAllowed(w http.ResponseWriter, allowed ...string) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:297
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:297
 	w.Header().Set("Allow", kukistring.Join(allowed, ", "))
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:298
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:298
 	w.WriteHeader(405)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:303
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:303
 func SecureHeaders(handler http.Handler) http.Handler {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:304
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:304
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:305
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:305
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:306
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:306
 		w.Header().Set("X-Frame-Options", "DENY")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:307
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:307
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:308
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:308
 		w.Header().Set("Content-Security-Policy", "default-src 'self'")
-//line /var/home/tluker/repos/go/kukicha/stdlib/http/http.kuki:309
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/http/http.kuki:309
 		handler.ServeHTTP(w, r)
 	})
 }

@@ -211,7 +211,7 @@ Every Kukicha concept maps 1:1 to Go and Python — see the [Quick Reference](do
 | **Infrastructure** | `pg`, `kube`, `container`, `shell`, `net` |
 | **AI & Agents** | `llm`, `mcp`, `a2a` |
 | **Web** | `http`, `fetch`, `validate`, `netguard`, `sandbox`, `template` |
-| **Config & Ops** | `env`, `must`, `cli`, `obs`, `retry`, `ctx`, `datetime`, `concurrent` |
+| **Config & Ops** | `env`, `must`, `cli`, `semver`, `obs`, `retry`, `ctx`, `datetime`, `concurrent` |
 | **Errors & Testing** | `errors`, `test`, `input` |
 
 See the full [Stdlib Reference](stdlib/AGENTS.md).

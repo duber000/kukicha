@@ -822,15 +822,17 @@ You just made your tool 3x faster with one line of code.
 
 ---
 
-## Step 9: One-Shot Mode with `cli` (Bonus)
+## Step 9: Subcommand Mode with `cli` (Bonus)
 
-The interactive loop is great for exploration, but sometimes you want a command you can script:
+The interactive loop is great for exploration, but sometimes you want a tool you can script:
 
 ```bash
-./explorer golang --filter=go --limit=10
+./explorer fetch golang
+./explorer list --filter=go --limit=10
+./explorer search "web framework"
 ```
 
-For that, use `stdlib/cli`.
+For that, use `stdlib/cli` with **subcommands**. Each interactive command becomes its own subcommand with typed flags.
 
 First, add the import:
 
@@ -838,43 +840,68 @@ First, add the import:
 import "stdlib/cli"
 ```
 
-Then wire a one-shot app entrypoint:
+Then build a subcommand-based entrypoint:
 
 ```kukicha
 function main()
-    app := cli.New("explorer")
-        |> cli.Arg("username", "GitHub user or org to explore")
-        |> cli.AddFlag("filter", "Filter by language", "")
-        |> cli.AddFlag("limit", "Max repos to show", "10")
-        |> cli.Action(runExplorer)
+    _ = cli.New("explorer")
+        |> cli.Description("Explore GitHub repos from the command line")
+        |> cli.GlobalFlag("limit", "Max repos to show", "10")
+        |> cli.Command("fetch", "Fetch repos for a GitHub user or org")
+        |> cli.CommandFlag("fetch", "user", "GitHub username", "")
+        |> cli.CommandAction("fetch", doFetch)
+        |> cli.Command("list", "List fetched repos")
+        |> cli.CommandFlag("list", "filter", "Filter by language", "")
+        |> cli.CommandAction("list", doList)
+        |> cli.Command("search", "Search repos by keyword")
+        |> cli.CommandFlag("search", "query", "Search term", "")
+        |> cli.CommandAction("search", doSearch)
+        |> cli.RunApp() onerr panic "CLI error: {error}"
 
-    cli.RunApp(app) onerr panic "CLI error: {error}"
+function doFetch(args cli.Args)
+    user := cli.GetString(args, "user")
+    if user equals ""
+        print("Usage: explorer fetch --user USERNAME")
+        return
+    repos := FetchRepos(user)
+    print("Fetched {len(repos)} repos for {user}")
 
-function runExplorer(args cli.Args)
-    username := cli.GetString(args, "username")
+function doList(args cli.Args)
     filter := cli.GetString(args, "filter")
-    limit, _ := cli.GetInt(args, "limit") onerr 10
+    limit := cli.GetInt(args, "limit") onerr 10
+    # ... filter and display repos
+```
 
-    repos := FetchRepos(username)
-    if filter not equals ""
-        repos = FilterByLanguage(repos, filter)
+Running `./explorer --help` auto-generates:
 
-    top := repos
-    if len(repos) > limit
-        top = repos[:limit]
+```
+Explore GitHub repos from the command line
 
-    for i, repo in top
-        print(repo.Summary(i + 1))
+Usage:
+  explorer <command> [flags]
+
+Commands:
+  fetch         Fetch repos for a GitHub user or org
+  list          List fetched repos
+  search        Search repos by keyword
+
+Global Flags:
+  --limit             Max repos to show (default: 10)
+
+Use "explorer <command> --help" for more information about a command.
 ```
 
 **What this adds:**
-- `cli.New("explorer")` creates a builder for your app.
-- `cli.Arg(...)`, `cli.AddFlag(...)`, and `cli.Action(...)` are chained with pipes.
-- `cli.GetString(...)` and `cli.GetInt(...)` read parsed arguments safely.
+- `cli.Command(...)` registers a named subcommand with a description.
+- `cli.CommandFlag(...)` adds flags specific to one subcommand.
+- `cli.GlobalFlag(...)` adds flags shared across all subcommands.
+- `cli.CommandAction(...)` wires a handler function per subcommand.
+- `--help` is auto-generated for the app and each subcommand.
 
 **When to use which style:**
 - Use the **interactive loop** when you want guided exploration with multiple commands in one session.
-- Use **one-shot CLI mode** when you want shell scripts, automation, and pipelines.
+- Use **subcommand CLI mode** when you want shell scripts, automation, and pipelines.
+- Use the **flat API** (`cli.Arg` + `cli.AddFlag` + `cli.Action`) for simple single-purpose tools.
 
 ---
 
@@ -898,7 +925,7 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | **`\|> switch as v`** | Branch on a value's type with typed piped switch |
 | **Command Loop** | Read input, bare `for`, `break`, and `continue` |
 | **`fetch` + `json`** | Fetch and parse data from web APIs |
-| **`cli`** | Build one-shot command interfaces with args, flags, and actions |
+| **`cli`** | Build CLI tools with subcommands, flags, and auto-generated help |
 | **`cast`** | Convert strings/values to typed numbers with `onerr` |
 
 ---

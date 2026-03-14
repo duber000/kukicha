@@ -8,211 +8,211 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:10
 func TestValues(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:11
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:11
 	items := []int{10, 20, 30}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:12
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:12
 	result := iterator.Collect(iterator.Values(items))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:13
 	test.AssertEqual(t, len(result), 3)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:16
 type FilterCase struct {
 	name    string
 	wantLen int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:20
 func TestFilter(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:21
 	items := []int{1, 2, 3, 4, 5, 6}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:22
 	t.Run("keep even", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:23
 		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return ((n % 2) == 0) }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:24
 		test.AssertEqual(t, len(result), 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:26
 	t.Run("keep none", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:27
 		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return (n > 100) }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:28
 		test.AssertEqual(t, len(result), 0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:30
 	t.Run("keep all", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:31
 		result := iterator.Collect(iterator.Filter(iterator.Values(items), func(n int) bool { return (n > 0) }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:32
 		test.AssertEqual(t, len(result), 6)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:36
 func TestTake(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:37
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:37
 	items := []int{1, 2, 3, 4, 5}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:38
 	t.Run("take 3", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:39
 		result := iterator.Collect(iterator.Take(iterator.Values(items), 3))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:40
 		test.AssertEqual(t, len(result), 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:42
 	t.Run("take more than available", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:43
 		result := iterator.Collect(iterator.Take(iterator.Values(items), 10))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:44
 		test.AssertEqual(t, len(result), 5)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:46
 	t.Run("take 0", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:47
 		result := iterator.Collect(iterator.Take(iterator.Values(items), 0))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:48
 		test.AssertEqual(t, len(result), 0)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:52
 func TestSkip(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:53
 	items := []int{1, 2, 3, 4, 5}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:54
 	t.Run("skip 2", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:55
 		result := iterator.Collect(iterator.Skip(iterator.Values(items), 2))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:56
 		test.AssertEqual(t, len(result), 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:58
 	t.Run("skip all", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:59
 		result := iterator.Collect(iterator.Skip(iterator.Values(items), 10))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:60
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:60
 		test.AssertEqual(t, len(result), 0)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:62
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:62
 	t.Run("skip 0", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:63
 		result := iterator.Collect(iterator.Skip(iterator.Values(items), 0))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:64
 		test.AssertEqual(t, len(result), 5)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:68
 func addInts(acc int, n int) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:69
 	return (acc + n)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:71
 func TestReduce(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:72
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:72
 	items := []int{1, 2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:73
 	t.Run("sum", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:74
 		result := iterator.Reduce(iterator.Values(items), 0, addInts)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:75
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:75
 		test.AssertEqual(t, result, 10)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:77
 	t.Run("empty with initial", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:78
 		emptyList := []int{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:79
 		result := iterator.Reduce(iterator.Values(emptyList), 42, addInts)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:80
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:80
 		test.AssertEqual(t, result, 42)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:84
 func TestAny(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:85
 	items := []int{1, 2, 3, 4, 5}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:86
 	t.Run("has match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:87
 		result := iterator.Any(iterator.Values(items), func(n int) bool { return (n == 3) })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:88
 		test.AssertTrue(t, result)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:90
 	t.Run("no match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:91
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:91
 		result := iterator.Any(iterator.Values(items), func(n int) bool { return (n > 100) })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:92
 		test.AssertFalse(t, result)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:96
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:96
 func TestAll(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:97
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:97
 	items := []int{2, 4, 6, 8}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:98
 	t.Run("all match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:99
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:99
 		result := iterator.All(iterator.Values(items), func(n int) bool { return ((n % 2) == 0) })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:100
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:100
 		test.AssertTrue(t, result)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:102
 	t.Run("not all match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:103
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:103
 		mixed := []int{2, 3, 4}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:104
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:104
 		result := iterator.All(iterator.Values(mixed), func(n int) bool { return ((n % 2) == 0) })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:105
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:105
 		test.AssertFalse(t, result)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:109
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:109
 func TestFind(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:110
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:110
 	items := []int{10, 20, 30, 40}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:111
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:111
 	t.Run("found", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:112
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:112
 		val, ok := iterator.Find(iterator.Values(items), func(n int) bool { return (n > 15) })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:113
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:113
 		test.AssertTrue(t, ok)
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:114
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:114
 		test.AssertEqual(t, val, 20)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:116
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:116
 	t.Run("not found", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:117
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:117
 		_, ok := iterator.Find(iterator.Values(items), func(n int) bool { return (n > 100) })
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:118
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:118
 		test.AssertFalse(t, ok)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:122
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:122
 func TestChain(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:123
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:123
 	items := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:124
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:124
 	t.Run("filter then take", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:125
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:125
 		result := iterator.Collect(iterator.Take(iterator.Filter(iterator.Values(items), func(n int) bool { return ((n % 2) == 0) }), 2))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:126
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:126
 		test.AssertEqual(t, len(result), 2)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:128
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:128
 	t.Run("skip then filter", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:129
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:129
 		result := iterator.Collect(iterator.Filter(iterator.Skip(iterator.Values(items), 5), func(n int) bool { return ((n % 2) == 0) }))
-//line /var/home/tluker/repos/go/kukicha/stdlib/iterator/iterator_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/iterator/iterator_test.kuki:130
 		test.AssertEqual(t, len(result), 3)
 	})
 }

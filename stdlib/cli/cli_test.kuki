@@ -86,3 +86,25 @@ func TestGetInt(t reference testing.T)
                 test.AssertNoError(t, err)
                 test.AssertEqual(t, got, tc.want)
         )
+
+# --- TestBuilderChain ---
+# Verifies that chaining builder methods does not panic
+func TestBuilderChain(t reference testing.T)
+    handler := (args cli.Args) =>
+        _ = args
+
+    _ = cli.New("myapp")
+        |> cli.Description("A great tool")
+        |> cli.GlobalFlag("verbose", "Enable verbose output", "false")
+        |> cli.Command("list", "List items")
+        |> cli.CommandFlag("list", "csv", "CSV output", "false")
+        |> cli.CommandAction("list", handler)
+        |> cli.Command("add", "Add an item")
+    test.AssertTrue(t, true)
+
+# --- TestCommandName ---
+func TestCommandName(t reference testing.T)
+    values := make(map of string to string)
+    values["__command__"] = "list"
+    args := cli.NewArgs(values)
+    test.AssertEqual(t, cli.CommandName(args), "list")

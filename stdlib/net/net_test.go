@@ -7,66 +7,66 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:9
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:9
 func TestIPAndCIDRHelpers(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:10
 	ip := netutil.ParseIP("10.0.0.1")
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:11
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:11
 	if netutil.IsNil(ip) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:12
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:12
 		t.Fatalf("ParseIP should return valid IP")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:13
 	if !netutil.IsPrivate(ip) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:14
 		t.Errorf("10.0.0.1 should be private")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:16
 	loop := netutil.ParseIP("127.0.0.1")
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:17
 	if !netutil.IsLoopback(loop) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:18
 		t.Errorf("Loopback detection failed")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:20
 	multicast := netutil.ParseIP("224.0.0.1")
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:21
 	if !netutil.IsMulticast(multicast) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:22
 		t.Errorf("Multicast detection failed")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:24
 	cidr, err_1 := netutil.ParseCIDR("192.0.2.0/24")
 	if err_1 != nil {
-		//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:25
+		//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:25
 		t.Fatalf("ParseCIDR failed: %v", err_1)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:26
 	if !netutil.Contains(cidr, netutil.ParseIP("192.0.2.5")) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:27
 		t.Errorf("CIDR should contain 192.0.2.5")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:29
 	host, port, err_2 := netutil.SplitHostPort("example.com:8080")
 	if err_2 != nil {
-		//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:30
+		//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:30
 		t.Fatalf("SplitHostPort failed: %v", err_2)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:31
 	if (host != "example.com") || (port != "8080") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:32
 		t.Errorf("SplitHostPort returned wrong parts")
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:34
 	joined := netutil.JoinHostPort("example.com", "80")
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:35
 	if joined != "example.com:80" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:36
 		t.Errorf("JoinHostPort returned '%v'", joined)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:38
 	if netutil.IPString(multicast) != "224.0.0.1" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/net/net_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/net/net_test.kuki:39
 		t.Errorf("IPString returned wrong value")
 	}
 }

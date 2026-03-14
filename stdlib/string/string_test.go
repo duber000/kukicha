@@ -9,38 +9,38 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:10
 type StringCase struct {
 	name  string
 	input string
 	want  string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:16
 func TestToUpperToLower(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:17
 	upperCases := []StringCase{StringCase{name: "all lower", input: "hello", want: "HELLO"}, StringCase{name: "mixed", input: "Hello World", want: "HELLO WORLD"}, StringCase{name: "empty", input: "", want: ""}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:22
 	for _, tc := range upperCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:23
 		t.Run(fmt.Sprintf("ToUpper/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:24
 			test.AssertEqual(t, kukistring.ToUpper(tc.input), tc.want)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:27
 	lowerCases := []StringCase{StringCase{name: "all upper", input: "HELLO", want: "hello"}, StringCase{name: "mixed", input: "Hello World", want: "hello world"}, StringCase{name: "empty", input: "", want: ""}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:32
 	for _, tc := range lowerCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:33
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:33
 		t.Run(fmt.Sprintf("ToLower/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:34
 			test.AssertEqual(t, kukistring.ToLower(tc.input), tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:38
 type TrimCase struct {
 	name   string
 	input  string
@@ -48,196 +48,196 @@ type TrimCase struct {
 	want   string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:44
 func TestTrimFunctions(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:45
 	trimCases := []TrimCase{TrimCase{name: "spaces", input: "  hello  ", cutset: " ", want: "hello"}, TrimCase{name: "x chars", input: "xxhelloxx", cutset: "x", want: "hello"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:49
 	for _, tc := range trimCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:50
 		t.Run(fmt.Sprintf("Trim/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:51
 			test.AssertEqual(t, kukistring.Trim(tc.input, tc.cutset), tc.want)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:54
 	trimSpaceCases := []StringCase{StringCase{name: "spaces", input: "  hello  ", want: "hello"}, StringCase{name: "tabs and newlines", input: "\t hello \n", want: "hello"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:58
 	for _, tc := range trimSpaceCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:59
 		t.Run(fmt.Sprintf("TrimSpace/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:60
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:60
 			test.AssertEqual(t, kukistring.TrimSpace(tc.input), tc.want)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:63
 	prefixCases := []TrimCase{TrimCase{name: "removes prefix", input: "hello world", cutset: "hello ", want: "world"}, TrimCase{name: "not present", input: "hello world", cutset: "xyz", want: "hello world"}, TrimCase{name: "empty prefix", input: "hello world", cutset: "", want: "hello world"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:68
 	for _, tc := range prefixCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:69
 		t.Run(fmt.Sprintf("TrimPrefix/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:70
 			test.AssertEqual(t, kukistring.TrimPrefix(tc.input, tc.cutset), tc.want)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:73
 	suffixCases := []TrimCase{TrimCase{name: "removes suffix", input: "hello world", cutset: " world", want: "hello"}, TrimCase{name: "not present", input: "hello world", cutset: "xyz", want: "hello world"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:77
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:77
 	for _, tc := range suffixCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:78
 		t.Run(fmt.Sprintf("TrimSuffix/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:79
 			test.AssertEqual(t, kukistring.TrimSuffix(tc.input, tc.cutset), tc.want)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:82
 	t.Run("TrimLeft removes leading x", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:83
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:83
 		test.AssertEqual(t, kukistring.TrimLeft("xxhello", "x"), "hello")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:85
 	t.Run("TrimRight removes trailing x", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:86
 		test.AssertEqual(t, kukistring.TrimRight("helloxx", "x"), "hello")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:90
 func TestSplitJoin(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:91
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:91
 	t.Run("split on comma", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:92
 		parts := kukistring.Split("a,b,c", ",")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:93
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:93
 		test.AssertEqual(t, len(parts), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:94
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:94
 		test.AssertEqual(t, parts[0], "a")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:95
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:95
 		test.AssertEqual(t, parts[1], "b")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:96
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:96
 		test.AssertEqual(t, parts[2], "c")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:98
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:98
 	t.Run("join with dash", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:99
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:99
 		parts := kukistring.Split("a,b,c", ",")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:100
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:100
 		test.AssertEqual(t, kukistring.Join(parts, "-"), "a-b-c")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:102
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:102
 	t.Run("split on empty string", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:103
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:103
 		chars := kukistring.Split("abc", "")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:104
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:104
 		test.AssertEqual(t, len(chars), 3)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:106
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:106
 	t.Run("join with empty separator", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:107
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:107
 		chars := kukistring.Split("abc", "")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:108
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:108
 		test.AssertEqual(t, kukistring.Join(chars, ""), "abc")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:112
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:112
 func TestSplitN(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:113
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:113
 	t.Run("limit to 2 parts", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:114
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:114
 		parts := kukistring.SplitN("a:b:c:d", ":", 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:115
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:115
 		test.AssertEqual(t, len(parts), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:116
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:116
 		test.AssertEqual(t, parts[0], "a")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:117
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:117
 		test.AssertEqual(t, parts[1], "b:c:d")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:121
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:121
 func TestFields(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:122
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:122
 	t.Run("splits on whitespace", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:123
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:123
 		parts := kukistring.Fields("  hello   world  ")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:124
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:124
 		test.AssertEqual(t, len(parts), 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:125
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:125
 		test.AssertEqual(t, parts[0], "hello")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:126
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:126
 		test.AssertEqual(t, parts[1], "world")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:128
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:128
 	t.Run("empty string returns empty slice", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:129
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:129
 		none := kukistring.Fields("")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:130
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:130
 		test.AssertEqual(t, len(none), 0)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:134
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:134
 func TestSearchFunctions(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:135
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:135
 	s := "hello world"
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:137
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:137
 	containsCases := []TrimCase{TrimCase{name: "world present", input: s, cutset: "world", want: "true"}, TrimCase{name: "hello present", input: s, cutset: "hello", want: "true"}, TrimCase{name: "xyz absent", input: s, cutset: "xyz", want: "false"}, TrimCase{name: "empty always present", input: s, cutset: "", want: "true"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:143
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:143
 	for _, tc := range containsCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:144
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:144
 		t.Run(fmt.Sprintf("Contains/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:145
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:145
 			got := kukistring.Contains(tc.input, tc.cutset)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:146
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:146
 			wantBool := (tc.want == "true")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:147
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:147
 			test.AssertEqual(t, got, wantBool)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:150
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:150
 	t.Run("HasPrefix/hello", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:151
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:151
 		test.AssertEqual(t, kukistring.HasPrefix(s, "hello"), true)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:153
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:153
 	t.Run("HasPrefix/world false", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:154
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:154
 		test.AssertEqual(t, kukistring.HasPrefix(s, "world"), false)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:156
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:156
 	t.Run("HasSuffix/world", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:157
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:157
 		test.AssertEqual(t, kukistring.HasSuffix(s, "world"), true)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:159
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:159
 	t.Run("HasSuffix/hello false", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:160
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:160
 		test.AssertEqual(t, kukistring.HasSuffix(s, "hello"), false)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:163
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:163
 	t.Run("HasSuffix/multibyte match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:164
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:164
 		test.AssertEqual(t, kukistring.HasSuffix("café", "é"), true)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:166
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:166
 	t.Run("HasSuffix/multibyte no match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:167
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:167
 		test.AssertEqual(t, kukistring.HasSuffix("café", "c"), false)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:169
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:169
 	t.Run("HasSuffix/CJK match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:170
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:170
 		test.AssertEqual(t, kukistring.HasSuffix("日本語", "語"), true)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:172
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:172
 	t.Run("HasSuffix/CJK no match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:173
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:173
 		test.AssertEqual(t, kukistring.HasSuffix("日本語", "日"), false)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:177
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:177
 type IndexCase struct {
 	name  string
 	input string
@@ -245,31 +245,31 @@ type IndexCase struct {
 	want  int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:183
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:183
 func TestIndexFunctions(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:184
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:184
 	indexCases := []IndexCase{IndexCase{name: "world at 6", input: "hello world", sub: "world", want: 6}, IndexCase{name: "hello at 0", input: "hello world", sub: "hello", want: 0}, IndexCase{name: "xyz not found", input: "hello world", sub: "xyz", want: -1}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:189
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:189
 	for _, tc := range indexCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:190
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:190
 		t.Run(fmt.Sprintf("Index/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:191
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:191
 			test.AssertEqual(t, kukistring.Index(tc.input, tc.sub), tc.want)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:194
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:194
 	lastIndexCases := []IndexCase{IndexCase{name: "last abc at 3", input: "abcabc", sub: "abc", want: 3}, IndexCase{name: "xyz not found", input: "abcabc", sub: "xyz", want: -1}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:198
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:198
 	for _, tc := range lastIndexCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:199
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:199
 		t.Run(fmt.Sprintf("LastIndex/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:200
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:200
 			test.AssertEqual(t, kukistring.LastIndex(tc.input, tc.sub), tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:204
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:204
 type CountCase struct {
 	name  string
 	input string
@@ -277,65 +277,65 @@ type CountCase struct {
 	want  int
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:210
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:210
 func TestCount(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:211
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:211
 	cases := []CountCase{CountCase{name: "l appears twice", input: "hello", sub: "l", want: 2}, CountCase{name: "ll appears once", input: "hello", sub: "ll", want: 1}, CountCase{name: "x absent", input: "hello", sub: "x", want: 0}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:216
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:216
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:217
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:217
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:218
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:218
 			test.AssertEqual(t, kukistring.Count(tc.input, tc.sub), tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:222
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:222
 func TestReplaceFunctions(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:223
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:223
 	t.Run("ReplaceAll replaces all", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:224
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:224
 		test.AssertEqual(t, kukistring.ReplaceAll("aabbcc", "b", "x"), "aaxxcc")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:226
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:226
 	t.Run("ReplaceAll no match", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:227
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:227
 		test.AssertEqual(t, kukistring.ReplaceAll("hello", "x", "y"), "hello")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:229
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:229
 	t.Run("Replace first only", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:230
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:230
 		test.AssertEqual(t, kukistring.Replace("aabbcc", "b", "x", 1), "aaxbcc")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:232
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:232
 	t.Run("Replace n=-1 replaces all", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:233
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:233
 		test.AssertEqual(t, kukistring.Replace("aabbcc", "b", "x", -1), "aaxxcc")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:237
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:237
 func TestRepeat(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:238
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:238
 	cases := []StringCase{StringCase{name: "repeat 3 times", input: "ab", want: "ababab"}, StringCase{name: "repeat 1 time", input: "x", want: "x"}, StringCase{name: "repeat 0 times", input: "x", want: ""}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:243
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:243
 	counts := []int{3, 1, 0}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:244
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:244
 	for i := range len(cases) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:245
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:245
 		tc := cases[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:246
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:246
 		n := counts[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:247
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:247
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:248
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:248
 			test.AssertEqual(t, kukistring.Repeat(tc.input, n), tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:252
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:252
 type PadCase struct {
 	name  string
 	input string
@@ -344,151 +344,151 @@ type PadCase struct {
 	want  string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:259
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:259
 func TestPadFunctions(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:260
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:260
 	rightCases := []PadCase{PadCase{name: "pad with spaces", input: "hi", width: 5, pad: " ", want: "hi   "}, PadCase{name: "already long enough", input: "hello", width: 3, pad: " ", want: "hello"}, PadCase{name: "pad with dash", input: "hi", width: 5, pad: "-", want: "hi---"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:265
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:265
 	for _, tc := range rightCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:266
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:266
 		t.Run(fmt.Sprintf("PadRight/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:267
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:267
 			test.AssertEqual(t, kukistring.PadRight(tc.input, tc.width, tc.pad), tc.want)
 		})
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:270
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:270
 	leftCases := []PadCase{PadCase{name: "pad with spaces", input: "hi", width: 5, pad: " ", want: "   hi"}, PadCase{name: "already long enough", input: "hello", width: 3, pad: " ", want: "hello"}, PadCase{name: "pad with dash", input: "hi", width: 5, pad: "-", want: "---hi"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:275
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:275
 	for _, tc := range leftCases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:276
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:276
 		t.Run(fmt.Sprintf("PadLeft/%v", tc.name), func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:277
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:277
 			test.AssertEqual(t, kukistring.PadLeft(tc.input, tc.width, tc.pad), tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:281
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:281
 func TestEqualFold(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:282
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:282
 	cases := []TrimCase{TrimCase{name: "same case diff", input: "Hello", cutset: "hello", want: "true"}, TrimCase{name: "all caps", input: "WORLD", cutset: "world", want: "true"}, TrimCase{name: "different strings", input: "hello", cutset: "world", want: "false"}, TrimCase{name: "both empty", input: "", cutset: "", want: "true"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:288
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:288
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:289
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:289
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:290
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:290
 			got := kukistring.EqualFold(tc.input, tc.cutset)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:291
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:291
 			wantBool := (tc.want == "true")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:292
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:292
 			test.AssertEqual(t, got, wantBool)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:296
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:296
 func TestLen(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:297
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:297
 	cases := []IndexCase{IndexCase{name: "hello is 5", input: "hello", sub: "", want: 5}, IndexCase{name: "empty is 0", input: "", sub: "", want: 0}, IndexCase{name: "single char is 1", input: "a", sub: "", want: 1}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:302
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:302
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:303
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:303
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:304
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:304
 			test.AssertEqual(t, kukistring.Len(tc.input), tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:308
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:308
 func TestIsEmptyIsBlank(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:309
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:309
 	t.Run("IsEmpty/empty string", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:310
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:310
 		test.AssertEqual(t, kukistring.IsEmpty(""), true)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:312
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:312
 	t.Run("IsEmpty/non-empty", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:313
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:313
 		test.AssertEqual(t, kukistring.IsEmpty("hello"), false)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:315
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:315
 	t.Run("IsEmpty/space is not empty", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:316
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:316
 		test.AssertEqual(t, kukistring.IsEmpty(" "), false)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:318
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:318
 	t.Run("IsBlank/empty", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:319
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:319
 		test.AssertEqual(t, kukistring.IsBlank(""), true)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:321
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:321
 	t.Run("IsBlank/spaces", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:322
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:322
 		test.AssertEqual(t, kukistring.IsBlank("   "), true)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:324
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:324
 	t.Run("IsBlank/tabs and newlines", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:325
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:325
 		test.AssertEqual(t, kukistring.IsBlank("\t\n"), true)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:327
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:327
 	t.Run("IsBlank/non-blank", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:328
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:328
 		test.AssertEqual(t, kukistring.IsBlank("hello"), false)
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:330
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:330
 	t.Run("IsBlank/space with char", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:331
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:331
 		test.AssertEqual(t, kukistring.IsBlank(" x "), false)
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:335
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:335
 func TestLines(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:336
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:336
 	t.Run("three lines", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:337
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:337
 		lines := kukistring.Lines("line1\nline2\nline3")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:338
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:338
 		test.AssertEqual(t, len(lines), 3)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:339
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:339
 		test.AssertEqual(t, lines[0], "line1")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:340
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:340
 		test.AssertEqual(t, lines[2], "line3")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:342
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:342
 	t.Run("single line no newline", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:343
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:343
 		single := kukistring.Lines("hello")
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:344
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:344
 		test.AssertEqual(t, len(single), 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:345
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:345
 		test.AssertEqual(t, single[0], "hello")
 	})
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:349
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:349
 func TestConcat(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:350
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:350
 	t.Run("joins parts", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:351
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:351
 		parts := []string{"hello", " ", "world"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:352
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:352
 		test.AssertEqual(t, kukistring.Concat(parts), "hello world")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:354
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:354
 	t.Run("empty slice", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:355
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:355
 		noParts := []string{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:356
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:356
 		test.AssertEqual(t, kukistring.Concat(noParts), "")
 	})
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:358
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:358
 	t.Run("single element", func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:359
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:359
 		single := []string{"alone"}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string_test.kuki:360
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/string/string_test.kuki:360
 		test.AssertEqual(t, kukistring.Concat(single), "alone")
 	})
 }

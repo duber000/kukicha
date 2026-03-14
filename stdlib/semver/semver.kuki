@@ -1,0 +1,112 @@
+# Kukicha Standard Library - Semver (Semantic Versioning)
+# Parse, bump, compare, and validate semver tags.
+#
+# Examples:
+#   v := semver.Parse("v1.2.3") onerr panic "{error}"
+#   next := v |> semver.Bump("minor") |> semver.Format()   # "v1.3.0"
+#   if semver.Valid("v2.0.0")
+#       print("ok")
+
+petiole semver
+
+import "stdlib/cast"
+import "stdlib/string"
+import "stdlib/slice"
+import "fmt"
+
+# Version represents a parsed semver tag
+type Version
+    major int
+    minor int
+    patch int
+    prefix string
+
+# Parse converts a semver string like "v1.2.3" or "1.2.3" into a Version
+# Returns an error if the string is not valid semver
+# Example: v := semver.Parse("v1.2.3") onerr return
+func Parse(tag string) (Version, error)
+    raw := tag
+    prefix := ""
+    if raw |> string.HasPrefix("v")
+        prefix = "v"
+        raw = raw |> string.TrimPrefix("v")
+
+    parts := raw |> string.Split(".")
+    if len(parts) != 3
+        return Version{}, error "invalid semver: {tag}"
+
+    major := cast.Atoi(parts[0]) onerr return Version{}, error "invalid semver: {tag}"
+    minor := cast.Atoi(parts[1]) onerr return Version{}, error "invalid semver: {tag}"
+    patch := cast.Atoi(parts[2]) onerr return Version{}, error "invalid semver: {tag}"
+
+    if major < 0 or minor < 0 or patch < 0
+        return Version{}, error "invalid semver: {tag}"
+
+    return Version{major: major, minor: minor, patch: patch, prefix: prefix}, empty
+
+# Bump increments the version by the given level: "major", "minor", or "patch"
+# Higher components are incremented and lower ones are zeroed
+# Example: v |> semver.Bump("minor")
+func Bump(v Version, level string) Version
+    level |> switch
+        when "major"
+            v.major = v.major + 1
+            v.minor = 0
+            v.patch = 0
+        when "minor"
+            v.minor = v.minor + 1
+            v.patch = 0
+        when "patch"
+            v.patch = v.patch + 1
+    return v
+
+# Format converts a Version back to its string form (e.g. "v1.2.3")
+# Example: tag := v |> semver.Format()
+func Format(v Version) string
+    return fmt.Sprintf("%s%d.%d.%d", v.prefix, v.major, v.minor, v.patch)
+
+# Valid returns true if the tag string is valid semver
+# Example: if semver.Valid("v1.0.0")
+func Valid(tag string) bool
+    _, err := Parse(tag)
+    return err == empty
+
+# Compare returns -1, 0, or 1 comparing two versions
+# Example: semver.Compare(a, b)
+func Compare(a Version, b Version) int
+    if a.major != b.major
+        if a.major > b.major
+            return 1
+        return -1
+    if a.minor != b.minor
+        if a.minor > b.minor
+            return 1
+        return -1
+    if a.patch != b.patch
+        if a.patch > b.patch
+            return 1
+        return -1
+    return 0
+
+# Greater returns true if a is greater than b
+# Example: semver.Greater(a, b)
+func Greater(a Version, b Version) bool
+    return Compare(a, b) > 0
+
+# Highest returns the highest valid semver tag from a list of strings
+# Non-semver strings are silently ignored
+# Example: best := semver.Highest(tags) onerr return
+func Highest(tags list of string) (string, error)
+    valid := tags |> slice.Filter(Valid)
+    if slice.IsEmpty(valid)
+        return "", error "no valid semver tags found"
+
+    best := Parse(valid[0]) onerr return "", error "{error}"
+    for i from 1 to len(valid)
+        v, err := Parse(valid[i])
+        if err != empty
+            continue
+        if Greater(v, best)
+            best = v
+
+    return Format(best), empty

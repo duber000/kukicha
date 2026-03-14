@@ -10,166 +10,462 @@ import (
 	"os"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:11
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:11
 type ArgDef struct {
 	name        string
 	description string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:16
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:16
 type FlagDef struct {
 	name         string
 	description  string
 	defaultValue string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:22
-type App struct {
-	name   string
-	args   []ArgDef
-	flags  []FlagDef
-	action func(Args)
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:22
+type SubcommandDef struct {
+	name        string
+	description string
+	flags       []FlagDef
+	action      func(Args)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:29
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:29
+type App struct {
+	name        string
+	description string
+	args        []ArgDef
+	flags       []FlagDef
+	globalFlags []FlagDef
+	subcommands []SubcommandDef
+	action      func(Args)
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:39
 type Args struct {
 	values map[string]string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:34
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:44
 func NewArgs(values map[string]string) Args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:35
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:45
 	return Args{values: values}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:41
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:51
 func New(name string) App {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:42
-	return App{name: name, args: make([]ArgDef, 0), flags: make([]FlagDef, 0), action: nil}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:52
+	return App{name: name, description: "", args: make([]ArgDef, 0), flags: make([]FlagDef, 0), globalFlags: make([]FlagDef, 0), subcommands: make([]SubcommandDef, 0), action: nil}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:46
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:56
+func Description(app App, desc string) App {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:57
+	app.description = desc
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:58
+	return app
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:62
 func Arg(app App, name string, description string) App {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:47
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:63
 	app.args = append(app.args, ArgDef{name: name, description: description})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:48
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:64
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:52
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:68
 func AddFlag(app App, name string, description string, defaultValue string) App {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:53
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:69
 	app.flags = append(app.flags, FlagDef{name: name, description: description, defaultValue: defaultValue})
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:54
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:70
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:58
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:74
 func Action(app App, handler func(Args)) App {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:59
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:75
 	app.action = handler
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:60
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:76
 	return app
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:64
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:80
+func Command(app App, name string, desc string) App {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:81
+	app.subcommands = append(app.subcommands, SubcommandDef{name: name, description: desc, flags: make([]FlagDef, 0), action: nil})
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:82
+	return app
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:86
+func CommandFlag(app App, cmd string, name string, desc string, defaultValue string) App {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:87
+	for i := range len(app.subcommands) {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:88
+		if app.subcommands[i].name == cmd {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:89
+			app.subcommands[i].flags = append(app.subcommands[i].flags, FlagDef{name: name, description: desc, defaultValue: defaultValue})
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:90
+			return app
+		}
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:91
+	return app
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:95
+func CommandAction(app App, cmd string, handler func(Args)) App {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:96
+	for i := range len(app.subcommands) {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:97
+		if app.subcommands[i].name == cmd {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:98
+			app.subcommands[i].action = handler
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:99
+			return app
+		}
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:100
+	return app
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:104
+func GlobalFlag(app App, name string, desc string, defaultValue string) App {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:105
+	app.globalFlags = append(app.globalFlags, FlagDef{name: name, description: desc, defaultValue: defaultValue})
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:106
+	return app
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:110
+func CommandName(args Args) string {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:111
+	return args.values["__command__"]
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:115
 func RunApp(app App) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:66
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:117
+	if len(app.subcommands) > 0 {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:118
+		return runWithSubcommands(app)
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:121
+	return runFlat(app)
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:125
+func runFlat(app App) error {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:126
 	values := make(map[string]string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:69
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:129
 	args := os.Args
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:70
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:130
 	argIndex := 1
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:71
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:131
 	for _, argDef := range app.args {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:72
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:132
 		if (argIndex < len(args)) && !kukistring.HasPrefix(args[argIndex], "--") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:73
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:133
 			values[argDef.name] = args[argIndex]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:74
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:134
 			argIndex = (argIndex + 1)
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:77
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:137
 	i := argIndex
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:78
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:138
 	for i < len(args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:79
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:139
 		arg := args[i]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:80
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:140
 		if kukistring.HasPrefix(arg, "--") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:82
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:141
 			parts := kukistring.SplitN(arg, "=", 2)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:83
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:142
 			flagName := kukistring.TrimPrefix(parts[0], "--")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:84
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:143
 			flagValue := ""
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:85
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:144
 			if len(parts) > 1 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:86
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:145
 				flagValue = parts[1]
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:88
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:147
 				i = (i + 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:89
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:148
 				if (i < len(args)) && !kukistring.HasPrefix(args[i], "--") {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:90
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:149
 					flagValue = args[i]
 				} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:92
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:151
 					i = (i - 1)
 				}
 			}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:94
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:153
 			values[flagName] = flagValue
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:95
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:154
 		i = (i + 1)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:98
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:157
 	for _, flagDef := range app.flags {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:99
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:158
 		if values[flagDef.name] == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:100
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:159
 			values[flagDef.name] = flagDef.defaultValue
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:103
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:162
 	if app.action != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:104
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:163
 		parsedArgs := Args{values: values}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:105
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:164
 		app.action(parsedArgs)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:106
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:165
 		return nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:108
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:167
 	return errors.New("no action defined")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:114
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:171
+func runWithSubcommands(app App) error {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:172
+	args := os.Args
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:174
+	if ((len(args) < 2) || (args[1] == "-h")) || (args[1] == "--help") {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:175
+		printHelp(app)
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:176
+		return nil
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:178
+	cmdName := args[1]
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:181
+	cmdIndex := -1
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:182
+	for i := range len(app.subcommands) {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:183
+		if app.subcommands[i].name == cmdName {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:184
+			cmdIndex = i
+		}
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:186
+	if cmdIndex == -1 {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:187
+		fmt.Fprintln(os.Stderr, fmt.Sprintf("Unknown command: %v", cmdName))
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:188
+		fmt.Fprintln(os.Stderr, "")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:189
+		printHelp(app)
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:190
+		return errors.New(fmt.Sprintf("unknown command: %v", cmdName))
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:192
+	cmd := app.subcommands[cmdIndex]
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:195
+	if (len(args) > 2) && ((args[2] == "-h") || (args[2] == "--help")) {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:196
+		printCommandHelp(app, cmd)
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:197
+		return nil
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:200
+	values := make(map[string]string)
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:201
+	values["__command__"] = cmdName
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:203
+	i := 2
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:204
+	for i < len(args) {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:205
+		arg := args[i]
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:206
+		if kukistring.HasPrefix(arg, "--") {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:207
+			parts := kukistring.SplitN(arg, "=", 2)
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:208
+			flagName := kukistring.TrimPrefix(parts[0], "--")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:209
+			flagValue := ""
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:210
+			if len(parts) > 1 {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:211
+				flagValue = parts[1]
+			} else {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:213
+				i = (i + 1)
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:214
+				if (i < len(args)) && !kukistring.HasPrefix(args[i], "--") {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:215
+					flagValue = args[i]
+				} else {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:217
+					flagValue = "true"
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:218
+					i = (i - 1)
+				}
+			}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:219
+			values[flagName] = flagValue
+		}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:220
+		i = (i + 1)
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:223
+	for _, flagDef := range app.globalFlags {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:224
+		if values[flagDef.name] == "" {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:225
+			values[flagDef.name] = flagDef.defaultValue
+		}
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:228
+	for _, flagDef := range cmd.flags {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:229
+		if values[flagDef.name] == "" {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:230
+			values[flagDef.name] = flagDef.defaultValue
+		}
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:232
+	if cmd.action == nil {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:233
+		return errors.New(fmt.Sprintf("no action defined for command: %v", cmdName))
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:235
+	parsedArgs := Args{values: values}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:236
+	cmd.action(parsedArgs)
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:237
+	return nil
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:241
+func printHelp(app App) {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:242
+	if app.description != "" {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:243
+		fmt.Println(app.description)
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:244
+		fmt.Println("")
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:246
+	fmt.Println("Usage:")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:247
+	fmt.Println(fmt.Sprintf("  %v <command> [flags]", app.name))
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:248
+	fmt.Println("")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:249
+	fmt.Println("Commands:")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:250
+	for _, cmd := range app.subcommands {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:251
+		padded := kukistring.PadRight(cmd.name, 14, " ")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:252
+		fmt.Println(fmt.Sprintf("  %v%v", padded, cmd.description))
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:254
+	if len(app.globalFlags) > 0 {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:255
+		fmt.Println("")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:256
+		fmt.Println("Global Flags:")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:257
+		for _, flag := range app.globalFlags {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:258
+			label := kukistring.PadRight(fmt.Sprintf("--%v", flag.name), 20, " ")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:259
+			if flag.defaultValue != "" {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:260
+				fmt.Println(fmt.Sprintf("  %v%v (default: %v)", label, flag.description, flag.defaultValue))
+			} else {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:262
+				fmt.Println(fmt.Sprintf("  %v%v", label, flag.description))
+			}
+		}
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:264
+	fmt.Println("")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:265
+	fmt.Println(fmt.Sprintf("Use \"%v <command> --help\" for more information about a command.", app.name))
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:267
+func printCommandHelp(app App, cmd SubcommandDef) {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:268
+	fmt.Println("Usage:")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:269
+	fmt.Println(fmt.Sprintf("  %v %v [flags]", app.name, cmd.name))
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:270
+	fmt.Println("")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:271
+	if cmd.description != "" {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:272
+		fmt.Println(cmd.description)
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:273
+		fmt.Println("")
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:275
+	if (len(app.globalFlags) > 0) || (len(cmd.flags) > 0) {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:276
+		fmt.Println("Flags:")
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:278
+	for _, flag := range app.globalFlags {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:279
+		label := kukistring.PadRight(fmt.Sprintf("--%v", flag.name), 20, " ")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:280
+		if flag.defaultValue != "" {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:281
+			fmt.Println(fmt.Sprintf("  %v%v (default: %v)", label, flag.description, flag.defaultValue))
+		} else {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:283
+			fmt.Println(fmt.Sprintf("  %v%v", label, flag.description))
+		}
+	}
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:285
+	for _, flag := range cmd.flags {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:286
+		label := kukistring.PadRight(fmt.Sprintf("--%v", flag.name), 20, " ")
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:287
+		if flag.defaultValue != "" {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:288
+			fmt.Println(fmt.Sprintf("  %v%v (default: %v)", label, flag.description, flag.defaultValue))
+		} else {
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:290
+			fmt.Println(fmt.Sprintf("  %v%v", label, flag.description))
+		}
+	}
+}
+
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:296
 func GetString(args Args, name string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:115
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:297
 	return args.values[name]
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:119
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:301
 func GetBool(args Args, name string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:120
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:302
 	val := args.values[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:121
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:303
 	return (((val == "true") || (val == "1")) || (val == "yes"))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:125
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:307
 func GetInt(args Args, name string) (int, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:126
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:308
 	strVal := args.values[name]
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:127
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:309
 	if strVal == "" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:128
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:310
 		return 0, errors.New(fmt.Sprintf("argument %v not found", name))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli.kuki:130
+//line /Users/tluker/repos/go/kukicha/.claude/worktrees/vigorous-liskov/stdlib/cli/cli.kuki:312
 	return cast.Atoi(strVal)
 }

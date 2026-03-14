@@ -9,29 +9,15 @@ petiole main
 
 import "fmt"
 import "os"
-import "regexp"
-import "stdlib/cast"
+import "stdlib/cli"
 import "stdlib/env"
 import "stdlib/input"
+import "stdlib/semver"
 import "stdlib/shell"
 import "stdlib/slice"
 import "stdlib/string"
 
-# ── Configuration ──────────────────────────────────────────────
-
-var semverPattern = regexp.MustCompile("^v?[0-9]+\\.[0-9]+\\.[0-9]+$")
-
 # ── Types ──────────────────────────────────────────────────────
-
-type Options
-    command string
-    repo string
-    org string
-    bump string
-    format string
-    dryRun bool
-    draft bool
-    initialTag string
 
 type RepoEntry
     name string
@@ -47,60 +33,12 @@ func fatal(msg string)
 func warn(msg string)
     fmt.Fprintln(os.Stderr, "Warning: {msg}")
 
-# ── Semver helpers ─────────────────────────────────────────────
-
-func validateSemver(tag string) bool
-    return semverPattern.MatchString(tag)
-
-func parseSemverParts(tag string) (int, int, int)
-    parts := tag |> string.TrimPrefix("v") |> string.Split(".")
-    major := cast.Atoi(parts[0]) onerr 0
-    minor := cast.Atoi(parts[1]) onerr 0
-    patch := cast.Atoi(parts[2]) onerr 0
-    return major, minor, patch
-
-func semverGreater(a string, b string) bool
-    aMaj, aMin, aPat := parseSemverParts(a)
-    bMaj, bMin, bPat := parseSemverParts(b)
-    if aMaj != bMaj
-        return aMaj > bMaj
-    if aMin != bMin
-        return aMin > bMin
-    return aPat > bPat
-
-func bumpSemver(tag string, bump string) (string, error)
-    prefix := ""
-    version := tag
-    if tag |> string.HasPrefix("v")
-        prefix = "v"
-        version = tag |> string.TrimPrefix("v")
-
-    parts := version |> string.Split(".")
-    if len(parts) != 3
-        return "", error "cannot parse semver from tag: {tag}"
-
-    major := cast.Atoi(parts[0]) onerr return "", error "cannot parse semver from tag: {tag}"
-    minor := cast.Atoi(parts[1]) onerr return "", error "cannot parse semver from tag: {tag}"
-    patch := cast.Atoi(parts[2]) onerr return "", error "cannot parse semver from tag: {tag}"
-
-    bump |> switch
-        when "major"
-            major = major + 1
-            minor = 0
-            patch = 0
-        when "minor"
-            minor = minor + 1
-            patch = 0
-        when "patch"
-            patch = patch + 1
-
-    return fmt.Sprintf("%s%d.%d.%d", prefix, major, minor, patch), empty
-
 # nextTag computes the next semver tag from the current one, falling back to initialTag
 func nextTag(current string, bump string, initialTag string) (string, error)
     if current == ""
         return initialTag, empty
-    return bumpSemver(current, bump)
+    v := semver.Parse(current) onerr return "", error "{error}"
+    return v |> semver.Bump(bump) |> semver.Format(), empty
 
 # ── GitHub helpers ─────────────────────────────────────────────
 
@@ -110,18 +48,10 @@ func highestSemverTag(repo string) (string, error)
     if raw |> string.IsBlank()
         return "", empty
 
-    tags := raw
-        |> string.Lines()
-        |> slice.Filter(validateSemver)
-
-    if slice.IsEmpty(tags)
+    tags := raw |> string.Lines()
+    best, err := semver.Highest(tags)
+    if err != empty
         return "", empty
-
-    best := tags[0]
-    for i from 1 to len(tags)
-        if semverGreater(tags[i], best)
-            best = tags[i]
-
     return best, empty
 
 func defaultBranch(repo string) (string, error)
@@ -163,12 +93,16 @@ func listReposWhereICommitted(org string) (list of string, error)
 
 # ── Commands ───────────────────────────────────────────────────
 
-func doList(opts Options)
-    repos := listReposWhereICommitted(opts.org) onerr
+func doList(args cli.Args, initialTag string)
+    org := cli.GetString(args, "org")
+    bump := cli.GetString(args, "bump")
+    csv := cli.GetBool(args, "csv")
+
+    repos := listReposWhereICommitted(org) onerr
         fatal("Error: {error}")
 
     # Header
-    if opts.format == "csv"
+    if csv
         print("\"repo\",\"current_tag\",\"next_tag\"")
     else
         print("repo\tcurrent_tag\tnext_tag")
@@ -178,7 +112,7 @@ func doList(opts Options)
             warn("{error}")
             continue
 
-        next := nextTag(current, opts.bump, opts.initialTag) onerr
+        next := nextTag(current, bump, initialTag) onerr
             warn("{error}")
             continue
 
@@ -186,52 +120,57 @@ func doList(opts Options)
         if display == ""
             display = "<none>"
 
-        if opts.format == "csv"
+        if csv
             print("\"{repo}\",\"{display}\",\"{next}\"")
         else
             print("{repo}\t{display}\t{next}")
 
-func doRelease(opts Options)
+func doRelease(args cli.Args, initialTag string)
+    org := cli.GetString(args, "org")
+    bump := cli.GetString(args, "bump")
+    repo := cli.GetString(args, "repo")
+    dryRun := cli.GetBool(args, "dry-run")
+    draft := cli.GetBool(args, "draft")
     generateNotes := env.GetBoolOrDefault("GENERATE_NOTES", true)
 
-    if opts.repo == ""
+    if repo == ""
         fatal("release requires --repo OWNER/REPO")
 
-    if opts.org != "" and not (opts.repo |> string.HasPrefix("{opts.org}/"))
-        fatal("Repo '{opts.repo}' is not under org '{opts.org}'")
+    if org != "" and not (repo |> string.HasPrefix("{org}/"))
+        fatal("Repo '{repo}' is not under org '{org}'")
 
     # Verify repo exists
-    _ := shell.Output("gh", "repo", "view", opts.repo) onerr
+    _ := shell.Output("gh", "repo", "view", repo) onerr
         fatal("Failed to access repo: {error}")
 
-    current := highestSemverTag(opts.repo) onerr
+    current := highestSemverTag(repo) onerr
         fatal("Error: {error}")
 
-    next := nextTag(current, opts.bump, opts.initialTag) onerr
+    next := nextTag(current, bump, initialTag) onerr
         fatal("Error: {error}")
 
-    if releaseExists(opts.repo, next)
+    if releaseExists(repo, next)
         print("Release already exists:")
-        print("  repo: {opts.repo}")
+        print("  repo: {repo}")
         print("  tag:  {next}")
         return
 
-    branch := defaultBranch(opts.repo) onerr
+    branch := defaultBranch(repo) onerr
         fatal("Error: {error}")
 
-    tagAlreadyExists := tagExists(opts.repo, next)
+    tagAlreadyExists := tagExists(repo, next)
 
     # Display summary
     displayCurrent := current
     if displayCurrent == ""
         displayCurrent = "<none>"
 
-    print("Repo:           {opts.repo}")
+    print("Repo:           {repo}")
     print("Current tag:    {displayCurrent}")
     print("Next tag:       {next}")
     print("Default branch: {branch}")
-    if opts.org != ""
-        print("Org filter:     {opts.org}")
+    if org != ""
+        print("Org filter:     {org}")
     if tagAlreadyExists
         print("Tag exists:     yes")
     else
@@ -239,13 +178,13 @@ func doRelease(opts Options)
     print("")
 
     # Build command arguments
-    cmdArgs := list of string{"release", "create", next, "--repo", opts.repo, "--title", next}
+    cmdArgs := list of string{"release", "create", next, "--repo", repo, "--title", next}
 
     if not tagAlreadyExists
         cmdArgs = append(cmdArgs, "--target", branch)
     if generateNotes
         cmdArgs = append(cmdArgs, "--generate-notes")
-    if opts.draft
+    if draft
         cmdArgs = append(cmdArgs, "--draft")
 
     # Display the command
@@ -253,7 +192,7 @@ func doRelease(opts Options)
     print("  gh {cmdArgs |> string.Join(\" \")}")
     print("")
 
-    if opts.dryRun
+    if dryRun
         print("Dry run only. No release created.")
         return
 
@@ -262,8 +201,11 @@ func doRelease(opts Options)
         fmt.Fprintln(os.Stderr, "Release creation failed. This may indicate a race condition")
         fatal("(another process may have created the release or tag).")
 
-func doPick(opts Options)
-    repos := listReposWhereICommitted(opts.org) onerr
+func doPick(args cli.Args, initialTag string)
+    org := cli.GetString(args, "org")
+    bump := cli.GetString(args, "bump")
+
+    repos := listReposWhereICommitted(org) onerr
         fatal("Failed to list repos: {error}")
 
     # Collect repos with their computed next tags
@@ -272,7 +214,7 @@ func doPick(opts Options)
         current := highestSemverTag(repo) onerr
             continue
 
-        next := nextTag(current, opts.bump, opts.initialTag) onerr
+        next := nextTag(current, bump, initialTag) onerr
             continue
 
         entries = append(entries, RepoEntry{name: repo, current: current, next: next})
@@ -282,129 +224,53 @@ func doPick(opts Options)
         os.Exit(1)
 
     # Build display lines: "myorg/repo          v1.2.3  →  v1.2.4"
-    labels := entries |> slice.Map((entry RepoEntry) =>
+    labels := list of string{}
+    for entry in entries
         displayCurrent := entry.current
         if displayCurrent == ""
             displayCurrent = "<none>"
-        return entry.name |> string.PadRight(40) + "  " + displayCurrent |> string.PadRight(12) + "  →  " + entry.next
-    )
+        line := string.PadRight(entry.name, 40, " ") + "  " + string.PadRight(displayCurrent, 12, " ") + "  →  " + entry.next
+        labels = append(labels, line)
 
     i := input.Choose("Select a repo to release:", labels) onerr
         print("Cancelled.")
         os.Exit(0)
 
-    opts.repo = entries[i].name
-    doRelease(opts)
-
-# ── CLI parsing ────────────────────────────────────────────────
-
-func usage()
-    print("Usage:")
-    print("  gh-semver-release list [--org ORG] [--bump patch|minor|major] [--csv]")
-    print("  gh-semver-release release --repo OWNER/REPO [--org ORG] [--bump patch|minor|major] [--dry-run] [--draft|--publish]")
-    print("  gh-semver-release pick [--org ORG] [--bump patch|minor|major] [--dry-run] [--draft|--publish]")
-    print("")
-    print("Commands:")
-    print("  list       List repos with commit contributions, showing current and next semver tags")
-    print("  release    Create a release for one specific repo")
-    print("  pick       Interactively choose a repo with fzf, then create the release")
-    print("")
-    print("Options:")
-    print("  --repo OWNER/REPO   Repo to release")
-    print("  --org ORG           Limit to repos under this org")
-    print("  --bump TYPE         patch (default), minor, major")
-    print("  --csv               CSV output for list")
-    print("  --dry-run           Show what would happen without creating a release")
-    print("  --draft             Create draft release (default)")
-    print("  --publish           Publish immediately")
-    print("  -h, --help          Show help")
-    print("")
-    print("Environment:")
-    print("  INITIAL_TAG=v0.0.1  Starting tag when no semver tag exists")
-    print("  GENERATE_NOTES=1    Use --generate-notes (default: true, also accepts 1/yes/on)")
-
-func nextFlagValue(args list of string, i int, flag string) string
-    if i + 1 >= len(args) or args[i + 1] |> string.HasPrefix("--")
-        fatal("{flag} requires a value")
-    return args[i + 1]
-
-func validateBump(bump string)
-    validBumps := list of string{"patch", "minor", "major"}
-    if not slice.Contains(validBumps, bump)
-        fatal("Invalid bump type: {bump}")
-
-func parseArgs(initialTag string) Options
-    args := os.Args
-    if len(args) < 2
-        usage()
-        os.Exit(0)
-
-    command := args[1]
-
-    if command == "-h" or command == "--help"
-        usage()
-        os.Exit(0)
-
-    validCommands := list of string{"list", "release", "pick"}
-    if not slice.Contains(validCommands, command)
-        fmt.Fprintln(os.Stderr, "Unknown command: {command}")
-        fmt.Fprintln(os.Stderr, "")
-        usage()
-        os.Exit(1)
-
-    opts := Options{command: command, bump: "patch", format: "tsv", dryRun: false, draft: true, initialTag: initialTag}
-
-    i := 2
-    for i < len(args)
-        args[i] |> switch
-            when "--repo"
-                opts.repo = nextFlagValue(args, i, "--repo")
-                i = i + 1
-            when "--org"
-                opts.org = nextFlagValue(args, i, "--org")
-                i = i + 1
-            when "--bump"
-                opts.bump = nextFlagValue(args, i, "--bump")
-                i = i + 1
-            when "--csv"
-                opts.format = "csv"
-            when "--dry-run"
-                opts.dryRun = true
-            when "--draft"
-                opts.draft = true
-            when "--publish"
-                opts.draft = false
-            when "-h", "--help"
-                usage()
-                os.Exit(0)
-            otherwise
-                fmt.Fprintln(os.Stderr, "Unknown option: {args[i]}")
-                fmt.Fprintln(os.Stderr, "")
-                usage()
-                os.Exit(1)
-        i = i + 1
-
-    validateBump(opts.bump)
-    return opts
+    # Create new args with the chosen repo
+    vals := make(map of string to string)
+    vals["repo"] = entries[i].name
+    vals["org"] = org
+    vals["bump"] = bump
+    vals["dry-run"] = cli.GetString(args, "dry-run")
+    vals["draft"] = cli.GetString(args, "draft")
+    doRelease(cli.NewArgs(vals), initialTag)
 
 # ── Main ───────────────────────────────────────────────────────
 
 func main()
     # Validate env config
     initialTag := env.GetOr("INITIAL_TAG", "v0.0.1")
-    if not validateSemver(initialTag)
+    if not semver.Valid(initialTag)
         fatal("INITIAL_TAG '{initialTag}' is not valid semver (expected e.g. v0.0.1)")
 
     # Check required tools
     if not shell.Which("gh")
         fatal("Missing required command: gh")
 
-    opts := parseArgs(initialTag)
-
-    opts.command |> switch
-        when "list"
-            doList(opts)
-        when "release"
-            doRelease(opts)
-        when "pick"
-            doPick(opts)
+    _ = cli.New("gh-semver-release")
+        |> cli.Description("Create GitHub releases with auto-bumped semver tags")
+        |> cli.GlobalFlag("org", "Limit to repos under this org", "")
+        |> cli.GlobalFlag("bump", "Bump type: patch, minor, major", "patch")
+        |> cli.Command("list", "List repos with current and next semver tags")
+        |> cli.CommandFlag("list", "csv", "CSV output", "false")
+        |> cli.Command("release", "Create a release for a specific repo")
+        |> cli.CommandFlag("release", "repo", "OWNER/REPO to release", "")
+        |> cli.CommandFlag("release", "dry-run", "Show what would happen", "false")
+        |> cli.CommandFlag("release", "draft", "Create draft release", "true")
+        |> cli.Command("pick", "Interactively choose a repo to release")
+        |> cli.CommandFlag("pick", "dry-run", "Show what would happen", "false")
+        |> cli.CommandFlag("pick", "draft", "Create draft release", "true")
+        |> cli.CommandAction("list", (a cli.Args) => doList(a, initialTag))
+        |> cli.CommandAction("release", (a cli.Args) => doRelease(a, initialTag))
+        |> cli.CommandAction("pick", (a cli.Args) => doPick(a, initialTag))
+        |> cli.RunApp() onerr fatal("{error}")

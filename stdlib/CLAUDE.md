@@ -13,7 +13,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/a2a` | Agent-to-Agent protocol client | Discover, Ask, Send, Stream, New/Text/Context |
 | `stdlib/accel` | Smart inference fallback (native → web) | Init, InitWith, Cleanup, Backend, Version, IsAvailable, New/Threads/InterOpThreads/OptLevel/EP/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
 | `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString |
-| `stdlib/cli` | CLI argument parsing | New, String, Int, Bool, Parse |
+| `stdlib/cli` | CLI argument parsing with subcommands | New, Description, Arg, AddFlag, Action, RunApp, Command, CommandFlag, CommandAction, GlobalFlag, CommandName, GetString, GetBool, GetInt, NewArgs |
 | `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
 | `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, PullAuth, LoginFromConfig, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
 | `stdlib/ctx` | Context timeout/cancellation helpers | Background, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err |
@@ -42,6 +42,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/random` | Random number generation | Int, IntRange, Float, String, Choice |
 | `stdlib/retry` | Retry with backoff | New, Attempts, Delay, Sleep |
 | `stdlib/sandbox` | os.Root filesystem sandboxing | New, Read, Write, List, Exists, Delete |
+| `stdlib/semver` | Semantic versioning (parse, bump, compare) | Parse, Bump, Format, Valid, Compare, Greater, Highest |
 | `stdlib/shell` | Safe command execution | Run, Output, New/Dir/Env/Execute, Which, Getenv |
 | `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Get, Find, FindLast, Unique, Contains, Pop, Shift |
 | `stdlib/string` | String utilities | Split, Join, Trim, Contains, Replace, ToUpper, ToLower |
@@ -91,6 +92,26 @@ func TestClamp(t reference testing.T)
 ## Common Patterns
 
 ```kukicha
+# Semver (parse, bump, compare)
+import "stdlib/semver"
+v := semver.Parse("v1.2.3") onerr panic "{error}"
+next := v |> semver.Bump("minor") |> semver.Format()   # "v1.3.0"
+if semver.Valid("v2.0.0")
+    print("valid")
+best := semver.Highest(tags) onerr panic "{error}"
+
+# CLI with subcommands
+import "stdlib/cli"
+_ = cli.New("mytool")
+    |> cli.Description("A useful tool")
+    |> cli.GlobalFlag("verbose", "Enable verbose output", "false")
+    |> cli.Command("list", "List all items")
+    |> cli.CommandFlag("list", "format", "Output format", "table")
+    |> cli.CommandAction("list", doList)
+    |> cli.Command("add", "Add a new item")
+    |> cli.CommandAction("add", doAdd)
+    |> cli.RunApp() onerr fatal("{error}")
+
 # Validation (returns error for onerr)
 import "stdlib/validate"
 email |> validate.Email() onerr return
@@ -437,7 +458,7 @@ Every stdlib module is **pure Kukicha**: `<name>.kuki` source + `<name>.go` gene
 
 All packages: `a2a`, `accel`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
 `http`, `infer`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
-`random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `test`, `validate`, `webinfer`
+`random`, `retry`, `sandbox`, `semver`, `shell`, `slice`, `string`, `template`, `test`, `validate`, `webinfer`
 
 ## Import Aliases
 

@@ -12,30 +12,45 @@
 # Prerequisites:
 #   export MISTRAL_API_KEY="..."
 
-import "stdlib/llm"
-import "stdlib/shell"
+import "stdlib/cli"
 import "stdlib/files"
+import "stdlib/llm"
+import "stdlib/semver"
+import "stdlib/shell"
+import "stdlib/slice"
 import "stdlib/string" as strpkg
-import "os"
 
 func main()
-    # Determine version from CLI args
-    version := "Unreleased"
-    if len(os.Args) > 1
-        version = os.Args[1]
+    _ = cli.New("changelog")
+        |> cli.Description("Generate CHANGELOG.md entries from git history using an LLM")
+        |> cli.Arg("version", "Release version (e.g. v0.5.0). Defaults to 'Unreleased'")
+        |> cli.Action(run)
+        |> cli.RunApp() onerr panic "{error}"
 
-    # Get sorted tag list to find the previous release tag
-    # We use the second-most-recent tag so we capture commits *in* the current release,
-    # not just commits after it (which would be the case if we used git describe HEAD).
-    tagsRaw := shell.Output("git", "tag", "-l", "--sort=-version:refname") onerr ""
+func run(args cli.Args)
+    version := cli.GetString(args, "version")
+    if version == ""
+        version = "Unreleased"
+    generateChangelog(version)
+
+func generateChangelog(version string)
+    # Get sorted tag list and find the previous release tag using semver
+    tagsRaw := shell.Output("git", "tag", "-l") onerr ""
     tagsRaw = strpkg.Trim(tagsRaw, "\n")
     tagLines := strpkg.Split(tagsRaw, "\n")
+        |> slice.Filter((t string) => semver.Valid(t))
 
+    # Sort by semver to find the two most recent tags
     lastTag := ""
-    if len(tagLines) > 1
-        lastTag = tagLines[1]
-    else if len(tagLines) == 1 and tagLines[0] != ""
-        lastTag = tagLines[0]
+    if slice.IsNotEmpty(tagLines)
+        best := semver.Highest(tagLines) onerr ""
+        if best == version and len(tagLines) > 1
+            # Current version tag already exists — find the one before it
+            remaining := tagLines |> slice.Filter((t string) => t != best)
+            if slice.IsNotEmpty(remaining)
+                lastTag = semver.Highest(remaining) onerr ""
+        else
+            lastTag = best
 
     # Get commits since previous tag (or last 50 if no prior tags exist)
     gitLog := ""
