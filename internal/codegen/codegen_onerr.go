@@ -119,11 +119,18 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 		// onerr return empty - generate bare return (for named return values)
 		g.writeLine("return")
 	default:
-		// onerr expression (default value case)
-		// e.g., port := getPort() onerr "8080"
-		// Assign the default value to the first variable
-		if len(names) > 0 {
-			g.writeLine(fmt.Sprintf("%s = %s", names[0].Value, g.exprToString(handler)))
+		handlerStr := g.exprToString(handler)
+		switch handler.(type) {
+		case *ast.CallExpr, *ast.MethodCallExpr:
+			// Function call handler — execute as a statement (e.g., fatal("msg"), log.Fatal("x")).
+			// These are side-effect calls, not default values.
+			g.writeLine(handlerStr)
+		default:
+			// Default value expression — assign to the first variable.
+			// e.g., port := getPort() onerr "8080" → port = "8080"
+			if len(names) > 0 {
+				g.writeLine(fmt.Sprintf("%s = %s", names[0].Value, handlerStr))
+			}
 		}
 	}
 }
@@ -372,7 +379,13 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 	if len(stmt.Targets) == 1 && len(stmt.Values) == 1 {
 		if pipe, ok := stmt.Values[0].(*ast.PipeExpr); ok {
 			if finalVar, ok := g.generateOnErrPipeChain(pipe, clause, names, ""); ok {
-				g.writeLine(fmt.Sprintf("%s = %s", g.exprToString(stmt.Targets[0]), finalVar))
+				targetStr := g.exprToString(stmt.Targets[0])
+				// If finalVar is a complex expression (contains parens), the value was
+				// already consumed as an argument to the final error-only step.
+				// Only emit an assignment when finalVar is a temp variable name.
+				if targetStr != "_" || !strings.Contains(finalVar, "(") {
+					g.writeLine(fmt.Sprintf("%s = %s", targetStr, finalVar))
+				}
 				return
 			}
 		}

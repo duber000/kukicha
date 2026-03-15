@@ -303,6 +303,11 @@ func (g *Generator) generateArrowLambda(lambda *ast.ArrowLambda) string {
 		// from the context (e.g., when passed to a generic function).
 		returnType := g.inferExprReturnType(lambda.Body)
 
+		// Don't add return for void expressions (0-return functions).
+		if count, ok := g.inferReturnCount(lambda.Body); ok && count == 0 {
+			return fmt.Sprintf("func(%s) { %s }", params, bodyStr)
+		}
+
 		if returnType != "" {
 			return fmt.Sprintf("func(%s) %s { return %s }", params, returnType, bodyStr)
 		}
