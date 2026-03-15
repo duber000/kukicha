@@ -591,9 +591,7 @@ func buildImage(cli reference client.Client, contextPath string, tag string) (st
         output.WriteString(line)
         output.WriteString("\n")
         msg := buildStreamMsg{}
-        unmarshalErr := json.Unmarshal(scanner.Bytes(), reference of msg)
-        if unmarshalErr != empty
-            continue
+        json.Unmarshal(scanner.Bytes(), reference of msg) onerr continue
         if msg.Error != ""
             return "", output.String(), fmt.Errorf("container build: %s", msg.Error)
         if msg.Aux.ID != ""

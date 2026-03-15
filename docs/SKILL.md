@@ -82,6 +82,8 @@ data := fetch.Get(url) onerr return                         # propagate (shortha
 data := fetch.Get(url) onerr return empty, error "{error}"  # propagate (verbose, wraps error)
 port := getPort()      onerr 8080                           # default value
 _    := riskyOp()      onerr discard                        # ignore
+v    := parse(item)    onerr continue                       # skip iteration (inside for loop)
+v    := parse(item)    onerr break                          # exit loop (inside for loop)
 data := fetch.Get(url) onerr explain "context hint"         # wrap and propagate
 
 # Block form — multiple statements

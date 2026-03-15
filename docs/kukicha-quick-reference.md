@@ -107,6 +107,10 @@ config := parse(data) onerr DefaultConfig
 # Propagate — passes the original error to the caller
 data := files.Read("config.json") onerr return
 
+# Loop control — skip or exit on error (inside for loops)
+v := parse(item) onerr continue
+v := parse(item) onerr break
+
 # Block handler — caught error is always named `error`, never `err`
 user := fetchUser(id) onerr
     log.Printf("failed for user {id}: {error}")   # {error} = caught error

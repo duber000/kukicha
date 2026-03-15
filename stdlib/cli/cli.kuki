@@ -248,8 +248,7 @@ func printHelp(app App)
     print("")
     print("Commands:")
     for cmd in app.subcommands
-        padded := cmd.name |> string.PadRight(14)
-        print("  {padded}{cmd.description}")
+        print("  {cmd.name |> string.PadRight(14)}{cmd.description}")
 
     if len(app.globalFlags) > 0
         print("")

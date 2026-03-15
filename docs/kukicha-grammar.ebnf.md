@@ -249,11 +249,15 @@ SendStatement ::= "send" Expression "," Expression NEWLINE
 
 ExpressionStatement ::= Expression [ OnErrClause ] StatementTerminator
 
-OnErrClause ::= "onerr" ( Expression | NEWLINE INDENT StatementList DEDENT ) [ "explain" STRING ]
+OnErrClause ::= "onerr" ( "return" | "continue" | "break" | Expression | NEWLINE INDENT StatementList DEDENT ) [ "explain" STRING ]
+    # Shorthand forms:
+    #   onerr return                           # Propagate error with zero values
+    #   onerr continue                         # Skip to next loop iteration
+    #   onerr break                            # Exit loop
     # Single expression: onerr panic "failed"
     # Block form:
     #   onerr
-    #       log.Printf("Error: {err}")
+    #       log.Printf("Error: {error}")
     #       return
     # With explain hint:
     #   onerr explain "hint message"           # Standalone: wraps error, returns

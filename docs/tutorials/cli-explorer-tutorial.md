@@ -177,8 +177,8 @@ function Summary on repo Repo(index int) string
     lang := repo.Language
     if lang equals ""
         lang = "n/a"
-    name := repo.Name |> string.PadRight(30, " ")
-    lang = lang |> string.PadRight(12, " ")
+    name := repo.Name |> string.PadRight(30)
+    lang = lang |> string.PadRight(12)
     return "  {index}. {name}  ⭐ {repo.Stars}  {lang}  {repo.Description}"
 ```
 
@@ -187,7 +187,7 @@ function Summary on repo Repo(index int) string
 - `on repo Repo` — This method works on a `Repo` (syntax: receiver name first, then the type). Inside the method, we call it `repo`
 - `(index int)` — The method also takes an index number for display numbering
 - `string` — The method returns a string
-- `string.PadRight(30, " ")` — pads a string to exactly 30 characters wide by adding spaces on the right, so every repo name takes up the same width and columns line up cleanly in the output
+- `string.PadRight(30)` — pads a string to exactly 30 characters wide by adding spaces on the right (the default pad character), so every repo name takes up the same width and columns line up cleanly in the output
 
 ### Filtering with Pipes and Arrow Lambdas
 
@@ -359,8 +359,8 @@ function Summary on repo Repo(index int) string
     lang := repo.Language
     if lang equals ""
         lang = "n/a"
-    name := repo.Name |> string.PadRight(30, " ")
-    lang = lang |> string.PadRight(12, " ")
+    name := repo.Name |> string.PadRight(30)
+    lang = lang |> string.PadRight(12)
     return "  {index}. {name}  ⭐ {repo.Stars}  {lang}  {repo.Description}"
 
 # --- Data Fetching ---
