@@ -1,8 +1,8 @@
 # Kukicha
 
-**AI-assisted coding. Not AI-replaced coding.**
+**AI-assisted coding.**
 
-You describe what you want. AI writes the code. Kukicha lets you actually *read* it.
+You describe what you want. AI writes the code. Kukicha lets you *read* it.
 
 Kukicha is a programming language designed to be read by humans and written by AI agents. It compiles to Go, so your programs run fast and deploy as a single binary with no dependencies.
 
@@ -20,7 +20,7 @@ kukicha build → single binary
 Ship it
 ```
 
-You don't need to know how to write Kukicha — you just need to *read* it and spot when something looks wrong.
+You don't need to know how to write Kukicha as long as you can *read* it and spot when something looks wrong.
 
 See the [Agent Workflow Tutorial](docs/tutorials/agent-workflow-tutorial.md) to get started immediately.
 
@@ -179,7 +179,7 @@ But readability alone isn't enough. AI writes [nearly half of all committed code
 
 The Kukicha compiler catches common AI-generated vulnerabilities **at build time** — SQL injection, XSS, SSRF, path traversal, command injection, and open redirects — and tells both you and the AI agent what safe alternative to use instead.
 
-AI is the writer. You are the editor. That's not a limitation — it's the architecture of trust.
+AI is the writer. You are the editor.
 
 ---
 
