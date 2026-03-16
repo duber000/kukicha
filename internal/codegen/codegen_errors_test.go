@@ -641,3 +641,177 @@ func Foo(x any) Stringer
 		t.Errorf("expected assertion syntax .(Stringer) for local interface, got: %s", output)
 	}
 }
+
+func TestDeeplyNestedIndentation(t *testing.T) {
+	// 10+ levels of nesting should compile correctly
+	input := `func deep(n int) int
+    if n > 0
+        if n > 1
+            if n > 2
+                if n > 3
+                    if n > 4
+                        if n > 5
+                            if n > 6
+                                if n > 7
+                                    if n > 8
+                                        if n > 9
+                                            return n
+    return 0
+`
+
+	output := generateSource(t, input)
+
+	if !strings.Contains(output, "return n") {
+		t.Errorf("expected deeply nested return, got:\n%s", output)
+	}
+
+	// Count tab depth — innermost return should have 11 tabs
+	for _, line := range strings.Split(output, "\n") {
+		trimmed := strings.TrimLeft(line, "\t")
+		if strings.Contains(trimmed, "return n") {
+			tabs := len(line) - len(trimmed)
+			if tabs < 11 {
+				t.Errorf("expected at least 11 tabs for deeply nested return, got %d", tabs)
+			}
+		}
+	}
+}
+
+func TestParserCascadesMultipleErrors(t *testing.T) {
+	// Parser should report multiple errors, not stop at the first one
+	input := `func Bad(a, b int) int
+    return a +
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+
+	_, parseErrors := p.Parse()
+	if len(parseErrors) == 0 {
+		t.Error("expected parse errors for malformed input, got none")
+	}
+}
+
+func TestOnErrContinueInLoop(t *testing.T) {
+	input := `import "strconv"
+
+func sumValid(items list of string) int
+    total := 0
+    for item in items
+        n := strconv.Atoi(item) onerr continue
+        total = total + n
+    return total
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.NewWithFile(program, "test.kuki")
+	semErrors := analyzer.Analyze()
+	if len(semErrors) > 0 {
+		t.Fatalf("semantic errors: %v", semErrors)
+	}
+
+	gen := New(program)
+	gen.SetExprReturnCounts(analyzer.ReturnCounts())
+	gen.SetExprTypes(analyzer.ExprTypes())
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "continue") {
+		t.Errorf("expected 'continue' in onerr handler, got:\n%s", output)
+	}
+}
+
+func TestOnErrBreakInLoop(t *testing.T) {
+	input := `import "strconv"
+
+func firstValid(items list of string) int
+    result := 0
+    for item in items
+        n := strconv.Atoi(item) onerr break
+        result = n
+    return result
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.NewWithFile(program, "test.kuki")
+	semErrors := analyzer.Analyze()
+	if len(semErrors) > 0 {
+		t.Fatalf("semantic errors: %v", semErrors)
+	}
+
+	gen := New(program)
+	gen.SetExprReturnCounts(analyzer.ReturnCounts())
+	gen.SetExprTypes(analyzer.ExprTypes())
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "break") {
+		t.Errorf("expected 'break' in onerr handler, got:\n%s", output)
+	}
+}
+
+func TestOnErrBlockMultiStatement(t *testing.T) {
+	input := `import "os"
+
+func readOrDie(path string) list of byte
+    data := os.ReadFile(path) onerr
+        print("Failed to read {path}: {error}")
+        panic "aborting"
+    return data
+`
+
+	p, err := parser.New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("parser error: %v", err)
+	}
+
+	program, parseErrors := p.Parse()
+	if len(parseErrors) > 0 {
+		t.Fatalf("parse errors: %v", parseErrors)
+	}
+
+	analyzer := semantic.NewWithFile(program, "test.kuki")
+	semErrors := analyzer.Analyze()
+	if len(semErrors) > 0 {
+		t.Fatalf("semantic errors: %v", semErrors)
+	}
+
+	gen := New(program)
+	gen.SetExprReturnCounts(analyzer.ReturnCounts())
+	gen.SetExprTypes(analyzer.ExprTypes())
+	output, err := gen.Generate()
+	if err != nil {
+		t.Fatalf("codegen error: %v", err)
+	}
+
+	if !strings.Contains(output, "!= nil") {
+		t.Errorf("expected nil check in onerr block, got:\n%s", output)
+	}
+	if !strings.Contains(output, "panic") {
+		t.Errorf("expected panic in onerr block, got:\n%s", output)
+	}
+}

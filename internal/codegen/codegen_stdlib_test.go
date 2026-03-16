@@ -1,10 +1,12 @@
 package codegen
 
 import (
-	"github.com/duber000/kukicha/internal/parser"
 	"strings"
 	"testing"
 	"testing/synctest"
+
+	"github.com/duber000/kukicha/internal/ast"
+	"github.com/duber000/kukicha/internal/parser"
 )
 
 // TestConcurrentCodeGeneration tests that multiple code generators can run
@@ -329,6 +331,247 @@ func main()
 				t.Errorf("expected code %s in output, got: %s", tt.shouldContain, output)
 			}
 		})
+	}
+}
+
+func TestZeroValueForType(t *testing.T) {
+	prog := mustParseProgram(t, "func main()\n    x := 1\n")
+	gen := New(prog)
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"string param", `func f(s string)
+    x := s
+`, `""`},
+		{"bool param", `func f(b bool)
+    x := b
+`, "false"},
+		{"int param", `func f(n int)
+    x := n
+`, "0"},
+		{"list param", `func f(items list of string)
+    x := items
+`, "[]string{}"},
+		{"map param", `func f(m map of string to int)
+    x := m
+`, "map[string]int{}"},
+		{"reference param", `func f(p reference int)
+    x := p
+`, "nil"},
+		{"channel param", `func f(ch channel of string)
+    x := ch
+`, "nil"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := mustParseProgram(t, tt.input)
+			// Find the function and get first param type
+			for _, decl := range p.Declarations {
+				if fn, ok := decl.(*ast.FunctionDecl); ok {
+					if len(fn.Parameters) > 0 {
+						got := gen.zeroValueForType(fn.Parameters[0].Type)
+						if got != tt.expected {
+							t.Errorf("zeroValueForType() = %q, want %q", got, tt.expected)
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestIsLikelyInterfaceType(t *testing.T) {
+	// Test with a program that declares a local interface
+	input := `interface Storer
+    Store(data string) error
+
+func main()
+    x := 1
+`
+
+	prog := mustParseProgram(t, input)
+	gen := New(prog)
+
+	tests := []struct {
+		typeName string
+		expected bool
+	}{
+		{"error", true},
+		{"Storer", true},     // local interface
+		{"io.Reader", true},  // Go stdlib interface
+		{"http.Handler", true},
+		{"User", false},      // unknown type, not interface
+		{"int", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.typeName, func(t *testing.T) {
+			got := gen.isLikelyInterfaceType(tt.typeName)
+			if got != tt.expected {
+				t.Errorf("isLikelyInterfaceType(%q) = %v, want %v", tt.typeName, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestInferExprReturnType(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "integer literal",
+			input: `func f() int
+    return 42
+`,
+			expected: "int",
+		},
+		{
+			name: "string literal",
+			input: `func f() string
+    return "hello"
+`,
+			expected: "string",
+		},
+		{
+			name: "bool literal",
+			input: `func f() bool
+    return true
+`,
+			expected: "bool",
+		},
+		{
+			name: "float literal",
+			input: `func f() float64
+    return 3.14
+`,
+			expected: "float64",
+		},
+		{
+			name: "comparison operator",
+			input: `func f(a int, b int) bool
+    return a > b
+`,
+			expected: "bool",
+		},
+		{
+			name: "equality operator",
+			input: `func f(a int, b int) bool
+    return a equals b
+`,
+			expected: "bool",
+		},
+		{
+			name: "logical not",
+			input: `func f(b bool) bool
+    return not b
+`,
+			expected: "bool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prog := mustParseProgram(t, tt.input)
+			gen := New(prog)
+
+			// Find the return expression
+			for _, decl := range prog.Declarations {
+				if fn, ok := decl.(*ast.FunctionDecl); ok && fn.Body != nil {
+					for _, stmt := range fn.Body.Statements {
+						if ret, ok := stmt.(*ast.ReturnStmt); ok && len(ret.Values) > 0 {
+							got := gen.inferExprReturnType(ret.Values[0])
+							if got != tt.expected {
+								t.Errorf("inferExprReturnType() = %q, want %q", got, tt.expected)
+							}
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestTypeContainsPlaceholder(t *testing.T) {
+	prog := mustParseProgram(t, "func f(items list of any)\n    x := items\n")
+	gen := New(prog)
+
+	for _, decl := range prog.Declarations {
+		if fn, ok := decl.(*ast.FunctionDecl); ok {
+			if len(fn.Parameters) > 0 {
+				got := gen.typeContainsPlaceholder(fn.Parameters[0].Type, "any")
+				if !got {
+					t.Error("expected list of any to contain 'any' placeholder")
+				}
+				got = gen.typeContainsPlaceholder(fn.Parameters[0].Type, "any2")
+				if got {
+					t.Error("expected list of any NOT to contain 'any2' placeholder")
+				}
+			}
+		}
+	}
+}
+
+func TestTypeContainsPlaceholderNested(t *testing.T) {
+	prog := mustParseProgram(t, "func f(m map of any2 to list of any)\n    x := m\n")
+	gen := New(prog)
+
+	for _, decl := range prog.Declarations {
+		if fn, ok := decl.(*ast.FunctionDecl); ok {
+			if len(fn.Parameters) > 0 {
+				if !gen.typeContainsPlaceholder(fn.Parameters[0].Type, "any") {
+					t.Error("expected map value type to contain 'any' placeholder")
+				}
+				if !gen.typeContainsPlaceholder(fn.Parameters[0].Type, "any2") {
+					t.Error("expected map key type to contain 'any2' placeholder")
+				}
+			}
+		}
+	}
+}
+
+func TestTypeContainsPlaceholderNil(t *testing.T) {
+	prog := mustParseProgram(t, "func main()\n    x := 1\n")
+	gen := New(prog)
+
+	if gen.typeContainsPlaceholder(nil, "any") {
+		t.Error("expected nil type annotation to return false")
+	}
+}
+
+func TestInferReturnCount(t *testing.T) {
+	input := `func single() int
+    return 1
+
+func double() (int, error)
+    return 0, empty
+
+func main()
+    a := single()
+    b, e := double()
+`
+
+	prog := mustParseProgram(t, input)
+	gen := New(prog)
+
+	count, ok := gen.returnCountForFunctionName("single")
+	if !ok || count != 1 {
+		t.Errorf("returnCountForFunctionName(single) = (%d, %v), want (1, true)", count, ok)
+	}
+
+	count, ok = gen.returnCountForFunctionName("double")
+	if !ok || count != 2 {
+		t.Errorf("returnCountForFunctionName(double) = (%d, %v), want (2, true)", count, ok)
+	}
+
+	count, ok = gen.returnCountForFunctionName("nonexistent")
+	if ok {
+		t.Errorf("returnCountForFunctionName(nonexistent) should return false, got (%d, %v)", count, ok)
 	}
 }
 
