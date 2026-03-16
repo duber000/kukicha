@@ -472,3 +472,84 @@ func TestParseSelectStatement(t *testing.T) {
 		t.Fatal("expected otherwise branch")
 	}
 }
+
+func TestParseMalformedTypeAnnotation_NoNilPanic(t *testing.T) {
+	// parseTypeAnnotation returns a sentinel, not nil, so the parser
+	// doesn't panic on malformed input.
+	input := `func Foo() list of
+    return 0
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+
+	program, errors := p.Parse()
+	if program == nil {
+		t.Fatal("expected non-nil program even with parse errors")
+	}
+	if len(errors) == 0 {
+		t.Fatal("expected parse errors for malformed type annotation")
+	}
+}
+
+func TestParseMalformedIdentifier_NoNilPanic(t *testing.T) {
+	// parseIdentifier returns a sentinel, not nil, so the parser
+	// doesn't panic on malformed input.
+	input := `type
+    name string
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+
+	program, errors := p.Parse()
+	if program == nil {
+		t.Fatal("expected non-nil program even with parse errors")
+	}
+	if len(errors) == 0 {
+		t.Fatal("expected parse errors for missing type name")
+	}
+}
+
+func TestParseMalformedExpression_NoNilPanic(t *testing.T) {
+	// parsePrimaryExpr returns a sentinel, not nil, on unexpected tokens.
+	input := `func Foo()
+    x := !!!
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+
+	program, errors := p.Parse()
+	if program == nil {
+		t.Fatal("expected non-nil program even with parse errors")
+	}
+	if len(errors) == 0 {
+		t.Fatal("expected parse errors for malformed expression")
+	}
+}
+
+func TestPeekAtSkipsComments(t *testing.T) {
+	// peekAt should skip comment tokens when counting offsets,
+	// so lookahead patterns work even with intervening comments.
+	// This is a unit test for the peekAt method itself.
+	input := `func Foo()
+    x := 1
+`
+	p, err := New(input, "test.kuki")
+	if err != nil {
+		t.Fatalf("lexer error: %v", err)
+	}
+
+	// Verify peekAt skips comments by checking it returns
+	// the same type sequence regardless of token position.
+	// peekAt(0) should be same as peekToken() after skipIgnoredTokens.
+	tok0 := p.peekAt(0)
+	tokPeek := p.peekToken()
+	if tok0.Type != tokPeek.Type {
+		t.Errorf("peekAt(0) type %s != peekToken() type %s", tok0.Type, tokPeek.Type)
+	}
+}

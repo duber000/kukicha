@@ -159,9 +159,14 @@ func (a *Analyzer) checkShellRunNonLiteral(qualifiedName string, expr *ast.Metho
 		return
 	}
 	// Direct call: shell.Run(cmd) — cmd is at index 0.
-	// Piped call: cmd |> shell.Run() — cmd is the piped value; skip since we
-	// cannot verify a piped value's origin from TypeInfo alone.
+	// Piped call: cmd |> shell.Run() — cmd is the piped value.
 	if pipedArg != nil {
+		// We can't verify the piped value's origin from TypeInfo alone,
+		// but piping a variable into shell.Run is almost certainly unsafe.
+		if pipedArg.Kind != TypeKindUnknown {
+			a.warn(expr.Pos(),
+				"command injection risk: piped value into shell.Run cannot be verified as safe — use shell.Output() with separate arguments for variable input")
+		}
 		return
 	}
 	if len(expr.Arguments) == 0 {

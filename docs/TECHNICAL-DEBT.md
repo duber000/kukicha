@@ -25,55 +25,22 @@ Now emits a `// kukicha:` comment when inference fails so the problem is visible
 
 ---
 
-## Tier 2: Crashes and Security Gaps
+## Tier 2: Crashes and Security Gaps ✅ DONE
 
-### 5. Parser nil returns cause codegen panics
-**Files:** `parser_stmt.go:590,630,696,776`, `parser_type.go:150`, `parser_expr.go:628-645`
+### ~~5. Parser nil returns cause codegen panics~~ ✅ FIXED
+**Files:** `parser_expr.go:486-496`, `parser_type.go:148-151`, `parser_expr.go:479-483`
 
-Multiple parser functions return `nil` on error without callers checking. This can cause nil pointer panics during codegen when processing malformed input.
+`parseIdentifier()`, `parseTypeAnnotation()`, and `parsePrimaryExpr()` now return sentinel values instead of nil on error. The error is still recorded; codegen won't run on programs with parse errors. `parseIntegerLiteral()` and `parseFloatLiteral()` also return sentinels now.
 
-**Key locations:**
-- `parseTypeAnnotation()` returns `nil` on unexpected tokens (line 150) — callers like `parseParameters()` don't check
-- `parseIdentifier()` / `parseExpression()` return `nil` in struct literal field parsing (lines 635, 637) — nil fields get added to the AST
-- `parseDeferStmt()`, `parseGoStmt()` return `nil` for invalid expressions (lines 590, 630)
-- `parseMultiValueAssignmentStmt()` returns `nil` in several error paths (lines 776, 790, 834)
+### ~~6. Security checks skip piped values~~ ✅ FIXED
+**File:** `semantic_security.go:162-170`
 
-**Fix:** Add nil checks after these calls in callers, or make the parser skip to the next statement boundary on error.
+`checkShellRunNonLiteral` now emits a warning (not error) when a value is piped into `shell.Run()`. The other security checks (SQL, HTML, redirect) already handle piped args correctly by adjusting the argument index — the piped value is the connection/writer, not the dangerous input.
 
-### 6. Security checks skip piped values
-**File:** `semantic_security.go:162-165`
+### ~~7. `peekAt()` doesn't skip comments~~ ✅ FIXED
+**File:** `parser.go:192-212`
 
-The compiler advertises compile-time security checks for SQL injection, command injection, XSS, etc. But all checks are **completely bypassed** when the dangerous argument is piped:
-```kukicha
-# This is checked:
-shell.Run(userInput)
-
-# This is NOT checked:
-userInput |> shell.Run()
-```
-
-The comment says: "Piped call: cmd |> shell.Run() — cannot verify a piped value's origin from TypeInfo alone."
-
-**Fix (minimum):** Emit a warning that the security check was skipped for the piped value.
-**Fix (proper):** Track taint/origin through pipe chains to determine if the piped value came from user input.
-
-### 7. `peekAt()` doesn't skip comments
-**File:** `parser.go:192-200`
-
-Unlike `peekToken()` and `peekNextToken()`, `peekAt(offset)` reads raw tokens including comments. This breaks struct literal detection which hardcodes offsets 2 and 3 (`parser_expr.go:577-580`).
-
-```kukicha
-# This works:
-x := MyStruct
-    field: value
-
-# This may fail if a comment appears between the type and the indent:
-x := MyStruct
-    # comment here breaks detection
-    field: value
-```
-
-**Fix:** Make `peekAt()` skip ignored tokens, or create a `peekAtSkipping()` variant and update struct literal detection to use it.
+`peekAt()` now counts only meaningful tokens (skipping comments, semicolons, directives) when computing the offset, matching the behavior of `peekToken()` and `peekNextToken()`.
 
 ---
 

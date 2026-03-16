@@ -477,9 +477,12 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 	case lexer.TOKEN_RETURN:
 		return p.parseReturnExpr()
 	default:
-		p.error(p.peekToken(), fmt.Sprintf("unexpected token in expression: %s", p.peekToken().Type))
+		tok := p.peekToken()
+		p.error(tok, fmt.Sprintf("unexpected token in expression: %s", tok.Type))
 		p.advance()
-		return nil
+		// Return a sentinel so callers don't need nil checks.
+		// The error is already recorded; codegen will not run.
+		return &ast.Identifier{Token: tok, Value: "_"}
 	}
 }
 
@@ -487,7 +490,9 @@ func (p *Parser) parseIdentifier() *ast.Identifier {
 	token := p.advance()
 	if token.Type != lexer.TOKEN_IDENTIFIER && token.Type != lexer.TOKEN_EMPTY && token.Type != lexer.TOKEN_ERROR {
 		p.error(token, "expected identifier")
-		return nil
+		// Return a sentinel so callers don't need nil checks.
+		// The error is already recorded; codegen will not run.
+		return &ast.Identifier{Token: token, Value: "_"}
 	}
 	return &ast.Identifier{
 		Token: token,
@@ -501,7 +506,7 @@ func (p *Parser) parseIntegerLiteral() *ast.IntegerLiteral {
 	value, err := strconv.ParseInt(token.Lexeme, 0, 64)
 	if err != nil {
 		p.error(token, fmt.Sprintf("could not parse integer: %s", err))
-		return nil
+		return &ast.IntegerLiteral{Token: token, Value: 0}
 	}
 	return &ast.IntegerLiteral{
 		Token: token,
@@ -514,7 +519,7 @@ func (p *Parser) parseFloatLiteral() *ast.FloatLiteral {
 	value, err := strconv.ParseFloat(token.Lexeme, 64)
 	if err != nil {
 		p.error(token, fmt.Sprintf("could not parse float: %s", err))
-		return nil
+		return &ast.FloatLiteral{Token: token, Value: 0}
 	}
 	return &ast.FloatLiteral{
 		Token: token,

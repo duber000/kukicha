@@ -222,14 +222,15 @@ func Cleanup()
 
 // --- Command injection: piped arg edge case ---
 
-func TestShellRun_PipedArgSkipped(t *testing.T) {
-	// When argument is piped, we can't verify origin — should NOT error.
+func TestShellRun_PipedArgWarning(t *testing.T) {
+	// When argument is piped, should NOT error but SHOULD warn.
 	source := `import "stdlib/shell"
 
 func Run(cmd string) (string, error)
     return cmd |> shell.Run()
 `
 	assertNoSecurityError(t, source, "command injection risk")
+	assertSecurityWarning(t, source, "command injection risk")
 }
 
 func TestShellRun_NoArgs(t *testing.T) {
@@ -332,6 +333,19 @@ func assertNoSecurityError(t *testing.T, source string, substr string) {
 			t.Fatalf("unexpected error containing %q: %v", substr, e)
 		}
 	}
+}
+
+// assertSecurityWarning parses source and asserts a warning containing substr.
+func assertSecurityWarning(t *testing.T, source string, substr string) {
+	t.Helper()
+	analyzer, _ := analyzeSource(t, source)
+
+	for _, w := range analyzer.Warnings() {
+		if strings.Contains(w.Error(), substr) {
+			return
+		}
+	}
+	t.Fatalf("expected warning containing %q, got warnings: %v", substr, analyzer.Warnings())
 }
 
 // analyzeIgnoringNonSecurity parses source and ensures it doesn't panic,

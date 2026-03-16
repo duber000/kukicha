@@ -190,13 +190,25 @@ func (p *Parser) peekNextToken() lexer.Token {
 }
 
 func (p *Parser) peekAt(offset int) lexer.Token {
-	// Note: skipIgnoredTokens is already called by peekToken/peekNextToken but
-	// for safety we don't call it here to avoid complex side effects if used with large offsets.
-	// Actually, most peek methods call it.
-	if p.pos+offset >= len(p.tokens) {
-		return lexer.Token{Type: lexer.TOKEN_EOF}
+	// Skip ignored tokens (comments, semicolons, directives) when counting
+	// the offset so that comments between meaningful tokens don't break
+	// lookahead patterns like struct literal detection.
+	p.skipIgnoredTokens()
+	i := p.pos
+	seen := 0
+	for i < len(p.tokens) {
+		t := p.tokens[i]
+		if t.Type == lexer.TOKEN_COMMENT || t.Type == lexer.TOKEN_SEMICOLON || t.Type == lexer.TOKEN_DIRECTIVE {
+			i++
+			continue
+		}
+		if seen == offset {
+			return t
+		}
+		seen++
+		i++
 	}
-	return p.tokens[p.pos+offset]
+	return lexer.Token{Type: lexer.TOKEN_EOF}
 }
 
 func (p *Parser) peekTokenAt(index int) lexer.Token {

@@ -146,7 +146,10 @@ func (p *Parser) parseTypeAnnotation() ast.TypeAnnotation {
 		}
 
 	default:
-		p.error(p.peekToken(), fmt.Sprintf("expected type annotation, got %s", p.peekToken().Type))
-		return nil
+		tok := p.peekToken()
+		p.error(tok, fmt.Sprintf("expected type annotation, got %s", tok.Type))
+		// Return a sentinel so callers don't need nil checks.
+		// The error is already recorded; codegen will not run.
+		return &ast.NamedType{Token: tok, Name: "_"}
 	}
 }
