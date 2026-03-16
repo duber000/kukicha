@@ -2,16 +2,9 @@ package semantic
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
-	"github.com/duber000/kukicha/internal/parser"
-)
-
-var (
-	interpolationPattern = regexp.MustCompile(`\{([a-zA-Z_][^}]*)\}`)
-	identifierPattern    = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 )
 
 // analyzeOnErrClause analyzes the onerr clause on a statement
@@ -112,46 +105,6 @@ func (a *Analyzer) analyzeStringInterpolation(lit *ast.StringLiteral) {
 		}
 		return
 	}
-
-	// Fallback: regex-based parsing when Parts is empty (parse failure)
-	matches := interpolationPattern.FindAllStringSubmatchIndex(lit.Value, -1)
-
-	for _, match := range matches {
-		exprStr := strings.TrimSpace(lit.Value[match[2]:match[3]])
-		if exprStr == "" {
-			a.error(lit.Pos(), "empty expression in string interpolation")
-			continue
-		}
-		if a.inOnerr && exprStr == "err" {
-			hint := "use {error} not {err} inside onerr — the caught error is always named 'error'"
-			if a.currentOnerrrAlias != "" {
-				hint += fmt.Sprintf(", or {%s} via your 'onerr as %s' alias", a.currentOnerrrAlias, a.currentOnerrrAlias)
-			} else {
-				hint += ", or name it with 'onerr as e' and use {e}"
-			}
-			a.error(lit.Pos(), hint)
-			continue
-		}
-
-		// Skip known onerr error variables — they're injected by codegen, not user-defined
-		if a.inOnerr && (exprStr == "error" || exprStr == a.currentOnerrrAlias) {
-			continue
-		}
-
-		expr, err := parseInterpolationExpression(exprStr, lit.Token.File)
-		if err != nil {
-			// Only report for expressions that look intentional (not format specifiers etc.)
-			if identifierPattern.MatchString(exprStr) || strings.Contains(exprStr, ".") || strings.Contains(exprStr, "(") {
-				a.error(lit.Pos(), fmt.Sprintf("invalid expression in string interpolation: %s", exprStr))
-			}
-			continue
-		}
-
-		// Patch position info for better error reporting
-		patchExprPosition(expr, lit.Token.File, lit.Token.Line, lit.Token.Column+match[2])
-
-		a.analyzeExpression(expr)
-	}
 }
 
 // patchExprPosition updates position info on an expression for error reporting.
@@ -176,36 +129,3 @@ func patchExprPosition(expr ast.Expression, file string, line, column int) {
 	}
 }
 
-func parseInterpolationExpression(exprStr string, filename string) (ast.Expression, error) {
-	source := fmt.Sprintf("func __interp__()\n    print(%s)\n", exprStr)
-
-	p, err := parser.New(source, filename)
-	if err != nil {
-		return nil, err
-	}
-
-	program, parseErrors := p.Parse()
-	if len(parseErrors) > 0 {
-		return nil, parseErrors[0]
-	}
-	if len(program.Declarations) == 0 {
-		return nil, fmt.Errorf("missing interpolation wrapper function")
-	}
-
-	fn, ok := program.Declarations[0].(*ast.FunctionDecl)
-	if !ok || fn.Body == nil || len(fn.Body.Statements) == 0 {
-		return nil, fmt.Errorf("missing interpolation wrapper body")
-	}
-
-	stmt, ok := fn.Body.Statements[0].(*ast.ExpressionStmt)
-	if !ok {
-		return nil, fmt.Errorf("missing interpolation wrapper statement")
-	}
-
-	call, ok := stmt.Expression.(*ast.CallExpr)
-	if !ok || len(call.Arguments) != 1 {
-		return nil, fmt.Errorf("missing interpolation wrapper argument")
-	}
-
-	return call.Arguments[0], nil
-}

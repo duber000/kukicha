@@ -112,9 +112,11 @@ Simplified `errorValueExpr()` and panic handler to use `generateStringLiteral()`
 Removed `regexp` and `parser` imports from `codegen_expr.go`.
 Added `\sep` detection to `scanExprForAutoImports` for proper `path/filepath` auto-import.
 
-### Phase 3: Semantic cleanup (follow-up PR)
+### Phase 3: Semantic cleanup ✅ DONE
 
-Delete fallback regex path in `analyzeStringInterpolation()` (`semantic_onerr.go:116-154`).
+Deleted fallback regex path in `analyzeStringInterpolation()`, the `parseInterpolationExpression()`
+sub-parser function, and the `interpolationPattern`/`identifierPattern` regex vars.
+Removed `regexp` and `parser` imports from `semantic_onerr.go`.
 
 ### Phase 4: Edge case tests (follow-up PR)
 
@@ -151,4 +153,5 @@ Add tests for cases that were previously impossible:
 | `internal/codegen/codegen_stdlib.go` | 2 | Simplify errorValueExpr to use generateStringLiteral |
 | `internal/codegen/codegen_walk.go` | 2 | Remove fallback in exprHasNonPrintfInterpolation |
 | `internal/codegen/codegen_imports.go` | 2 | Add \sep detection to scanExprForAutoImports |
+| `internal/semantic/semantic_onerr.go` | 3 | Delete fallback regex path, parseInterpolationExpression, regex vars |
 | `internal/formatter/lexer.go` | — | Mirror token changes (formatter has its own lexer) |
