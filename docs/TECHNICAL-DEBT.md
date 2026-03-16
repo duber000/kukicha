@@ -2,6 +2,8 @@
 
 Comprehensive audit of shortcuts, heuristics, and gaps in the Kukicha compiler.
 Items 1–4 from Tier 1 were fixed in commit `a41558c`.
+Dead code and lint violations cleaned up in commits `5fbf182` and `6d04e16`;
+`golangci-lint` added to prevent future accumulation (`make lint`).
 
 ---
 
@@ -122,7 +124,7 @@ The following files have **zero test coverage**:
 | `codegen_types.go` | `typeInfoToGoString` |
 | `codegen_walk.go` | 13+ `needs*` helper predicates |
 | `codegen_decl.go` | `generateTypeDecl`, `generateInterfaceDecl`, `generateGlobalVarDecl`, `generateFunctionDecl` |
-| `codegen_stdlib.go` | `inferStdlibTypeParameters`, `zeroValueForType` (only indirect coverage) |
+| `codegen_stdlib.go` | `inferStdlibTypeParameters`, `zeroValueForType` |
 
 ### 14. All codegen tests use `strings.Contains`
 
