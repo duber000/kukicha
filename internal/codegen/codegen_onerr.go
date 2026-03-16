@@ -59,7 +59,7 @@ func (g *Generator) generateOnErrVarDecl(names []*ast.Identifier, values []ast.E
 	}
 
 	// Single-return with auto-generated error variable
-	block := l.lowerOnErr(valueExpr, 0, clause, identNames(names), true)
+	block := l.lowerOnErr(valueExpr, clause, identNames(names), true)
 	g.emitIR(block)
 }
 
@@ -420,7 +420,7 @@ func (g *Generator) generateOnErrAssign(stmt *ast.AssignStmt) {
 	}
 
 	// Single-return with auto-generated error variable
-	block := l.lowerOnErr(valueExpr, 0, clause, g.exprStrings(stmt.Targets), false)
+	block := l.lowerOnErr(valueExpr, clause, g.exprStrings(stmt.Targets), false)
 	g.emitIR(block)
 }
 

@@ -174,9 +174,9 @@ func (a *Analyzer) checkShellRunNonLiteral(qualifiedName string, expr *ast.Metho
 	}
 	cmdArg := expr.Arguments[0]
 	if _, ok := cmdArg.(*ast.StringLiteral); !ok {
-		a.error(expr.Pos(), fmt.Sprintf(
+		a.error(expr.Pos(),
 			"command injection risk: shell.Run with non-literal argument — shell.Run splits on whitespace without quoting; use shell.Output() with separate arguments for variable input",
-		))
+		)
 	}
 }
 

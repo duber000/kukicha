@@ -602,21 +602,6 @@ func (g *Generator) generateDerefExpr(expr *ast.DerefExpr) string {
 	return fmt.Sprintf("*%s", operand)
 }
 
-func (g *Generator) isContextExpr(expr ast.Expression) bool {
-	// Simple type detection for Context
-	// 1. Literal 'ctx' identifier
-	if id, ok := expr.(*ast.Identifier); ok {
-		return id.Value == "ctx"
-	}
-	// 2. Call to context package (e.g., context.Background(), context.WithTimeout())
-	if call, ok := expr.(*ast.CallExpr); ok {
-		if id, ok := call.Function.(*ast.Identifier); ok {
-			return strings.HasPrefix(id.Value, "context.")
-		}
-	}
-	return false
-}
-
 // generatePipeExpr transforms pipe expressions into function calls.
 //
 // ARCHITECTURE NOTE: Kukicha's pipe operator (|>) supports three strategies
@@ -1065,12 +1050,7 @@ func (g *Generator) generateMakeExpr(expr *ast.MakeExpr) string {
 	return fmt.Sprintf("make(%s, %s)", targetType, strings.Join(args, ", "))
 }
 
-func (g *Generator) isPrintBuiltin(expr ast.Expression) bool {
-	if id, ok := expr.(*ast.Identifier); ok {
-		return id.Value == "print"
-	}
-	return false
-}
+
 
 func (g *Generator) generateReturnExpr(expr *ast.ReturnExpr) string {
 	values := make([]string, len(expr.Values))

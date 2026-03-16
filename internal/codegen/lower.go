@@ -78,7 +78,7 @@ func (l *Lowerer) lowerPipeChain(pipe *ast.PipeExpr) (*ir.Block, string) {
 // lowerOnErr produces IR for a single expression + onerr clause.
 // names are the LHS variable names (empty for statement-level).
 // returnCount is the number of values returned by the expression.
-func (l *Lowerer) lowerOnErr(expr string, returnCount int, clause *ast.OnErrClause, names []string, walrus bool) *ir.Block {
+func (l *Lowerer) lowerOnErr(expr string, clause *ast.OnErrClause, names []string, walrus bool) *ir.Block {
 	block := &ir.Block{}
 	errVar := l.uniqueId("err")
 
@@ -259,7 +259,7 @@ func (l *Lowerer) lowerOnErrPipeChain(pipe *ast.PipeExpr, clause *ast.OnErrClaus
 
 // lowerOnErrPipeChainWithLabels is like lowerOnErrPipeChain but uses goto
 // for error handling instead of inline handlers (for piped switch support).
-func (l *Lowerer) lowerOnErrPipeChainWithLabels(pipe *ast.PipeExpr, onErrLabel, endLabel string) (*ir.Block, string) {
+func (l *Lowerer) lowerOnErrPipeChainWithLabels(pipe *ast.PipeExpr, onErrLabel string) (*ir.Block, string) {
 	base, steps, ok := flattenPipeChain(pipe)
 	if !ok {
 		return nil, ""
@@ -327,7 +327,7 @@ func (l *Lowerer) lowerPipedSwitchVarDecl(varName string, ps *ast.PipedSwitchExp
 
 	var finalPipeVar string
 	if pipe, ok := ps.Left.(*ast.PipeExpr); ok {
-		pipeBlock, pipeVar := l.lowerOnErrPipeChainWithLabels(pipe, onErrLabel, endLabel)
+		pipeBlock, pipeVar := l.lowerOnErrPipeChainWithLabels(pipe, onErrLabel)
 		if pipeBlock == nil {
 			return nil
 		}
@@ -376,7 +376,7 @@ func (l *Lowerer) lowerPipedSwitchStmt(ps *ast.PipedSwitchExpr, clause *ast.OnEr
 
 	var finalPipeVar string
 	if pipe, ok := ps.Left.(*ast.PipeExpr); ok {
-		pipeBlock, pipeVar := l.lowerOnErrPipeChainWithLabels(pipe, onErrLabel, endLabel)
+		pipeBlock, pipeVar := l.lowerOnErrPipeChainWithLabels(pipe, onErrLabel)
 		if pipeBlock == nil {
 			return nil
 		}

@@ -211,14 +211,6 @@ func (p *Parser) peekAt(offset int) lexer.Token {
 	return lexer.Token{Type: lexer.TOKEN_EOF}
 }
 
-func (p *Parser) peekTokenAt(index int) lexer.Token {
-	p.skipIgnoredTokens()
-	if index >= len(p.tokens) {
-		return lexer.Token{Type: lexer.TOKEN_EOF}
-	}
-	return p.tokens[index]
-}
-
 func (p *Parser) previousToken() lexer.Token {
 	if p.pos == 0 {
 		return lexer.Token{Type: lexer.TOKEN_EOF}

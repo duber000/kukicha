@@ -19,7 +19,7 @@ type Analyzer struct {
 	// exprTypes maps each analyzed expression to its inferred TypeInfo.
 	// Consumed by codegen for: error-only pipe step detection (isErrorOnlyReturn),
 	// piped switch return type inference, empty keyword resolution, expression
-	// return type inference, and typed zero-value generation (zeroValueForTypeInfo).
+	// return type inference, and typed zero-value generation (zeroValueForType).
 	exprTypes           map[ast.Expression]*TypeInfo
 	sourceFile          string                 // Source file path, used to detect stdlib context
 	inOnerr             bool                   // True while analyzing an onerr handler

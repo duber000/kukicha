@@ -835,10 +835,6 @@ func (p *Parser) parseMultiValueAssignmentStmt() ast.Statement {
 	}
 }
 
-func (p *Parser) restorePosition(pos int) {
-	p.pos = pos
-}
-
 // parseExpressionList parses a comma-separated list of expressions
 // This is used for multi-value assignments like: x, y := 1, 2
 // or function calls that return multiple values: x, y := iter.Pull(seq)

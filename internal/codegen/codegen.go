@@ -60,7 +60,7 @@ type Generator struct {
 	exprReturnCounts     map[ast.Expression]int      // Semantic return counts passed from analyzer (drives onerr multi-value split)
 	// exprTypes holds per-expression type info from semantic analysis.
 	// Used by isErrorOnlyReturn, inferExprReturnType, inferExprType,
-	// pipedSwitchReturnType, empty keyword resolution, and zeroValueForTypeInfo.
+	// pipedSwitchReturnType, empty keyword resolution, and zeroValueForType.
 	exprTypes            map[ast.Expression]*semantic.TypeInfo
 	mcpTarget            bool                        // True if targeting MCP (Model Context Protocol)
 	currentOnErrVar      string                   // Render-time context: set/restored only by renderHandler in lower.go
@@ -105,7 +105,7 @@ func (g *Generator) SetExprReturnCounts(counts map[ast.Expression]int) {
 
 // SetExprTypes passes semantic analysis expression types to the generator.
 // Used by isErrorOnlyReturn, inferExprReturnType, empty keyword resolution,
-// piped switch return type inference, and zeroValueForTypeInfo.
+// piped switch return type inference, and zeroValueForType.
 func (g *Generator) SetExprTypes(types map[ast.Expression]*semantic.TypeInfo) {
 	g.exprTypes = types
 }

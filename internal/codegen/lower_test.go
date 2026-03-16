@@ -143,7 +143,7 @@ func TestLowerOnErrHandlerPanic(t *testing.T) {
 		},
 	}
 
-	block := l.lowerOnErr("foo()", 2, clause, []string{"x"}, true)
+	block := l.lowerOnErr("foo()", clause, []string{"x"}, true)
 	if block == nil {
 		t.Fatal("expected non-nil block")
 	}
@@ -337,7 +337,7 @@ func TestLowerOnErrPipeChainWithLabels(t *testing.T) {
 	}
 
 	l := newLowerer(gen)
-	block, finalVar := l.lowerOnErrPipeChainWithLabels(pipe, "onerr_label", "end_label")
+	block, finalVar := l.lowerOnErrPipeChainWithLabels(pipe, "onerr_label")
 
 	if block == nil {
 		t.Fatal("expected non-nil block")
@@ -368,7 +368,7 @@ func TestLowerOnErrShorthandReturn(t *testing.T) {
 		ShorthandReturn: true,
 	}
 
-	block := l.lowerOnErr("readFile()", 2, clause, []string{"data"}, true)
+	block := l.lowerOnErr("readFile()", clause, []string{"data"}, true)
 	gen.emitIR(block)
 	out := gen.output.String()
 
@@ -392,7 +392,7 @@ func TestLowerOnErrExplain(t *testing.T) {
 		Explain: "failed to read config",
 	}
 
-	block := l.lowerOnErr("readConfig()", 2, clause, []string{"cfg"}, true)
+	block := l.lowerOnErr("readConfig()", clause, []string{"cfg"}, true)
 	gen.emitIR(block)
 	out := gen.output.String()
 
@@ -584,7 +584,7 @@ func TestLowerOnErrAssignNonWalrus(t *testing.T) {
 		},
 	}
 
-	block := l.lowerOnErr("fetch()", 2, clause, []string{"result"}, false)
+	block := l.lowerOnErr("fetch()", clause, []string{"result"}, false)
 	gen.emitIR(block)
 	out := gen.output.String()
 

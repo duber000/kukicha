@@ -450,38 +450,6 @@ func (g *Generator) zeroValueForType(typeAnn ast.TypeAnnotation) string {
 	}
 }
 
-// zeroValueForTypeInfo returns a Go expression for the zero value of a TypeInfo.
-// Used when codegen has semantic type info (from exprTypes) but no TypeAnnotation.
-func (g *Generator) zeroValueForTypeInfo(ti *semantic.TypeInfo) string {
-	switch ti.Kind {
-	case semantic.TypeKindString:
-		return "\"\""
-	case semantic.TypeKindBool:
-		return "false"
-	case semantic.TypeKindInt, semantic.TypeKindFloat:
-		return "0"
-	case semantic.TypeKindList, semantic.TypeKindMap:
-		return "nil"
-	case semantic.TypeKindReference, semantic.TypeKindChannel, semantic.TypeKindFunction, semantic.TypeKindInterface, semantic.TypeKindNil:
-		return "nil"
-	case semantic.TypeKindNamed:
-		if ti.Name == "error" {
-			return "nil"
-		}
-		if g.isLikelyInterfaceType(ti.Name) {
-			return "nil"
-		}
-		return fmt.Sprintf("*new(%s)", ti.Name)
-	case semantic.TypeKindStruct:
-		if ti.Name != "" {
-			return ti.Name + "{}"
-		}
-		return "nil"
-	default:
-		return "nil"
-	}
-}
-
 func (g *Generator) errorValueExpr(expr ast.Expression, errVar string) string {
 	// Defensive guard: the parser lexes `error` as TOKEN_ERROR, not TOKEN_IDENTIFIER,
 	// so this branch is currently unreachable. Kept as documentation of intent.
