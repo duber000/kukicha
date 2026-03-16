@@ -642,21 +642,19 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 		if !e.Interpolated && !strings.ContainsRune(e.Value, '\uE002') {
 			return false
 		}
-		// Fast path: use pre-parsed Parts
-		if len(e.Parts) > 0 {
-			for _, part := range e.Parts {
-				if !part.IsLiteral {
-					return true
-				}
-				if strings.ContainsRune(part.Literal, '\uE002') {
-					return true
-				}
-			}
-			return false
+		// Non-interpolated string with \sep sentinel but no Parts (plain TOKEN_STRING)
+		if len(e.Parts) == 0 {
+			return strings.ContainsRune(e.Value, '\uE002')
 		}
-		// Fallback
-		_, args := g.parseStringInterpolation(e.Value)
-		return len(args) > 0
+		for _, part := range e.Parts {
+			if !part.IsLiteral {
+				return true
+			}
+			if strings.ContainsRune(part.Literal, '\uE002') {
+				return true
+			}
+		}
+		return false
 	case *ast.BinaryExpr:
 		return g.exprHasNonPrintfInterpolation(e.Left) || g.exprHasNonPrintfInterpolation(e.Right)
 	case *ast.UnaryExpr:

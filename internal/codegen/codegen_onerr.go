@@ -72,18 +72,9 @@ func (g *Generator) generateOnErrHandler(names []*ast.Identifier, handler ast.Ex
 	switch h := handler.(type) {
 	case *ast.PanicExpr:
 		// onerr panic "message"
-		// If message contains {error}, replace it with the actual error variable
-		msg := ""
-		if strLit, ok := h.Message.(*ast.StringLiteral); ok {
-			msg = strLit.Value
-		} else {
-			msg = g.exprToString(h.Message)
-		}
-
-		if strings.Contains(msg, "{error}") {
-			msg = strings.ReplaceAll(msg, "{error}", fmt.Sprintf("{%s}", errVar))
-		}
-		g.writeLine(fmt.Sprintf("panic(%s)", g.generateStringInterpolation(msg)))
+		// currentOnErrVar is set by renderHandler, so generateStringLiteral
+		// handles {error} substitution via generateStringFromParts.
+		g.writeLine(fmt.Sprintf("panic(%s)", g.exprToString(h.Message)))
 	case *ast.ErrorExpr:
 		// onerr return empty, error - generate return with error
 		errExpr := g.errorValueExpr(h.Message, errVar)

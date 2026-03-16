@@ -406,12 +406,12 @@ Application code never sees this — it just calls functions normally.
 
 `generateStringLiteral` routes to one of three paths:
 - **Plain string** (`Interpolated == false` and no `\uE002` sentinel): emits `"escaped"` via `escapeString`
-- **Pre-parsed Parts** (`len(lit.Parts) > 0`): calls `generateStringFromParts` — iterates pre-parsed `StringInterpolation` parts, building `fmt.Sprintf` with `%v` placeholders for expression parts and escaped literals. Handles `\uE002` expansion and onerr `{error}` substitution inline.
-- **Fallback regex** (Parts empty, e.g. parse failure): calls `generateStringInterpolation` → `parseStringInterpolation`
+- **Sep-only string** (`Parts` empty but `\uE002` present): calls `generateSepOnlyString` — splits on `\uE002` and emits `string(filepath.Separator)` concatenation
+- **Interpolated string** (`Parts` populated): calls `generateStringFromParts` — iterates pre-parsed `StringInterpolation` parts, building `fmt.Sprintf` with `%v` placeholders for expression parts and escaped literals. Handles `\uE002` expansion and onerr `{error}` substitution inline.
 
-**Pre-parsed interpolation (primary path):** The lexer splits interpolated strings into `TOKEN_STRING_HEAD`, expression tokens, `TOKEN_STRING_MID`/`TOKEN_STRING_TAIL`. The parser's `parseInterpolatedStringLiteral()` calls `parseExpression()` directly on the token stream, building `StringLiteral.Parts` with no sub-parser or regex. Semantic analysis and codegen both consume the pre-parsed AST nodes directly. The old regex-based methods (`parseStringInterpolation`, `transformInterpolatedExpr`, `parseAndGenerateInterpolatedExpr`) remain as fallbacks for callers that operate on raw strings (e.g., onerr panic messages with substituted `{error}` variables).
+The lexer splits interpolated strings into `TOKEN_STRING_HEAD`, expression tokens, `TOKEN_STRING_MID`/`TOKEN_STRING_TAIL`. The parser's `parseInterpolatedStringLiteral()` calls `parseExpression()` directly on the token stream, building `StringLiteral.Parts` with no sub-parser or regex. Semantic analysis and codegen both consume the pre-parsed AST nodes directly.
 
-`parseStringPartsOrInterpolation(lit)` is a shared helper that returns `(format, args)` using Parts when available, falling back to `parseStringInterpolation`. Used by the printf-style method path.
+`parseStringPartsOrInterpolation(lit)` is a shared helper that returns `(format, args)` from pre-parsed Parts. Used by the printf-style method path.
 
 `escapeString` handles compile-time PUA sentinels (`\uE000` → `{`, `\uE001` → `}`) and standard Go escapes (`\n`, `\t`, `\\`, `\"`, `\x00`). It is **not** responsible for `\uE002` — that sentinel is expanded before `escapeString` sees it.
 

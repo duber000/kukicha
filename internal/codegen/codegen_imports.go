@@ -359,6 +359,10 @@ func (g *Generator) scanExprForAutoImports(expr ast.Expression) {
 	}
 
 	switch e := expr.(type) {
+	case *ast.StringLiteral:
+		if strings.ContainsRune(e.Value, '\uE002') {
+			g.addImport("path/filepath")
+		}
 	case *ast.BinaryExpr:
 		g.scanExprForAutoImports(e.Left)
 		g.scanExprForAutoImports(e.Right)

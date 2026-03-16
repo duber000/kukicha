@@ -98,15 +98,19 @@ depth, and only the outer `}` ends the interpolation.
 - Update parser interpolation tests to work through new token path
 - All existing codegen/integration tests must pass unchanged
 
-### Phase 2: Codegen cleanup (follow-up PR)
+### Phase 2: Codegen cleanup ✅ DONE
 
-Delete from `codegen_expr.go`:
+Deleted from `codegen_expr.go`:
 - `parseStringInterpolation()` — regex-based splitter
 - `transformInterpolatedExpr()` — `as`/pipe string transformer
 - `parseAndGenerateInterpolatedExpr()` — codegen-time re-parser
 - `generateStringInterpolation()` — fallback path
 
-Simplify `generateStringLiteral()` to only use `generateStringFromParts()`.
+Simplified `generateStringLiteral()` to only use `generateStringFromParts()`.
+Simplified `errorValueExpr()` and panic handler to use `generateStringLiteral()`
+(which handles `{error}` substitution via `currentOnErrVar` set by `renderHandler`).
+Removed `regexp` and `parser` imports from `codegen_expr.go`.
+Added `\sep` detection to `scanExprForAutoImports` for proper `path/filepath` auto-import.
 
 ### Phase 3: Semantic cleanup (follow-up PR)
 
@@ -134,11 +138,17 @@ Add tests for cases that were previously impossible:
 
 ## Files affected
 
-| File | Change |
-|------|--------|
-| `internal/lexer/token.go` | Add 3 token types + String() cases |
-| `internal/lexer/lexer.go` | interpStack, scanString split, scanStringContinuation, `{}` handling |
-| `internal/lexer/lexer_test.go` | New interpolation tokenization tests |
-| `internal/parser/parser_expr.go` | Rewrite parseStringLiteral, delete parseStringParts/parseInterpolationExpr |
-| `internal/parser/parser_interpolation_test.go` | Update tests for new token-based parsing |
-| `internal/formatter/lexer.go` | Mirror token changes (formatter has its own lexer) |
+| File | Phase | Change |
+|------|-------|--------|
+| `internal/lexer/token.go` | 1 | Add 3 token types + String() cases |
+| `internal/lexer/lexer.go` | 1 | interpStack, scanString split, scanStringContinuation, `{}` handling |
+| `internal/lexer/lexer_test.go` | 1 | New interpolation tokenization tests |
+| `internal/parser/parser_expr.go` | 1 | Rewrite parseStringLiteral, delete parseStringParts/parseInterpolationExpr |
+| `internal/parser/parser.go` | 1 | Add STRING_MID/TAIL to isIdentifierFollower |
+| `internal/parser/parser_interpolation_test.go` | 1 | Update tests for new token-based parsing |
+| `internal/codegen/codegen_expr.go` | 2 | Delete 4 fallback functions, remove regexp/parser imports |
+| `internal/codegen/codegen_onerr.go` | 2 | Simplify panic handler to use exprToString |
+| `internal/codegen/codegen_stdlib.go` | 2 | Simplify errorValueExpr to use generateStringLiteral |
+| `internal/codegen/codegen_walk.go` | 2 | Remove fallback in exprHasNonPrintfInterpolation |
+| `internal/codegen/codegen_imports.go` | 2 | Add \sep detection to scanExprForAutoImports |
+| `internal/formatter/lexer.go` | — | Mirror token changes (formatter has its own lexer) |

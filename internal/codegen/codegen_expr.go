@@ -2,11 +2,9 @@ package codegen
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
-	"github.com/duber000/kukicha/internal/parser"
 	"github.com/duber000/kukicha/internal/semantic"
 )
 
@@ -416,13 +414,35 @@ func (g *Generator) generateStringLiteral(lit *ast.StringLiteral) string {
 		return fmt.Sprintf("\"%s\"", g.escapeString(lit.Value))
 	}
 
-	// Use pre-parsed Parts when available
-	if len(lit.Parts) > 0 {
-		return g.generateStringFromParts(lit)
+	// Non-interpolated string with \sep sentinel — handle inline since Parts is empty
+	if len(lit.Parts) == 0 {
+		return g.generateSepOnlyString(lit.Value)
 	}
 
-	// Fallback to regex-based parsing
-	return g.generateStringInterpolation(lit.Value)
+	return g.generateStringFromParts(lit)
+}
+
+// generateSepOnlyString handles non-interpolated strings that contain \uE002 (\sep) sentinels.
+func (g *Generator) generateSepOnlyString(value string) string {
+	g.addImport("path/filepath")
+	segments := strings.Split(value, "\uE002")
+	if len(segments) == 2 && segments[0] == "" && segments[1] == "" {
+		// String is just "\sep"
+		return "string(filepath.Separator)"
+	}
+	var format strings.Builder
+	var args []string
+	for i, seg := range segments {
+		format.WriteString(g.escapeString(seg))
+		if i < len(segments)-1 {
+			format.WriteString("%v")
+			args = append(args, "string(filepath.Separator)")
+		}
+	}
+	if len(args) == 0 {
+		return fmt.Sprintf("\"%s\"", format.String())
+	}
+	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", format.String(), strings.Join(args, ", "))
 }
 
 // generateStringFromParts generates a Go string expression from pre-parsed interpolation parts.
@@ -469,168 +489,40 @@ func (g *Generator) generateStringFromParts(lit *ast.StringLiteral) string {
 	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", format.String(), argsStr)
 }
 
-// parseStringPartsOrInterpolation returns a format string and args from a StringLiteral,
-// using pre-parsed Parts when available, otherwise falling back to regex-based parsing.
+// parseStringPartsOrInterpolation returns a format string and args from a StringLiteral.
 func (g *Generator) parseStringPartsOrInterpolation(lit *ast.StringLiteral) (string, []string) {
-	if len(lit.Parts) > 0 {
-		var format strings.Builder
-		var args []string
-		for _, part := range lit.Parts {
-			if part.IsLiteral {
-				literal := part.Literal
-				if strings.ContainsRune(literal, '\uE002') {
-					g.addImport("path/filepath")
-					segments := strings.Split(literal, "\uE002")
-					for i, seg := range segments {
-						format.WriteString(g.escapeString(seg))
-						if i < len(segments)-1 {
-							format.WriteString("%v")
-							args = append(args, "string(filepath.Separator)")
-						}
+	var format strings.Builder
+	var args []string
+	for _, part := range lit.Parts {
+		if part.IsLiteral {
+			literal := part.Literal
+			if strings.ContainsRune(literal, '\uE002') {
+				g.addImport("path/filepath")
+				segments := strings.Split(literal, "\uE002")
+				for i, seg := range segments {
+					format.WriteString(g.escapeString(seg))
+					if i < len(segments)-1 {
+						format.WriteString("%v")
+						args = append(args, "string(filepath.Separator)")
 					}
-				} else {
-					format.WriteString(g.escapeString(literal))
 				}
 			} else {
-				format.WriteString("%v")
-				if g.currentOnErrVar != "" {
-					if ident, ok := part.Expr.(*ast.Identifier); ok {
-						if ident.Value == "error" || (g.currentOnErrAlias != "" && ident.Value == g.currentOnErrAlias) {
-							args = append(args, g.currentOnErrVar)
-							continue
-						}
+				format.WriteString(g.escapeString(literal))
+			}
+		} else {
+			format.WriteString("%v")
+			if g.currentOnErrVar != "" {
+				if ident, ok := part.Expr.(*ast.Identifier); ok {
+					if ident.Value == "error" || (g.currentOnErrAlias != "" && ident.Value == g.currentOnErrAlias) {
+						args = append(args, g.currentOnErrVar)
+						continue
 					}
 				}
-				args = append(args, g.exprToString(part.Expr))
 			}
+			args = append(args, g.exprToString(part.Expr))
 		}
-		return format.String(), args
 	}
-	return g.parseStringInterpolation(lit.Value)
-}
-
-func (g *Generator) generateStringInterpolation(str string) string {
-	format, args := g.parseStringInterpolation(str)
-	if len(args) == 0 {
-		return fmt.Sprintf("\"%s\"", format)
-	}
-	argsStr := strings.Join(args, ", ")
-	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", format, argsStr)
-}
-
-// parseStringInterpolation extracts the format string and arguments from
-// a Kukicha string with {expr} interpolation patterns.
-// Returns the format string (with %v placeholders) and the list of argument expressions.
-func (g *Generator) parseStringInterpolation(str string) (string, []string) {
-	// Pre-process: expand \uE002 sentinel to filepath.Separator interpolation.
-	// filepath.Separator is a runtime value so it must be injected as an expression.
-	if strings.ContainsRune(str, '\uE002') {
-		g.addImport("path/filepath")
-		str = strings.ReplaceAll(str, "\uE002", "{string(filepath.Separator)}")
-	}
-
-	// Find all {expr} patterns where expr starts with an identifier character.
-	// This avoids matching regex quantifiers like {2,} or {3,5}.
-	re := regexp.MustCompile(`\{([a-zA-Z_][^}]*)\}`)
-	matches := re.FindAllStringSubmatchIndex(str, -1)
-
-	if len(matches) == 0 {
-		return g.escapeString(str), nil
-	}
-
-	// Build format string and args
-	var format strings.Builder
-	args := []string{}
-	lastIndex := 0
-
-	for _, match := range matches {
-		// Add literal part before the interpolation (escaped)
-		if match[0] > lastIndex {
-			format.WriteString(g.escapeString(str[lastIndex:match[0]]))
-		}
-
-		// Add format specifier
-		format.WriteString("%v")
-
-		// Extract expression and transform Kukicha syntax to Go
-		expr := str[match[2]:match[3]]
-		expr = g.transformInterpolatedExpr(expr)
-		args = append(args, expr)
-
-		lastIndex = match[1]
-	}
-
-	// Add remaining literal part (escaped)
-	if lastIndex < len(str) {
-		format.WriteString(g.escapeString(str[lastIndex:]))
-	}
-
 	return format.String(), args
-}
-
-// transformInterpolatedExpr converts Kukicha expression syntax in string
-// interpolation to valid Go syntax.
-func (g *Generator) transformInterpolatedExpr(expr string) string {
-	// Inside block-style onerr, replace "error" (or the named alias) with the actual error variable.
-	trimmed := strings.TrimSpace(expr)
-	if g.currentOnErrVar != "" {
-		if trimmed == "error" {
-			return g.currentOnErrVar
-		}
-		if g.currentOnErrAlias != "" && trimmed == g.currentOnErrAlias {
-			return g.currentOnErrVar
-		}
-	}
-
-	// Handle pipe expressions: re-parse and generate valid Go
-	if strings.Contains(expr, "|>") {
-		if result, ok := g.parseAndGenerateInterpolatedExpr(expr); ok {
-			return result
-		}
-	}
-
-	// Handle "X as Type" -> "Type(X)" for type conversions
-	// This is a simple string-based transformation for common cases
-	asRe := regexp.MustCompile(`^(.+)\s+as\s+(\w+)$`)
-	if matches := asRe.FindStringSubmatch(strings.TrimSpace(expr)); matches != nil {
-		value := strings.TrimSpace(matches[1])
-		targetType := matches[2]
-		return fmt.Sprintf("%s(%s)", targetType, value)
-	}
-	return expr
-}
-
-// parseAndGenerateInterpolatedExpr re-parses a Kukicha expression string
-// (e.g., from string interpolation) into an AST node, then generates valid Go.
-// This handles pipe expressions and other Kukicha syntax that cannot be
-// emitted as raw strings.
-func (g *Generator) parseAndGenerateInterpolatedExpr(exprStr string) (string, bool) {
-	// Wrap in a synthetic function so the parser has a valid context
-	src := fmt.Sprintf("func __interp__()\n    __x__ := %s\n", exprStr)
-	p, err := parser.New(src, "__interp__.kuki")
-	if err != nil {
-		return "", false
-	}
-	prog, parseErrors := p.Parse()
-	if len(parseErrors) > 0 || prog == nil {
-		return "", false
-	}
-
-	// Extract the expression from the parsed var decl
-	for _, decl := range prog.Declarations {
-		fd, ok := decl.(*ast.FunctionDecl)
-		if !ok || fd.Body == nil {
-			continue
-		}
-		for _, stmt := range fd.Body.Statements {
-			vd, ok := stmt.(*ast.VarDeclStmt)
-			if !ok || len(vd.Values) == 0 {
-				continue
-			}
-			return g.exprToString(vd.Values[0]), true
-		}
-	}
-	return "", false
 }
 
 func (g *Generator) generateBinaryExpr(expr *ast.BinaryExpr) string {

@@ -345,11 +345,9 @@ func (g *Generator) errorValueExpr(expr ast.Expression, errVar string) string {
 		return errVar
 	}
 	if strLit, ok := expr.(*ast.StringLiteral); ok {
-		msg := strLit.Value
-		if strings.Contains(msg, "{error}") {
-			msg = strings.ReplaceAll(msg, "{error}", fmt.Sprintf("{%s}", errVar))
-		}
-		return fmt.Sprintf("errors.New(%s)", g.generateStringInterpolation(msg))
+		// currentOnErrVar is set by renderHandler before we get here,
+		// so generateStringLiteral handles {error} substitution via generateStringFromParts.
+		return fmt.Sprintf("errors.New(%s)", g.generateStringLiteral(strLit))
 	}
 	return fmt.Sprintf("errors.New(%s)", g.exprToString(expr))
 }
