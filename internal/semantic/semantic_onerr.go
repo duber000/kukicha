@@ -79,7 +79,41 @@ func funcReturnsError(decl *ast.FunctionDecl) bool {
 }
 
 func (a *Analyzer) analyzeStringInterpolation(lit *ast.StringLiteral) {
-	// Parse string interpolations and validate bare identifiers.
+	// Fast path: use pre-parsed Parts from the parser
+	if len(lit.Parts) > 0 {
+		for _, part := range lit.Parts {
+			if part.IsLiteral {
+				continue
+			}
+			// Check for {err} in onerr context
+			if a.inOnerr {
+				if ident, ok := part.Expr.(*ast.Identifier); ok && ident.Value == "err" {
+					hint := "use {error} not {err} inside onerr — the caught error is always named 'error'"
+					if a.currentOnerrrAlias != "" {
+						hint += fmt.Sprintf(", or {%s} via your 'onerr as %s' alias", a.currentOnerrrAlias, a.currentOnerrrAlias)
+					} else {
+						hint += ", or name it with 'onerr as e' and use {e}"
+					}
+					a.error(lit.Pos(), hint)
+					continue
+				}
+			}
+			// Skip known onerr error variables — they're injected by codegen, not user-defined
+			if a.inOnerr {
+				if ident, ok := part.Expr.(*ast.Identifier); ok {
+					if ident.Value == "error" || ident.Value == a.currentOnerrrAlias {
+						continue
+					}
+				}
+			}
+			// Patch position info for better error reporting
+			patchExprPosition(part.Expr, lit.Token.File, lit.Token.Line, lit.Token.Column)
+			a.analyzeExpression(part.Expr)
+		}
+		return
+	}
+
+	// Fallback: regex-based parsing when Parts is empty (parse failure)
 	matches := interpolationPattern.FindAllStringSubmatchIndex(lit.Value, -1)
 
 	for _, match := range matches {

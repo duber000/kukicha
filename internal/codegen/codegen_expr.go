@@ -416,8 +416,97 @@ func (g *Generator) generateStringLiteral(lit *ast.StringLiteral) string {
 		return fmt.Sprintf("\"%s\"", g.escapeString(lit.Value))
 	}
 
-	// Parse string interpolation
+	// Use pre-parsed Parts when available
+	if len(lit.Parts) > 0 {
+		return g.generateStringFromParts(lit)
+	}
+
+	// Fallback to regex-based parsing
 	return g.generateStringInterpolation(lit.Value)
+}
+
+// generateStringFromParts generates a Go string expression from pre-parsed interpolation parts.
+func (g *Generator) generateStringFromParts(lit *ast.StringLiteral) string {
+	var format strings.Builder
+	var args []string
+
+	for _, part := range lit.Parts {
+		if part.IsLiteral {
+			literal := part.Literal
+			// Handle \uE002 (\sep) in literal parts
+			if strings.ContainsRune(literal, '\uE002') {
+				g.addImport("path/filepath")
+				segments := strings.Split(literal, "\uE002")
+				for i, seg := range segments {
+					format.WriteString(g.escapeString(seg))
+					if i < len(segments)-1 {
+						format.WriteString("%v")
+						args = append(args, "string(filepath.Separator)")
+					}
+				}
+			} else {
+				format.WriteString(g.escapeString(literal))
+			}
+		} else {
+			format.WriteString("%v")
+			// Check onerr substitution
+			if g.currentOnErrVar != "" {
+				if ident, ok := part.Expr.(*ast.Identifier); ok {
+					if ident.Value == "error" || (g.currentOnErrAlias != "" && ident.Value == g.currentOnErrAlias) {
+						args = append(args, g.currentOnErrVar)
+						continue
+					}
+				}
+			}
+			args = append(args, g.exprToString(part.Expr))
+		}
+	}
+
+	if len(args) == 0 {
+		return fmt.Sprintf("\"%s\"", format.String())
+	}
+	argsStr := strings.Join(args, ", ")
+	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", format.String(), argsStr)
+}
+
+// parseStringPartsOrInterpolation returns a format string and args from a StringLiteral,
+// using pre-parsed Parts when available, otherwise falling back to regex-based parsing.
+func (g *Generator) parseStringPartsOrInterpolation(lit *ast.StringLiteral) (string, []string) {
+	if len(lit.Parts) > 0 {
+		var format strings.Builder
+		var args []string
+		for _, part := range lit.Parts {
+			if part.IsLiteral {
+				literal := part.Literal
+				if strings.ContainsRune(literal, '\uE002') {
+					g.addImport("path/filepath")
+					segments := strings.Split(literal, "\uE002")
+					for i, seg := range segments {
+						format.WriteString(g.escapeString(seg))
+						if i < len(segments)-1 {
+							format.WriteString("%v")
+							args = append(args, "string(filepath.Separator)")
+						}
+					}
+				} else {
+					format.WriteString(g.escapeString(literal))
+				}
+			} else {
+				format.WriteString("%v")
+				if g.currentOnErrVar != "" {
+					if ident, ok := part.Expr.(*ast.Identifier); ok {
+						if ident.Value == "error" || (g.currentOnErrAlias != "" && ident.Value == g.currentOnErrAlias) {
+							args = append(args, g.currentOnErrVar)
+							continue
+						}
+					}
+				}
+				args = append(args, g.exprToString(part.Expr))
+			}
+		}
+		return format.String(), args
+	}
+	return g.parseStringInterpolation(lit.Value)
 }
 
 func (g *Generator) generateStringInterpolation(str string) string {
@@ -831,7 +920,7 @@ func (g *Generator) generateMethodCallExpr(expr *ast.MethodCallExpr) string {
 	// These methods require a constant format string in Go 1.26+
 	if g.isPrintfStyleMethod(method) && len(expr.Arguments) > 0 {
 		if strLit, ok := expr.Arguments[0].(*ast.StringLiteral); ok {
-			format, formatArgs := g.parseStringInterpolation(strLit.Value)
+			format, formatArgs := g.parseStringPartsOrInterpolation(strLit)
 			if len(formatArgs) > 0 {
 				// Generate: t.Errorf("format %v", args...) instead of t.Errorf(fmt.Sprintf(...))
 				allArgs := make([]string, 0, len(formatArgs)+len(expr.Arguments)-1)

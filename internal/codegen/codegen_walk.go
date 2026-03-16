@@ -642,6 +642,19 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 		if !e.Interpolated && !strings.ContainsRune(e.Value, '\uE002') {
 			return false
 		}
+		// Fast path: use pre-parsed Parts
+		if len(e.Parts) > 0 {
+			for _, part := range e.Parts {
+				if !part.IsLiteral {
+					return true
+				}
+				if strings.ContainsRune(part.Literal, '\uE002') {
+					return true
+				}
+			}
+			return false
+		}
+		// Fallback
 		_, args := g.parseStringInterpolation(e.Value)
 		return len(args) > 0
 	case *ast.BinaryExpr:

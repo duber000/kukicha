@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -531,12 +532,13 @@ func (p *Parser) parseStringLiteral() *ast.StringLiteral {
 
 	// Check for string interpolation
 	if strings.Contains(token.Lexeme, "{") {
-		// Has interpolation - we'll parse this in semantic analysis
-		return &ast.StringLiteral{
+		lit := &ast.StringLiteral{
 			Token:        token,
 			Value:        token.Lexeme,
 			Interpolated: true,
 		}
+		lit.Parts = p.parseStringParts(token.Lexeme, token.File)
+		return lit
 	}
 
 	return &ast.StringLiteral{
@@ -544,6 +546,89 @@ func (p *Parser) parseStringLiteral() *ast.StringLiteral {
 		Value:        token.Lexeme,
 		Interpolated: false,
 	}
+}
+
+// interpolationRe matches {expr} patterns where expr starts with an identifier character.
+// PUA sentinels \uE000/\uE001 (escaped braces) are multi-byte and won't match {/}.
+var interpolationRe = regexp.MustCompile(`\{([a-zA-Z_][^}]*)\}`)
+
+// parseStringParts splits an interpolated string value into literal and expression parts.
+func (p *Parser) parseStringParts(value string, filename string) []*ast.StringInterpolation {
+	matches := interpolationRe.FindAllStringSubmatchIndex(value, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	var parts []*ast.StringInterpolation
+	lastIndex := 0
+
+	for _, match := range matches {
+		// Literal part before this interpolation
+		if match[0] > lastIndex {
+			parts = append(parts, &ast.StringInterpolation{
+				IsLiteral: true,
+				Literal:   value[lastIndex:match[0]],
+			})
+		}
+
+		exprStr := strings.TrimSpace(value[match[2]:match[3]])
+		expr, err := p.parseInterpolationExpr(exprStr, filename)
+		if err != nil {
+			// Parse failed — bail out entirely and let fallback paths handle it
+			return nil
+		}
+		parts = append(parts, &ast.StringInterpolation{
+			IsLiteral: false,
+			Expr:      expr,
+		})
+
+		lastIndex = match[1]
+	}
+
+	// Trailing literal part
+	if lastIndex < len(value) {
+		parts = append(parts, &ast.StringInterpolation{
+			IsLiteral: true,
+			Literal:   value[lastIndex:],
+		})
+	}
+
+	return parts
+}
+
+// parseInterpolationExpr parses a single expression string from inside {expr} interpolation.
+func (p *Parser) parseInterpolationExpr(exprStr string, filename string) (ast.Expression, error) {
+	source := fmt.Sprintf("func __interp__()\n    print(%s)\n", exprStr)
+
+	subParser, err := New(source, filename)
+	if err != nil {
+		return nil, err
+	}
+
+	program, parseErrors := subParser.Parse()
+	if len(parseErrors) > 0 {
+		return nil, parseErrors[0]
+	}
+	if len(program.Declarations) == 0 {
+		return nil, fmt.Errorf("missing interpolation wrapper function")
+	}
+
+	fn, ok := program.Declarations[0].(*ast.FunctionDecl)
+	if !ok || fn.Body == nil || len(fn.Body.Statements) == 0 {
+		return nil, fmt.Errorf("missing interpolation wrapper body")
+	}
+
+	stmt, ok := fn.Body.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		return nil, fmt.Errorf("missing interpolation wrapper statement")
+	}
+
+	call, ok := stmt.Expression.(*ast.CallExpr)
+	if !ok || len(call.Arguments) != 1 {
+		return nil, fmt.Errorf("missing interpolation wrapper argument")
+	}
+
+	return call.Arguments[0], nil
 }
 
 func (p *Parser) parseRuneLiteral() *ast.RuneLiteral {

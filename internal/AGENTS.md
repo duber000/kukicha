@@ -288,6 +288,9 @@ The IR (Intermediate Representation) package defines Go-level imperative nodes u
 | `Label` | `LabelName:` |
 | `ScopedBlock` | Bare `{ ... }` block for variable scoping |
 | `RawStmt` | Pre-rendered Go statement (escape hatch) |
+| `ReturnStmt` | `return val1, val2, ...` |
+| `ExprStmt` | Standalone expression (`continue`, `break`, `panic(...)`) |
+| `Comment` | `// text` |
 
 The IR is intentionally thin — it models only the constructs needed by the onerr/pipe lowering passes. Other codegen paths still emit Go text directly.
 
@@ -305,7 +308,7 @@ The IR is intentionally thin — it models only the constructs needed by the one
 | `codegen_expr.go` | Expression generators (`exprToString`, `generatePipeExpr`, `generateCallExpr`, string interpolation, …) |
 | `codegen_onerr.go` | `onerr` code generation (`generateOnErrVarDecl`, `generateOnErrHandler`); delegates pipe-chain and piped-switch onerr to Lowerer |
 | `lower.go` | `Lowerer` struct — transforms pipe chains, onerr clauses, and piped switches into IR nodes. Key methods: `lowerPipeChain`, `lowerOnErrPipeChain`, `lowerPipedSwitchVarDecl`, `lowerOnErrWithExplicitErr` |
-| `emit.go` | `emitIR` / `emitIRNode` — walks IR blocks and emits Go source via `g.writeLine`. Handles `Assign`, `VarDecl`, `IfErrCheck`, `Goto`, `Label`, `ScopedBlock`, `RawStmt` |
+| `emit.go` | `emitIR` / `emitIRNode` — walks IR blocks and emits Go source via `g.writeLine`. Handles `Assign`, `VarDecl`, `IfErrCheck`, `Goto`, `Label`, `ScopedBlock`, `RawStmt`, `ReturnStmt`, `ExprStmt`, `Comment` |
 | `codegen_imports.go` | Import generation and auto-import scanning (`generateImports`, `scanStmtForAutoImports`, …) |
 | `codegen_stdlib.go` | Stdlib/generics type inference (`inferStdlibTypeParameters`, `zeroValueForType`, …) |
 | `codegen_walk.go` | Unified AST visitor (`walkProgram`, `walkBlock`, `walkStmt`, `walkExpr`) and `needsXxx` helpers |
@@ -320,10 +323,19 @@ The IR is intentionally thin — it models only the constructs needed by the one
 | `pkgAliases map[string]string` | Collision aliases (e.g., `json` → `kukijson`) |
 | `funcDefaults map[string]*FuncDefaults` | Default parameter info for wrapper generation |
 | `placeholderMap map[string]string` | Generic placeholder substitution (`"any"→"T"`, `"any2"→"K"`) |
+| `isStdlibIter bool` | True if generating `stdlib/iterator` code (enables iter-specific generic transpilation) |
+| `sourceFile string` | Source file path for detecting stdlib packages |
+| `currentFuncName string` | Current function being generated (for context-aware decisions) |
+| `currentReturnTypes []ast.TypeAnnotation` | Return types of current function (for type coercion in returns and `onerr` zero-value generation) |
 | `currentOnErrVar string` | Error variable name in active `onerr` block (for `{error}` interpolation) |
+| `currentOnErrAlias string` | User-specified alias in `onerr as e` blocks |
 | `currentReturnIndex int` | Index of return value being generated (-1 if not in return); used to emit `*new(T)` vs `nil` for bare `empty` in generic stdlib functions |
+| `tempCounter int` | Counter for generating unique temporary variable names via `uniqueId()` |
 | `exprReturnCounts map[ast.Expression]int` | From semantic — drives `onerr` multi-value split |
 | `exprTypes map[ast.Expression]*TypeInfo` | From semantic — used by `isErrorOnlyReturn()` for error-only pipe step detection |
+| `mcpTarget bool` | True if targeting MCP (Model Context Protocol) — affects main function generation |
+| `reservedNames map[string]bool` | User-declared identifiers — `uniqueId` skips these to avoid collisions |
+| `stdlibModuleBase string` | Base module path for rewriting `"stdlib/X"` imports (default: `github.com/duber000/kukicha`) |
 
 ### onerr code generation (Lowerer + IR)
 
@@ -374,16 +386,20 @@ Application code never sees this — it just calls functions normally.
 
 ### String literal codegen (`codegen_expr.go`)
 
-`generateStringLiteral` routes to one of two paths:
+`generateStringLiteral` routes to one of three paths:
 - **Plain string** (`Interpolated == false` and no `\uE002` sentinel): emits `"escaped"` via `escapeString`
-- **Interpolated / runtime-escape** (`Interpolated == true` OR contains `\uE002`): calls `generateStringInterpolation` → `parseStringInterpolation`
+- **Pre-parsed Parts** (`len(lit.Parts) > 0`): calls `generateStringFromParts` — iterates pre-parsed `StringInterpolation` parts, building `fmt.Sprintf` with `%v` placeholders for expression parts and escaped literals. Handles `\uE002` expansion and onerr `{error}` substitution inline.
+- **Fallback regex** (Parts empty, e.g. parse failure): calls `generateStringInterpolation` → `parseStringInterpolation`
 
-`parseStringInterpolation` flow:
-1. Pre-process `\uE002` → `{string(filepath.Separator)}` (adds `path/filepath` auto-import)
-2. Run regex `\{([a-zA-Z_][^}]*)\}` to find all `{expr}` sites
-3. Build `fmt.Sprintf("...%v...", arg, ...)` format string and args list
+**Pre-parsed interpolation (primary path):** The parser populates `StringLiteral.Parts` at parse time via `parseStringParts()`, which splits `{expr}` patterns and parses each expression once using a sub-parser. Semantic analysis and codegen both consume the pre-parsed AST nodes directly, avoiding redundant re-parsing. The old regex-based methods (`parseStringInterpolation`, `transformInterpolatedExpr`, `parseAndGenerateInterpolatedExpr`) remain as fallbacks and for callers that operate on raw strings (e.g., onerr panic messages with substituted `{error}` variables).
+
+`parseStringPartsOrInterpolation(lit)` is a shared helper that returns `(format, args)` using Parts when available, falling back to `parseStringInterpolation`. Used by the printf-style method path.
 
 `escapeString` handles compile-time PUA sentinels (`\uE000` → `{`, `\uE001` → `}`) and standard Go escapes (`\n`, `\t`, `\\`, `\"`, `\x00`). It is **not** responsible for `\uE002` — that sentinel is expanded before `escapeString` sees it.
+
+### Child generators for inline code blocks
+
+Use `g.childGenerator(extraIndent)` when generating inline function bodies (function literals, arrow lambda blocks). The child shares the parent's semantic state by reference (program, autoImports, pkgAliases, exprTypes, etc.) and writes to a fresh `strings.Builder`. This replaces the old pattern of manually copying 8+ fields into a throwaway `Generator`.
 
 ### Writing to output
 

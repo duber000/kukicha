@@ -386,14 +386,14 @@ Application code never sees this — it just calls functions normally.
 
 ### String literal codegen (`codegen_expr.go`)
 
-`generateStringLiteral` routes to one of two paths:
+`generateStringLiteral` routes to one of three paths:
 - **Plain string** (`Interpolated == false` and no `\uE002` sentinel): emits `"escaped"` via `escapeString`
-- **Interpolated / runtime-escape** (`Interpolated == true` OR contains `\uE002`): calls `generateStringInterpolation` → `parseStringInterpolation`
+- **Pre-parsed Parts** (`len(lit.Parts) > 0`): calls `generateStringFromParts` — iterates pre-parsed `StringInterpolation` parts, building `fmt.Sprintf` with `%v` placeholders for expression parts and escaped literals. Handles `\uE002` expansion and onerr `{error}` substitution inline.
+- **Fallback regex** (Parts empty, e.g. parse failure): calls `generateStringInterpolation` → `parseStringInterpolation`
 
-`parseStringInterpolation` flow:
-1. Pre-process `\uE002` → `{string(filepath.Separator)}` (adds `path/filepath` auto-import)
-2. Run regex `\{([a-zA-Z_][^}]*)\}` to find all `{expr}` sites
-3. Build `fmt.Sprintf("...%v...", arg, ...)` format string and args list
+**Pre-parsed interpolation (primary path):** The parser populates `StringLiteral.Parts` at parse time via `parseStringParts()`, which splits `{expr}` patterns and parses each expression once using a sub-parser. Semantic analysis and codegen both consume the pre-parsed AST nodes directly, avoiding redundant re-parsing. The old regex-based methods (`parseStringInterpolation`, `transformInterpolatedExpr`, `parseAndGenerateInterpolatedExpr`) remain as fallbacks and for callers that operate on raw strings (e.g., onerr panic messages with substituted `{error}` variables).
+
+`parseStringPartsOrInterpolation(lit)` is a shared helper that returns `(format, args)` using Parts when available, falling back to `parseStringInterpolation`. Used by the printf-style method path.
 
 `escapeString` handles compile-time PUA sentinels (`\uE000` → `{`, `\uE001` → `}`) and standard Go escapes (`\n`, `\t`, `\\`, `\"`, `\x00`). It is **not** responsible for `\uE002` — that sentinel is expanded before `escapeString` sees it.
 
