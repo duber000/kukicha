@@ -64,8 +64,11 @@ type typeRepr struct {
 
 // scanResult holds the scanned registry and deprecated map.
 type scanResult struct {
-	registry   map[string]registryEntry
-	deprecated map[string]string // qualified name → deprecation message
+	registry     map[string]registryEntry
+	deprecated   map[string]string // qualified name → deprecation message
+	genericClass map[string]string // qualified name → generic class ("T", "K", or "TK")
+	security     map[string]string // qualified name → security category (sql, html, fetch, files, redirect, shell)
+	interfaces   map[string]bool   // qualified interface names (e.g., "mcp.Server")
 }
 
 // scanRegistry reads and parses all .kuki files in paths, returning a map of
@@ -74,8 +77,11 @@ type scanResult struct {
 // Returns accumulated errors.
 func scanRegistry(paths []string) (scanResult, []error) {
 	result := scanResult{
-		registry:   map[string]registryEntry{},
-		deprecated: map[string]string{},
+		registry:     map[string]registryEntry{},
+		deprecated:   map[string]string{},
+		genericClass: map[string]string{},
+		security:     map[string]string{},
+		interfaces:   map[string]bool{},
 	}
 	var errs []error
 
@@ -110,6 +116,15 @@ func scanRegistry(paths []string) (scanResult, []error) {
 		pkgName := prog.PetioleDecl.Name.Value
 
 		for _, decl := range prog.Declarations {
+			// Collect exported interface declarations.
+			if iface, ok := decl.(*ast.InterfaceDecl); ok {
+				name := iface.Name.Value
+				if len(name) > 0 && name[0] >= 'A' && name[0] <= 'Z' {
+					result.interfaces[pkgName+"."+name] = true
+				}
+				continue
+			}
+
 			fd, ok := decl.(*ast.FunctionDecl)
 			if !ok {
 				continue
@@ -129,15 +144,34 @@ func scanRegistry(paths []string) (scanResult, []error) {
 
 			key := pkgName + "." + name
 
-			// Check for # kuki:deprecated directive
+			// Check for directives
 			for _, dir := range fd.Directives {
-				if dir.Name == "deprecated" {
+				switch dir.Name {
+				case "deprecated":
 					msg := "deprecated"
 					if len(dir.Args) > 0 {
 						msg = dir.Args[0]
 					}
 					result.deprecated[key] = msg
-					break
+				case "security":
+					if len(dir.Args) > 0 {
+						result.security[key] = dir.Args[0]
+					}
+				}
+			}
+
+			// Detect generic placeholder usage for slice package functions.
+			// This drives codegen's type parameter inference so new functions
+			// don't need to be manually added to hardcoded allowlists.
+			if pkgName == "slice" {
+				usesAny := signatureContainsPlaceholder(fd, "any")
+				usesAny2 := signatureContainsPlaceholder(fd, "any2")
+				if usesAny && usesAny2 {
+					result.genericClass[key] = "TK"
+				} else if usesAny2 {
+					result.genericClass[key] = "K"
+				} else if usesAny {
+					result.genericClass[key] = "T"
 				}
 			}
 
@@ -180,6 +214,56 @@ func scanRegistry(paths []string) (scanResult, []error) {
 	}
 
 	return result, errs
+}
+
+// signatureContainsPlaceholder checks if a function's parameters or return types
+// contain a placeholder name (e.g., "any" or "any2").
+func signatureContainsPlaceholder(fd *ast.FunctionDecl, placeholder string) bool {
+	for _, param := range fd.Parameters {
+		if typeContainsPlaceholder(param.Type, placeholder) {
+			return true
+		}
+	}
+	for _, ret := range fd.Returns {
+		if typeContainsPlaceholder(ret, placeholder) {
+			return true
+		}
+	}
+	return false
+}
+
+// typeContainsPlaceholder recursively checks if a type annotation tree
+// contains the given placeholder name.
+func typeContainsPlaceholder(typeAnn ast.TypeAnnotation, placeholder string) bool {
+	if typeAnn == nil {
+		return false
+	}
+	switch t := typeAnn.(type) {
+	case *ast.PrimitiveType:
+		return t.Name == placeholder
+	case *ast.NamedType:
+		return t.Name == placeholder
+	case *ast.ListType:
+		return typeContainsPlaceholder(t.ElementType, placeholder)
+	case *ast.MapType:
+		return typeContainsPlaceholder(t.KeyType, placeholder) || typeContainsPlaceholder(t.ValueType, placeholder)
+	case *ast.ChannelType:
+		return typeContainsPlaceholder(t.ElementType, placeholder)
+	case *ast.ReferenceType:
+		return typeContainsPlaceholder(t.ElementType, placeholder)
+	case *ast.FunctionType:
+		for _, param := range t.Parameters {
+			if typeContainsPlaceholder(param, placeholder) {
+				return true
+			}
+		}
+		for _, ret := range t.Returns {
+			if typeContainsPlaceholder(ret, placeholder) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // typeAnnotationToRepr converts a Kukicha AST type annotation to a typeRepr.
@@ -289,11 +373,29 @@ func formatRegistry(result scanResult) []byte {
 	}
 	sort.Strings(entries)
 
+	securityEntries := make([]string, 0, len(result.security))
+	for k, v := range result.security {
+		securityEntries = append(securityEntries, fmt.Sprintf("\t%q: %q,", k, v))
+	}
+	sort.Strings(securityEntries)
+
+	genericEntries := make([]string, 0, len(result.genericClass))
+	for k, v := range result.genericClass {
+		genericEntries = append(genericEntries, fmt.Sprintf("\t%q: %q,", k, v))
+	}
+	sort.Strings(genericEntries)
+
 	depEntries := make([]string, 0, len(result.deprecated))
 	for k, v := range result.deprecated {
 		depEntries = append(depEntries, fmt.Sprintf("\t%q: %q,", k, v))
 	}
 	sort.Strings(depEntries)
+
+	ifaceEntries := make([]string, 0, len(result.interfaces))
+	for k := range result.interfaces {
+		ifaceEntries = append(ifaceEntries, fmt.Sprintf("\t%q: true,", k))
+	}
+	sort.Strings(ifaceEntries)
 
 	src := fmt.Sprintf(`// Code generated by cmd/genstdlibregistry; DO NOT EDIT.
 // Run "make genstdlibregistry" to regenerate after changing stdlib/*.kuki files.
@@ -316,7 +418,31 @@ var generatedStdlibRegistry = map[string]goStdlibEntry{
 var generatedStdlibDeprecated = map[string]string{
 %s
 }
-`, strings.Join(entries, "\n"), strings.Join(depEntries, "\n"))
+
+// generatedSecurityFunctions maps qualified stdlib function names to their
+// security check category. Populated from # kuki:security directives in .kuki files.
+// Categories: "sql", "html", "fetch", "files", "redirect", "shell"
+var generatedSecurityFunctions = map[string]string{
+%s
+}
+
+// generatedSliceGenericClass maps stdlib/slice function names to their generic
+// classification based on placeholder usage in their signatures:
+//   - "T"  = uses "any" placeholder only  → emits [T any]
+//   - "K"  = uses "any2" placeholder only → emits [K comparable]
+//   - "TK" = uses both                    → emits [T any, K comparable]
+//
+// Functions not in this map do not use placeholders and are not made generic.
+var generatedSliceGenericClass = map[string]string{
+%s
+}
+
+// generatedStdlibInterfaces lists qualified Kukicha stdlib type names that are interfaces.
+// Used by codegen to decide between type assertion (x.(T)) and type conversion (T(x)).
+var generatedStdlibInterfaces = map[string]bool{
+%s
+}
+`, strings.Join(entries, "\n"), strings.Join(depEntries, "\n"), strings.Join(securityEntries, "\n"), strings.Join(genericEntries, "\n"), strings.Join(ifaceEntries, "\n"))
 
 	formatted, fmtErr := format.Source([]byte(src))
 	if fmtErr != nil {

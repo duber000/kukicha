@@ -599,3 +599,45 @@ func Use()
 		t.Errorf("expected warning comment when return count inference fails, got: %s", output2)
 	}
 }
+
+func TestTypeCastConcreteUsesConversion(t *testing.T) {
+	// Casting to a concrete type (int, string) should use conversion syntax: int(x)
+	input := `func Foo(x float64) int
+    return x as int
+`
+	output := generateSource(t, input)
+
+	if !strings.Contains(output, "int(x)") {
+		t.Errorf("expected conversion syntax int(x), got: %s", output)
+	}
+	if strings.Contains(output, ".(int)") {
+		t.Errorf("should not use assertion syntax for concrete type, got: %s", output)
+	}
+}
+
+func TestTypeCastInterfaceUsesAssertion(t *testing.T) {
+	// Casting to an interface type should use assertion syntax: x.(error)
+	input := `func Foo(x any) error
+    return x as error
+`
+	output := generateSource(t, input)
+
+	if !strings.Contains(output, ".(error)") {
+		t.Errorf("expected assertion syntax .(error), got: %s", output)
+	}
+}
+
+func TestTypeCastLocalInterfaceUsesAssertion(t *testing.T) {
+	// Casting to a locally-declared interface should use assertion syntax
+	input := `interface Stringer
+    String() string
+
+func Foo(x any) Stringer
+    return x as Stringer
+`
+	output := generateSource(t, input)
+
+	if !strings.Contains(output, ".(Stringer)") {
+		t.Errorf("expected assertion syntax .(Stringer) for local interface, got: %s", output)
+	}
+}

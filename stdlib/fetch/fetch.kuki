@@ -41,6 +41,7 @@ type Request
 # New creates a new HTTP request builder for the given URL
 # Returns a Request that can be configured with Header(), Timeout(), etc.
 # Example: req := fetch.New("https://api.example.com/data")
+# kuki:security "fetch"
 func New(url string) Request
     req := Request{}
     req.url = url
@@ -179,6 +180,7 @@ func createHTTPRequest(method string, url string, bodyData any) (reference http.
 # Get performs an HTTP GET request to the specified URL (quick function)
 # Returns the HTTP response and any error that occurred
 # Example: resp, err := fetch.Get("https://api.example.com/data")
+# kuki:security "fetch"
 func Get(url string) (reference http.Response, error)
     resp := New(url)
         |> Do()
@@ -202,6 +204,7 @@ func SafeGet(url string) (reference http.Response, error)
 # Automatically serializes data to JSON using stdlib/json
 # Returns the HTTP response and any error that occurred
 # Example: resp, err := fetch.Post(userData, "https://api.example.com/users")
+# kuki:security "fetch"
 func Post(data any, url string) (reference http.Response, error)
     resp := New(url)
         |> Method("POST")

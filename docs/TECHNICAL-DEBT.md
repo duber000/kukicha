@@ -4,6 +4,8 @@ Comprehensive audit of shortcuts, heuristics, and gaps in the Kukicha compiler.
 Items 1–4 from Tier 1 were fixed in commit `a41558c`.
 Dead code and lint violations cleaned up in commits `5fbf182` and `6d04e16`;
 `golangci-lint` added to prevent future accumulation (`make lint`).
+Tier 3 items 8–12 fixed by replacing hardcoded lists with data-driven approaches
+via `genstdlibregistry`, `gengostdlib`, and `# kuki:security`/`# kuki:deprecated` directives.
 
 ---
 
@@ -46,69 +48,32 @@ Now emits a `// kukicha:` comment when inference fails so the problem is visible
 
 ---
 
-## Tier 3: Heuristics That Should Be Proper Logic
+## Tier 3: Heuristics That Should Be Proper Logic ✅ DONE
 
-### 8. Type assertion vs. conversion heuristic
-**File:** `codegen_expr.go:115-121`
+### ~~8. Type assertion vs. conversion heuristic~~ ✅ FIXED
+**File:** `codegen_expr.go`
 
-Decides between `x.(Type)` (assertion) and `Type(x)` (conversion) by checking if the type name contains a dot — with a special exception for `iter.Seq`:
+Now uses `isLikelyInterfaceType()` instead of string-matching on dots. Correctly handles local interfaces, known Go interfaces, and `error`.
 
-```go
-if strings.Contains(targetType, ".") && !strings.Contains(targetType, "iter.Seq") {
-    return fmt.Sprintf("%s.(%s)", expr, targetType)
-}
-return fmt.Sprintf("%s(%s)", targetType, expr)
-```
+### ~~9. `isLikelyInterfaceType` hardcoded list~~ ✅ FIXED
+**File:** `codegen_stdlib.go`
 
-This is wrong for:
-- Local interface types (no dot → uses conversion instead of assertion)
-- Qualified non-interface types (has dot → uses assertion instead of conversion)
+Deleted the hardcoded `knownInterfaces` map. `isLikelyInterfaceType` now checks: (1) `"error"`, (2) local interface declarations, (3) auto-generated `generatedGoInterfaces` map (52 interfaces extracted from Go stdlib via `go/types` in `gengostdlib`), and (4) auto-generated `generatedStdlibInterfaces` map (from `genstdlibregistry` scanning `InterfaceDecl` nodes in `.kuki` files).
 
-**Fix:** Use `isLikelyInterfaceType()` (which already exists) instead of string matching on dots.
+### ~~10. Hardcoded security function lists~~ ✅ FIXED
+**File:** `semantic_security.go`
 
-### 9. `isLikelyInterfaceType` hardcoded list
-**File:** `codegen_stdlib.go:404-422`
+Security-sensitive functions are now annotated with `# kuki:security "category"` directives in their `.kuki` source files. The `genstdlibregistry` generator scans these directives and emits a `generatedSecurityFunctions` map. Security checks use `securityCategory()` which reads from this generated map (with alias support for `httphelper.X → http.X`).
 
-The function name says it all — "likely." It checks:
-1. The literal string `"error"`
-2. Interface declarations in the current file
-3. A hardcoded `knownInterfaces` map (lines 52-74)
+### ~~11. Hardcoded generic/comparable function lists~~ ✅ FIXED
+**File:** `codegen_stdlib.go`
 
-User-defined interfaces from other packages are missed entirely.
+`genericSafe` and `comparableSafe` maps deleted. `inferSliceTypeParameters` now reads from the generated `generatedSliceGenericClass` map (via `semantic.GetSliceGenericClass()`), which is auto-derived from placeholder usage in `.kuki` function signatures.
 
-**Fix:** Extend to resolve interfaces from imported packages, or add an `isInterface` flag to the type info passed from semantic analysis.
+### ~~12. Hardcoded "Enumerate" special case~~ ✅ FIXED
+**File:** `codegen_decl.go`
 
-### 10. Hardcoded security function lists
-**File:** `semantic_security.go:11-49`
-
-Security-sensitive functions are tracked in manually-maintained maps:
-- `sqlFunctions`
-- `htmlFunctions`
-- `fetchFunctions`
-- `filesFunctions`
-- `redirectFunctions`
-
-Adding a new stdlib function that is security-sensitive requires updating these maps manually.
-
-**Fix:** Move to registry annotations (e.g., `# kuki:security sql` directives on stdlib function declarations) so the security check table is maintained alongside the code it protects.
-
-### 11. Hardcoded generic/comparable function lists
-**File:** `codegen_stdlib.go:19-50`
-
-`genericSafe` and `comparableSafe` maps must be updated manually when new stdlib functions are added. Same for `knownInterfaces` (lines 52-74).
-
-**Fix:** Derive these from the stdlib `.kuki` source files during `make genstdlibregistry`. Functions using `any`/`any2` placeholders can be auto-classified.
-
-### 12. Hardcoded "Enumerate" special case
-**File:** `codegen_decl.go:466`
-
-```go
-if g.currentFuncName == "Enumerate" {
-    return "iter.Seq2[int, T]"
-}
-```
-
-**Fix:** Make this data-driven via a return-type annotation in the stdlib registry rather than a name check.
+Introduced `iter.Seq2Int` type name convention instead of checking function name. `stdlib/iterator/iterator.kuki` updated to use the new return type.
 
 ---
 

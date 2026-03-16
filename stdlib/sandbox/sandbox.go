@@ -222,7 +222,7 @@ func Stat(r Root, path string) (os.FileInfo, error) {
 	info, err_16 := r.root.Stat(path)
 	if err_16 != nil {
 		err_16 = fmt.Errorf("sandbox stat: %w", err_16)
-		return *new(os.FileInfo), err_16
+		return nil, err_16
 	}
 //line /var/home/tluker/repos/go/kukicha/stdlib/sandbox/sandbox.kuki:111
 	return info, nil

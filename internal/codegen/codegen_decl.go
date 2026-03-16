@@ -461,11 +461,13 @@ func (g *Generator) generateTypeAnnotation(typeAnn ast.TypeAnnotation) string {
 				return "iter.Seq[U]"
 			}
 
-			// iter.Seq2 → iter.Seq2[T, U] or iter.Seq2[int, T] (for Enumerate) or iter.Seq2[T, T]
+			// iter.Seq2Int → iter.Seq2[int, T]
+			if t.Name == "iter.Seq2Int" {
+				return "iter.Seq2[int, T]"
+			}
+
+			// iter.Seq2 → iter.Seq2[T, U] or iter.Seq2[T, T]
 			if t.Name == "iter.Seq2" {
-				if g.currentFuncName == "Enumerate" {
-					return "iter.Seq2[int, T]"
-				}
 				// Only use U if it's actually declared as a type parameter
 				if _, hasU := g.placeholderMap["any2"]; hasU {
 					return "iter.Seq2[T, U]"

@@ -7,45 +7,18 @@ import (
 	"github.com/duber000/kukicha/internal/ast"
 )
 
-// Package-level lookup maps — allocated once to avoid per-call allocation.
-var sqlFunctions = map[string]bool{
-	"pg.Query":      true,
-	"pg.QueryRow":   true,
-	"pg.Exec":       true,
-	"pg.TxQuery":    true,
-	"pg.TxQueryRow": true,
-	"pg.TxExec":     true,
-}
-
-var htmlFunctions = map[string]bool{
-	"httphelper.HTML": true,
-	"http.HTML":      true,
-}
-
-var fetchFunctions = map[string]bool{
-	"fetch.Get":  true,
-	"fetch.Post": true,
-	"fetch.New":  true,
-}
-
-var filesFunctions = map[string]bool{
-	"files.Read":          true,
-	"files.ReadBytes":     true,
-	"files.Write":         true,
-	"files.WriteString":   true,
-	"files.Append":        true,
-	"files.AppendString":  true,
-	"files.Delete":        true,
-	"files.DeleteAll":     true,
-	"files.List":          true,
-	"files.ListRecursive": true,
-}
-
-var redirectFunctions = map[string]bool{
-	"httphelper.Redirect":          true,
-	"http.Redirect":               true,
-	"httphelper.RedirectPermanent": true,
-	"http.RedirectPermanent":      true,
+// securityCategory returns the security check category for a qualified function
+// name, checking both the generated registry and known aliases (e.g., httphelper.X → http.X).
+func securityCategory(qualifiedName string) string {
+	if cat := GetSecurityCategory(qualifiedName); cat != "" {
+		return cat
+	}
+	// Handle aliases: httphelper.X → http.X
+	if strings.HasPrefix(qualifiedName, "httphelper.") {
+		suffix := qualifiedName[len("httphelper."):]
+		return GetSecurityCategory("http." + suffix)
+	}
+	return ""
 }
 
 // isInHTTPHandler returns true when the current function is an HTTP handler.
@@ -69,7 +42,7 @@ func (a *Analyzer) isInHTTPHandler() bool {
 // class of SQL injection where Kukicha's "{var}" syntax interpolates user
 // data into the query string before pgx's parameterization can protect it.
 func (a *Analyzer) checkSQLInterpolation(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
-	if !sqlFunctions[qualifiedName] {
+	if securityCategory(qualifiedName) != "sql" {
 		return
 	}
 
@@ -98,7 +71,7 @@ func (a *Analyzer) checkSQLInterpolation(qualifiedName string, expr *ast.MethodC
 // checkHTMLNonLiteral warns when http.HTML (or its alias) is called with a
 // non-literal content argument, which is a direct XSS vector.
 func (a *Analyzer) checkHTMLNonLiteral(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
-	if !htmlFunctions[qualifiedName] {
+	if securityCategory(qualifiedName) != "html" {
 		return
 	}
 
@@ -124,7 +97,7 @@ func (a *Analyzer) checkHTMLNonLiteral(qualifiedName string, expr *ast.MethodCal
 // checkFetchInHandler warns when fetch.Get, fetch.Post, or fetch.New is called
 // directly inside an HTTP handler without SSRF protection.
 func (a *Analyzer) checkFetchInHandler(qualifiedName string, expr *ast.MethodCallExpr) {
-	if !fetchFunctions[qualifiedName] {
+	if securityCategory(qualifiedName) != "fetch" {
 		return
 	}
 	if !a.isInHTTPHandler() {
@@ -139,7 +112,7 @@ func (a *Analyzer) checkFetchInHandler(qualifiedName string, expr *ast.MethodCal
 // checkFilesInHandler warns when files.* I/O functions are called inside an
 // HTTP handler, where the path argument may be user-controlled.
 func (a *Analyzer) checkFilesInHandler(qualifiedName string, expr *ast.MethodCallExpr) {
-	if !filesFunctions[qualifiedName] {
+	if securityCategory(qualifiedName) != "files" {
 		return
 	}
 	if !a.isInHTTPHandler() {
@@ -155,7 +128,7 @@ func (a *Analyzer) checkFilesInHandler(qualifiedName string, expr *ast.MethodCal
 // argument. shell.Run splits its argument on whitespace without quoting
 // awareness; a variable value can silently inject extra arguments.
 func (a *Analyzer) checkShellRunNonLiteral(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
-	if qualifiedName != "shell.Run" {
+	if securityCategory(qualifiedName) != "shell" {
 		return
 	}
 	// Direct call: shell.Run(cmd) — cmd is at index 0.
@@ -183,7 +156,7 @@ func (a *Analyzer) checkShellRunNonLiteral(qualifiedName string, expr *ast.Metho
 // checkRedirectNonLiteral warns when http.Redirect / http.RedirectPermanent is
 // called with a non-literal URL argument, which is an open-redirect vector.
 func (a *Analyzer) checkRedirectNonLiteral(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
-	if !redirectFunctions[qualifiedName] {
+	if securityCategory(qualifiedName) != "redirect" {
 		return
 	}
 	// Stdlib files (e.g. http.kuki itself) are exempt: SafeRedirect and the

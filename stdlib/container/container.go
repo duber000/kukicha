@@ -1138,6 +1138,7 @@ func createTarFromPath(sourcePath string) (io.Reader, error) {
 				header.Name = (header.Name + "/")
 			}
 //line /var/home/tluker/repos/go/kukicha/stdlib/container/container.kuki:666
+			// kukicha: could not infer return count; use explicit capture if incorrect
 			err_4 := tw.WriteHeader(header)
 			if err_4 != nil {
 				return err_4

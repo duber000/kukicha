@@ -183,11 +183,13 @@ func NoContent(w http.ResponseWriter)
 
 # Redirect sends a redirect response (302 by default)
 # Example: http.Redirect(w, r, "/new-location")
+# kuki:security "redirect"
 func Redirect(w http.ResponseWriter, r reference http.Request, url string)
     http.Redirect(w, r, url, 302)
 
 # RedirectPermanent sends a 301 permanent redirect response
 # Example: http.RedirectPermanent(w, r, "/new-location")
+# kuki:security "redirect"
 func RedirectPermanent(w http.ResponseWriter, r reference http.Request, url string)
     http.Redirect(w, r, url, 301)
 
@@ -238,6 +240,7 @@ func TextStatus(w http.ResponseWriter, content string, status int) error
 # WARNING: content is written verbatim — any user input is an XSS vector.
 # Use http.SafeHTML when content may contain user-controlled data.
 # Example: http.HTML(w, "<h1>Hello</h1>")
+# kuki:security "html"
 func HTML(w http.ResponseWriter, content string) error
     w.Header().Set("Content-Type", "text/html; charset=utf-8")
     _, err := io.WriteString(w, content)

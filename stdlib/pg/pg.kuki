@@ -130,18 +130,21 @@ func Open(cfg Config) (Pool, error)
     return Pool{}, lastErr
 
 # Query executes a query that returns multiple rows.
+# kuki:security "sql"
 func Query(p Pool, sql string, many args any) (Rows, error)
     bg := ctxpkg.Background()
     rows := p.pool.Query(ctxpkg.Value(bg), sql, many args) onerr explain "pg query"
     return Rows{rows: rows}, empty
 
 # QueryRow executes a query that returns at most one row.
+# kuki:security "sql"
 func QueryRow(p Pool, sql string, many args any) (Row, error)
     bg := ctxpkg.Background()
     row := p.pool.QueryRow(ctxpkg.Value(bg), sql, many args)
     return Row{scanFn: row}, empty
 
 # Exec executes a query that doesn't return rows (INSERT, UPDATE, DELETE).
+# kuki:security "sql"
 func Exec(p Pool, sql string, many args any) (Result, error)
     bg := ctxpkg.Background()
     tag := p.pool.Exec(ctxpkg.Value(bg), sql, many args) onerr explain "pg exec"
@@ -226,6 +229,7 @@ func Begin(p Pool) (Tx, error)
     return Tx{tx: tx}, empty
 
 # TxQuery executes a query within a transaction that returns multiple rows.
+# kuki:security "sql"
 func TxQuery(t Tx, sql string, many args any) (Rows, error)
     bg := ctxpkg.Background()
     tx := t.tx.(pgx.Tx)
@@ -233,6 +237,7 @@ func TxQuery(t Tx, sql string, many args any) (Rows, error)
     return Rows{rows: rows}, empty
 
 # TxQueryRow executes a query within a transaction that returns at most one row.
+# kuki:security "sql"
 func TxQueryRow(t Tx, sql string, many args any) (Row, error)
     bg := ctxpkg.Background()
     tx := t.tx.(pgx.Tx)
@@ -240,6 +245,7 @@ func TxQueryRow(t Tx, sql string, many args any) (Row, error)
     return Row{scanFn: row}, empty
 
 # TxExec executes a query within a transaction that doesn't return rows.
+# kuki:security "sql"
 func TxExec(t Tx, sql string, many args any) (Result, error)
     bg := ctxpkg.Background()
     tx := t.tx.(pgx.Tx)

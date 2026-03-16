@@ -61,7 +61,7 @@ func Skip(seq iter.Seq, n int) iter.Seq
         return
 
 # Enumerate yields pairs of (index, value) for the iterator
-func Enumerate(seq iter.Seq) iter.Seq2
+func Enumerate(seq iter.Seq) iter.Seq2Int
     return func(yield func(int, any) bool)
         i := 0
         for item in seq

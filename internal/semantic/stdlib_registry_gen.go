@@ -280,7 +280,7 @@ var generatedStdlibRegistry = map[string]goStdlibEntry{
 	"iterator.Any":                    {Count: 1, Types: []goStdlibType{{Kind: TypeKindBool}}, ParamNames: []string{"seq", "predicate"}},
 	"iterator.Chunk":                  {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "iter.SeqSlice"}}, ParamNames: []string{"seq", "n"}},
 	"iterator.Collect":                {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"seq"}},
-	"iterator.Enumerate":              {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "iter.Seq2"}}, ParamNames: []string{"seq"}},
+	"iterator.Enumerate":              {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "iter.Seq2Int"}}, ParamNames: []string{"seq"}},
 	"iterator.Filter":                 {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "iter.Seq"}}, ParamNames: []string{"seq", "keep"}},
 	"iterator.Find":                   {Count: 2, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "any"}, {Kind: TypeKindBool}}, ParamNames: []string{"seq", "predicate"}},
 	"iterator.FlatMap":                {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "iter.Seq"}}, ParamNames: []string{"seq", "transform"}},
@@ -727,3 +727,74 @@ var generatedStdlibRegistry = map[string]goStdlibEntry{
 // generatedStdlibDeprecated maps qualified Kukicha stdlib function names to their
 // deprecation messages. Populated from # kuki:deprecated directives in stdlib .kuki files.
 var generatedStdlibDeprecated = map[string]string{}
+
+// generatedSecurityFunctions maps qualified stdlib function names to their
+// security check category. Populated from # kuki:security directives in .kuki files.
+// Categories: "sql", "html", "fetch", "files", "redirect", "shell"
+var generatedSecurityFunctions = map[string]string{
+	"fetch.Get":              "fetch",
+	"fetch.New":              "fetch",
+	"fetch.Post":             "fetch",
+	"files.Append":           "files",
+	"files.AppendString":     "files",
+	"files.Delete":           "files",
+	"files.DeleteAll":        "files",
+	"files.List":             "files",
+	"files.ListRecursive":    "files",
+	"files.Read":             "files",
+	"files.ReadBytes":        "files",
+	"files.Write":            "files",
+	"files.WriteString":      "files",
+	"http.HTML":              "html",
+	"http.Redirect":          "redirect",
+	"http.RedirectPermanent": "redirect",
+	"pg.Exec":                "sql",
+	"pg.Query":               "sql",
+	"pg.QueryRow":            "sql",
+	"pg.TxExec":              "sql",
+	"pg.TxQuery":             "sql",
+	"pg.TxQueryRow":          "sql",
+	"shell.Run":              "shell",
+}
+
+// generatedSliceGenericClass maps stdlib/slice function names to their generic
+// classification based on placeholder usage in their signatures:
+//   - "T"  = uses "any" placeholder only  → emits [T any]
+//   - "K"  = uses "any2" placeholder only → emits [K comparable]
+//   - "TK" = uses both                    → emits [T any, K comparable]
+//
+// Functions not in this map do not use placeholders and are not made generic.
+var generatedSliceGenericClass = map[string]string{
+	"slice.Chunk":      "T",
+	"slice.Concat":     "T",
+	"slice.Contains":   "K",
+	"slice.Drop":       "T",
+	"slice.DropLast":   "T",
+	"slice.Filter":     "T",
+	"slice.Find":       "T",
+	"slice.FindIndex":  "T",
+	"slice.FindLast":   "T",
+	"slice.FindLastOr": "T",
+	"slice.FindOr":     "T",
+	"slice.First":      "T",
+	"slice.FirstOne":   "T",
+	"slice.FirstOr":    "T",
+	"slice.Get":        "T",
+	"slice.GetOr":      "T",
+	"slice.GroupBy":    "TK",
+	"slice.IndexOf":    "K",
+	"slice.IsEmpty":    "T",
+	"slice.IsNotEmpty": "T",
+	"slice.Last":       "T",
+	"slice.LastOne":    "T",
+	"slice.LastOr":     "T",
+	"slice.Map":        "T",
+	"slice.Pop":        "T",
+	"slice.Reverse":    "T",
+	"slice.Shift":      "T",
+	"slice.Unique":     "K",
+}
+
+// generatedStdlibInterfaces lists qualified Kukicha stdlib type names that are interfaces.
+// Used by codegen to decide between type assertion (x.(T)) and type conversion (T(x)).
+var generatedStdlibInterfaces = map[string]bool{}

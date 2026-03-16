@@ -28,6 +28,7 @@ type Result
 # Run splits a fixed command string on whitespace and runs it, returning stdout
 # Only use for string literals — not safe when any part comes from user input
 # Example: out := shell.Run("git diff --staged")
+# kuki:security "shell"
 func Run(cmd string) (string, error)
     fields := string.Fields(cmd)
     if len(fields) == 0

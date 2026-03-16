@@ -16,63 +16,6 @@ var boolMethods = map[string]bool{
 	"EqualFold": true,
 }
 
-var genericSafe = map[string]bool{
-	"Filter":     true,
-	"Map":        true,
-	"First":      true,
-	"Last":       true,
-	"Drop":       true,
-	"DropLast":   true,
-	"Reverse":    true,
-	"Chunk":      true,
-	"IsEmpty":    true,
-	"IsNotEmpty": true,
-	"Concat":     true,
-	"GetOr":      true,
-	"FirstOr":    true,
-	"LastOr":     true,
-	"FindOr":     true,
-	"FindIndex":  true,
-	"FindLastOr": true,
-	"Get":        true,
-	"FirstOne":   true,
-	"LastOne":    true,
-	"Find":       true,
-	"FindLast":   true,
-	"Pop":        true,
-	"Shift":      true,
-}
-
-var comparableSafe = map[string]bool{
-	"Unique":   true,
-	"Contains": true,
-	"IndexOf":  true,
-}
-
-var knownInterfaces = map[string]bool{
-	"io.Reader":           true,
-	"io.Writer":           true,
-	"io.Closer":           true,
-	"io.ReadCloser":       true,
-	"io.WriteCloser":      true,
-	"io.ReadWriter":       true,
-	"io.ReadWriteCloser":  true,
-	"io.ReaderFrom":       true,
-	"io.WriterTo":         true,
-	"io.Seeker":           true,
-	"io.ReadSeeker":       true,
-	"io.ReadWriteSeeker":  true,
-	"fmt.Stringer":        true,
-	"fmt.Scanner":         true,
-	"http.Handler":        true,
-	"http.ResponseWriter": true,
-	"context.Context":     true,
-	"sort.Interface":      true,
-	"net.Conn":            true,
-	"net.Listener":        true,
-	"net.Error":           true,
-}
-
 // inferExprReturnType tries to infer the return type of an expression lambda body.
 // Returns empty string if it can't determine the type.
 func (g *Generator) inferExprReturnType(expr ast.Expression) string {
@@ -199,88 +142,32 @@ func (g *Generator) isStdlibJSON() bool {
 	return strings.Contains(g.sourceFile, "stdlib/json/") || strings.Contains(g.sourceFile, "stdlib\\json\\")
 }
 
-// inferSliceTypeParameters infers type parameters for stdlib/slice functions.
-// GroupBy gets [T any, K comparable]; a curated set of other functions get [T any].
-//
-// Functions are excluded from generic treatment when they either:
-//   - return `empty` as a value of type T (which becomes nil — invalid for unconstrained generics), or
-//   - use T as a map key (requires comparable), or
-//   - delegate to Go stdlib functions that require comparable (slices.Contains, slices.Index).
-//
-// The excluded functions (Get, FirstOne, LastOne, Find, FindLast, Pop, Shift, Unique,
-// Contains, IndexOf) retain []any signatures until the codegen can emit proper zero
-// values for generic type parameters.
+// inferSliceTypeParameters infers type parameters for stdlib/slice functions
+// using the generated registry (generatedSliceGenericClass) which classifies
+// each function by its placeholder usage:
+//   - "T"  → [T any]
+//   - "K"  → [K comparable]
+//   - "TK" → [T any, K comparable]
 func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
+	class := semantic.GetSliceGenericClass("slice." + decl.Name.Value)
+	if class == "" {
+		return nil
+	}
+
 	var typeParams []*TypeParameter
 
-	// GroupBy has two type parameters: T (element) and K (comparable map key)
-	if decl.Name.Value == "GroupBy" {
+	if strings.Contains(class, "T") {
 		typeParams = append(typeParams, &TypeParameter{
 			Name:        "T",
 			Placeholder: "any",
 			Constraint:  "any",
 		})
+	}
+	if strings.Contains(class, "K") {
 		typeParams = append(typeParams, &TypeParameter{
 			Name:        "K",
 			Placeholder: "any2",
 			Constraint:  "comparable",
-		})
-		return typeParams
-	}
-
-	if comparableSafe[decl.Name.Value] {
-		// These functions use any2 only — emit [K comparable] as the sole type parameter
-		usesAny2 := false
-		for _, param := range decl.Parameters {
-			if g.typeContainsPlaceholder(param.Type, "any2") {
-				usesAny2 = true
-				break
-			}
-		}
-		if !usesAny2 {
-			for _, ret := range decl.Returns {
-				if g.typeContainsPlaceholder(ret, "any2") {
-					usesAny2 = true
-					break
-				}
-			}
-		}
-		if usesAny2 {
-			typeParams = append(typeParams, &TypeParameter{
-				Name:        "K",
-				Placeholder: "any2",
-				Constraint:  "comparable",
-			})
-		}
-		return typeParams
-	}
-
-	if !genericSafe[decl.Name.Value] {
-		return typeParams
-	}
-
-	// If the signature references the "any" placeholder, emit [T any] and substitute
-	// "any" → T throughout parameters and return types.
-	usesAny := false
-	for _, param := range decl.Parameters {
-		if g.typeContainsPlaceholder(param.Type, "any") {
-			usesAny = true
-			break
-		}
-	}
-	if !usesAny {
-		for _, ret := range decl.Returns {
-			if g.typeContainsPlaceholder(ret, "any") {
-				usesAny = true
-				break
-			}
-		}
-	}
-	if usesAny {
-		typeParams = append(typeParams, &TypeParameter{
-			Name:        "T",
-			Placeholder: "any",
-			Constraint:  "any",
 		})
 	}
 
@@ -401,7 +288,7 @@ func (g *Generator) typeContainsPlaceholder(typeAnn ast.TypeAnnotation, placehol
 	return false
 }
 
-// isLikelyInterfaceType checks if a Go type name is likely an interface type.
+// isLikelyInterfaceType checks if a Go type name is an interface type.
 // Used to determine whether empty Type should generate nil (interface) vs Type{} (struct).
 func (g *Generator) isLikelyInterfaceType(typeName string) bool {
 	// "error" is always an interface
@@ -409,7 +296,7 @@ func (g *Generator) isLikelyInterfaceType(typeName string) bool {
 		return true
 	}
 
-	// Check current program's declarations for interface types
+	// Check current program's declarations for local interface types
 	for _, decl := range g.program.Declarations {
 		if iface, ok := decl.(*ast.InterfaceDecl); ok {
 			if iface.Name.Value == typeName {
@@ -418,7 +305,8 @@ func (g *Generator) isLikelyInterfaceType(typeName string) bool {
 		}
 	}
 
-	return knownInterfaces[typeName]
+	// Check auto-generated Go stdlib and Kukicha stdlib interface registries
+	return semantic.IsKnownInterface(typeName)
 }
 
 // zeroValueForType returns a Go expression for the zero value of a type annotation.

@@ -339,6 +339,7 @@ func OldFunc() string
 | Directive | Target | Effect |
 |-----------|--------|--------|
 | `# kuki:deprecated "msg"` | `func`, `type` | Emits a warning at each call site |
+| `# kuki:security "category"` | `func` | Registers function for compile-time security checks (`sql`, `html`, `fetch`, `files`, `redirect`, `shell`) |
 
 Directives on stdlib `.kuki` files are automatically picked up by `make genstdlibregistry` and checked at compile time.
 

@@ -23,3 +23,21 @@ func GetStdlibEntry(name string) (goStdlibEntry, bool) {
 	entry, ok := generatedStdlibRegistry[name]
 	return entry, ok
 }
+
+// GetSliceGenericClass returns the generic classification for a stdlib/slice
+// function: "T" (uses any), "K" (uses any2), "TK" (uses both), or "" (not generic).
+func GetSliceGenericClass(qualifiedName string) string {
+	return generatedSliceGenericClass[qualifiedName]
+}
+
+// GetSecurityCategory returns the security check category for a stdlib function
+// (e.g., "sql", "html", "fetch", "files", "redirect", "shell"), or "" if none.
+func GetSecurityCategory(qualifiedName string) string {
+	return generatedSecurityFunctions[qualifiedName]
+}
+
+// IsKnownInterface returns true if the qualified type name is a known interface
+// from either the Go stdlib or the Kukicha stdlib registries.
+func IsKnownInterface(qualifiedName string) bool {
+	return generatedGoInterfaces[qualifiedName] || generatedStdlibInterfaces[qualifiedName]
+}

@@ -12,6 +12,7 @@ import "time"
 # Read reads the entire contents of a file as bytes
 # Returns the file contents and any error that occurred
 # Example: "config.json" |> files.Read()
+# kuki:security "files"
 func Read(path string) (list of byte, error)
     data := path |> os.ReadFile() onerr return
     return data, empty
@@ -19,6 +20,7 @@ func Read(path string) (list of byte, error)
 # ReadBytes reads the entire contents of a file as a byte slice
 # Returns the file contents and any error that occurred
 # Example: "image.png" |> files.ReadBytes()
+# kuki:security "files"
 func ReadBytes(path string) (list of byte, error)
     return os.ReadFile(path)
 
@@ -26,6 +28,7 @@ func ReadBytes(path string) (list of byte, error)
 # Marshals data to JSON with indentation
 # Returns any error that occurred
 # Example: data |> files.Write("output.json")
+# kuki:security "files"
 func Write(data any, path string) error
     data
         |> json.MarshalPretty()
@@ -36,6 +39,7 @@ func Write(data any, path string) error
 # WriteString writes a string to a file
 # Returns any error that occurred
 # Example: "Hello, World!" |> files.WriteString("output.txt")
+# kuki:security "files"
 func WriteString(data string, path string) error
     bytesData := data as list of byte
     return os.WriteFile(path, bytesData, 0644)
@@ -44,6 +48,7 @@ func WriteString(data string, path string) error
 # Marshals data to JSON
 # Returns any error that occurred
 # Example: "new line\n" |> files.Append("log.txt")
+# kuki:security "files"
 func Append(data any, path string) error
     file := os.OpenFile(path, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644) onerr return
     defer file.Close()
@@ -58,6 +63,7 @@ func Append(data any, path string) error
 # Unlike Append, this does NOT marshal the data as JSON
 # Returns any error that occurred
 # Example: "new line\n" |> files.AppendString("log.txt")
+# kuki:security "files"
 func AppendString(data string, path string) error
     file := os.OpenFile(path, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644) onerr return
     defer file.Close()
@@ -91,6 +97,7 @@ func IsFile(path string) bool
 # Does not recurse into subdirectories
 # Returns a list of file names and any error that occurred
 # Example: files.List("/var/log")
+# kuki:security "files"
 func List(path string) (list of string, error)
     entries := os.ReadDir(path) onerr return
 
@@ -103,6 +110,7 @@ func List(path string) (list of string, error)
 # ListRecursive returns all files recursively under the specified directory
 # Returns a list of absolute file paths and any error that occurred
 # Example: files.ListRecursive("/var/log")
+# kuki:security "files"
 func ListRecursive(path string) (list of string, error)
     result := make(list of string, 0)
     filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error
@@ -117,6 +125,7 @@ func ListRecursive(path string) (list of string, error)
 # Delete removes a file or empty directory
 # Returns any error that occurred
 # Example: "temp.txt" |> files.Delete()
+# kuki:security "files"
 func Delete(path string) error
     return os.Remove(path)
 
@@ -124,6 +133,7 @@ func Delete(path string) error
 # Recursively removes all subdirectories and files
 # Returns any error that occurred
 # Example: "temp_dir" |> files.DeleteAll()
+# kuki:security "files"
 func DeleteAll(path string) error
     return os.RemoveAll(path)
 

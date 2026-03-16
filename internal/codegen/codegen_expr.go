@@ -112,10 +112,8 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 	case *ast.TypeCastExpr:
 		targetType := g.generateTypeAnnotation(e.TargetType)
 		expr := g.exprToString(e.Expression)
-		// Use type assertion syntax for interface types (contains a dot like http.Handler)
-		// or when likely asserting from any/interface
-		// Exception: iter.Seq types are functions, so use conversion
-		if strings.Contains(targetType, ".") && !strings.Contains(targetType, "iter.Seq") {
+		// Use type assertion for interface types, conversion for concrete types.
+		if g.isLikelyInterfaceType(targetType) {
 			return fmt.Sprintf("%s.(%s)", expr, targetType)
 		}
 		return fmt.Sprintf("%s(%s)", targetType, expr)
