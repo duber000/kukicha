@@ -112,7 +112,7 @@ Added `codegen_integration_test.go` with 25 integration tests that run the full 
 
 ---
 
-## Tier 5: Architecture Improvements (Lower Priority)
+## Tier 5: Architecture Improvements (4 of 5 done)
 
 ### ~~17. RawStmt escape hatch undermines IR~~ ✅ IMPROVED
 **File:** `lower.go`

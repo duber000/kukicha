@@ -308,7 +308,7 @@ The IR is intentionally thin — it models only the constructs needed by the one
 | `codegen_expr.go` | Expression generators (`exprToString`, `generatePipeExpr`, `generateCallExpr`, string interpolation, …) |
 | `codegen_onerr.go` | `onerr` code generation (`generateOnErrVarDecl`, `generateOnErrHandler`); delegates pipe-chain and piped-switch onerr to Lowerer |
 | `lower.go` | `Lowerer` struct — transforms pipe chains, onerr clauses, and piped switches into IR nodes. Key methods: `lowerPipeChain`, `lowerOnErrPipeChain`, `lowerPipedSwitchVarDecl`, `lowerOnErrWithExplicitErr` |
-| `emit.go` | `emitIR` / `emitIRNode` — walks IR blocks and emits Go source via `g.writeLine`. Handles `Assign`, `VarDecl`, `IfErrCheck`, `Goto`, `Label`, `ScopedBlock`, `RawStmt` |
+| `emit.go` | `emitIR` / `emitIRNode` — walks IR blocks and emits Go source via `g.writeLine`. Handles `Assign`, `VarDecl`, `IfErrCheck`, `Goto`, `Label`, `ScopedBlock`, `RawStmt`, `ReturnStmt`, `ExprStmt`, `Comment` |
 | `codegen_imports.go` | Import generation and auto-import scanning (`generateImports`, `scanStmtForAutoImports`, …) |
 | `codegen_stdlib.go` | Stdlib/generics type inference (`inferStdlibTypeParameters`, `zeroValueForType`, …) |
 | `codegen_walk.go` | Unified AST visitor (`walkProgram`, `walkBlock`, `walkStmt`, `walkExpr`) and `needsXxx` helpers |
@@ -323,10 +323,19 @@ The IR is intentionally thin — it models only the constructs needed by the one
 | `pkgAliases map[string]string` | Collision aliases (e.g., `json` → `kukijson`) |
 | `funcDefaults map[string]*FuncDefaults` | Default parameter info for wrapper generation |
 | `placeholderMap map[string]string` | Generic placeholder substitution (`"any"→"T"`, `"any2"→"K"`) |
+| `isStdlibIter bool` | True if generating `stdlib/iterator` code (enables iter-specific generic transpilation) |
+| `sourceFile string` | Source file path for detecting stdlib packages |
+| `currentFuncName string` | Current function being generated (for context-aware decisions) |
+| `currentReturnTypes []ast.TypeAnnotation` | Return types of current function (for type coercion in returns and `onerr` zero-value generation) |
 | `currentOnErrVar string` | Error variable name in active `onerr` block (for `{error}` interpolation) |
+| `currentOnErrAlias string` | User-specified alias in `onerr as e` blocks |
 | `currentReturnIndex int` | Index of return value being generated (-1 if not in return); used to emit `*new(T)` vs `nil` for bare `empty` in generic stdlib functions |
+| `tempCounter int` | Counter for generating unique temporary variable names via `uniqueId()` |
 | `exprReturnCounts map[ast.Expression]int` | From semantic — drives `onerr` multi-value split |
 | `exprTypes map[ast.Expression]*TypeInfo` | From semantic — used by `isErrorOnlyReturn()` for error-only pipe step detection |
+| `mcpTarget bool` | True if targeting MCP (Model Context Protocol) — affects main function generation |
+| `reservedNames map[string]bool` | User-declared identifiers — `uniqueId` skips these to avoid collisions |
+| `stdlibModuleBase string` | Base module path for rewriting `"stdlib/X"` imports (default: `github.com/duber000/kukicha`) |
 
 ### onerr code generation (Lowerer + IR)
 
