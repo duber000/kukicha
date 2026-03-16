@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
-	"github.com/duber000/kukicha/internal/semantic"
 	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -442,7 +441,3 @@ func findVarInBlock(block *ast.BlockStmt, word string, cursorLine int) string {
 	return ""
 }
 
-// findSymbolInScope searches for a symbol definition (legacy stub, now delegates to findLocalSymbol).
-func findSymbolInScope(program *ast.Program, name string) *semantic.Symbol {
-	return nil
-}

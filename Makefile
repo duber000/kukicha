@@ -9,7 +9,7 @@ KUKI_SOURCES := $(wildcard stdlib/*/*.kuki)
 KUKI_MAIN := $(filter-out %_test.kuki stdlib/test/test.kuki,$(KUKI_SOURCES))
 KUKI_TESTS := $(filter %_test.kuki,$(KUKI_SOURCES))
 
-.PHONY: all build lsp generate generate-tests genstdlibregistry gengostdlib test check-generate check-test-staleness clean install-lsp install-hooks zed-test
+.PHONY: all build lsp generate generate-tests genstdlibregistry gengostdlib test lint check-generate check-test-staleness clean install-lsp install-hooks zed-test
 
 all: build lsp
 
@@ -72,6 +72,10 @@ check-test-staleness:
 # Run all tests
 test: check-test-staleness
 	go test ./...
+
+# Run linter (requires golangci-lint: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest)
+lint:
+	golangci-lint run ./internal/... ./cmd/...
 
 # Check that generated .go files are up to date (for CI)
 check-generate: generate

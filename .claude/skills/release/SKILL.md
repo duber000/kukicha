@@ -56,13 +56,14 @@ make build   # re-embed the updated .go files
 
 This regenerates `internal/semantic/stdlib_registry_gen.go`, all `stdlib/*/*.go`, all `stdlib/*/*_test.go`, then rebuilds the compiler with the updated files embedded.
 
-### 5. Run tests
+### 5. Run tests and lint
 
 ```bash
 make test
+make lint
 ```
 
-All packages must pass before tagging. Do not proceed if any test fails.
+All tests must pass and lint must be clean before tagging. Do not proceed if either fails.
 
 ### 6. Commit
 
@@ -101,6 +102,7 @@ git push origin vX.X.X
 - [ ] `AGENTS.md` — version line updated (must match CLAUDE.md)
 - [ ] `make generate && make build` succeeded
 - [ ] `make test` — all packages pass
+- [ ] `make lint` — zero issues
 - [ ] Single commit with all generated + doc changes
 - [ ] Tag created and pushed
 - [ ] `git ls-remote --tags origin` confirms tag is present

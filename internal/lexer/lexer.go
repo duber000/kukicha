@@ -30,7 +30,6 @@ type Lexer struct {
 	file               string
 	tokens             []Token
 	indentStack        []int // Stack of indentation levels (in spaces). Always starts with [0].
-	pendingDedents     int   // Dedents to emit
 	atLineStart        bool  // Whether we're at the start of a line
 	indentationHandled bool  // Whether indentation has been handled for the current line
 	errors             []error
@@ -647,10 +646,6 @@ func isAlpha(c rune) bool {
 
 func isAlphaNumeric(c rune) bool {
 	return isAlpha(c) || isDigit(c)
-}
-
-func isWhitespace(c rune) bool {
-	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }
 
 // IsKeyword checks if a string is a keyword

@@ -1,0 +1,53 @@
+version: "2"
+
+run:
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+        - "-QF*"    # Quickfix suggestions (style-only, not bugs)
+        - "-ST*"    # Style conventions (TOKEN_ALL_CAPS, uniqueId naming are established)
+
+  exclusions:
+    # Generated code and non-compiler directories.
+    paths:
+      - stdlib       # Generated from .kuki sources
+      - editors
+      - examples
+      - genstdlibregistry
+      - cmd/ku-diag  # Generated from .kuki sources
+      - cmd/ku-k8s   # Generated from .kuki sources
+      - cmd/ku-sys   # Generated from .kuki sources
+
+    rules:
+      # Parser methods (p.error, p.consume) return values that are
+      # intentionally unused — the parser collects errors and continues.
+      - path: internal/parser/
+        linters: [errcheck]
+
+      # symbolTable.Define errors are checked during declaration collection;
+      # re-defining in statement analysis is intentionally unchecked.
+      - path: internal/semantic/semantic_statements\.go
+        linters: [errcheck]
+
+      # LSP notifications are fire-and-forget (no response expected).
+      - path: internal/lsp/
+        linters: [errcheck]
+
+      # os.Stderr.Write and deferred os.Remove are fire-and-forget in the CLI.
+      - path: cmd/kukicha/
+        linters: [errcheck]
+
+      # Test helpers may be used only in some test files.
+      - path: _test\.go
+        linters: [unused]

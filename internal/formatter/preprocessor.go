@@ -7,12 +7,8 @@ import (
 
 // Preprocessor converts Go-style syntax to Kukicha-style indentation
 type Preprocessor struct {
-	source      []rune
-	output      strings.Builder
-	current     int
-	line        int
-	indentLevel int
-	indentStr   string
+	source    []rune
+	indentStr string
 }
 
 // NewPreprocessor creates a new preprocessor
