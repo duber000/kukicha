@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -407,6 +406,8 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 		return p.parseFloatLiteral()
 	case lexer.TOKEN_STRING:
 		return p.parseStringLiteral()
+	case lexer.TOKEN_STRING_HEAD:
+		return p.parseInterpolatedStringLiteral()
 	case lexer.TOKEN_RUNE:
 		return p.parseRuneLiteral()
 	case lexer.TOKEN_TRUE, lexer.TOKEN_FALSE:
@@ -426,7 +427,8 @@ func (p *Parser) parsePrimaryExpr() ast.Expression {
 			next == lexer.TOKEN_BIT_AND || next == lexer.TOKEN_BIT_AND_ASSIGN ||
 			next == lexer.TOKEN_DOT || next == lexer.TOKEN_LBRACKET ||
 			next == lexer.TOKEN_COLON || next == lexer.TOKEN_PIPE ||
-			next == lexer.TOKEN_RPAREN || next == lexer.TOKEN_COMMA {
+			next == lexer.TOKEN_RPAREN || next == lexer.TOKEN_COMMA ||
+			next == lexer.TOKEN_STRING_MID || next == lexer.TOKEN_STRING_TAIL {
 			token := p.advance()
 			return &ast.Identifier{Token: token, Value: token.Lexeme}
 		}
@@ -527,20 +529,9 @@ func (p *Parser) parseFloatLiteral() *ast.FloatLiteral {
 		Value: value,
 	}
 }
+// parseStringLiteral parses a non-interpolated string (TOKEN_STRING).
 func (p *Parser) parseStringLiteral() *ast.StringLiteral {
 	token := p.advance()
-
-	// Check for string interpolation
-	if strings.Contains(token.Lexeme, "{") {
-		lit := &ast.StringLiteral{
-			Token:        token,
-			Value:        token.Lexeme,
-			Interpolated: true,
-		}
-		lit.Parts = p.parseStringParts(token.Lexeme, token.File)
-		return lit
-	}
-
 	return &ast.StringLiteral{
 		Token:        token,
 		Value:        token.Lexeme,
@@ -548,87 +539,80 @@ func (p *Parser) parseStringLiteral() *ast.StringLiteral {
 	}
 }
 
-// interpolationRe matches {expr} patterns where expr starts with an identifier character.
-// PUA sentinels \uE000/\uE001 (escaped braces) are multi-byte and won't match {/}.
-var interpolationRe = regexp.MustCompile(`\{([a-zA-Z_][^}]*)\}`)
-
-// parseStringParts splits an interpolated string value into literal and expression parts.
-func (p *Parser) parseStringParts(value string, filename string) []*ast.StringInterpolation {
-	matches := interpolationRe.FindAllStringSubmatchIndex(value, -1)
-	if len(matches) == 0 {
-		return nil
-	}
+// parseInterpolatedStringLiteral parses an interpolated string from the token
+// stream. The lexer has already split the string into TOKEN_STRING_HEAD,
+// expression tokens, TOKEN_STRING_MID, more expression tokens, ...,
+// TOKEN_STRING_TAIL. This method calls parseExpression() for each interpolated
+// expression — no sub-parser, no regex.
+func (p *Parser) parseInterpolatedStringLiteral() *ast.StringLiteral {
+	head := p.advance() // consume TOKEN_STRING_HEAD
 
 	var parts []*ast.StringInterpolation
-	lastIndex := 0
+	var valueBuf strings.Builder
+	valueBuf.WriteString(head.Lexeme)
 
-	for _, match := range matches {
-		// Literal part before this interpolation
-		if match[0] > lastIndex {
-			parts = append(parts, &ast.StringInterpolation{
-				IsLiteral: true,
-				Literal:   value[lastIndex:match[0]],
-			})
-		}
+	// Add leading literal part (may be empty)
+	if head.Lexeme != "" {
+		parts = append(parts, &ast.StringInterpolation{
+			IsLiteral: true,
+			Literal:   head.Lexeme,
+		})
+	}
 
-		exprStr := strings.TrimSpace(value[match[2]:match[3]])
-		expr, err := p.parseInterpolationExpr(exprStr, filename)
-		if err != nil {
-			// Parse failed — bail out entirely and let fallback paths handle it
-			return nil
+	for {
+		// Parse the interpolated expression using the normal expression parser.
+		// Track token positions to reconstruct the raw expression text for Value.
+		startPos := p.pos
+		expr := p.parseExpression()
+		endPos := p.pos
+		// Reconstruct raw expression text from consumed tokens for Value compatibility
+		valueBuf.WriteByte('{')
+		for i := startPos; i < endPos; i++ {
+			if i > startPos {
+				valueBuf.WriteByte(' ')
+			}
+			valueBuf.WriteString(p.tokens[i].Lexeme)
 		}
+		valueBuf.WriteByte('}')
 		parts = append(parts, &ast.StringInterpolation{
 			IsLiteral: false,
 			Expr:      expr,
 		})
 
-		lastIndex = match[1]
+		// Expect TOKEN_STRING_MID or TOKEN_STRING_TAIL
+		next := p.peekToken()
+		if next.Type == lexer.TOKEN_STRING_MID {
+			mid := p.advance()
+			valueBuf.WriteString(mid.Lexeme)
+			if mid.Lexeme != "" {
+				parts = append(parts, &ast.StringInterpolation{
+					IsLiteral: true,
+					Literal:   mid.Lexeme,
+				})
+			}
+			// Continue to next interpolation
+		} else if next.Type == lexer.TOKEN_STRING_TAIL {
+			tail := p.advance()
+			valueBuf.WriteString(tail.Lexeme)
+			if tail.Lexeme != "" {
+				parts = append(parts, &ast.StringInterpolation{
+					IsLiteral: true,
+					Literal:   tail.Lexeme,
+				})
+			}
+			break
+		} else {
+			p.error(next, fmt.Sprintf("expected string continuation or end after interpolation, got %s", next.Type))
+			break
+		}
 	}
 
-	// Trailing literal part
-	if lastIndex < len(value) {
-		parts = append(parts, &ast.StringInterpolation{
-			IsLiteral: true,
-			Literal:   value[lastIndex:],
-		})
+	return &ast.StringLiteral{
+		Token:        head,
+		Value:        valueBuf.String(),
+		Interpolated: true,
+		Parts:        parts,
 	}
-
-	return parts
-}
-
-// parseInterpolationExpr parses a single expression string from inside {expr} interpolation.
-func (p *Parser) parseInterpolationExpr(exprStr string, filename string) (ast.Expression, error) {
-	source := fmt.Sprintf("func __interp__()\n    print(%s)\n", exprStr)
-
-	subParser, err := New(source, filename)
-	if err != nil {
-		return nil, err
-	}
-
-	program, parseErrors := subParser.Parse()
-	if len(parseErrors) > 0 {
-		return nil, parseErrors[0]
-	}
-	if len(program.Declarations) == 0 {
-		return nil, fmt.Errorf("missing interpolation wrapper function")
-	}
-
-	fn, ok := program.Declarations[0].(*ast.FunctionDecl)
-	if !ok || fn.Body == nil || len(fn.Body.Statements) == 0 {
-		return nil, fmt.Errorf("missing interpolation wrapper body")
-	}
-
-	stmt, ok := fn.Body.Statements[0].(*ast.ExpressionStmt)
-	if !ok {
-		return nil, fmt.Errorf("missing interpolation wrapper statement")
-	}
-
-	call, ok := stmt.Expression.(*ast.CallExpr)
-	if !ok || len(call.Arguments) != 1 {
-		return nil, fmt.Errorf("missing interpolation wrapper argument")
-	}
-
-	return call.Arguments[0], nil
 }
 
 func (p *Parser) parseRuneLiteral() *ast.RuneLiteral {

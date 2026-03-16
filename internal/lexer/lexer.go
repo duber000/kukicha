@@ -43,6 +43,12 @@ type Lexer struct {
 	braceDepth        int       // current nesting level of [], {} (used for continuations)
 	parenDepth        int       // current nesting level of () (used for closures)
 	inFunctionLiteral bool      // true when we've just seen 'func' and are parsing its body
+
+	// String interpolation support: when scanning a string and encountering
+	// {expr}, the lexer emits TOKEN_STRING_HEAD, returns to normal tokenization
+	// for the expression, and resumes string scanning when the matching } is found.
+	// Each entry in interpStack is the brace depth within that interpolation level.
+	interpStack []int
 }
 
 // NewLexer creates a new lexer for the given source code
@@ -194,9 +200,22 @@ func (l *Lexer) scanToken() {
 		}
 		l.addToken(TOKEN_RBRACKET)
 	case '{':
+		if len(l.interpStack) > 0 {
+			l.interpStack[len(l.interpStack)-1]++
+		}
 		l.braceDepth++
 		l.addToken(TOKEN_LBRACE)
 	case '}':
+		if len(l.interpStack) > 0 && l.interpStack[len(l.interpStack)-1] == 0 {
+			// End of string interpolation expression — resume string scanning
+			l.interpStack = l.interpStack[:len(l.interpStack)-1]
+			l.start = l.current
+			l.scanStringContinuation()
+			return
+		}
+		if len(l.interpStack) > 0 {
+			l.interpStack[len(l.interpStack)-1]--
+		}
 		if l.braceDepth > 0 {
 			l.braceDepth--
 		}
@@ -364,8 +383,28 @@ func (l *Lexer) handleIndentation() {
 	}
 }
 
-// scanString scans a double-quoted string literal with optional interpolation
+// scanString scans a double-quoted string literal.
+//
+// For non-interpolated strings, emits a single TOKEN_STRING.
+// For interpolated strings (containing {expr}), emits TOKEN_STRING_HEAD for the
+// leading literal, then returns so the main scanToken loop can tokenize the
+// expression normally. When the matching } is found, scanStringContinuation
+// resumes scanning, emitting TOKEN_STRING_MID or TOKEN_STRING_TAIL.
 func (l *Lexer) scanString() {
+	l.scanStringBody(TOKEN_STRING_HEAD, TOKEN_STRING)
+}
+
+// scanStringContinuation resumes string scanning after a } closes an
+// interpolation expression. Emits TOKEN_STRING_MID if another interpolation
+// follows, or TOKEN_STRING_TAIL at the closing quote.
+func (l *Lexer) scanStringContinuation() {
+	l.scanStringBody(TOKEN_STRING_MID, TOKEN_STRING_TAIL)
+}
+
+// scanStringBody is the shared string scanning logic.
+// interpTokenType is emitted when a {expr} interpolation is found (HEAD or MID).
+// endTokenType is emitted when the string ends with " (STRING or TAIL).
+func (l *Lexer) scanStringBody(interpTokenType TokenType, endTokenType TokenType) {
 	value := strings.Builder{}
 
 	for !l.isAtEnd() && l.peek() != '"' {
@@ -375,60 +414,14 @@ func (l *Lexer) scanString() {
 		}
 
 		if l.peek() == '\\' {
-			// Handle escape sequences
-			l.advance() // consume \
-			if !l.isAtEnd() {
-				escaped := l.advance()
-				switch escaped {
-				case 'n':
-					value.WriteRune('\n')
-				case 't':
-					value.WriteRune('\t')
-				case 'r':
-					value.WriteRune('\r')
-				case '\\':
-					value.WriteRune('\\')
-				case '"':
-					value.WriteRune('"')
-				case '\'':
-					value.WriteRune('\'')
-				case '{':
-					value.WriteRune('\uE000') // PUA sentinel for literal {
-				case '}':
-					value.WriteRune('\uE001') // PUA sentinel for literal }
-				case 's':
-					// Check for \sep (filepath separator)
-					if l.peek() == 'e' && l.peekNext() == 'p' {
-						l.advance()               // consume 'e'
-						l.advance()               // consume 'p'
-						value.WriteRune('\uE002') // PUA sentinel for filepath.Separator
-					} else {
-						value.WriteRune('s')
-					}
-				case 'x':
-					// Hex escape: \xHH
-					if !l.isAtEnd() {
-						h1 := l.advance()
-						if !l.isAtEnd() {
-							h2 := l.advance()
-							hi, ok1 := hexDigit(h1)
-							lo, ok2 := hexDigit(h2)
-							if ok1 && ok2 {
-								value.WriteRune(rune(hi*16 + lo))
-							} else {
-								value.WriteString(`\x`)
-								value.WriteRune(h1)
-								value.WriteRune(h2)
-							}
-						}
-					}
-				default:
-					value.WriteRune(escaped)
-				}
-			}
-		} else if l.peek() == '{' {
-			// String interpolation
-			value.WriteRune(l.advance())
+			l.scanStringEscape(&value)
+		} else if l.peek() == '{' && l.isInterpStart() {
+			// String interpolation: emit the accumulated literal, push
+			// interp state, and return so the expression gets tokenized.
+			l.advance() // consume '{'
+			l.addTokenWithLexeme(interpTokenType, value.String())
+			l.interpStack = append(l.interpStack, 0)
+			return
 		} else {
 			value.WriteRune(l.advance())
 		}
@@ -440,10 +433,77 @@ func (l *Lexer) scanString() {
 	}
 
 	l.advance() // consume closing quote
+	l.addTokenWithLexeme(endTokenType, value.String())
+}
 
-	// For now, store the entire string including interpolation markers
-	// The parser will handle breaking it down into segments
-	l.addTokenWithLexeme(TOKEN_STRING, value.String())
+// isInterpStart checks whether { at the current position starts a string
+// interpolation. Requires the character after { to be an identifier-start
+// character (letter or underscore). This avoids treating regex quantifiers
+// like {2,} as interpolation.
+func (l *Lexer) isInterpStart() bool {
+	// peek() is '{', check the character after it
+	nextIdx := l.current + 1
+	if nextIdx >= len(l.source) {
+		return false
+	}
+	c := l.source[nextIdx]
+	return isAlpha(c)
+}
+
+// scanStringEscape handles a single escape sequence inside a string literal,
+// writing the result into the provided builder.
+func (l *Lexer) scanStringEscape(value *strings.Builder) {
+	l.advance() // consume '\'
+	if l.isAtEnd() {
+		return
+	}
+	escaped := l.advance()
+	switch escaped {
+	case 'n':
+		value.WriteRune('\n')
+	case 't':
+		value.WriteRune('\t')
+	case 'r':
+		value.WriteRune('\r')
+	case '\\':
+		value.WriteRune('\\')
+	case '"':
+		value.WriteRune('"')
+	case '\'':
+		value.WriteRune('\'')
+	case '{':
+		value.WriteRune('\uE000') // PUA sentinel for literal {
+	case '}':
+		value.WriteRune('\uE001') // PUA sentinel for literal }
+	case 's':
+		// Check for \sep (filepath separator)
+		if l.peek() == 'e' && l.peekNext() == 'p' {
+			l.advance()               // consume 'e'
+			l.advance()               // consume 'p'
+			value.WriteRune('\uE002') // PUA sentinel for filepath.Separator
+		} else {
+			value.WriteRune('s')
+		}
+	case 'x':
+		// Hex escape: \xHH
+		if !l.isAtEnd() {
+			h1 := l.advance()
+			if !l.isAtEnd() {
+				h2 := l.advance()
+				hi, ok1 := hexDigit(h1)
+				lo, ok2 := hexDigit(h2)
+				if ok1 && ok2 {
+					value.WriteRune(rune(hi*16 + lo))
+				} else {
+					value.WriteString(`\x`)
+					value.WriteRune(h1)
+					value.WriteRune(h2)
+				}
+			}
+		}
+	default:
+		value.WriteRune(escaped)
+	}
 }
 
 // scanRune scans a single-quoted character/rune literal

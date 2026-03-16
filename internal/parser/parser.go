@@ -281,7 +281,8 @@ func (p *Parser) isIdentifierFollower() bool {
 		lexer.TOKEN_DOT, lexer.TOKEN_LBRACKET,
 		lexer.TOKEN_COMMA, lexer.TOKEN_RPAREN, lexer.TOKEN_RBRACKET, lexer.TOKEN_RBRACE,
 		lexer.TOKEN_PLUS_PLUS, lexer.TOKEN_MINUS_MINUS,
-		lexer.TOKEN_SEMICOLON:
+		lexer.TOKEN_SEMICOLON,
+		lexer.TOKEN_STRING_MID, lexer.TOKEN_STRING_TAIL:
 		return true
 	default:
 		return false

@@ -63,15 +63,33 @@ Comments starting with `# kuki:` are emitted as `TOKEN_DIRECTIVE` instead of `TO
 | `\{`   | `\uE000`    | literal `{` |
 | `\}`   | `\uE001`    | literal `}` |
 
-**Runtime (expression injection):** The escape expands to a Go expression evaluated at runtime. The sentinel passes through `escapeString` unchanged, but `parseStringInterpolation` pre-processes it before the regex runs, replacing it with an interpolation expression (`{expr}`) that gets emitted as a `fmt.Sprintf` arg.
+**Runtime (expression injection):** The escape expands to a Go expression evaluated at runtime. The sentinel is included in literal `TOKEN_STRING_PART`/`TOKEN_STRING_MID`/`TOKEN_STRING_TAIL` lexemes; codegen's `generateStringFromParts` detects `\uE002` and expands it to `string(filepath.Separator)`.
 
 | Escape  | PUA sentinel | Emitted as |
 |---------|-------------|-----------|
 | `\sep`  | `\uE002`    | `string(filepath.Separator)` — auto-imports `path/filepath` |
 
-`\sep` is a multi-character escape: `scanString` checks `l.peek() == 'e' && l.peekNext() == 'p'` before consuming the `ep` suffix.
+`\sep` is a multi-character escape: `scanStringEscape` checks `l.peek() == 'e' && l.peekNext() == 'p'` before consuming the `ep` suffix.
 
 `generateStringLiteral` and `exprHasNonPrintfInterpolation` (in `codegen_walk.go`) both check `strings.ContainsRune(value, '\uE002')` to correctly handle strings that contain `\sep` but no `{expr}` interpolation (i.e., where `StringLiteral.Interpolated` is `false`).
+
+### String interpolation tokenization
+
+For interpolated strings (containing `{expr}`), the lexer emits multiple tokens instead of a single `TOKEN_STRING`:
+
+| Token | Purpose | Example in `"Hello {name}, age {age}!"` |
+|-------|---------|------------------------------------------|
+| `TOKEN_STRING_HEAD` | Leading literal before first `{` | `"Hello "` |
+| `TOKEN_STRING_MID` | Literal between two interpolations | `", age "` |
+| `TOKEN_STRING_TAIL` | Trailing literal after last `}` | `"!"` |
+
+Between HEAD→MID and MID→MID/TAIL, normal expression tokens are emitted. The parser calls `parseExpression()` directly on these tokens — no sub-parser needed.
+
+**Brace depth tracking:** `interpStack []int` on the `Lexer` tracks nesting within each interpolation level. `{` inside an interpolation increments `interpStack[top]`; `}` at depth 0 ends the interpolation and resumes string scanning via `scanStringContinuation()`. This correctly handles nested braces like `{MyStruct{field: 1}}`.
+
+**Interpolation detection:** `isInterpStart()` checks if the character after `{` is alpha or `_`. Non-identifier starts like `{2,}` are treated as literal text, matching the old regex behavior.
+
+Non-interpolated strings still emit a single `TOKEN_STRING`.
 
 ---
 
@@ -391,7 +409,7 @@ Application code never sees this — it just calls functions normally.
 - **Pre-parsed Parts** (`len(lit.Parts) > 0`): calls `generateStringFromParts` — iterates pre-parsed `StringInterpolation` parts, building `fmt.Sprintf` with `%v` placeholders for expression parts and escaped literals. Handles `\uE002` expansion and onerr `{error}` substitution inline.
 - **Fallback regex** (Parts empty, e.g. parse failure): calls `generateStringInterpolation` → `parseStringInterpolation`
 
-**Pre-parsed interpolation (primary path):** The parser populates `StringLiteral.Parts` at parse time via `parseStringParts()`, which splits `{expr}` patterns and parses each expression once using a sub-parser. Semantic analysis and codegen both consume the pre-parsed AST nodes directly, avoiding redundant re-parsing. The old regex-based methods (`parseStringInterpolation`, `transformInterpolatedExpr`, `parseAndGenerateInterpolatedExpr`) remain as fallbacks and for callers that operate on raw strings (e.g., onerr panic messages with substituted `{error}` variables).
+**Pre-parsed interpolation (primary path):** The lexer splits interpolated strings into `TOKEN_STRING_HEAD`, expression tokens, `TOKEN_STRING_MID`/`TOKEN_STRING_TAIL`. The parser's `parseInterpolatedStringLiteral()` calls `parseExpression()` directly on the token stream, building `StringLiteral.Parts` with no sub-parser or regex. Semantic analysis and codegen both consume the pre-parsed AST nodes directly. The old regex-based methods (`parseStringInterpolation`, `transformInterpolatedExpr`, `parseAndGenerateInterpolatedExpr`) remain as fallbacks for callers that operate on raw strings (e.g., onerr panic messages with substituted `{error}` variables).
 
 `parseStringPartsOrInterpolation(lit)` is a shared helper that returns `(format, args)` using Parts when available, falling back to `parseStringInterpolation`. Used by the printf-style method path.
 

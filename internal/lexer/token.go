@@ -14,6 +14,9 @@ const (
 	TOKEN_INTEGER
 	TOKEN_FLOAT
 	TOKEN_STRING
+	TOKEN_STRING_HEAD // Leading literal of an interpolated string (before first {expr})
+	TOKEN_STRING_MID  // Middle literal between two interpolations (between }...{)
+	TOKEN_STRING_TAIL // Trailing literal after last interpolation (after last })
 	TOKEN_TRUE
 	TOKEN_FALSE
 
@@ -136,6 +139,12 @@ func (t TokenType) String() string {
 		return "FLOAT"
 	case TOKEN_STRING:
 		return "STRING"
+	case TOKEN_STRING_HEAD:
+		return "STRING_HEAD"
+	case TOKEN_STRING_MID:
+		return "STRING_MID"
+	case TOKEN_STRING_TAIL:
+		return "STRING_TAIL"
 	case TOKEN_TRUE:
 		return "TRUE"
 	case TOKEN_FALSE:

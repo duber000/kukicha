@@ -193,11 +193,6 @@ func TestStrings(t *testing.T) {
 			expected: "hello",
 		},
 		{
-			name:     "string with interpolation",
-			input:    `"Hello {name}"`,
-			expected: "Hello {name}",
-		},
-		{
 			name:     "string with escape sequences",
 			input:    `"line1\nline2"`,
 			expected: "line1\nline2",
@@ -208,19 +203,9 @@ func TestStrings(t *testing.T) {
 			expected: "hello \uE000world\uE001",
 		},
 		{
-			name:     "escaped braces mixed with interpolation",
-			input:    `"\{key\}: {value}"`,
-			expected: "\uE000key\uE001: {value}",
-		},
-		{
 			name:     "filepath separator escape",
 			input:    `"\sep"`,
 			expected: "\uE002",
-		},
-		{
-			name:     "filepath separator mixed with interpolation",
-			input:    `"{dir}\sep{file}"`,
-			expected: "{dir}\uE002{file}",
 		},
 	}
 
@@ -234,11 +219,148 @@ func TestStrings(t *testing.T) {
 			}
 
 			if len(tokens) < 1 || tokens[0].Type != TOKEN_STRING {
-				t.Fatalf("Expected STRING token")
+				t.Fatalf("Expected STRING token, got %s", tokens[0].Type)
 			}
 
 			if tokens[0].Lexeme != tt.expected {
 				t.Errorf("Expected string %q, got %q", tt.expected, tokens[0].Lexeme)
+			}
+		})
+	}
+}
+
+func TestStringInterpolationTokens(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []TokenType
+		lexemes  []string // expected lexemes for string-part tokens only
+	}{
+		{
+			name:  "simple interpolation",
+			input: `"Hello {name}"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+			lexemes: []string{"Hello ", "", ""},
+		},
+		{
+			name:  "interpolation at start",
+			input: `"{name}!"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+			lexemes: []string{"", "", "!"},
+		},
+		{
+			name:  "two interpolations",
+			input: `"{a} and {b}"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_STRING_MID, TOKEN_IDENTIFIER, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+			lexemes: []string{"", "", " and ", "", ""},
+		},
+		{
+			name:  "pipe in interpolation",
+			input: `"{data |> upper()}"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_PIPE, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+		},
+		{
+			name:  "field access in interpolation",
+			input: `"Hello {u.name}!"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_DOT, TOKEN_IDENTIFIER, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+			lexemes: []string{"Hello ", "", "", "", "!"},
+		},
+		{
+			name:  "escaped braces mixed with interpolation",
+			input: `"\{key\}: {value}"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+			lexemes: []string{"\uE000key\uE001: ", "", ""},
+		},
+		{
+			name:  "filepath separator mixed with interpolation",
+			input: `"{dir}\sep{file}"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_STRING_MID, TOKEN_IDENTIFIER, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+			lexemes: []string{"", "", "\uE002", "", ""},
+		},
+		{
+			name:  "non-alpha after brace is not interpolation",
+			input: `"regex {2,}"`,
+			expected: []TokenType{
+				TOKEN_STRING, TOKEN_EOF,
+			},
+			lexemes: []string{"regex {2,}"},
+		},
+		{
+			name:  "nested braces in interpolation",
+			input: `"val: {m[key]}"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_LBRACKET, TOKEN_IDENTIFIER, TOKEN_RBRACKET, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+			lexemes: []string{"val: ", "", "", "", "", ""},
+		},
+		{
+			name:  "nested curly braces in interpolation",
+			input: `"result: {Foo{x: 1}}"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_LBRACE, TOKEN_IDENTIFIER, TOKEN_COLON, TOKEN_INTEGER, TOKEN_RBRACE, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+			lexemes: []string{"result: ", "", "", "", "", "", "", ""},
+		},
+		{
+			name:  "three interpolations",
+			input: `"{a}/{b}/{c}"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_STRING_MID, TOKEN_IDENTIFIER, TOKEN_STRING_MID, TOKEN_IDENTIFIER, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+			lexemes: []string{"", "", "/", "", "/", "", ""},
+		},
+		{
+			name:  "only interpolation no literal",
+			input: `"{name}"`,
+			expected: []TokenType{
+				TOKEN_STRING_HEAD, TOKEN_IDENTIFIER, TOKEN_STRING_TAIL, TOKEN_EOF,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lexer := NewLexer(tt.input, "test.kuki")
+			tokens, err := lexer.ScanTokens()
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if len(tokens) != len(tt.expected) {
+				types := make([]string, len(tokens))
+				for i, tok := range tokens {
+					types[i] = tok.Type.String()
+				}
+				t.Fatalf("Expected %d tokens, got %d: %v", len(tt.expected), len(tokens), types)
+			}
+
+			for i, expectedType := range tt.expected {
+				if tokens[i].Type != expectedType {
+					t.Errorf("Token %d: expected %s, got %s (lexeme: %q)", i, expectedType, tokens[i].Type, tokens[i].Lexeme)
+				}
+			}
+
+			if tt.lexemes != nil {
+				for i, expectedLexeme := range tt.lexemes {
+					if expectedLexeme != "" && tokens[i].Lexeme != expectedLexeme {
+						t.Errorf("Token %d: expected lexeme %q, got %q", i, expectedLexeme, tokens[i].Lexeme)
+					}
+				}
 			}
 		})
 	}
