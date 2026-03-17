@@ -125,7 +125,7 @@ func (a *Analyzer) collectConstDecl(decl *ast.ConstDecl) {
 		}
 		err := a.symbolTable.Define(&Symbol{
 			Name:    spec.Name.Value,
-			Kind:    SymbolVariable,
+			Kind:    SymbolConst,
 			Type:    &TypeInfo{Kind: TypeKindUnknown},
 			Defined: spec.Name.Pos(),
 		})

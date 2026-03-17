@@ -15,6 +15,7 @@ const (
 	SymbolFunction
 	SymbolType
 	SymbolInterface
+	SymbolConst
 )
 
 func (sk SymbolKind) String() string {
@@ -29,6 +30,8 @@ func (sk SymbolKind) String() string {
 		return "type"
 	case SymbolInterface:
 		return "interface"
+	case SymbolConst:
+		return "constant"
 	default:
 		return "unknown"
 	}

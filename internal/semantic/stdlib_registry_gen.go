@@ -650,6 +650,7 @@ var generatedStdlibRegistry = map[string]goStdlibEntry{
 	"slice.Shift":                     {Count: 3, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "any"}, {Kind: TypeKindList}, {Kind: TypeKindNamed, Name: "error"}}, ParamNames: []string{"items"}},
 	"slice.Unique":                    {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items"}},
 	"sort.By":                         {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items", "less"}},
+	"sort.ByKey":                      {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items", "key"}},
 	"sort.Float64s":                   {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items"}},
 	"sort.Ints":                       {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items"}},
 	"sort.Reverse":                    {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items", "less"}},

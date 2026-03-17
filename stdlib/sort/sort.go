@@ -3,56 +3,67 @@
 package sort
 
 import (
+	"fmt"
 	"slices"
 	"sort"
 )
 
-//line /home/user/kukicha/stdlib/sort/sort.kuki:17
-func Strings(items []string) []string {
-//line /home/user/kukicha/stdlib/sort/sort.kuki:18
-	result := slices.Clone(items)
 //line /home/user/kukicha/stdlib/sort/sort.kuki:19
-	slices.Sort(result)
+func Strings(items []string) []string {
 //line /home/user/kukicha/stdlib/sort/sort.kuki:20
+	result := slices.Clone(items)
+//line /home/user/kukicha/stdlib/sort/sort.kuki:21
+	slices.Sort(result)
+//line /home/user/kukicha/stdlib/sort/sort.kuki:22
 	return result
 }
 
-//line /home/user/kukicha/stdlib/sort/sort.kuki:24
-func Ints(items []int) []int {
-//line /home/user/kukicha/stdlib/sort/sort.kuki:25
-	result := slices.Clone(items)
 //line /home/user/kukicha/stdlib/sort/sort.kuki:26
-	slices.Sort(result)
+func Ints(items []int) []int {
 //line /home/user/kukicha/stdlib/sort/sort.kuki:27
-	return result
-}
-
-//line /home/user/kukicha/stdlib/sort/sort.kuki:31
-func Float64s(items []float64) []float64 {
-//line /home/user/kukicha/stdlib/sort/sort.kuki:32
 	result := slices.Clone(items)
-//line /home/user/kukicha/stdlib/sort/sort.kuki:33
+//line /home/user/kukicha/stdlib/sort/sort.kuki:28
 	slices.Sort(result)
+//line /home/user/kukicha/stdlib/sort/sort.kuki:29
+	return result
+}
+
+//line /home/user/kukicha/stdlib/sort/sort.kuki:33
+func Float64s(items []float64) []float64 {
 //line /home/user/kukicha/stdlib/sort/sort.kuki:34
+	result := slices.Clone(items)
+//line /home/user/kukicha/stdlib/sort/sort.kuki:35
+	slices.Sort(result)
+//line /home/user/kukicha/stdlib/sort/sort.kuki:36
 	return result
 }
 
-//line /home/user/kukicha/stdlib/sort/sort.kuki:40
-func By(items []any, less func(any, any) bool) []any {
-//line /home/user/kukicha/stdlib/sort/sort.kuki:41
-	result := slices.Clone(items)
 //line /home/user/kukicha/stdlib/sort/sort.kuki:42
-	sort.SliceStable(result, func(i int, j int) bool { return less(result[i], result[j]) })
+func By(items []any, less func(any, any) bool) []any {
 //line /home/user/kukicha/stdlib/sort/sort.kuki:43
+	result := slices.Clone(items)
+//line /home/user/kukicha/stdlib/sort/sort.kuki:44
+	sort.SliceStable(result, func(i int, j int) bool { return less(result[i], result[j]) })
+//line /home/user/kukicha/stdlib/sort/sort.kuki:45
 	return result
 }
 
-//line /home/user/kukicha/stdlib/sort/sort.kuki:48
-func Reverse(items []any, less func(any, any) bool) []any {
-//line /home/user/kukicha/stdlib/sort/sort.kuki:49
-	result := slices.Clone(items)
-//line /home/user/kukicha/stdlib/sort/sort.kuki:50
-	sort.SliceStable(result, func(i int, j int) bool { return less(result[j], result[i]) })
 //line /home/user/kukicha/stdlib/sort/sort.kuki:51
+func ByKey[T any, K comparable](items []T, key func(T) K) []T {
+//line /home/user/kukicha/stdlib/sort/sort.kuki:52
+	result := slices.Clone(items)
+//line /home/user/kukicha/stdlib/sort/sort.kuki:53
+	sort.SliceStable(result, func(i int, j int) bool { return fmt.Sprint(key(result[i])) < fmt.Sprint(key(result[j])) })
+//line /home/user/kukicha/stdlib/sort/sort.kuki:54
+	return result
+}
+
+//line /home/user/kukicha/stdlib/sort/sort.kuki:59
+func Reverse(items []any, less func(any, any) bool) []any {
+//line /home/user/kukicha/stdlib/sort/sort.kuki:60
+	result := slices.Clone(items)
+//line /home/user/kukicha/stdlib/sort/sort.kuki:61
+	sort.SliceStable(result, func(i int, j int) bool { return less(result[j], result[i]) })
+//line /home/user/kukicha/stdlib/sort/sort.kuki:62
 	return result
 }

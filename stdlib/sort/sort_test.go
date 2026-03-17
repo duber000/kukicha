@@ -88,23 +88,48 @@ func TestBy(t *testing.T) {
 }
 
 //line /home/user/kukicha/stdlib/sort/sort_test.kuki:66
-type ReverseCase struct {
+type ByKeyCase struct {
 	name string
 }
 
 //line /home/user/kukicha/stdlib/sort/sort_test.kuki:69
-func TestReverse(t *testing.T) {
+func TestByKey(t *testing.T) {
 //line /home/user/kukicha/stdlib/sort/sort_test.kuki:70
-	cases := []ReverseCase{ReverseCase{name: "reverse ints"}}
+	cases := []ByKeyCase{ByKeyCase{name: "sort by string length"}}
 //line /home/user/kukicha/stdlib/sort/sort_test.kuki:73
 	for _, tc := range cases {
 //line /home/user/kukicha/stdlib/sort/sort_test.kuki:74
 		t.Run(tc.name, func(t *testing.T) {
 //line /home/user/kukicha/stdlib/sort/sort_test.kuki:75
-			nums := []int{1, 3, 2}
+			words := []string{"banana", "fig", "apple", "kiwi"}
 //line /home/user/kukicha/stdlib/sort/sort_test.kuki:76
-			sorted := sort.Reverse(nums, func(a any, b any) bool { return (a.(int) < b.(int)) })
+			sorted := sort.ByKey(words, func(w string) int { return len(w) })
 //line /home/user/kukicha/stdlib/sort/sort_test.kuki:77
+			test.AssertEqual(t, sorted[0], "fig")
+//line /home/user/kukicha/stdlib/sort/sort_test.kuki:78
+			test.AssertEqual(t, sorted[1], "kiwi")
+		})
+	}
+}
+
+//line /home/user/kukicha/stdlib/sort/sort_test.kuki:82
+type ReverseCase struct {
+	name string
+}
+
+//line /home/user/kukicha/stdlib/sort/sort_test.kuki:85
+func TestReverse(t *testing.T) {
+//line /home/user/kukicha/stdlib/sort/sort_test.kuki:86
+	cases := []ReverseCase{ReverseCase{name: "reverse ints"}}
+//line /home/user/kukicha/stdlib/sort/sort_test.kuki:89
+	for _, tc := range cases {
+//line /home/user/kukicha/stdlib/sort/sort_test.kuki:90
+		t.Run(tc.name, func(t *testing.T) {
+//line /home/user/kukicha/stdlib/sort/sort_test.kuki:91
+			nums := []int{1, 3, 2}
+//line /home/user/kukicha/stdlib/sort/sort_test.kuki:92
+			sorted := sort.Reverse(nums, func(a any, b any) bool { return (a.(int) < b.(int)) })
+//line /home/user/kukicha/stdlib/sort/sort_test.kuki:93
 			test.AssertEqual(t, int(sorted[0]), 3)
 		})
 	}

@@ -346,6 +346,15 @@ func (a *Analyzer) analyzeVarDeclStmt(stmt *ast.VarDeclStmt) {
 }
 
 func (a *Analyzer) analyzeAssignStmt(stmt *ast.AssignStmt) {
+	// Check for reassignment to constants
+	for _, target := range stmt.Targets {
+		if ident, ok := target.(*ast.Identifier); ok && ident.Value != "_" {
+			if sym := a.symbolTable.Resolve(ident.Value); sym != nil && sym.Kind == SymbolConst {
+				a.error(ident.Pos(), fmt.Sprintf("cannot assign to constant '%s'", ident.Value))
+			}
+		}
+	}
+
 	// Analyze all target and value expressions
 	targetTypes := make([]*TypeInfo, len(stmt.Targets))
 	for i, target := range stmt.Targets {

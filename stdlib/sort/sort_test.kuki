@@ -62,6 +62,22 @@ func TestBy(t reference testing.T)
             test.AssertEqual(t, sorted[0] as string, "fig")
         )
 
+# --- TestByKey ---
+type ByKeyCase
+    name string
+
+func TestByKey(t reference testing.T)
+    cases := list of ByKeyCase{
+        ByKeyCase{name: "sort by string length"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            words := list of string{"banana", "fig", "apple", "kiwi"}
+            sorted := sort.ByKey(words, (w string) => len(w))
+            test.AssertEqual(t, sorted[0], "fig")
+            test.AssertEqual(t, sorted[1], "kiwi")
+        )
+
 # --- TestReverse ---
 type ReverseCase
     name string

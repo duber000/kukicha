@@ -156,6 +156,8 @@ func doList(args cli.Args, initialTag string)
 
         entries = append(entries, RepoEntry{name: repo, current: current, next: next})
 
+    entries = entries |> sort.ByKey((e RepoEntry) => e.name)
+
     if csv
         print("\"repo\",\"current_tag\",\"next_tag\"")
         for entry in entries

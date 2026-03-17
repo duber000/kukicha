@@ -29,8 +29,9 @@ Kukicha accepts English-word aliases for two common keywords:
 |-----------|--------------|-------------|
 | `func`    | `function`   | Beginner-facing code and tutorials |
 | `var`     | `variable`   | Top-level variable declarations in beginner-facing code |
+| `const`   | `constant`   | Beginner-facing const declarations |
 
-Both forms compile identically. Use `func`/`var` in idiomatic/production code, and `function`/`variable` when writing beginner tutorials or agent-generated code aimed at non-programmers.
+All forms compile identically. Use `func`/`var`/`const` in idiomatic/production code, and `function`/`variable`/`constant` when writing beginner tutorials or agent-generated code aimed at non-programmers.
 
 ```kukicha
 # These are identical to the compiler:
@@ -40,10 +41,14 @@ function Add(a int, b int) int
 # Top-level variable (file scope):
 var AppName string = "myapp"
 variable AppName string = "myapp"
+
+# Constants:
+const MaxRetries = 5
+constant MaxRetries = 5
 ```
 
-**For AI agents generating beginner-facing code:** prefer `function` and `variable`.
-**For all other code generation:** use `func` and `var`.
+**For AI agents generating beginner-facing code:** prefer `function`, `variable`, and `constant`.
+**For all other code generation:** use `func`, `var`, and `const`.
 
 ## Generic Type Placeholders (stdlib authoring only)
 

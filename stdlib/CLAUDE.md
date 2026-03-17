@@ -46,7 +46,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/semver` | Semantic versioning (parse, bump, compare) | Parse, Bump, Format, Valid, Compare, Greater, Highest |
 | `stdlib/shell` | Safe command execution | Run, Output, New/Dir/Env/Execute, Which, Getenv |
 | `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Get, Find, FindLast, Unique, Contains, Pop, Shift |
-| `stdlib/sort` | Sorting slices (strings, ints, floats, custom) | Strings, Ints, Float64s, By, Reverse |
+| `stdlib/sort` | Sorting slices (strings, ints, floats, custom) | Strings, Ints, Float64s, By, ByKey, Reverse |
 | `stdlib/string` | String utilities | Split, Join, Trim, Contains, Replace, ToUpper, ToLower |
 | `stdlib/table` | Terminal table rendering (plain, box, markdown) | New, AddRow, Print, PrintWithStyle, ToString, ToStringWithStyle |
 | `stdlib/template` | Text templating (plain + HTML-safe) | Execute, New, HTMLExecute, HTMLRenderSimple |
@@ -359,6 +359,7 @@ import "stdlib/sort"
 sorted := sort.Strings(list of string{"banana", "apple", "cherry"})
 nums := sort.Ints(list of int{3, 1, 4, 1, 5})
 byLen := sort.By(words, (a string, b string) => len(a) < len(b))
+byName := sort.ByKey(repos, (r Repo) => r.Name)
 reversed := sort.Reverse(sorted)
 
 # Terminal tables (plain, box, markdown)

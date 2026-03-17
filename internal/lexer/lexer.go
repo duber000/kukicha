@@ -424,6 +424,7 @@ func (l *Lexer) scanString() {
 // The resulting content is passed through the same TOKEN_STRING / TOKEN_STRING_HEAD
 // path as regular strings, so the rest of the pipeline (parser, codegen) is unchanged.
 func (l *Lexer) scanTripleQuoteString() {
+	startLine := l.line // Save start line for the token position
 	raw := strings.Builder{}
 
 	for !l.isAtEnd() {
@@ -443,11 +444,25 @@ func (l *Lexer) scanTripleQuoteString() {
 		raw.WriteRune(ch)
 	}
 
+	// Save the post-scan line (after closing """) so we can restore it after
+	// the content injection. This ensures tokens following the triple-quote
+	// string get the correct line number.
+	endLine := l.line
+	endColumn := l.column
+
 	content := dedentTripleQuote(raw.String())
+
+	// Set line to start so the emitted string token has the correct position.
+	l.line = startLine
 
 	// Now re-scan content string through the interpolation machinery by
 	// injecting it as if it were scanned from a regular "..." string.
 	l.scanStringFromContent(content)
+
+	// Restore line/column to the position after the closing """ so subsequent
+	// tokens get correct positions.
+	l.line = endLine
+	l.column = endColumn
 }
 
 // dedentTripleQuote strips the first newline (if any), the last newline (if any),
