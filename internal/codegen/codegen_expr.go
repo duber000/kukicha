@@ -31,7 +31,7 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 			if t, ok := g.exprTypes[e]; ok && t.Kind == semantic.TypeKindNil {
 				// In generic stdlib context, use *new(T) or *new(K) for zero value instead of nil
 				// But only if the return type at this position actually uses a placeholder type
-				if (g.isStdlibIter || g.isStdlibSlice()) && g.placeholderMap != nil {
+				if (g.isStdlibIter || g.isStdlibSlice() || g.isStdlibSort()) && g.placeholderMap != nil {
 					// If we're in a return statement and know the return type, check if it's a placeholder
 					if g.currentReturnIndex >= 0 && g.currentReturnIndex < len(g.currentReturnTypes) {
 						retType := g.currentReturnTypes[g.currentReturnIndex]
@@ -41,6 +41,9 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 						if _, hasK := g.placeholderMap["any2"]; hasK && g.typeContainsPlaceholder(retType, "any2") {
 							return "*new(K)"
 						}
+						if _, hasK := g.placeholderMap["ordered"]; hasK && g.typeContainsPlaceholder(retType, "ordered") {
+							return "*new(K)"
+						}
 						// Return type doesn't use a placeholder — fall through to nil
 					} else {
 						// Not in a return statement context — use *new(T) as default
@@ -48,6 +51,9 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 							return "*new(T)"
 						}
 						if _, hasK := g.placeholderMap["any2"]; hasK {
+							return "*new(K)"
+						}
+						if _, hasK := g.placeholderMap["ordered"]; hasK {
 							return "*new(K)"
 						}
 					}
@@ -130,7 +136,7 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 		}
 		// In generic stdlib context, use *new(T) or *new(K) for zero value instead of nil
 		// But only if the return type at this position actually uses a placeholder type
-		if (g.isStdlibIter || g.isStdlibSlice()) && g.placeholderMap != nil {
+		if (g.isStdlibIter || g.isStdlibSlice() || g.isStdlibSort()) && g.placeholderMap != nil {
 			// If we're in a return statement and know the return type, check if it's a placeholder
 			if g.currentReturnIndex >= 0 && g.currentReturnIndex < len(g.currentReturnTypes) {
 				retType := g.currentReturnTypes[g.currentReturnIndex]
@@ -140,6 +146,9 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 				if _, hasK := g.placeholderMap["any2"]; hasK && g.typeContainsPlaceholder(retType, "any2") {
 					return "*new(K)"
 				}
+				if _, hasK := g.placeholderMap["ordered"]; hasK && g.typeContainsPlaceholder(retType, "ordered") {
+					return "*new(K)"
+				}
 				// Return type doesn't use a placeholder — fall through to nil
 			} else {
 				// Not in a return statement context — use *new(T) as default
@@ -147,6 +156,9 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 					return "*new(T)"
 				}
 				if _, hasK := g.placeholderMap["any2"]; hasK {
+					return "*new(K)"
+				}
+				if _, hasK := g.placeholderMap["ordered"]; hasK {
 					return "*new(K)"
 				}
 			}

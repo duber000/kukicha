@@ -7,11 +7,21 @@ petiole datetime
 import "time"
 
 # Named Format Constants
-# These are the Go reference time layouts for common formats
+# Use these instead of remembering Go reference time layouts
 # Go uses the reference time: Mon Jan 2 15:04:05 MST 2006
-
-# Common format names mapped to Go layouts
-# Use with Format(t, "iso8601") instead of remembering "2006-01-02T15:04:05Z07:00"
+const ISO8601 = "iso8601"
+const RFC3339 = "rfc3339"
+const RFC3339Nano = "rfc3339nano"
+const Date = "date"
+const Time = "time"
+const DateTime = "datetime"
+const DateTimeT = "dateTimeT"
+const Kitchen = "kitchen"
+const Stamp = "stamp"
+const RFC822 = "rfc822"
+const RFC1123 = "rfc1123"
+const ANSIC = "ansic"
+const UnixDate = "unixdate"
 
 # Format formats a time using a named format or custom layout
 # Named formats: "iso8601", "rfc3339", "date", "time", "datetime", "unix", "kitchen"

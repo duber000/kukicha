@@ -32,3 +32,38 @@ func TestMapHelpers(t reference testing.T)
         t.Errorf("Contains should return true for existing key")
     if maps.Contains(sample, "missing")
         t.Errorf("Contains should return false for missing key")
+
+# --- TestHas ---
+func TestHas(t reference testing.T)
+    sample := map of any to any{("x" as any): ("1" as any)}
+    if not maps.Has(sample, "x")
+        t.Errorf("Has should return true for existing key")
+    if maps.Has(sample, "missing")
+        t.Errorf("Has should return false for missing key")
+
+# --- TestMerge ---
+func TestMerge(t reference testing.T)
+    base := map of any to any{("a" as any): ("1" as any), ("b" as any): ("2" as any)}
+    overlay := map of any to any{("b" as any): ("99" as any), ("c" as any): ("3" as any)}
+    merged := maps.Merge(base, overlay)
+    if len(merged) != 3
+        t.Fatalf("Expected 3 keys, got {len(merged)}")
+    if not containsValue(list of any{merged["a"]}, "1")
+        t.Errorf("Merge should keep base key 'a'")
+    if not containsValue(list of any{merged["b"]}, "99")
+        t.Errorf("Merge should prefer overlay value for 'b'")
+    if not containsValue(list of any{merged["c"]}, "3")
+        t.Errorf("Merge should include overlay key 'c'")
+
+# --- TestSortedKeys ---
+func TestSortedKeys(t reference testing.T)
+    sample := map of any to any{("c" as any): ("3" as any), ("a" as any): ("1" as any), ("b" as any): ("2" as any)}
+    keys := maps.SortedKeys(sample)
+    if len(keys) != 3
+        t.Fatalf("Expected 3 keys, got {len(keys)}")
+    if keys[0] != "a"
+        t.Errorf("Expected first key 'a', got '{keys[0]}'")
+    if keys[1] != "b"
+        t.Errorf("Expected second key 'b', got '{keys[1]}'")
+    if keys[2] != "c"
+        t.Errorf("Expected third key 'c', got '{keys[2]}'")

@@ -34,6 +34,19 @@ func TestToUpperToLower(t reference testing.T)
             test.AssertEqual(t, string.ToLower(tc.input), tc.want)
         )
 
+# --- TestTitle ---
+func TestTitle(t reference testing.T)
+    titleCases := list of StringCase{
+        StringCase{name: "simple", input: "hello world", want: "Hello World"},
+        StringCase{name: "already titled", input: "Hello World", want: "Hello World"},
+        StringCase{name: "empty", input: "", want: ""},
+        StringCase{name: "single word", input: "hello", want: "Hello"},
+    }
+    for tc in titleCases
+        t.Run(tc.name, (t reference testing.T) =>
+            test.AssertEqual(t, string.Title(tc.input), tc.want)
+        )
+
 # --- TestTrimFunctions ---
 type TrimCase
     name   string

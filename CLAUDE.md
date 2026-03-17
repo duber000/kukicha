@@ -58,6 +58,7 @@ Kukicha uses reserved placeholder names to express generic type parameters in st
 |-------------|---------------|------------|----------|
 | `any` | `T` | `any` (unconstrained) | First type parameter |
 | `any2` | `K` | `comparable` | Second type parameter (e.g., map key) |
+| `ordered` | `K` | `cmp.Ordered` | Second type parameter requiring ordering (e.g., sort key) |
 
 Example: `slice.GroupBy` uses `any` for element type and `any2` for the map key type:
 ```kukicha
@@ -65,6 +66,12 @@ Example: `slice.GroupBy` uses `any` for element type and `any2` for the map key 
 func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of any
 ```
 The compiler generates: `func GroupBy[T any, K comparable](items []T, keyFunc func(T) K) map[K][]T`
+
+Example: `sort.ByKey` uses `any` for element type and `ordered` for the sort key type:
+```kukicha
+func ByKey(items list of any, key func(any) ordered) list of any
+```
+The compiler generates: `func ByKey[T any, K cmp.Ordered](items []T, key func(T) K) []T`
 
 Functions that use `any2` only (no `any`): `Unique`, `Contains`, `IndexOf`. These emit `[K comparable]` as the sole type parameter.
 

@@ -209,8 +209,30 @@ func (g *Generator) scanForAutoImports() {
 			if fn.Body != nil {
 				g.scanBlockForAutoImports(fn.Body)
 			}
+			// Pre-scan for cmp.Ordered constraint: detect "ordered" placeholder
+			// in function signatures so the cmp import is emitted before declarations.
+			if g.isStdlibSort() || g.isStdlibSlice() {
+				if g.funcUsesOrderedPlaceholder(fn) {
+					g.addImport("cmp")
+				}
+			}
 		}
 	}
+}
+
+// funcUsesOrderedPlaceholder checks if a function signature contains the "ordered" placeholder.
+func (g *Generator) funcUsesOrderedPlaceholder(fn *ast.FunctionDecl) bool {
+	for _, param := range fn.Parameters {
+		if g.typeContainsPlaceholder(param.Type, "ordered") {
+			return true
+		}
+	}
+	for _, ret := range fn.Returns {
+		if g.typeContainsPlaceholder(ret, "ordered") {
+			return true
+		}
+	}
+	return false
 }
 
 // scanForFunctionDefaults collects function parameter names and default values

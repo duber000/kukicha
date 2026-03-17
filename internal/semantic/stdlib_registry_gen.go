@@ -482,7 +482,10 @@ var generatedStdlibRegistry = map[string]goStdlibEntry{
 	"llm.TopP":                        {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "Client"}}, ParamNames: []string{"c", "p"}},
 	"llm.User":                        {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "Client"}}, ParamNames: []string{"c", "content"}},
 	"maps.Contains":                   {Count: 1, Types: []goStdlibType{{Kind: TypeKindBool}}, ParamNames: []string{"m", "key"}},
+	"maps.Has":                        {Count: 1, Types: []goStdlibType{{Kind: TypeKindBool}}, ParamNames: []string{"m", "key"}},
 	"maps.Keys":                       {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"m"}},
+	"maps.Merge":                      {Count: 1, Types: []goStdlibType{{Kind: TypeKindMap}}, ParamNames: []string{"base", "overlay"}},
+	"maps.SortedKeys":                 {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"m"}},
 	"maps.Values":                     {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"m"}},
 	"math.Abs":                        {Count: 1, Types: []goStdlibType{{Kind: TypeKindFloat}}, ParamNames: []string{"x"}},
 	"math.Ceil":                       {Count: 1, Types: []goStdlibType{{Kind: TypeKindFloat}}, ParamNames: []string{"x"}},
@@ -648,6 +651,8 @@ var generatedStdlibRegistry = map[string]goStdlibEntry{
 	"slice.Pop":                       {Count: 3, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "any"}, {Kind: TypeKindList}, {Kind: TypeKindNamed, Name: "error"}}, ParamNames: []string{"items"}},
 	"slice.Reverse":                   {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items"}},
 	"slice.Shift":                     {Count: 3, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "any"}, {Kind: TypeKindList}, {Kind: TypeKindNamed, Name: "error"}}, ParamNames: []string{"items"}},
+	"slice.Sort":                      {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items", "less"}},
+	"slice.SortBy":                    {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items", "key"}},
 	"slice.Unique":                    {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items"}},
 	"sort.By":                         {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items", "less"}},
 	"sort.ByKey":                      {Count: 1, Types: []goStdlibType{{Kind: TypeKindList}}, ParamNames: []string{"items", "key"}},
@@ -809,7 +814,12 @@ var generatedSliceGenericClass = map[string]string{
 	"slice.Pop":        "T",
 	"slice.Reverse":    "T",
 	"slice.Shift":      "T",
+	"slice.Sort":       "T",
+	"slice.SortBy":     "TO",
 	"slice.Unique":     "K",
+	"sort.By":          "T",
+	"sort.ByKey":       "TO",
+	"sort.Reverse":     "T",
 }
 
 // generatedStdlibInterfaces lists qualified Kukicha stdlib type names that are interfaces.

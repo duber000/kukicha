@@ -132,6 +132,16 @@ func (g *Generator) isStdlibSlice() bool {
 	return strings.Contains(g.sourceFile, "stdlib/slice/") || strings.Contains(g.sourceFile, "stdlib\\slice\\")
 }
 
+// isStdlibSort checks if we're generating code in stdlib/sort.
+func (g *Generator) isStdlibSort() bool {
+	return strings.Contains(g.sourceFile, "stdlib/sort/") || strings.Contains(g.sourceFile, "stdlib\\sort\\")
+}
+
+// isStdlibMaps checks if we're generating code in stdlib/maps.
+func (g *Generator) isStdlibMaps() bool {
+	return strings.Contains(g.sourceFile, "stdlib/maps/") || strings.Contains(g.sourceFile, "stdlib\\maps\\")
+}
+
 // isStdlibFetch checks if we're generating code in stdlib/fetch.
 func (g *Generator) isStdlibFetch() bool {
 	return strings.Contains(g.sourceFile, "stdlib/fetch/") || strings.Contains(g.sourceFile, "stdlib\\fetch\\")
@@ -150,6 +160,24 @@ func (g *Generator) isStdlibJSON() bool {
 //   - "TK" → [T any, K comparable]
 func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
 	class := semantic.GetSliceGenericClass("slice." + decl.Name.Value)
+	return g.typeParamsFromClass(class)
+}
+
+// inferSortTypeParameters infers type parameters for stdlib/sort functions.
+func (g *Generator) inferSortTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
+	class := semantic.GetSliceGenericClass("sort." + decl.Name.Value)
+	return g.typeParamsFromClass(class)
+}
+
+// inferMapsTypeParameters infers type parameters for stdlib/maps functions.
+func (g *Generator) inferMapsTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
+	class := semantic.GetSliceGenericClass("maps." + decl.Name.Value)
+	return g.typeParamsFromClass(class)
+}
+
+// typeParamsFromClass converts a generic class string ("T", "K", "TK", "O", "TO")
+// into TypeParameter slices.
+func (g *Generator) typeParamsFromClass(class string) []*TypeParameter {
 	if class == "" {
 		return nil
 	}
@@ -168,6 +196,13 @@ func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypePara
 			Name:        "K",
 			Placeholder: "any2",
 			Constraint:  "comparable",
+		})
+	}
+	if strings.Contains(class, "O") {
+		typeParams = append(typeParams, &TypeParameter{
+			Name:        "K",
+			Placeholder: "ordered",
+			Constraint:  "cmp.Ordered",
 		})
 	}
 

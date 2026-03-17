@@ -160,16 +160,21 @@ func scanRegistry(paths []string) (scanResult, []error) {
 				}
 			}
 
-			// Detect generic placeholder usage for slice package functions.
+			// Detect generic placeholder usage for stdlib functions.
 			// This drives codegen's type parameter inference so new functions
 			// don't need to be manually added to hardcoded allowlists.
-			if pkgName == "slice" {
+			if pkgName == "slice" || pkgName == "sort" {
 				usesAny := signatureContainsPlaceholder(fd, "any")
 				usesAny2 := signatureContainsPlaceholder(fd, "any2")
-				if usesAny && usesAny2 {
+				usesOrdered := signatureContainsPlaceholder(fd, "ordered")
+				if usesAny && usesOrdered {
+					result.genericClass[key] = "TO"
+				} else if usesAny && usesAny2 {
 					result.genericClass[key] = "TK"
 				} else if usesAny2 {
 					result.genericClass[key] = "K"
+				} else if usesOrdered {
+					result.genericClass[key] = "O"
 				} else if usesAny {
 					result.genericClass[key] = "T"
 				}

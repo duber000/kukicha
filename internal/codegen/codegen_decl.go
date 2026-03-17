@@ -151,6 +151,12 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 		for _, tp := range typeParams {
 			g.placeholderMap[tp.Placeholder] = tp.Name
 		}
+	} else if g.isStdlibSort() {
+		// Generate type parameters from function signature for sort
+		typeParams = g.inferSortTypeParameters(decl)
+		for _, tp := range typeParams {
+			g.placeholderMap[tp.Placeholder] = tp.Name
+		}
 	} else if g.isStdlibFetch() {
 		// Generate type parameters for selected fetch helpers (e.g., Json)
 		typeParams = g.inferFetchTypeParameters(decl)

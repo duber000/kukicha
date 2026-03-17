@@ -13,6 +13,45 @@ import "stdlib/cast"
 import "html"
 import "net/url"
 
+# HTTP Status Codes
+const StatusOK = 200
+const StatusCreated = 201
+const StatusAccepted = 202
+const StatusNoContent = 204
+const StatusMovedPermanently = 301
+const StatusFound = 302
+const StatusNotModified = 304
+const StatusBadRequest = 400
+const StatusUnauthorized = 401
+const StatusForbidden = 403
+const StatusNotFound = 404
+const StatusMethodNotAllowed = 405
+const StatusConflict = 409
+const StatusGone = 410
+const StatusUnprocessableEntity = 422
+const StatusTooManyRequests = 429
+const StatusInternalServerError = 500
+const StatusBadGateway = 502
+const StatusServiceUnavailable = 503
+const StatusGatewayTimeout = 504
+
+# Common HTTP Header Names
+const HeaderContentType = "Content-Type"
+const HeaderAuthorization = "Authorization"
+const HeaderAccept = "Accept"
+const HeaderCacheControl = "Cache-Control"
+const HeaderContentLength = "Content-Length"
+const HeaderUserAgent = "User-Agent"
+const HeaderXRequestID = "X-Request-Id"
+const HeaderXForwardedFor = "X-Forwarded-For"
+
+# Common Content-Type Values
+const ContentJSON = "application/json"
+const ContentHTML = "text/html; charset=utf-8"
+const ContentText = "text/plain; charset=utf-8"
+const ContentForm = "application/x-www-form-urlencoded"
+const ContentMultipart = "multipart/form-data"
+
 # WithCSRF wraps a handler with Cross-Origin protection
 # Uses Fetch metadata headers (modern browsers)
 # Example: http.WithCSRF(myHandler)

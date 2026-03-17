@@ -10,7 +10,6 @@
 
 petiole sort
 
-import "fmt"
 import "slices"
 import "sort"
 
@@ -44,13 +43,13 @@ func By(items list of any, less func(any, any) bool) list of any
     sort.SliceStable(result, (i int, j int) => less(result[i], result[j]))
     return result
 
-# ByKey returns a sorted copy of items ordered by an extracted comparable key.
+# ByKey returns a sorted copy of items ordered by an extracted ordered key.
 # Pipe-friendly alternative to By when sorting by a single field.
 # Uses a stable sort (preserves order of equal elements).
 # Example: sort.ByKey(repos, (r Repo) => r.Name)
-func ByKey(items list of any, key func(any) any2) list of any
+func ByKey(items list of any, key func(any) ordered) list of any
     result := slices.Clone(items)
-    sort.SliceStable(result, (i int, j int) => fmt.Sprint(key(result[i])) < fmt.Sprint(key(result[j])))
+    sort.SliceStable(result, (i int, j int) => key(result[i]) < key(result[j]))
     return result
 
 # Reverse returns a copy of items sorted in descending order using less(a, b).

@@ -3,6 +3,9 @@
 
 petiole maps
 
+import "fmt"
+import "sort"
+
 # Keys returns a list of all keys in the map
 # The order of keys is random
 func Keys(m map of any to any) list of any
@@ -23,3 +26,29 @@ func Values(m map of any to any) list of any
 func Contains(m map of any to any, key any) bool
     _, ok := m[key]
     return ok
+
+# Has checks if a key exists in the map (alias for Contains)
+func Has(m map of any to any, key any) bool
+    _, ok := m[key]
+    return ok
+
+# Merge combines two maps into a new map
+# If both maps have the same key, the value from the second map wins
+func Merge(base map of any to any, overlay map of any to any) map of any to any
+    result := make(map of any to any, len(base) + len(overlay))
+    for k, v in base
+        result[k] = v
+    for k, v in overlay
+        result[k] = v
+    return result
+
+# SortedKeys returns all keys of a map in sorted (ascending) order
+# Keys are converted to strings via fmt.Sprint for sorting
+# Useful for deterministic iteration over maps
+# Example: keys := maps.SortedKeys(config)
+func SortedKeys(m map of any to any) list of string
+    keys := make(list of string, 0, len(m))
+    for k, _ in m
+        keys = append(keys, fmt.Sprint(k))
+    sort.Strings(keys)
+    return keys

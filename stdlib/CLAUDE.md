@@ -18,13 +18,13 @@ Import with: `import "stdlib/slice"`
 | `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
 | `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, PullAuth, LoginFromConfig, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
 | `stdlib/ctx` | Context timeout/cancellation helpers | Background, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err |
-| `stdlib/datetime` | Named formats, duration helpers | Format, Seconds, Minutes, Hours |
+| `stdlib/datetime` | Named formats, duration helpers, format constants | Format, Seconds, Minutes, Hours; Constants: ISO8601, RFC3339, Date, Time, DateTime |
 | `stdlib/encoding` | Base64 and hex encoding/decoding | Base64Encode, Base64Decode, Base64URLEncode, HexEncode, HexDecode |
 | `stdlib/env` | Typed env vars with onerr | Get, GetInt, GetBool, GetFloat, GetOr, Set |
 | `stdlib/errors` | Error wrapping and inspection | Wrap, Opaque, Is, Unwrap, New, Join, NewPublic, Public |
 | `stdlib/fetch` | HTTP client (Builder, Auth, Sessions, Safe URL helpers, Retry) | Get, SafeGet, Post, Json, Decode, URLTemplate, URLWithQuery, PathEscape, QueryEscape, New/Header/Timeout/Retry/MaxBodySize/Do, BearerAuth, BasicAuth, FormData, NewSession |
 | `stdlib/files` | File I/O operations | Read, Write, Append, Exists, Copy, Move, Delete, Watch |
-| `stdlib/http` | HTTP response/request helpers + security | JSON, JSONError, JSONNotFound, ReadJSON, ReadJSONLimit, SafeURL, HTML, SafeHTML, Redirect, SafeRedirect, SetSecureHeaders, SecureHeaders |
+| `stdlib/http` | HTTP response/request helpers + security | JSON, JSONError, JSONNotFound, ReadJSON, ReadJSONLimit, SafeURL, HTML, SafeHTML, Redirect, SafeRedirect, SetSecureHeaders, SecureHeaders; Constants: StatusOK/NotFound/etc, HeaderContentType, ContentJSON |
 | `stdlib/infer` | ONNX Runtime inference (CPU; Phase 1) | Init, InitWithPath, Cleanup, IsAvailable, Version, New/Threads/InterOpThreads/OptLevel/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
 | `stdlib/input` | User input utilities | ReadLine, Prompt, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration (Go 1.23 iter.Seq) | Values, Filter, Map, FlatMap, Take, Skip, Enumerate, Chunk, Zip, Reduce, Collect, Any, All, Find |
@@ -32,7 +32,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/kube` | Kubernetes client via client-go | Connect, New/Kubeconfig/Context/InCluster/Retry/Open, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs |
 | `stdlib/llm` | Large language model client (Chat Completions, OpenResponses, Anthropic; Retry) | Ask/Send/Complete, RAsk/RSend/Respond, MAsk/MSend/AnthropicComplete, Retry/RRetry/MRetry |
 | `stdlib/math` | Mathematical operations | Abs, Round, Floor, Ceil, Min, Max, Pow, Sqrt, Log, Log2, Log10, Pi, E, Clamp |
-| `stdlib/maps` | Map utilities | Keys, Values, Has, Merge |
+| `stdlib/maps` | Map utilities | Keys, Values, Has, Merge, SortedKeys |
 | `stdlib/mcp` | Model Context Protocol support | NewServer, Tool, Resource, Prompt |
 | `stdlib/must` | Panic-on-error startup helpers | Env, EnvInt, EnvIntOr, Do, OkMsg |
 | `stdlib/net` | IP address and CIDR utilities | ParseIP, ParseCIDR, Contains, SplitHostPort, LookupHost, IsLoopback, IsPrivate |
@@ -45,7 +45,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/sandbox` | os.Root filesystem sandboxing | New, Read, Write, List, Exists, Delete |
 | `stdlib/semver` | Semantic versioning (parse, bump, compare) | Parse, Bump, Format, Valid, Compare, Greater, Highest |
 | `stdlib/shell` | Safe command execution | Run, Output, New/Dir/Env/Execute, Which, Getenv |
-| `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Get, Find, FindLast, Unique, Contains, Pop, Shift |
+| `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Sort, SortBy, Get, Find, FindLast, Unique, Contains, Pop, Shift |
 | `stdlib/sort` | Sorting slices (strings, ints, floats, custom) | Strings, Ints, Float64s, By, ByKey, Reverse |
 | `stdlib/string` | String utilities | Split, Join, Trim, Contains, Replace, ToUpper, ToLower |
 | `stdlib/table` | Terminal table rendering (plain, box, markdown) | New, AddRow, Print, PrintWithStyle, ToString, ToStringWithStyle |
@@ -169,7 +169,9 @@ httphelper.JSONNotFound(w, "User not found")
 
 # Time formatting
 import "stdlib/datetime"
-datetime.Format(t, "iso8601")  # Not "2006-01-02T15:04:05Z07:00"!
+datetime.Format(t, datetime.ISO8601)   # Use named constants instead of raw strings
+datetime.Format(t, datetime.Date)      # "2006-01-02"
+datetime.Format(t, "iso8601")          # String names still work
 timeout := datetime.Seconds(30)
 
 # PostgreSQL
@@ -361,6 +363,15 @@ nums := sort.Ints(list of int{3, 1, 4, 1, 5})
 byLen := sort.By(words, (a string, b string) => len(a) < len(b))
 byName := sort.ByKey(repos, (r Repo) => r.Name)
 reversed := sort.Reverse(sorted)
+
+# Convenience sort via slice package (pipe-friendly)
+import "stdlib/slice"
+sorted := repos |> slice.Sort((a Repo, b Repo) => a.Stars < b.Stars)
+sorted := repos |> slice.SortBy((r Repo) => r.Name)
+
+# Deterministic map key iteration
+import "stdlib/maps"
+keys := maps.SortedKeys(config)    # sorted string keys for deterministic output
 
 # Terminal tables (plain, box, markdown)
 import "stdlib/table"

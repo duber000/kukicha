@@ -12,6 +12,7 @@ petiole semver
 import "stdlib/cast"
 import "stdlib/string"
 import "stdlib/slice"
+import "stdlib/sort"
 import "fmt"
 
 # Version represents a parsed semver tag
@@ -101,10 +102,11 @@ func Highest(tags list of string) (string, error)
     if slice.IsEmpty(valid)
         return "", error "no valid semver tags found"
 
-    best := Parse(valid[0]) onerr return "", error "{error}"
-    for i from 1 to len(valid)
-        v := Parse(valid[i]) onerr continue
-        if Greater(v, best)
-            best = v
+    parsed := make(list of Version, 0, len(valid))
+    for tag in valid
+        v := Parse(tag) onerr continue
+        parsed = append(parsed, v)
 
+    sorted := parsed |> sort.By((a Version, b Version) => Compare(a, b) < 0)
+    best := sorted[len(sorted) - 1]
     return Format(best), empty

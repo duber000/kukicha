@@ -2,6 +2,8 @@
 
 petiole string
 
+import "golang.org/x/text/cases"
+import "golang.org/x/text/language"
 import "strings"
 
 # Case Conversion Functions
@@ -15,8 +17,9 @@ func ToLower(s string) string
     return strings.ToLower(s)
 
 # Title converts the string to title case (first letter of each word capitalized)
+# Uses golang.org/x/text/cases for Go 1.18+ compatibility (strings.Title is deprecated)
 func Title(s string) string
-    return strings.Title(s)
+    return cases.Title(language.Und).String(s)
 
 # Trimming Functions
 
