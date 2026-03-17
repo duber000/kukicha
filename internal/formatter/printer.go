@@ -68,7 +68,23 @@ func (p *Printer) printDeclaration(decl ast.Declaration) {
 		p.printInterfaceDecl(d)
 	case *ast.FunctionDecl:
 		p.printFunctionDecl(d)
+	case *ast.ConstDecl:
+		p.printConstDecl(d)
 	}
+}
+
+func (p *Printer) printConstDecl(decl *ast.ConstDecl) {
+	if len(decl.Specs) == 1 {
+		spec := decl.Specs[0]
+		p.writeLine(fmt.Sprintf("const %s = %s", spec.Name.Value, p.exprToString(spec.Value)))
+		return
+	}
+	p.writeLine("const")
+	p.indentLevel++
+	for _, spec := range decl.Specs {
+		p.writeLine(fmt.Sprintf("%s = %s", spec.Name.Value, p.exprToString(spec.Value)))
+	}
+	p.indentLevel--
 }
 
 func (p *Printer) printTypeDecl(decl *ast.TypeDecl) {

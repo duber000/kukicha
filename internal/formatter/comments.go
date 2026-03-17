@@ -110,6 +110,10 @@ func collectDeclLines(decl ast.Declaration, lines map[int]bool) {
 		for _, method := range d.Methods {
 			lines[method.Name.Token.Line] = true
 		}
+	case *ast.ConstDecl:
+		for _, spec := range d.Specs {
+			lines[spec.Name.Token.Line] = true
+		}
 	}
 }
 

@@ -111,6 +111,26 @@ func (a *Analyzer) collectDeclarations() {
 			a.collectInterfaceDecl(d)
 		case *ast.FunctionDecl:
 			a.collectFunctionDecl(d)
+		case *ast.ConstDecl:
+			a.collectConstDecl(d)
+		}
+	}
+}
+
+func (a *Analyzer) collectConstDecl(decl *ast.ConstDecl) {
+	for _, spec := range decl.Specs {
+		if !isValidIdentifier(spec.Name.Value) {
+			a.error(spec.Name.Pos(), fmt.Sprintf("invalid const name '%s'", spec.Name.Value))
+			continue
+		}
+		err := a.symbolTable.Define(&Symbol{
+			Name:    spec.Name.Value,
+			Kind:    SymbolVariable,
+			Type:    &TypeInfo{Kind: TypeKindUnknown},
+			Defined: spec.Name.Pos(),
+		})
+		if err != nil {
+			a.error(spec.Name.Pos(), err.Error())
 		}
 	}
 }
@@ -278,7 +298,15 @@ func (a *Analyzer) analyzeDeclarations() {
 			a.analyzeFunctionDecl(d)
 		case *ast.VarDeclStmt:
 			a.analyzeGlobalVarDecl(d)
+		case *ast.ConstDecl:
+			a.analyzeConstDecl(d)
 		}
+	}
+}
+
+func (a *Analyzer) analyzeConstDecl(decl *ast.ConstDecl) {
+	for _, spec := range decl.Specs {
+		a.analyzeExpression(spec.Value)
 	}
 }
 

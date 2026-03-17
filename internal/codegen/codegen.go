@@ -214,6 +214,8 @@ func (g *Generator) generateDeclaration(decl ast.Declaration) {
 		g.generateFunctionDecl(d)
 	case *ast.VarDeclStmt:
 		g.generateGlobalVarDecl(d)
+	case *ast.ConstDecl:
+		g.generateConstDecl(d)
 	}
 }
 

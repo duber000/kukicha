@@ -1,0 +1,76 @@
+# Tests for Kukicha Standard Library - Table Package
+
+petiole table_test
+
+import "stdlib/table"
+import "stdlib/test"
+import "stdlib/string"
+import "testing"
+
+# --- TestNew ---
+type NewCase
+    name    string
+    headers list of string
+
+func TestNew(t reference testing.T)
+    cases := list of NewCase{
+        NewCase{name: "two headers", headers: list of string{"Name", "Age"}},
+        NewCase{name: "empty headers", headers: list of string{}},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            tbl := table.New(tc.headers)
+            test.AssertEqual(t, len(tbl.headers), len(tc.headers))
+            test.AssertEqual(t, len(tbl.rows), 0)
+        )
+
+# --- TestAddRow ---
+type AddRowCase
+    name string
+
+func TestAddRow(t reference testing.T)
+    cases := list of AddRowCase{
+        AddRowCase{name: "add one row"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            tbl := table.New(list of string{"Name", "Age"})
+            tbl = tbl |> table.AddRow(list of string{"Alice", "30"})
+            test.AssertEqual(t, len(tbl.rows), 1)
+            test.AssertEqual(t, tbl.rows[0][0], "Alice")
+            test.AssertEqual(t, tbl.rows[0][1], "30")
+        )
+
+# --- TestToString ---
+type ToStringCase
+    name string
+
+func TestToString(t reference testing.T)
+    cases := list of ToStringCase{
+        ToStringCase{name: "plain output"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            tbl := table.New(list of string{"Name", "Stars"})
+            tbl = tbl |> table.AddRow(list of string{"go", "115000"})
+            s := table.ToString(tbl)
+            test.AssertTrue(t, string.Contains(s, "Name"))
+            test.AssertTrue(t, string.Contains(s, "go"))
+        )
+
+# --- TestMarkdown ---
+type MarkdownCase
+    name string
+
+func TestMarkdown(t reference testing.T)
+    cases := list of MarkdownCase{
+        MarkdownCase{name: "markdown style"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            tbl := table.New(list of string{"A", "B"})
+            tbl = tbl |> table.AddRow(list of string{"1", "2"})
+            s := table.ToStringWithStyle(tbl, "markdown")
+            test.AssertTrue(t, string.Contains(s, "|"))
+            test.AssertTrue(t, string.Contains(s, "---"))
+        )

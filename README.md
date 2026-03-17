@@ -202,16 +202,18 @@ Every Kukicha concept maps 1:1 to Go and Python — see the [Quick Reference](do
 
 ## Standard Library
 
-35+ packages, pipe-friendly, error-handled with `onerr`.
+38+ packages, pipe-friendly, error-handled with `onerr`.
 
 | Category | Packages |
 |---------|---------|
 | **Data** | `fetch`, `files`, `json`, `parse`, `encoding`, `cast` |
-| **Logic** | `slice`, `maps`, `string`, `math`, `iterator` (lazy iter.Seq pipelines), `random` |
+| **Logic** | `slice`, `maps`, `string`, `math`, `sort`, `iterator` (lazy iter.Seq pipelines), `random` |
+| **Security** | `crypto` (SHA-256, HMAC, secure random) |
 | **Infrastructure** | `pg`, `kube`, `container`, `shell`, `net` |
 | **AI & Agents** | `llm`, `mcp`, `a2a` |
 | **Web** | `http`, `fetch`, `validate`, `netguard`, `sandbox`, `template` |
 | **Config & Ops** | `env`, `must`, `cli`, `semver`, `obs`, `retry`, `ctx`, `datetime`, `concurrent` |
+| **Output** | `table` (terminal tables: plain, box, markdown) |
 | **Errors & Testing** | `errors`, `test`, `input` |
 
 See the full [Stdlib Reference](stdlib/AGENTS.md).

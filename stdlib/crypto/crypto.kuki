@@ -1,0 +1,70 @@
+# Kukicha Standard Library - Crypto
+# Hashing, HMAC, and secure random generation.
+# All functions use Go standard library only (no external dependencies).
+#
+# Examples:
+#   hash := crypto.SHA256("hello world")         # hex-encoded SHA-256
+#   token := crypto.RandomToken(32) onerr panic "{error}"
+#   mac := crypto.HMAC("secret", "message")
+
+petiole crypto
+
+import "crypto/sha256"
+import "crypto/hmac"
+import "crypto/rand"
+import "encoding/hex"
+import "fmt"
+
+# SHA256 returns the hex-encoded SHA-256 hash of the input string.
+# Example: crypto.SHA256("hello") = "2cf24dba5fb0..."
+func SHA256(data string) string
+    h := sha256.New()
+    h.Write(data as list of byte)
+    return hex.EncodeToString(h.Sum(empty))
+
+# SHA256Bytes returns the raw SHA-256 hash of a byte slice.
+# Use SHA256 for string input and hex output; this is for binary pipelines.
+func SHA256Bytes(data list of byte) list of byte
+    h := sha256.New()
+    h.Write(data)
+    return h.Sum(empty)
+
+# HMAC returns the hex-encoded HMAC-SHA256 of data using key.
+# Used for API request signing and message authentication.
+# Example: crypto.HMAC("secret-key", "message-body")
+func HMAC(key string, data string) string
+    mac := hmac.New(sha256.New, key as list of byte)
+    mac.Write(data as list of byte)
+    return hex.EncodeToString(mac.Sum(empty))
+
+# HMACBytes returns the raw HMAC-SHA256 bytes.
+# Use HMAC for hex output; this is for binary pipelines.
+func HMACBytes(key list of byte, data list of byte) list of byte
+    mac := hmac.New(sha256.New, key)
+    mac.Write(data)
+    return mac.Sum(empty)
+
+# RandomToken returns a crypto-random hex-encoded token of the given byte length.
+# The resulting string is 2*length hex characters.
+# Example: token := crypto.RandomToken(32) onerr panic "{error}"  # 64-char hex string
+func RandomToken(length int) (string, error)
+    b := make(list of byte, length)
+    _, error := rand.Read(b)
+    if error != empty
+        return "", fmt.Errorf("crypto.RandomToken: %w", error)
+    return hex.EncodeToString(b), empty
+
+# RandomBytes returns n crypto-random bytes.
+# Example: bytes := crypto.RandomBytes(16) onerr panic "{error}"
+func RandomBytes(n int) (list of byte, error)
+    b := make(list of byte, n)
+    _, error := rand.Read(b)
+    if error != empty
+        return empty, fmt.Errorf("crypto.RandomBytes: %w", error)
+    return b, empty
+
+# Equal compares two byte slices in constant time to prevent timing attacks.
+# Use this when comparing HMAC or hash values.
+# Example: crypto.Equal(expected, actual)
+func Equal(a list of byte, b list of byte) bool
+    return hmac.Equal(a, b)

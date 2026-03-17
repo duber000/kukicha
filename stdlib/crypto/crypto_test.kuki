@@ -1,0 +1,87 @@
+# Tests for Kukicha Standard Library - Crypto Package
+
+petiole crypto_test
+
+import "stdlib/crypto"
+import "stdlib/test"
+import "testing"
+
+# --- TestSHA256 ---
+type SHA256Case
+    name  string
+    input string
+    want  string
+
+func TestSHA256(t reference testing.T)
+    cases := list of SHA256Case{
+        SHA256Case{
+            name:  "empty string",
+            input: "",
+            want:  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        },
+        SHA256Case{
+            name:  "hello",
+            input: "hello",
+            want:  "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := crypto.SHA256(tc.input)
+            test.AssertEqual(t, got, tc.want)
+        )
+
+# --- TestHMAC ---
+type HMACCase
+    name string
+
+func TestHMAC(t reference testing.T)
+    cases := list of HMACCase{
+        HMACCase{name: "basic hmac"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            mac1 := crypto.HMAC("key", "message")
+            mac2 := crypto.HMAC("key", "message")
+            test.AssertEqual(t, mac1, mac2)
+            test.AssertEqual(t, len(mac1), 64)
+
+            mac3 := crypto.HMAC("other-key", "message")
+            test.AssertTrue(t, mac1 != mac3)
+        )
+
+# --- TestRandomToken ---
+type RandomTokenCase
+    name   string
+    length int
+
+func TestRandomToken(t reference testing.T)
+    cases := list of RandomTokenCase{
+        RandomTokenCase{name: "16 bytes",  length: 16},
+        RandomTokenCase{name: "32 bytes",  length: 32},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            token, err := crypto.RandomToken(tc.length)
+            test.AssertNoError(t, err)
+            test.AssertNoError(t, err)
+            test.AssertEqual(t, len(token), tc.length * 2)
+        )
+
+# --- TestEqual ---
+type EqualCase
+    name  string
+    a     string
+    b     string
+    equal bool
+
+func TestEqual(t reference testing.T)
+    cases := list of EqualCase{
+        EqualCase{name: "same",      a: "hello", b: "hello", equal: true},
+        EqualCase{name: "different", a: "hello", b: "world",  equal: false},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := crypto.Equal(tc.a as list of byte, tc.b as list of byte)
+            test.AssertEqual(t, got, tc.equal)
+        )

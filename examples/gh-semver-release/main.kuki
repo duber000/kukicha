@@ -15,7 +15,17 @@ import "stdlib/input"
 import "stdlib/semver"
 import "stdlib/shell"
 import "stdlib/slice"
+import "stdlib/sort"
 import "stdlib/string"
+import "stdlib/table"
+
+# ── Constants ──────────────────────────────────────────────────
+
+const
+    DefaultBump      = "patch"
+    DefaultInitialTag = "v0.0.1"
+    InitialTagEnv    = "INITIAL_TAG"
+    GenerateNotesEnv = "GENERATE_NOTES"
 
 # ── Types ──────────────────────────────────────────────────────
 
@@ -75,9 +85,40 @@ func currentUser() (string, error)
 func listReposWhereICommitted(org string) (list of string, error)
     me := currentUser() onerr return list of string{}, error "failed to get current user: {error}"
 
-    query := "query($login: String!, $endCursor: String) { user(login: $login) { repositoriesContributedTo( contributionTypes: [COMMIT] includeUserRepositories: true first: 100 after: $endCursor ) { nodes { nameWithOwner viewerPermission isArchived isDisabled } pageInfo { hasNextPage endCursor } } } }"
+    query := """
+        query($login: String!, $endCursor: String) {
+            user(login: $login) {
+                repositoriesContributedTo(
+                    contributionTypes: [COMMIT]
+                    includeUserRepositories: true
+                    first: 100
+                    after: $endCursor
+                ) {
+                    nodes {
+                        nameWithOwner
+                        viewerPermission
+                        isArchived
+                        isDisabled
+                    }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }
+        }
+        """
 
-    jqFilter := ".data.user.repositoriesContributedTo.nodes[] | select(.isArchived == false and .isDisabled == false) | select(.viewerPermission == \"ADMIN\" or .viewerPermission == \"MAINTAIN\" or .viewerPermission == \"WRITE\") | .nameWithOwner"
+    jqFilter := """
+        .data.user.repositoriesContributedTo.nodes[]
+        | select(.isArchived == false and .isDisabled == false)
+        | select(
+            .viewerPermission == "ADMIN" or
+            .viewerPermission == "MAINTAIN" or
+            .viewerPermission == "WRITE"
+          )
+        | .nameWithOwner
+        """
 
     raw := shell.Output("gh", "api", "graphql", "--paginate", "-f", "login={me}", "-f", "query={query}", "--jq", jqFilter) onerr return list of string{}, error "failed to list repos: {error}"
 
@@ -85,6 +126,7 @@ func listReposWhereICommitted(org string) (list of string, error)
         |> string.Lines()
         |> slice.Filter((r string) => not string.IsBlank(r))
         |> slice.Unique()
+        |> sort.Strings()
 
     if org != ""
         repos = repos |> slice.Filter((r string) => r |> string.HasPrefix("{org}/"))
@@ -101,12 +143,8 @@ func doList(args cli.Args, initialTag string)
     repos := listReposWhereICommitted(org) onerr
         fatal("Error: {error}")
 
-    # Header
-    if csv
-        print("\"repo\",\"current_tag\",\"next_tag\"")
-    else
-        print("repo\tcurrent_tag\tnext_tag")
-
+    # Collect entries
+    entries := list of RepoEntry{}
     for repo in repos
         current := highestSemverTag(repo) onerr
             warn("{error}")
@@ -116,14 +154,23 @@ func doList(args cli.Args, initialTag string)
             warn("{error}")
             continue
 
-        display := current
-        if display == ""
-            display = "<none>"
+        entries = append(entries, RepoEntry{name: repo, current: current, next: next})
 
-        if csv
-            print("\"{repo}\",\"{display}\",\"{next}\"")
-        else
-            print("{repo}\t{display}\t{next}")
+    if csv
+        print("\"repo\",\"current_tag\",\"next_tag\"")
+        for entry in entries
+            display := entry.current
+            if display == ""
+                display = "<none>"
+            print("\"{entry.name}\",\"{display}\",\"{entry.next}\"")
+    else
+        t := table.New(list of string{"repo", "current_tag", "next_tag"})
+        for entry in entries
+            display := entry.current
+            if display == ""
+                display = "<none>"
+            t = t |> table.AddRow(list of string{entry.name, display, entry.next})
+        t |> table.Print()
 
 func doRelease(args cli.Args, initialTag string)
     org := cli.GetString(args, "org")
@@ -131,7 +178,7 @@ func doRelease(args cli.Args, initialTag string)
     repo := cli.GetString(args, "repo")
     dryRun := cli.GetBool(args, "dry-run")
     draft := cli.GetBool(args, "draft")
-    generateNotes := env.GetBoolOrDefault("GENERATE_NOTES", true)
+    generateNotes := env.GetBoolOrDefault(GenerateNotesEnv, true)
 
     if repo == ""
         fatal("release requires --repo OWNER/REPO")
@@ -188,8 +235,9 @@ func doRelease(args cli.Args, initialTag string)
         cmdArgs = append(cmdArgs, "--draft")
 
     # Display the command
+    cmdStr := cmdArgs |> string.Join(" ")
     print("Command:")
-    print("  gh {cmdArgs |> string.Join(\" \")}")
+    print("  gh {cmdStr}")
     print("")
 
     if dryRun
@@ -249,7 +297,7 @@ func doPick(args cli.Args, initialTag string)
 
 func main()
     # Validate env config
-    initialTag := env.GetOr("INITIAL_TAG", "v0.0.1")
+    initialTag := env.GetOr(InitialTagEnv, DefaultInitialTag)
     if not semver.Valid(initialTag)
         fatal("INITIAL_TAG '{initialTag}' is not valid semver (expected e.g. v0.0.1)")
 
@@ -260,7 +308,7 @@ func main()
     _ = cli.New("gh-semver-release")
         |> cli.Description("Create GitHub releases with auto-bumped semver tags")
         |> cli.GlobalFlag("org", "Limit to repos under this org", "")
-        |> cli.GlobalFlag("bump", "Bump type: patch, minor, major", "patch")
+        |> cli.GlobalFlag("bump", "Bump type: patch, minor, major", DefaultBump)
         |> cli.Command("list", "List repos with current and next semver tags")
         |> cli.CommandFlag("list", "csv", "CSV output", "false")
         |> cli.Command("release", "Create a release for a specific repo")

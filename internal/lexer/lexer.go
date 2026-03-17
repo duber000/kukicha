@@ -385,12 +385,174 @@ func (l *Lexer) handleIndentation() {
 
 // scanString scans a double-quoted string literal.
 //
+// If the next two characters are also '"', this is a triple-quoted multi-line
+// string ("""...""") and is handled by scanTripleQuoteString.
+//
 // For non-interpolated strings, emits a single TOKEN_STRING.
 // For interpolated strings (containing {expr}), emits TOKEN_STRING_HEAD for the
 // leading literal, then returns so the main scanToken loop can tokenize the
 // expression normally. When the matching } is found, scanStringContinuation
 // resumes scanning, emitting TOKEN_STRING_MID or TOKEN_STRING_TAIL.
 func (l *Lexer) scanString() {
+	// Check for triple-quote: "" could be an empty string or the start of """
+	if l.peek() == '"' {
+		if l.current+1 < len(l.source) && l.source[l.current+1] == '"' {
+			// Triple-quote: consume the two extra '"' and scan multi-line
+			l.advance() // consume second "
+			l.advance() // consume third "
+			l.scanTripleQuoteString()
+			return
+		}
+		// Empty string "" — consume closing quote, emit empty TOKEN_STRING
+		l.advance()
+		l.addTokenWithLexeme(TOKEN_STRING, "")
+		return
+	}
+	l.scanStringBody(TOKEN_STRING_HEAD, TOKEN_STRING)
+}
+
+// scanTripleQuoteString scans a triple-quoted string literal ("""...""").
+//
+// Behavior:
+//   - Content spans multiple lines until the closing """
+//   - Leading common indentation (dedent) is stripped: the minimum non-empty
+//     leading-whitespace count across all content lines is removed from each line
+//   - The first newline after the opening """ is not part of the content
+//   - The last newline before the closing """ is not part of the content
+//   - String interpolation ({expr}) works inside, same as regular strings
+//
+// The resulting content is passed through the same TOKEN_STRING / TOKEN_STRING_HEAD
+// path as regular strings, so the rest of the pipeline (parser, codegen) is unchanged.
+func (l *Lexer) scanTripleQuoteString() {
+	raw := strings.Builder{}
+
+	for !l.isAtEnd() {
+		// Check for closing """
+		if l.peek() == '"' && l.current+1 < len(l.source) && l.source[l.current+1] == '"' &&
+			l.current+2 < len(l.source) && l.source[l.current+2] == '"' {
+			l.advance() // consume first "
+			l.advance() // consume second "
+			l.advance() // consume third "
+			break
+		}
+		ch := l.advance()
+		if ch == '\n' {
+			l.line++
+			l.column = 0
+		}
+		raw.WriteRune(ch)
+	}
+
+	content := dedentTripleQuote(raw.String())
+
+	// Now re-scan content string through the interpolation machinery by
+	// injecting it as if it were scanned from a regular "..." string.
+	l.scanStringFromContent(content)
+}
+
+// dedentTripleQuote strips the first newline (if any), the last newline (if any),
+// and the common leading indentation from all non-empty lines.
+func dedentTripleQuote(raw string) string {
+	// Strip leading newline (the one right after opening """)
+	if len(raw) > 0 && raw[0] == '\n' {
+		raw = raw[1:]
+	} else if len(raw) > 1 && raw[0] == '\r' && raw[1] == '\n' {
+		raw = raw[2:]
+	}
+
+	// Strip trailing newline (the one right before closing """)
+	if len(raw) > 0 && raw[len(raw)-1] == '\n' {
+		raw = raw[:len(raw)-1]
+		if len(raw) > 0 && raw[len(raw)-1] == '\r' {
+			raw = raw[:len(raw)-1]
+		}
+	}
+
+	// Find minimum indentation (spaces only) across non-empty lines
+	lines := strings.Split(raw, "\n")
+	minIndent := -1
+	for _, line := range lines {
+		if strings.TrimRight(line, " \t\r") == "" {
+			continue // skip blank / whitespace-only lines
+		}
+		indent := 0
+		for _, ch := range line {
+			if ch == ' ' {
+				indent++
+			} else if ch == '\t' {
+				indent += 4
+			} else {
+				break
+			}
+		}
+		if minIndent < 0 || indent < minIndent {
+			minIndent = indent
+		}
+	}
+	if minIndent <= 0 {
+		return raw
+	}
+
+	// Strip minIndent spaces from the front of each line
+	out := strings.Builder{}
+	for i, line := range lines {
+		stripped := 0
+		j := 0
+		for j < len(line) && stripped < minIndent {
+			if line[j] == ' ' {
+				stripped++
+				j++
+			} else if line[j] == '\t' {
+				stripped += 4
+				j++
+			} else {
+				break
+			}
+		}
+		out.WriteString(line[j:])
+		if i < len(lines)-1 {
+			out.WriteRune('\n')
+		}
+	}
+	return out.String()
+}
+
+// scanStringFromContent injects pre-extracted string content back into the
+// source stream so the existing scanStringBody machinery handles it naturally.
+// Bare `"` characters (not preceded by `\`) are escaped to `\"` so they
+// don't prematurely terminate the scan. All other escape sequences are kept
+// as-is so scanStringEscape can process them normally.
+func (l *Lexer) scanStringFromContent(content string) {
+	runes := []rune(content)
+	inject := make([]rune, 0, len(runes)+4)
+
+	for i := 0; i < len(runes); i++ {
+		ch := runes[i]
+		if ch == '\\' && i+1 < len(runes) {
+			// Keep escape sequence intact (two characters)
+			inject = append(inject, ch, runes[i+1])
+			i++ // skip next char (already consumed)
+		} else if ch == '"' {
+			// Bare quote — escape it so scanStringBody doesn't stop here
+			inject = append(inject, '\\', '"')
+		} else if ch == '\n' {
+			// Newline — inject as \n escape so scanStringBody doesn't error
+			inject = append(inject, '\\', 'n')
+		} else if ch == '\r' {
+			// Skip bare CR (CR+LF was already normalized to LF during extraction)
+		} else {
+			inject = append(inject, ch)
+		}
+	}
+	// Append synthetic closing quote
+	inject = append(inject, '"')
+
+	// Splice into l.source at l.current
+	newSource := make([]rune, 0, len(l.source)+len(inject))
+	newSource = append(newSource, l.source[:l.current]...)
+	newSource = append(newSource, inject...)
+	newSource = append(newSource, l.source[l.current:]...)
+	l.source = newSource
 	l.scanStringBody(TOKEN_STRING_HEAD, TOKEN_STRING)
 }
 

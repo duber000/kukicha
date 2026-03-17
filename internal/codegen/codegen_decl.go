@@ -53,6 +53,24 @@ func (g *Generator) generateInterfaceDecl(decl *ast.InterfaceDecl) {
 	g.writeLine("}")
 }
 
+func (g *Generator) generateConstDecl(decl *ast.ConstDecl) {
+	if len(decl.Specs) == 0 {
+		return
+	}
+	if len(decl.Specs) == 1 {
+		spec := decl.Specs[0]
+		g.writeLine(fmt.Sprintf("const %s = %s", spec.Name.Value, g.exprToString(spec.Value)))
+		return
+	}
+	g.writeLine("const (")
+	g.indent++
+	for _, spec := range decl.Specs {
+		g.writeLine(fmt.Sprintf("%s = %s", spec.Name.Value, g.exprToString(spec.Value)))
+	}
+	g.indent--
+	g.writeLine(")")
+}
+
 func (g *Generator) generateGlobalVarDecl(stmt *ast.VarDeclStmt) {
 	if len(stmt.Names) == 0 {
 		return
