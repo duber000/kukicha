@@ -102,6 +102,29 @@ func (d *ImportDecl) Pos() Position {
 }
 func (d *ImportDecl) declNode() {}
 
+// ConstSpec is a single name = value pair inside a const block.
+type ConstSpec struct {
+	Name  *Identifier
+	Value Expression // Required: const values must always be provided
+}
+
+// ConstDecl represents a const declaration (single or grouped).
+//
+//	const MaxRetries = 5
+//	const
+//	    StatusOK  = 200
+//	    StatusNotFound = 404
+type ConstDecl struct {
+	Token lexer.Token  // The 'const' token
+	Specs []*ConstSpec // One or more name=value pairs
+}
+
+func (d *ConstDecl) TokenLiteral() string { return d.Token.Lexeme }
+func (d *ConstDecl) Pos() Position {
+	return Position{Line: d.Token.Line, Column: d.Token.Column, File: d.Token.File}
+}
+func (d *ConstDecl) declNode() {}
+
 // Directive represents a `# kuki:name args...` annotation attached to a declaration.
 type Directive struct {
 	Token lexer.Token // The TOKEN_DIRECTIVE token

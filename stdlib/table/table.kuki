@@ -1,0 +1,178 @@
+# Kukicha Standard Library - Table
+# Pretty-printed tables for CLI output with auto-aligned columns.
+#
+# Examples:
+#   t := table.New(list of string{"Name", "Stars", "Language"})
+#   t = t |> table.AddRow(list of string{"golang/go", "115000", "Go"})
+#   t |> table.Print()
+#
+#   # With border style
+#   t |> table.PrintWithStyle("box")
+#
+#   # Render to string for logging
+#   s := table.ToString(t)
+
+petiole table
+
+import "fmt"
+import "strings"
+
+# Table holds the headers and rows for a formatted table.
+type Table
+    headers list of string
+    rows    list of list of string
+
+# New creates a new table with the given column headers.
+# Example: t := table.New(list of string{"Name", "Age"})
+func New(headers list of string) Table
+    return Table{headers: headers, rows: make(list of list of string, 0)}
+
+# AddRow appends a row of string values to the table and returns the updated table.
+# Values are coerced to strings. Rows with fewer columns than headers are padded with "".
+# Example: t = t |> table.AddRow(list of string{"Alice", "30"})
+func AddRow(t Table, row list of string) Table
+    padded := make(list of string, len(t.headers))
+    for i from 0 to len(t.headers)
+        if i < len(row)
+            padded[i] = row[i]
+    t.rows = append(t.rows, padded)
+    return t
+
+# Print prints the table to stdout with auto-aligned columns.
+# Uses plain style (spaces, no borders).
+# Example: t |> table.Print()
+func Print(t Table)
+    fmt.Print(renderTable(t, "plain"))
+
+# PrintWithStyle prints the table using the specified border style.
+# Styles: "plain" (default spaces), "box" (Unicode box-drawing), "markdown" (GitHub table)
+# Example: t |> table.PrintWithStyle("box")
+func PrintWithStyle(t Table, style string)
+    fmt.Print(renderTable(t, style))
+
+# ToString renders the table to a string.
+# Example: s := table.ToString(t)
+func ToString(t Table) string
+    return renderTable(t, "plain")
+
+# ToStringWithStyle renders the table to a string with the given border style.
+# Styles: "plain", "box", "markdown"
+func ToStringWithStyle(t Table, style string) string
+    return renderTable(t, style)
+
+# renderTable is the internal rendering function.
+func renderTable(t Table, style string) string
+    # Compute column widths
+    widths := make(list of int, len(t.headers))
+    for i from 0 to len(t.headers)
+        widths[i] = len(t.headers[i])
+    for row in t.rows
+        for i from 0 to len(t.headers)
+            if i < len(row) and len(row[i]) > widths[i]
+                widths[i] = len(row[i])
+
+    out := strings.Builder{}
+
+    switch style
+        when "markdown"
+            out.WriteString(renderMarkdownRow(t.headers, widths))
+            out.WriteString(renderMarkdownSep(widths))
+            for row in t.rows
+                out.WriteString(renderMarkdownRow(row, widths))
+        when "box"
+            out.WriteString(renderBoxTop(widths))
+            out.WriteString(renderBoxRow(t.headers, widths))
+            out.WriteString(renderBoxMid(widths))
+            for row in t.rows
+                out.WriteString(renderBoxRow(row, widths))
+            out.WriteString(renderBoxBottom(widths))
+        otherwise
+            out.WriteString(renderPlainRow(t.headers, widths))
+            out.WriteString(renderPlainSep(widths))
+            for row in t.rows
+                out.WriteString(renderPlainRow(row, widths))
+
+    return out.String()
+
+func renderPlainRow(cols list of string, widths list of int) string
+    sb := strings.Builder{}
+    for i from 0 to len(widths)
+        val := ""
+        if i < len(cols)
+            val = cols[i]
+        sb.WriteString(fmt.Sprintf("%-*s", widths[i], val))
+        if i < len(widths) - 1
+            sb.WriteString("  ")
+    sb.WriteString("\n")
+    return sb.String()
+
+func renderPlainSep(widths list of int) string
+    sb := strings.Builder{}
+    for i from 0 to len(widths)
+        sb.WriteString(strings.Repeat("-", widths[i]))
+        if i < len(widths) - 1
+            sb.WriteString("  ")
+    sb.WriteString("\n")
+    return sb.String()
+
+func renderMarkdownRow(cols list of string, widths list of int) string
+    sb := strings.Builder{}
+    sb.WriteString("|")
+    for i from 0 to len(widths)
+        val := ""
+        if i < len(cols)
+            val = cols[i]
+        sb.WriteString(fmt.Sprintf(" %-*s |", widths[i], val))
+    sb.WriteString("\n")
+    return sb.String()
+
+func renderMarkdownSep(widths list of int) string
+    sb := strings.Builder{}
+    sb.WriteString("|")
+    for i from 0 to len(widths)
+        sb.WriteString(" ")
+        sb.WriteString(strings.Repeat("-", widths[i]))
+        sb.WriteString(" |")
+    sb.WriteString("\n")
+    return sb.String()
+
+func renderBoxTop(widths list of int) string
+    sb := strings.Builder{}
+    sb.WriteString("┌")
+    for i from 0 to len(widths)
+        sb.WriteString(strings.Repeat("─", widths[i] + 2))
+        if i < len(widths) - 1
+            sb.WriteString("┬")
+    sb.WriteString("┐\n")
+    return sb.String()
+
+func renderBoxMid(widths list of int) string
+    sb := strings.Builder{}
+    sb.WriteString("├")
+    for i from 0 to len(widths)
+        sb.WriteString(strings.Repeat("─", widths[i] + 2))
+        if i < len(widths) - 1
+            sb.WriteString("┼")
+    sb.WriteString("┤\n")
+    return sb.String()
+
+func renderBoxBottom(widths list of int) string
+    sb := strings.Builder{}
+    sb.WriteString("└")
+    for i from 0 to len(widths)
+        sb.WriteString(strings.Repeat("─", widths[i] + 2))
+        if i < len(widths) - 1
+            sb.WriteString("┴")
+    sb.WriteString("┘\n")
+    return sb.String()
+
+func renderBoxRow(cols list of string, widths list of int) string
+    sb := strings.Builder{}
+    sb.WriteString("│")
+    for i from 0 to len(widths)
+        val := ""
+        if i < len(cols)
+            val = cols[i]
+        sb.WriteString(fmt.Sprintf(" %-*s │", widths[i], val))
+    sb.WriteString("\n")
+    return sb.String()

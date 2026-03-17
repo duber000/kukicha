@@ -1,0 +1,78 @@
+# Tests for Kukicha Standard Library - Sort Package
+
+petiole sort_test
+
+import "stdlib/sort"
+import "stdlib/test"
+import "testing"
+
+# --- TestStrings ---
+type StringsCase
+    name  string
+    input list of string
+    want  list of string
+
+func TestStrings(t reference testing.T)
+    cases := list of StringsCase{
+        StringsCase{name: "already sorted",  input: list of string{"apple", "banana"}, want: list of string{"apple", "banana"}},
+        StringsCase{name: "reverse order",   input: list of string{"banana", "apple"}, want: list of string{"apple", "banana"}},
+        StringsCase{name: "single element",  input: list of string{"only"},            want: list of string{"only"}},
+        StringsCase{name: "empty slice",     input: list of string{},                  want: list of string{}},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := sort.Strings(tc.input)
+            test.AssertEqual(t, len(got), len(tc.want))
+            for i from 0 to len(got)
+                test.AssertEqual(t, got[i], tc.want[i])
+        )
+
+# --- TestInts ---
+type IntsCase
+    name  string
+    input list of int
+    want  list of int
+
+func TestInts(t reference testing.T)
+    cases := list of IntsCase{
+        IntsCase{name: "unsorted",     input: list of int{3, 1, 2},    want: list of int{1, 2, 3}},
+        IntsCase{name: "with negatives", input: list of int{0, -1, 5}, want: list of int{-1, 0, 5}},
+        IntsCase{name: "empty",        input: list of int{},           want: list of int{}},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            got := sort.Ints(tc.input)
+            test.AssertEqual(t, len(got), len(tc.want))
+            for i from 0 to len(got)
+                test.AssertEqual(t, got[i], tc.want[i])
+        )
+
+# --- TestBy ---
+type ByCase
+    name string
+
+func TestBy(t reference testing.T)
+    cases := list of ByCase{
+        ByCase{name: "sort by length"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            words := list of string{"banana", "fig", "apple", "kiwi"}
+            sorted := sort.By(words, (a any, b any) => len(a as string) < len(b as string))
+            test.AssertEqual(t, sorted[0] as string, "fig")
+        )
+
+# --- TestReverse ---
+type ReverseCase
+    name string
+
+func TestReverse(t reference testing.T)
+    cases := list of ReverseCase{
+        ReverseCase{name: "reverse ints"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            nums := list of int{1, 3, 2}
+            sorted := sort.Reverse(nums, (a any, b any) => a.(int) < b.(int))
+            test.AssertEqual(t, sorted[0] as int, 3)
+        )

@@ -282,7 +282,14 @@ func (p *Parser) isIdentifierFollower() bool {
 		lexer.TOKEN_COMMA, lexer.TOKEN_RPAREN, lexer.TOKEN_RBRACKET, lexer.TOKEN_RBRACE,
 		lexer.TOKEN_PLUS_PLUS, lexer.TOKEN_MINUS_MINUS,
 		lexer.TOKEN_SEMICOLON,
-		lexer.TOKEN_STRING_MID, lexer.TOKEN_STRING_TAIL:
+		lexer.TOKEN_STRING_MID, lexer.TOKEN_STRING_TAIL,
+		// Binary / comparison operators — needed when 'error' or 'empty' is used
+		// as a variable name on the LHS of a comparison (e.g. "if error != empty").
+		lexer.TOKEN_NOT_EQUALS, lexer.TOKEN_DOUBLE_EQUALS, lexer.TOKEN_EQUALS,
+		lexer.TOKEN_LT, lexer.TOKEN_GT, lexer.TOKEN_LTE, lexer.TOKEN_GTE,
+		lexer.TOKEN_PLUS, lexer.TOKEN_MINUS, lexer.TOKEN_STAR, lexer.TOKEN_SLASH, lexer.TOKEN_PERCENT,
+		lexer.TOKEN_AND, lexer.TOKEN_OR, lexer.TOKEN_AND_AND, lexer.TOKEN_OR_OR,
+		lexer.TOKEN_PIPE, lexer.TOKEN_ONERR:
 		return true
 	default:
 		return false

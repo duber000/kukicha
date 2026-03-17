@@ -13,6 +13,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/a2a` | Agent-to-Agent protocol client | Discover, Ask, Send, Stream, New/Text/Context |
 | `stdlib/accel` | Smart inference fallback (native → web) | Init, InitWith, Cleanup, Backend, Version, IsAvailable, New/Threads/InterOpThreads/OptLevel/EP/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
 | `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString |
+| `stdlib/crypto` | Hashing, HMAC, and secure random (Go stdlib only) | SHA256, SHA256Bytes, HMAC, HMACBytes, RandomToken, RandomBytes, Equal |
 | `stdlib/cli` | CLI argument parsing with subcommands | New, Description, Arg, AddFlag, Action, RunApp, Command, CommandFlag, CommandAction, GlobalFlag, CommandName, GetString, GetBool, GetInt, NewArgs |
 | `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
 | `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, PullAuth, LoginFromConfig, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
@@ -45,7 +46,9 @@ Import with: `import "stdlib/slice"`
 | `stdlib/semver` | Semantic versioning (parse, bump, compare) | Parse, Bump, Format, Valid, Compare, Greater, Highest |
 | `stdlib/shell` | Safe command execution | Run, Output, New/Dir/Env/Execute, Which, Getenv |
 | `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Get, Find, FindLast, Unique, Contains, Pop, Shift |
+| `stdlib/sort` | Sorting slices (strings, ints, floats, custom) | Strings, Ints, Float64s, By, Reverse |
 | `stdlib/string` | String utilities | Split, Join, Trim, Contains, Replace, ToUpper, ToLower |
+| `stdlib/table` | Terminal table rendering (plain, box, markdown) | New, AddRow, Print, PrintWithStyle, ToString, ToStringWithStyle |
 | `stdlib/template` | Text templating (plain + HTML-safe) | Execute, New, HTMLExecute, HTMLRenderSimple |
 | `stdlib/test` | Test assertion helpers (use in `*_test.kuki` only) | AssertEqual, AssertTrue, AssertFalse, AssertNoError, AssertError, AssertNotEmpty |
 | `stdlib/validate` | Input validation | Email, URL, InRange, NotEmpty, MinLen, MaxLen |
@@ -343,6 +346,31 @@ print(errors.Public(e))    # "database unavailable" — safe to return to users
 # Falls back to "an error occurred" for non-PublicError errors
 print(errors.Public(plainErr))  # "an error occurred"
 
+# Hashing, HMAC, and secure random
+import "stdlib/crypto"
+hash := crypto.SHA256("hello world")                 # hex-encoded SHA-256
+mac := crypto.HMAC("secret-key", "message-body")    # hex-encoded HMAC-SHA256
+token, err := crypto.RandomToken(32) onerr panic "{error}"  # 64-char hex token
+if crypto.Equal(expected, actual)
+    print("match")
+
+# Sorting slices
+import "stdlib/sort"
+sorted := sort.Strings(list of string{"banana", "apple", "cherry"})
+nums := sort.Ints(list of int{3, 1, 4, 1, 5})
+byLen := sort.By(words, (a string, b string) => len(a) < len(b))
+reversed := sort.Reverse(sorted)
+
+# Terminal tables (plain, box, markdown)
+import "stdlib/table"
+tbl := table.New(list of string{"Name", "Stars"})
+tbl = tbl |> table.AddRow(list of string{"go", "115000"})
+tbl = tbl |> table.AddRow(list of string{"rust", "97000"})
+table.Print(tbl)                                     # plain output
+table.PrintWithStyle(tbl, "markdown")                # markdown table
+s := table.ToString(tbl)                             # as string
+s2 := table.ToStringWithStyle(tbl, "box")            # box-drawing style
+
 # Base64 and hex encoding
 import "stdlib/encoding"
 encoded := encoding.Base64Encode("hello" as list of byte)
@@ -456,9 +484,9 @@ result := template.HTMLRenderSimple(tmplStr, data) onerr return
 
 Every stdlib module is **pure Kukicha**: `<name>.kuki` source + `<name>.go` generated output. No `_helper.go` or `_tool.go` files.
 
-All packages: `a2a`, `accel`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
+All packages: `a2a`, `accel`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `crypto`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
 `http`, `infer`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
-`random`, `retry`, `sandbox`, `semver`, `shell`, `slice`, `string`, `template`, `test`, `validate`, `webinfer`
+`random`, `retry`, `sandbox`, `semver`, `shell`, `slice`, `sort`, `string`, `table`, `template`, `test`, `validate`, `webinfer`
 
 ## Import Aliases
 

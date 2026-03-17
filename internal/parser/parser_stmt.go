@@ -963,16 +963,12 @@ func (p *Parser) parseInlineOnErrHandler(token lexer.Token) *ast.OnErrClause {
 	// Check for standalone "onerr explain" (no handler before explain)
 	if p.check(lexer.TOKEN_EXPLAIN) {
 		p.advance() // consume 'explain'
-		explainToken := p.advance()
-		if explainToken.Type != lexer.TOKEN_STRING {
-			p.error(explainToken, "expected string literal after 'explain'")
-			return &ast.OnErrClause{Token: token}
-		}
+		explainText := p.parseExplainString()
 		// Standalone explain: implies return with fmt.Errorf wrapping
 		return &ast.OnErrClause{
 			Token:   token,
 			Handler: nil, // nil handler signals standalone explain
-			Explain: explainToken.Lexeme,
+			Explain: explainText,
 		}
 	}
 
@@ -982,13 +978,33 @@ func (p *Parser) parseInlineOnErrHandler(token lexer.Token) *ast.OnErrClause {
 	clause := &ast.OnErrClause{Token: token, Handler: handler}
 	if p.check(lexer.TOKEN_EXPLAIN) {
 		p.advance() // consume 'explain'
-		explainToken := p.advance()
-		if explainToken.Type != lexer.TOKEN_STRING {
-			p.error(explainToken, "expected string literal after 'explain'")
-		} else {
-			clause.Explain = explainToken.Lexeme
-		}
+		clause.Explain = p.parseExplainString()
 	}
 
 	return clause
+}
+
+// parseExplainString parses the string argument after the 'explain' keyword.
+// Accepts both plain strings (TOKEN_STRING) and interpolated strings
+// (TOKEN_STRING_HEAD ... TOKEN_STRING_TAIL). For interpolated strings the full
+// expression is parsed (so the token stream advances correctly), but only the
+// static prefix from the HEAD token is stored in the Explain field.
+func (p *Parser) parseExplainString() string {
+	tok := p.peekToken()
+	switch tok.Type {
+	case lexer.TOKEN_STRING:
+		p.advance()
+		return tok.Lexeme
+	case lexer.TOKEN_STRING_HEAD:
+		// Parse the full interpolated string expression to keep token stream intact,
+		// then return only the static prefix (the head lexeme) as the explain text.
+		expr := p.parseExpression()
+		if lit, ok := expr.(*ast.StringLiteral); ok && len(lit.Parts) > 0 && lit.Parts[0].IsLiteral {
+			return lit.Parts[0].Literal
+		}
+		return tok.Lexeme
+	default:
+		p.error(tok, "expected string literal after 'explain'")
+		return ""
+	}
 }

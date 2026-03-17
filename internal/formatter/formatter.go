@@ -157,7 +157,25 @@ func (p *PrinterWithComments) printDeclarationWithComments(decl ast.Declaration)
 		p.printInterfaceDeclWithComments(d)
 	case *ast.FunctionDecl:
 		p.printFunctionDeclWithComments(d)
+	case *ast.ConstDecl:
+		p.printConstDeclWithComments(d)
 	}
+}
+
+func (p *PrinterWithComments) printConstDeclWithComments(decl *ast.ConstDecl) {
+	if len(decl.Specs) == 1 {
+		spec := decl.Specs[0]
+		p.writeLine(fmt.Sprintf("const %s = %s", spec.Name.Value, p.exprToString(spec.Value)))
+		p.printTrailingComment(decl)
+		return
+	}
+	p.writeLine("const")
+	p.printTrailingComment(decl)
+	p.indentLevel++
+	for _, spec := range decl.Specs {
+		p.writeLine(fmt.Sprintf("%s = %s", spec.Name.Value, p.exprToString(spec.Value)))
+	}
+	p.indentLevel--
 }
 
 func (p *PrinterWithComments) printTypeDeclWithComments(decl *ast.TypeDecl) {

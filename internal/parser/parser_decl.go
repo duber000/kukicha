@@ -125,6 +125,8 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 		decl = p.parseFunctionDecl()
 	case lexer.TOKEN_VAR:
 		decl = p.parseVarDeclaration()
+	case lexer.TOKEN_CONST:
+		decl = p.parseConstDecl()
 	default:
 		if !p.isAtEnd() {
 			p.error(p.peekToken(), fmt.Sprintf("unexpected token %s, expected declaration", p.peekToken().Type))
@@ -437,6 +439,58 @@ func (p *Parser) parseFieldAlias() string {
 	}
 
 	return p.advance().Lexeme
+}
+
+// parseConstDecl parses a const declaration in one of two forms:
+//
+//	const MaxRetries = 5
+//	const
+//	    StatusOK  = 200
+//	    StatusNotFound = 404
+func (p *Parser) parseConstDecl() ast.Declaration {
+	token := p.advance() // consume 'const'
+
+	decl := &ast.ConstDecl{Token: token}
+
+	// Grouped form: const followed by newline + INDENT
+	if p.check(lexer.TOKEN_NEWLINE) || p.check(lexer.TOKEN_INDENT) {
+		p.skipNewlines()
+		if !p.match(lexer.TOKEN_INDENT) {
+			p.error(p.peekToken(), "expected indented block or name after 'const'")
+			return nil
+		}
+		for !p.check(lexer.TOKEN_DEDENT) && !p.isAtEnd() {
+			p.skipNewlines()
+			if p.check(lexer.TOKEN_DEDENT) {
+				break
+			}
+			spec := p.parseConstSpec()
+			if spec != nil {
+				decl.Specs = append(decl.Specs, spec)
+			}
+			p.skipNewlines()
+		}
+		p.consume(lexer.TOKEN_DEDENT, "expected dedent after const block")
+	} else {
+		// Single-line form: const Name = value
+		spec := p.parseConstSpec()
+		if spec != nil {
+			decl.Specs = append(decl.Specs, spec)
+		}
+	}
+
+	p.skipNewlines()
+	return decl
+}
+
+func (p *Parser) parseConstSpec() *ast.ConstSpec {
+	name := p.parseIdentifier()
+	if name == nil {
+		return nil
+	}
+	p.consume(lexer.TOKEN_ASSIGN, fmt.Sprintf("expected '=' after const name '%s'", name.Value))
+	value := p.parseExpression()
+	return &ast.ConstSpec{Name: name, Value: value}
 }
 
 func (p *Parser) parseVarDeclaration() ast.Declaration {

@@ -1,0 +1,51 @@
+# Kukicha Standard Library - Sort
+# Sorting slices in place or into new sorted copies.
+#
+# Examples:
+#   sorted := sort.Strings(names)
+#   sorted := sort.Ints(scores)
+#   sorted := sort.By(repos, (a Repo, b Repo) => a.Stars < b.Stars)
+#   sorted := sort.Reverse(repos, (a Repo, b Repo) => a.Stars < b.Stars)
+
+petiole sort
+
+import "slices"
+import "sort"
+
+# Strings returns a sorted copy of a string slice (ascending, lexicographic).
+# Example: sort.Strings(list of string{"banana", "apple"}) = ["apple", "banana"]
+func Strings(items list of string) list of string
+    result := slices.Clone(items)
+    slices.Sort(result)
+    return result
+
+# Ints returns a sorted copy of an int slice (ascending).
+# Example: sort.Ints(list of int{3, 1, 2}) = [1, 2, 3]
+func Ints(items list of int) list of int
+    result := slices.Clone(items)
+    slices.Sort(result)
+    return result
+
+# Float64s returns a sorted copy of a float64 slice (ascending).
+# Example: sort.Float64s(list of float64{3.0, 1.5}) = [1.5, 3.0]
+func Float64s(items list of float64) list of float64
+    result := slices.Clone(items)
+    slices.Sort(result)
+    return result
+
+# By returns a sorted copy of items using a less(a, b) comparator.
+# less(a, b) should return true if a should come before b.
+# Uses a stable sort (preserves order of equal elements).
+# Example: sort.By(repos, (a Repo, b Repo) => a.Stars < b.Stars)
+func By(items list of any, less func(any, any) bool) list of any
+    result := slices.Clone(items)
+    sort.SliceStable(result, (i int, j int) => less(result[i], result[j]))
+    return result
+
+# Reverse returns a copy of items sorted in descending order using less(a, b).
+# The less function defines the natural order; Reverse inverts it.
+# Example: sort.Reverse(repos, (a Repo, b Repo) => a.Stars < b.Stars)
+func Reverse(items list of any, less func(any, any) bool) list of any
+    result := slices.Clone(items)
+    sort.SliceStable(result, (i int, j int) => less(result[j], result[i]))
+    return result
