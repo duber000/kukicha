@@ -1,14 +1,36 @@
 # Verifier Roadmap: Formal Proof Engineering for Kukicha
 
-> Inspired by [Leanstral](https://mistral.ai/news/leanstral) — the insight that **small models + perfect verifiers > large models alone** applies directly to Kukicha's compiler-as-verifier architecture.
+> Inspired by [Leanstral](https://mistral.ai/news/leanstral) — Mistral's open-source Lean 4 proof agent.
 
-## Why This Matters
+## Key Insight from Leanstral
+
+Leanstral is a **6B active parameter** model (highly sparse architecture) that outperforms Claude Opus 4.6, Sonnet 4.6, Qwen3.5 397B, Kimi-K2.5 1T, and GLM5 744B on formal proof engineering — despite being ~100x smaller. The secret: **parallel inference with Lean as a perfect verifier.**
+
+The model generates many proof candidates simultaneously. Lean's kernel — a small, trusted piece of code — definitively accepts or rejects each one. No ambiguity, no "looks right." This generate-and-verify loop means a small model + perfect verifier > large model alone.
+
+Crucially, Leanstral operates on **real repositories** (PRs to the Fermat's Last Theorem formalization project), not isolated competition problems. It can diagnose breaking changes across Lean versions, build test environments to reproduce failures, and propose fixes with correct rationale — the full engineering loop, not just theorem proving.
+
+**The pattern:** Small, efficient code generation + a fast, trustworthy verifier in the loop + MCP for tool access = agent that punches far above its weight class.
+
+## Why This Matters for Kukicha
 
 When AI agents are the primary code authors, every compile-time check is a proof obligation that all future generated code must satisfy. Kukicha's compiler already acts as a partial verifier (6 security checks, type system, Go compiler as second layer). This roadmap strengthens that verifier across three dimensions:
 
-1. **AI-assisted code** — tighter generate-and-verify loops
-2. **Agent runtime** — compiler as guardrail for agent-generated code
-3. **Compiler correctness** — verifying the verifier itself
+1. **AI-assisted code** — tighter generate-and-verify loops (like Leanstral's parallel inference + Lean kernel)
+2. **Agent runtime** — compiler as guardrail for agent-generated code (like Lean rejecting invalid proofs)
+3. **Compiler correctness** — verifying the verifier itself (like Lean's trusted kernel being small and proven)
+
+### The Analogy
+
+| Leanstral | Kukicha |
+|-----------|---------|
+| Lean 4 kernel (perfect verifier) | `kukicha check` + Go compiler (partial verifier) |
+| Proof candidates (parallel inference) | Code candidates (parallel `kukicha check`) |
+| Lean's type theory (specifications) | Security checks + type system (partial specs) |
+| `lean-lsp-mcp` (tool access) | Structured diagnostics + MCP (tool access) |
+| FLT project PRs (real-world eval) | Real agent tasks on Kukicha codebases |
+
+The gap: Lean is a *perfect* verifier (sound and complete for its logic). Kukicha's compiler is a *partial* verifier (catches classes of bugs but can't prove arbitrary correctness). This roadmap closes that gap incrementally.
 
 ---
 
@@ -89,6 +111,12 @@ When AI agents are the primary code authors, every compile-time check is a proof
   - Shell: "use shell.Command() with explicit args"
 
 - [ ] **Batch check mode** — `kukicha check --batch file1.kuki file2.kuki ...` for parallel verification of multiple candidate solutions.
+  - This is the direct Leanstral parallel: generate N candidates, verify all in parallel, keep the valid ones
+  - The compiler becomes the "Lean kernel" in the agent loop
+
+- [ ] **MCP server for kukicha check** — Expose the compiler as an MCP tool so any agent (including Leanstral-style small models) can call it natively.
+  - Mirrors Leanstral's `lean-lsp-mcp` integration
+  - Enables: `kukicha-check-mcp` → agent sends `.kuki` source → gets structured errors back
 
 ---
 
@@ -155,7 +183,9 @@ When AI agents are the primary code authors, every compile-time check is a proof
   - `onerr` desugaring (error propagation preserves control flow)
   - String interpolation (generated `fmt.Sprintf` matches source semantics)
 
-- [ ] **Explore Leanstral integration** — Use Leanstral (or similar) to assist with writing Lean 4 proofs about Kukicha's compiler properties. The meta-level: an AI proving that an AI-targeted compiler is correct.
+- [ ] **Explore Leanstral integration** — Use Leanstral (Apache 2.0, 6B active params, available via Mistral API) to assist with writing Lean 4 proofs about Kukicha's compiler properties. The meta-level: an AI proving that an AI-targeted compiler is correct.
+  - Leanstral can operate on real repositories (not just isolated theorems) — feed it the Lean formalization of Kukicha's type rules and let it fill in proofs
+  - Its sparse architecture makes it cost-efficient for iterative proof refinement
 
 ---
 
