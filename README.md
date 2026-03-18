@@ -43,7 +43,7 @@ func main()
         |> fetch.CheckStatus()
         |> fetch.Json(list of Repo) onerr panic "fetch failed: {error}"
 
-    popular := repos |> slice.Filter((repo Repo) => repo.stars > 1000)
+    popular := repos |> slice.Filter(repo => repo.stars > 1000)
 
     for repo in popular
         print("{repo.name}: {repo.stars} stars")
@@ -179,8 +179,8 @@ import "stdlib/table"
 func main()
     repos := listMyRepos() onerr panic "{error}"
     entries := repos
-        |> slice.Map((r string) => buildEntry(r, bump))
-        |> sort.ByKey((e Entry) => e.name)
+        |> slice.Map(r => buildEntry(r, bump))
+        |> sort.ByKey(e => e.name)
 
     t := table.New(list of string{"repo", "current", "next"})
     for entry in entries
