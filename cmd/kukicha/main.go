@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"go/format"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/duber000/kukicha/internal/ast"
 	"github.com/duber000/kukicha/internal/codegen"
+	"github.com/duber000/kukicha/internal/diagnostic"
 	"github.com/duber000/kukicha/internal/parser"
 	"github.com/duber000/kukicha/internal/semantic"
 	"github.com/duber000/kukicha/internal/version"
@@ -66,16 +68,17 @@ func main() {
 		checkFlags := flag.NewFlagSet("check", flag.ContinueOnError)
 		checkFlags.SetOutput(os.Stderr)
 		strictOnerr := checkFlags.Bool("strict-onerr", false, "Treat onerr lint warnings as errors")
+		jsonOutput := checkFlags.Bool("json", false, "Output diagnostics as JSON array")
 		if err := checkFlags.Parse(args); err != nil {
-			fmt.Fprintln(os.Stderr, "Usage: kukicha check [--strict-onerr] <file.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha check [--json] [--strict-onerr] <file.kuki> [file2.kuki ...]")
 			os.Exit(1)
 		}
 		checkArgs := checkFlags.Args()
 		if len(checkArgs) < 1 {
-			fmt.Fprintln(os.Stderr, "Usage: kukicha check [--strict-onerr] <file.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha check [--json] [--strict-onerr] <file.kuki> [file2.kuki ...]")
 			os.Exit(1)
 		}
-		checkCommand(checkArgs[0], *strictOnerr)
+		checkCommand(checkArgs, *strictOnerr, *jsonOutput)
 	case "fmt":
 		if len(args) < 1 {
 			fmt.Fprintln(os.Stderr, "Usage: kukicha fmt [options] <files>")
@@ -125,7 +128,7 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "Usage:")
 	fmt.Fprintln(os.Stderr, "  kukicha build [--target t] [--vulncheck] <file.kuki>  Compile Kukicha file to Go")
 	fmt.Fprintln(os.Stderr, "  kukicha run [--target t] <file.kuki>   Transpile and execute Kukicha file")
-	fmt.Fprintln(os.Stderr, "  kukicha check <file.kuki>   Type check Kukicha file")
+	fmt.Fprintln(os.Stderr, "  kukicha check [--json] [--strict-onerr] <file.kuki> [...]  Type check Kukicha file(s)")
 	fmt.Fprintln(os.Stderr, "  kukicha audit [--json] [--warn-only] [dir]  Check dependencies for vulnerabilities")
 	fmt.Fprintln(os.Stderr, "  kukicha fmt [options] <files>  Fix indentation and normalize style")
 	fmt.Fprintln(os.Stderr, "    -w          Write result to file instead of stdout")
@@ -441,48 +444,133 @@ func runCommand(filename string, targetFlag string, scriptArgs []string) {
 	}
 }
 
-func checkCommand(filename string, strictOnerr bool) {
+// checkFileForDiags runs the check pipeline on a single file and returns structured
+// diagnostics plus a flag indicating whether errors were found.
+func checkFileForDiags(filename string) (diags []diagnostic.Diagnostic, hasErrors bool, hasWarnings bool) {
 	source, err := os.ReadFile(filename)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Errorf("Error reading file: %v", err))
-		os.Exit(1)
+		diags = append(diags, diagnostic.Diagnostic{
+			File:     filename,
+			Line:     1,
+			Col:      1,
+			Severity: "error",
+			Message:  fmt.Sprintf("error reading file: %v", err),
+		})
+		return diags, true, false
 	}
 
 	p, err := parser.New(string(source), filename)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Errorf("Lexer error: %v", err))
-		os.Exit(1)
+		diags = append(diags, diagnostic.Diagnostic{
+			File:     filename,
+			Line:     1,
+			Col:      1,
+			Severity: "error",
+			Message:  fmt.Sprintf("lexer error: %v", err),
+		})
+		return diags, true, false
 	}
 
-	program, parseErrors := p.Parse()
+	_, parseErrors := p.Parse()
 	if len(parseErrors) > 0 {
-		var msgs []string
 		for _, e := range parseErrors {
-			msgs = append(msgs, fmt.Sprintf("  %v", e))
+			diags = append(diags, diagnostic.Diagnostic{
+				File:     filename,
+				Line:     1,
+				Col:      1,
+				Severity: "error",
+				Message:  e.Error(),
+			})
 		}
-		fmt.Fprintln(os.Stderr, fmt.Errorf("Parse errors:\n%s", strings.Join(msgs, "\n")))
-		os.Exit(1)
+		return diags, true, false
 	}
+
+	// Re-parse for semantic analysis (parser is consumed after Parse)
+	p2, _ := parser.New(string(source), filename)
+	program, _ := p2.Parse()
 
 	analyzer := semantic.NewWithFile(program, filename)
 	semanticErrors := analyzer.Analyze()
-	if len(semanticErrors) > 0 {
-		var msgs []string
-		for _, e := range semanticErrors {
-			msgs = append(msgs, fmt.Sprintf("  %v", e))
+
+	// Collect structured diagnostics from the analyzer (security checks produce these)
+	diags = append(diags, analyzer.Diagnostics()...)
+
+	// Also collect any plain errors/warnings not already in diagnostics.
+	// Security errors are already in diagnostics via errorDiag; plain errors are not.
+	diagSet := make(map[string]bool)
+	for _, d := range diags {
+		diagSet[d.Error()] = true
+	}
+	for _, e := range semanticErrors {
+		if !diagSet[e.Error()] {
+			diags = append(diags, diagnostic.Diagnostic{
+				File:     filename,
+				Line:     1,
+				Col:      1,
+				Severity: "error",
+				Message:  e.Error(),
+			})
 		}
-		fmt.Fprintln(os.Stderr, fmt.Errorf("Semantic errors:\n%s", strings.Join(msgs, "\n")))
-		os.Exit(1)
+	}
+	for _, w := range analyzer.Warnings() {
+		if !diagSet[w.Error()] {
+			diags = append(diags, diagnostic.Diagnostic{
+				File:     filename,
+				Line:     1,
+				Col:      1,
+				Severity: "warning",
+				Message:  w.Error(),
+			})
+		}
 	}
 
-	warnings := analyzer.Warnings()
-	for _, w := range warnings {
-		fmt.Fprintf(os.Stderr, "warning: %v\n", w)
-	}
-	if strictOnerr && len(warnings) > 0 {
-		fmt.Fprintln(os.Stderr, "onerr warnings promoted to errors (--strict-onerr)")
-		os.Exit(1)
+	return diags, len(semanticErrors) > 0, len(analyzer.Warnings()) > 0
+}
+
+func checkCommand(files []string, strictOnerr bool, jsonOutput bool) {
+	var allDiags []diagnostic.Diagnostic
+	hasErrors := false
+	hasWarnings := false
+
+	for _, filename := range files {
+		diags, fileHasErrors, fileHasWarnings := checkFileForDiags(filename)
+		allDiags = append(allDiags, diags...)
+		if fileHasErrors {
+			hasErrors = true
+		}
+		if fileHasWarnings {
+			hasWarnings = true
+		}
 	}
 
-	fmt.Printf("✓ %s type checks successfully\n", filename)
+	if jsonOutput {
+		// JSON mode: output structured diagnostics to stdout
+		if allDiags == nil {
+			allDiags = []diagnostic.Diagnostic{} // emit [] not null
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(allDiags); err != nil {
+			fmt.Fprintf(os.Stderr, "Error encoding JSON: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		// Text mode: existing output format
+		for _, d := range allDiags {
+			if d.Severity == "warning" {
+				fmt.Fprintf(os.Stderr, "warning: %s\n", d.Error())
+			} else {
+				fmt.Fprintf(os.Stderr, "  %s\n", d.Error())
+			}
+		}
+		if !hasErrors && !(strictOnerr && hasWarnings) {
+			for _, filename := range files {
+				fmt.Printf("✓ %s type checks successfully\n", filename)
+			}
+		}
+	}
+
+	if hasErrors || (strictOnerr && hasWarnings) {
+		os.Exit(1)
+	}
 }

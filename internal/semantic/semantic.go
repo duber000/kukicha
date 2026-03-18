@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/duber000/kukicha/internal/ast"
+	"github.com/duber000/kukicha/internal/diagnostic"
 )
 
 // Analyzer performs semantic analysis on the AST
@@ -27,6 +28,7 @@ type Analyzer struct {
 	inPipedSwitch       bool                   // True while analyzing piped switch case bodies (suppresses return-count checks)
 	deprecatedFuncs     map[string]string      // Function name → deprecation message (from # kuki:deprecated directives)
 	deprecatedTypes     map[string]string      // Type name → deprecation message
+	diagnostics         []diagnostic.Diagnostic // Structured diagnostics (superset of errors+warnings with metadata)
 }
 
 // New creates a new semantic analyzer
@@ -152,4 +154,43 @@ func (a *Analyzer) warn(pos ast.Position, message string) {
 // Call after Analyze(). The caller decides whether to display or promote them to errors.
 func (a *Analyzer) Warnings() []error {
 	return a.warnings
+}
+
+// Diagnostics returns structured diagnostics collected during analysis.
+// Each diagnostic includes file, line, col, severity, optional category, message,
+// and optional suggestion. Call after Analyze().
+func (a *Analyzer) Diagnostics() []diagnostic.Diagnostic {
+	return a.diagnostics
+}
+
+// errorDiag records a structured error diagnostic with category and suggestion metadata.
+// It also appends to a.errors for backward compatibility with existing callers.
+func (a *Analyzer) errorDiag(pos ast.Position, message, category, suggestion string) {
+	d := diagnostic.Diagnostic{
+		File:       pos.File,
+		Line:       pos.Line,
+		Col:        pos.Column,
+		Severity:   "error",
+		Category:   category,
+		Message:    message,
+		Suggestion: suggestion,
+	}
+	a.diagnostics = append(a.diagnostics, d)
+	a.errors = append(a.errors, d)
+}
+
+// warnDiag records a structured warning diagnostic with category and suggestion metadata.
+// It also appends to a.warnings for backward compatibility.
+func (a *Analyzer) warnDiag(pos ast.Position, message, category, suggestion string) {
+	d := diagnostic.Diagnostic{
+		File:       pos.File,
+		Line:       pos.Line,
+		Col:        pos.Column,
+		Severity:   "warning",
+		Category:   category,
+		Message:    message,
+		Suggestion: suggestion,
+	}
+	a.diagnostics = append(a.diagnostics, d)
+	a.warnings = append(a.warnings, d)
 }

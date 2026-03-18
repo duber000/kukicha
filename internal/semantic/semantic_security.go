@@ -61,10 +61,11 @@ func (a *Analyzer) checkSQLInterpolation(qualifiedName string, expr *ast.MethodC
 
 	sqlArg := expr.Arguments[sqlArgIndex]
 	if strLit, ok := sqlArg.(*ast.StringLiteral); ok && strLit.Interpolated {
-		a.error(strLit.Pos(), fmt.Sprintf(
-			"SQL injection risk: string interpolation in %s query — use parameter placeholders ($1, $2, ...) instead",
-			qualifiedName,
-		))
+		a.errorDiag(strLit.Pos(),
+			fmt.Sprintf("SQL injection risk: string interpolation in %s query — use parameter placeholders ($1, $2, ...) instead", qualifiedName),
+			"security/sql-injection",
+			"use parameter placeholders ($1, $2, ...) instead of string interpolation",
+		)
 	}
 }
 
@@ -87,10 +88,11 @@ func (a *Analyzer) checkHTMLNonLiteral(qualifiedName string, expr *ast.MethodCal
 
 	contentArg := expr.Arguments[contentArgIndex]
 	if _, ok := contentArg.(*ast.StringLiteral); !ok {
-		a.error(expr.Pos(), fmt.Sprintf(
-			"XSS risk: %s with non-literal content — use http.SafeHTML to HTML-escape user-controlled content",
-			qualifiedName,
-		))
+		a.errorDiag(expr.Pos(),
+			fmt.Sprintf("XSS risk: %s with non-literal content — use http.SafeHTML to HTML-escape user-controlled content", qualifiedName),
+			"security/xss",
+			"use http.SafeHTML to HTML-escape user-controlled content, or use http.Text() for plain text",
+		)
 	}
 }
 
@@ -103,10 +105,11 @@ func (a *Analyzer) checkFetchInHandler(qualifiedName string, expr *ast.MethodCal
 	if !a.isInHTTPHandler() {
 		return
 	}
-	a.error(expr.Pos(), fmt.Sprintf(
-		"SSRF risk: %s inside an HTTP handler — use fetch.SafeGet or add fetch.Transport(netguard.HTTPTransport(...)) to restrict outbound requests",
-		qualifiedName,
-	))
+	a.errorDiag(expr.Pos(),
+		fmt.Sprintf("SSRF risk: %s inside an HTTP handler — use fetch.SafeGet or add fetch.Transport(netguard.HTTPTransport(...)) to restrict outbound requests", qualifiedName),
+		"security/ssrf",
+		"use fetch.SafeGet or add fetch.Transport(netguard.HTTPTransport(...)) to restrict outbound requests",
+	)
 }
 
 // checkFilesInHandler warns when files.* I/O functions are called inside an
@@ -118,10 +121,11 @@ func (a *Analyzer) checkFilesInHandler(qualifiedName string, expr *ast.MethodCal
 	if !a.isInHTTPHandler() {
 		return
 	}
-	a.error(expr.Pos(), fmt.Sprintf(
-		"path traversal risk: %s inside an HTTP handler — use sandbox.* with a restricted root for user-controlled paths",
-		qualifiedName,
-	))
+	a.errorDiag(expr.Pos(),
+		fmt.Sprintf("path traversal risk: %s inside an HTTP handler — use sandbox.* with a restricted root for user-controlled paths", qualifiedName),
+		"security/path-traversal",
+		"use sandbox.* with a restricted root for user-controlled paths",
+	)
 }
 
 // checkShellRunNonLiteral warns when shell.Run is called with a non-literal
@@ -137,8 +141,11 @@ func (a *Analyzer) checkShellRunNonLiteral(qualifiedName string, expr *ast.Metho
 		// We can't verify the piped value's origin from TypeInfo alone,
 		// but piping a variable into shell.Run is almost certainly unsafe.
 		if pipedArg.Kind != TypeKindUnknown {
-			a.warn(expr.Pos(),
-				"command injection risk: piped value into shell.Run cannot be verified as safe — use shell.Output() with separate arguments for variable input")
+			a.warnDiag(expr.Pos(),
+				"command injection risk: piped value into shell.Run cannot be verified as safe — use shell.Output() with separate arguments for variable input",
+				"security/command-injection",
+				"use shell.Output() with separate arguments for variable input",
+			)
 		}
 		return
 	}
@@ -147,8 +154,10 @@ func (a *Analyzer) checkShellRunNonLiteral(qualifiedName string, expr *ast.Metho
 	}
 	cmdArg := expr.Arguments[0]
 	if _, ok := cmdArg.(*ast.StringLiteral); !ok {
-		a.error(expr.Pos(),
+		a.errorDiag(expr.Pos(),
 			"command injection risk: shell.Run with non-literal argument — shell.Run splits on whitespace without quoting; use shell.Output() with separate arguments for variable input",
+			"security/command-injection",
+			"use shell.Output() with separate arguments for variable input",
 		)
 	}
 }
@@ -176,9 +185,10 @@ func (a *Analyzer) checkRedirectNonLiteral(qualifiedName string, expr *ast.Metho
 	}
 	urlArg := expr.Arguments[urlArgIndex]
 	if _, ok := urlArg.(*ast.StringLiteral); !ok {
-		a.error(expr.Pos(), fmt.Sprintf(
-			"open redirect risk: %s with non-literal URL — use http.SafeRedirect(w, r, url, allowedHosts...) to validate the destination",
-			qualifiedName,
-		))
+		a.errorDiag(expr.Pos(),
+			fmt.Sprintf("open redirect risk: %s with non-literal URL — use http.SafeRedirect(w, r, url, allowedHosts...) to validate the destination", qualifiedName),
+			"security/open-redirect",
+			"use http.SafeRedirect(w, r, url, allowedHosts...) to validate the destination",
+		)
 	}
 }
