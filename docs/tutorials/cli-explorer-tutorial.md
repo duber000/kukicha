@@ -196,12 +196,12 @@ Now let's write functions to filter repos. This is where pipes and **arrow lambd
 ```kukicha
 # FilterByLanguage returns repos matching a language (case-insensitive)
 function FilterByLanguage(repos list of Repo, language string) list of Repo
-    return repos |> slice.Filter((r Repo) => r.Language |> string.ToLower() |> string.Contains(language |> string.ToLower()))
+    return repos |> slice.Filter(r => r.Language |> string.ToLower() |> string.Contains(language |> string.ToLower()))
 ```
 
 **What's new here?**
 
-The `(r Repo) => ...` form is an **arrow lambda** — a concise inline function used heavily with `slice.Filter` and `slice.Map`.
+The `r => ...` form is an **arrow lambda** — a concise inline function used heavily with `slice.Filter` and `slice.Map`. The compiler infers the parameter type from context, so you don't need to write `(r Repo) =>` explicitly.
 
 ### Let's Try It
 
@@ -377,7 +377,7 @@ function FetchRepos(username string) list of Repo
 # --- Filter Functions ---
 
 function FilterByLanguage(repos list of Repo, language string) list of Repo
-    return repos |> slice.Filter((r Repo) => r.Language |> string.ToLower() |> string.Contains(language |> string.ToLower()))
+    return repos |> slice.Filter(r => r.Language |> string.ToLower() |> string.Contains(language |> string.ToLower()))
 
 # --- Explorer Methods ---
 
@@ -506,7 +506,7 @@ function main()
                     print("Usage: search <text>")
                     continue
                 term := parts[1] |> string.ToLower()
-                results := ex.repos |> slice.Filter((r Repo) =>
+                results := ex.repos |> slice.Filter(r =>
                     name := r.Name |> string.ToLower()
                     desc := r.Description |> string.ToLower()
                     return name |> string.Contains(term) or desc |> string.Contains(term)
@@ -693,16 +693,18 @@ The `as v` binding gives you a correctly-typed variable in each branch — so in
 ### Arrow Lambdas (`=>`) — Concise Inline Functions
 
 ```kukicha
-repos |> slice.Filter((r Repo) => r.Stars > 100)
+repos |> slice.Filter(r => r.Stars > 100)
 ```
 
-An **arrow lambda** is a short inline function. The part before `=>` declares the parameters (with types), and the part after is the body. For single-expression lambdas, the result is returned automatically — no `return` needed.
+An **arrow lambda** is a short inline function. The part before `=>` declares the parameters, and the part after is the body. For single-expression lambdas, the result is returned automatically — no `return` needed.
+
+When calling stdlib functions like `slice.Filter` or `sort.ByKey`, the compiler **infers the parameter type** from the list being filtered/sorted — so you don't need to write `(r Repo) =>`, just `r =>`.
 
 Arrow lambdas come in two forms:
-- **Expression form** (one line, auto-return): `(r Repo) => r.Stars > 100`
+- **Expression form** (one line, auto-return): `r => r.Stars > 100`
 - **Block form** (multi-statement, explicit `return`):
   ```kukicha
-  (r Repo) =>
+  r =>
       name := r.Name |> string.ToLower()
       return name |> string.Contains(term)
   ```
@@ -919,7 +921,7 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | **`reference`** | Modify the original value, not a copy |
 | **`onerr`** | Handle errors gracefully with fallback values |
 | **Pipe Operator** | Chain operations into readable data pipelines |
-| **Arrow Lambdas** | Concise inline functions with `(r Repo) => expr` |
+| **Arrow Lambdas** | Concise inline functions with `r => expr` (type inferred from context) |
 | **`empty`** | Check for null/missing values |
 | **`switch`/`when`** | Clean command dispatch with multiple matches per branch |
 | **`\|> switch as v`** | Branch on a value's type with typed piped switch |

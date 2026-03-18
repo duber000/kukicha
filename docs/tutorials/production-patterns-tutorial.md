@@ -878,7 +878,7 @@ Here's a quick reference for translating between Kukicha and Go:
 | `result onerr 0 explain "hint"` | `if err != nil { result = 0; err = fmt.Errorf("hint: %w", err) }` |
 | `a \|> f(b)` | `f(a, b)` |
 | `a \|> f(b, _)` | `f(b, a)` (placeholder) |
-| `(r Repo) => r.Stars > 100` | `func(r Repo) bool { return r.Stars > 100 }` |
+| `r => r.Stars > 100` | `func(r Repo) bool { return r.Stars > 100 }` |
 | `go` + indented block | `go func() { ... }()` |
 | `switch x` / `when a` / `otherwise` | `switch x { case a: ... default: ... }` |
 | `type Handler func(string)` | `type Handler func(string)` |

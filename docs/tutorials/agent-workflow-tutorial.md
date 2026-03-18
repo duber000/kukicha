@@ -88,7 +88,7 @@ function main()
         |> fetch.Json(list of Repo) onerr panic "fetch failed: {error}"
 
     # Filter to repos with more than 1000 stars
-    popular := repos |> slice.Filter((r Repo) => r.stars > 1000)
+    popular := repos |> slice.Filter(r => r.stars > 1000)
 
     # Print each result
     for repo in popular
@@ -160,7 +160,7 @@ Before running the code, ask yourself:
 - `|> fetch.CheckStatus()` — fails if the API returns an error. Good.
 - `|> fetch.Json(list of Repo)` — decodes the JSON as a list of Repos. Matches the `type Repo` definition?
 - `onerr panic "fetch failed: {error}"` — crashes with an error message if anything in the pipeline fails. Acceptable for a one-off tool.
-- `slice.Filter((r Repo) => r.stars > 1000)` — keeps repos with > 1000 stars. Matches the intent?
+- `slice.Filter(r => r.stars > 1000)` — keeps repos with > 1000 stars. Matches the intent?
 
 ---
 
