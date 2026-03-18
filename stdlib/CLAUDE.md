@@ -217,6 +217,13 @@ pool := pg.New(url) |> pg.Retry(5, 500) |> pg.Open() onerr panic "db: {error}"
 import "stdlib/kube"
 cluster := kube.New() |> kube.Retry(5, 1000) |> kube.Open() onerr panic "k8s: {error}"
 
+# Concurrent map — transform every element in parallel, ordered results
+import "stdlib/concurrent"
+results := concurrent.Map(urls, url => check(url))
+
+# With concurrency cap (useful for rate-limited APIs)
+results := concurrent.MapWithLimit(repos, 4, r => fetchDetails(r))
+
 # Iterator-based pipelines (lazy evaluation via Go 1.23 iter.Seq)
 import "stdlib/iterator"
 names := repos

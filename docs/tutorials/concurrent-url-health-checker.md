@@ -324,20 +324,36 @@ Here's what you learned in this tutorial:
 | **Buffered channel** | `make(channel of T, 10)` | Channel that can hold values before blocking |
 | **Error wrapping** | `errors.Wrap(error, "msg")` | Adds context to an error |
 
-### stdlib Shortcut: `concurrent.Parallel`
+### stdlib Shortcut: `concurrent.Map`
 
-Now that you understand how goroutines and channels work, `stdlib/concurrent` wraps fire-and-forget patterns for you. `concurrent.Parallel` runs a list of zero-argument functions concurrently and waits for all to finish:
+Now that you understand how goroutines and channels work under the hood, `stdlib/concurrent` wraps the common patterns for you. The entire health checker from Step 4 collapses to one line:
 
 ```kukicha
 import "stdlib/concurrent"
 
+# Check all URLs concurrently, results in original order
+results := concurrent.Map(urls, url => check(url))
+for result in results
+    print("[{result.status}] {result.url} ({result.latency})")
+```
+
+For rate-limited APIs or large lists, cap the concurrency with `MapWithLimit`:
+
+```kukicha
+# At most 3 checks at a time (like the fan-out pattern from Step 5)
+results := concurrent.MapWithLimit(urls, 3, url => check(url))
+```
+
+For fire-and-forget work (no return values), use `concurrent.Parallel`:
+
+```kukicha
 concurrent.Parallel(
     () => processChunk(urlsA),
     () => processChunk(urlsB),
 )
 ```
 
-For a parallel map (transform each element concurrently with ordered results), use the manual goroutine + channel pattern from Step 5 — it gives you full control over result ordering and error handling.
+The manual goroutine + channel patterns from Steps 3–5 are still useful when you need custom error handling, streaming results, or more complex coordination.
 
 ### What's Next?
 
