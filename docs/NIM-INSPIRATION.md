@@ -219,9 +219,9 @@ func highestSemverTag(repo string) (string, error)
 ## Phase 4: Lambda Parameter Type Inference
 
 **Complexity**: Medium-High | **Impact**: Highest for general Kukicha readability
-**Status**: Not started
+**Status**: Done
 
-The parser already supports untyped lambda forms (`x => expr` and `(x, y) => expr`). The missing piece is semantic analysis — inferring types from call context so the codegen can emit typed Go lambdas.
+Semantic analysis now infers lambda parameter types from call context, so codegen emits fully typed Go lambdas without requiring explicit annotations in `.kuki` source.
 
 ### Inference strategy (priority order)
 
@@ -261,18 +261,20 @@ entries = entries |> sort.ByKey(e => e.name)
 |> cli.CommandAction("pick", a => doPick(a, initialTag))
 ```
 
-### Files to modify
+### Files changed
 
-- `internal/semantic/semantic_expressions.go` — add type inference for lambda params from call context
-- `internal/codegen/codegen_decl.go` — emit inferred types in Go lambda output
-- Tests across semantic and codegen packages
+- `internal/semantic/semantic_calls.go` — `inferLambdaParamTypes` and `inferLambdaParamTypesMethod` infer types from call context (Cases A/B/C)
+- `cmd/genstdlibregistry/main.go` — populates `ParamFuncParams` on `goStdlibEntry` for func-typed parameters
+- `internal/codegen/codegen_decl.go` — `generateArrowLambda` checks `exprTypes` for inferred types
+- `internal/semantic/semantic_lambdas_test.go` — inference test cases
+- `internal/codegen/codegen_lambdas_test.go` — codegen emission test cases
 
 ---
 
 ## Phase 5: `# kuki:panics` and `# kuki:todo` Directives
 
 **Complexity**: Low | **Impact**: Moderate
-**Status**: Not started
+**Status**: Done
 
 Both extend the existing directive infrastructure (`# kuki:deprecated`, `# kuki:security`).
 
@@ -316,11 +318,13 @@ warning: TODO: "Add retry logic" on fetchConfig (config.kuki:15)
 - Both work on `func` and `type` declarations (same as existing directives)
 - `# kuki:panics` message should appear in LSP hover tooltips
 
-### Files to modify
+### Files changed
 
-- `internal/semantic/directives.go` — register `panics` and `todo` as valid directive types
-- `internal/semantic/` — emit warnings at call sites (panics) and declarations (todo)
-- `cmd/genstdlibregistry/` — propagate `panics` metadata through the registry
+- `internal/semantic/semantic.go` — `collectDeprecations` registers `panics` into `panickedFuncs` map and emits `todo` warnings on declarations
+- `internal/semantic/semantic_calls.go` — `checkPanics` emits warnings at call sites (local + stdlib via `generatedStdlibPanics`)
+- `cmd/genstdlibregistry/main.go` — generates `generatedStdlibPanics` map from `# kuki:panics` directives
+- `internal/semantic/directive_test.go` — tests for `todo` (func + type) and `panics` warnings
+- `stdlib/input/input.kuki` — first stdlib usage (`# kuki:panics "if reading from stdin fails"` on `Prompt`)
 
 ---
 
@@ -331,8 +335,8 @@ warning: TODO: "Add retry logic" on fetchConfig (config.kuki:15)
 | 1 | Phase 1 | Shell builder (FlagIf, Preview, Args) | Done |
 | 2 | Phase 2 | `stdlib/regex` | Done |
 | 3 | Phase 3 | `stdlib/git` | Done |
-| 4 | Phase 4 | Lambda type inference | Not started |
-| 5 | Phase 5 | `# kuki:panics` + `# kuki:todo` | Not started |
+| 4 | Phase 4 | Lambda type inference | Done |
+| 5 | Phase 5 | `# kuki:panics` + `# kuki:todo` | Done |
 
 ### Rewritten gh-semver-release (target state after all phases)
 
