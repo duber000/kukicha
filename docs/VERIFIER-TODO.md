@@ -1,0 +1,201 @@
+# Verifier Roadmap: Formal Proof Engineering for Kukicha
+
+> Inspired by [Leanstral](https://mistral.ai/news/leanstral) — Mistral's open-source Lean 4 proof agent.
+
+## Key Insight from Leanstral
+
+Leanstral is a **6B active parameter** model (highly sparse architecture) that outperforms Claude Opus 4.6, Sonnet 4.6, Qwen3.5 397B, Kimi-K2.5 1T, and GLM5 744B on formal proof engineering — despite being ~100x smaller. The secret: **parallel inference with Lean as a perfect verifier.**
+
+The model generates many proof candidates simultaneously. Lean's kernel — a small, trusted piece of code — definitively accepts or rejects each one. No ambiguity, no "looks right." This generate-and-verify loop means a small model + perfect verifier > large model alone.
+
+Crucially, Leanstral operates on **real repositories** (PRs to the Fermat's Last Theorem formalization project), not isolated competition problems. It can diagnose breaking changes across Lean versions, build test environments to reproduce failures, and propose fixes with correct rationale — the full engineering loop, not just theorem proving.
+
+**The pattern:** Small, efficient code generation + a fast, trustworthy verifier in the loop + MCP for tool access = agent that punches far above its weight class.
+
+## Why This Matters for Kukicha
+
+When AI agents are the primary code authors, every compile-time check is a proof obligation that all future generated code must satisfy. Kukicha's compiler already acts as a partial verifier (6 security checks, type system, Go compiler as second layer). This roadmap strengthens that verifier across three dimensions:
+
+1. **AI-assisted code** — tighter generate-and-verify loops (like Leanstral's parallel inference + Lean kernel)
+2. **Agent runtime** — compiler as guardrail for agent-generated code (like Lean rejecting invalid proofs)
+3. **Compiler correctness** — verifying the verifier itself (like Lean's trusted kernel being small and proven)
+
+### The Analogy
+
+| Leanstral | Kukicha |
+|-----------|---------|
+| Lean 4 kernel (perfect verifier) | `kukicha check` + Go compiler (partial verifier) |
+| Proof candidates (parallel inference) | Code candidates (parallel `kukicha check`) |
+| Lean's type theory (specifications) | Security checks + type system (partial specs) |
+| `lean-lsp-mcp` (tool access) | Structured diagnostics + MCP (tool access) |
+| FLT project PRs (real-world eval) | Real agent tasks on Kukicha codebases |
+
+The gap: Lean is a *perfect* verifier (sound and complete for its logic). Kukicha's compiler is a *partial* verifier (catches classes of bugs but can't prove arbitrary correctness). This roadmap closes that gap incrementally.
+
+---
+
+## What We Already Have
+
+| Verification Layer | What It Catches | Location |
+|--------------------|-----------------|----------|
+| 6 security checks | SQL injection, XSS, SSRF, path traversal, command injection, open redirect | `internal/semantic/semantic_security.go` |
+| Type system (14 kinds) | Type mismatches, undefined types, struct field errors | `internal/semantic/semantic_types.go` |
+| Return count inference | Incorrect `onerr` multi-value splits | `internal/semantic/semantic_declarations.go` |
+| `kukicha check` | Fast syntax + semantic validation without compilation | `cmd/kukicha/` |
+| Go compiler (2nd pass) | Anything Kukicha's analysis misses | Transpiled output |
+| ~8,100 lines of tests | Regressions across lexer, parser, semantic, codegen, stdlib | `internal/*/` |
+
+---
+
+## Tier 1: Fuzz Testing (no new tooling)
+
+**Goal:** Find crashes and panics in the compiler by throwing random inputs at it.
+
+- [ ] **Fuzz the lexer** — Go's built-in `testing.F` (since Go 1.18). Feed random byte sequences to `lexer.New()` and verify it never panics, only returns errors.
+  - File: `internal/lexer/lexer_fuzz_test.go`
+  - Property: `Lex(input)` either produces valid tokens or returns errors, never panics
+
+- [ ] **Fuzz the parser** — Feed random token sequences (or random source strings) to `parser.Parse()`.
+  - File: `internal/parser/parser_fuzz_test.go`
+  - Property: `Parse(input)` either produces a valid AST or returns parse errors, never panics
+
+- [ ] **Fuzz the full pipeline** — Feed random `.kuki` source to the full lex→parse→semantic→codegen chain.
+  - File: `internal/codegen/codegen_fuzz_test.go`
+  - Property: pipeline either produces valid Go (verified by `go/parser`) or returns errors, never panics
+  - Seed corpus: all existing test cases + `examples/*.kuki` + `stdlib/*.kuki`
+
+---
+
+## Tier 2: Property-Based Testing (no new tooling)
+
+**Goal:** Verify algebraic properties of compiler transforms.
+
+- [ ] **Roundtrip property** — `parse(format(parse(source))) == parse(source)` for the formatter.
+  - Proves the formatter doesn't change program meaning
+  - File: `internal/formatter/formatter_property_test.go`
+
+- [ ] **Codegen structural soundness** — For any valid AST, `go/parser.ParseFile(codegen(ast))` succeeds.
+  - Stronger than existing integration tests (random inputs, not hand-picked)
+  - File: `internal/codegen/codegen_property_test.go`
+
+- [ ] **Security check monotonicity** — Adding code to a program never removes a security error.
+  - If `check(P)` reports error E, then `check(P + extra_code)` also reports E
+  - File: `internal/semantic/security_property_test.go`
+
+- [ ] **Return count consistency** — For all stdlib functions in `stdlib_registry_gen.go`, the declared return count matches the actual Go function signature in the generated `.go` file.
+  - File: `internal/semantic/returncount_property_test.go`
+
+---
+
+## Tier 3: Structured Diagnostics for AI Agents
+
+**Goal:** Make the compiler a better verifier for AI-in-the-loop workflows.
+
+- [ ] **JSON error output** — `kukicha check --json` emits structured errors:
+  ```json
+  {
+    "file": "app.kuki",
+    "line": 12,
+    "col": 5,
+    "category": "security/sql-injection",
+    "message": "string interpolation in SQL query argument",
+    "suggestion": "use parameterized query: pg.Query(pool, \"SELECT * WHERE id = $1\", id)"
+  }
+  ```
+  - Enables agents to parse errors programmatically and auto-fix
+
+- [ ] **Fix suggestions for security errors** — Each security check category provides a concrete safe alternative.
+  - SQL: "use $1 parameter placeholder"
+  - XSS: "use http.Text() or template"
+  - SSRF: "validate URL against allowlist with fetch.AllowedHosts()"
+  - Shell: "use shell.Command() with explicit args"
+
+- [ ] **Batch check mode** — `kukicha check --batch file1.kuki file2.kuki ...` for parallel verification of multiple candidate solutions.
+  - This is the direct Leanstral parallel: generate N candidates, verify all in parallel, keep the valid ones
+  - The compiler becomes the "Lean kernel" in the agent loop
+
+- [ ] **MCP server for kukicha check** — Expose the compiler as an MCP tool so any agent (including Leanstral-style small models) can call it natively.
+  - Mirrors Leanstral's `lean-lsp-mcp` integration
+  - Enables: `kukicha-check-mcp` → agent sends `.kuki` source → gets structured errors back
+
+---
+
+## Tier 4: Specification Directives (new syntax)
+
+**Goal:** Let Kukicha code express lightweight specifications that generate runtime checks.
+
+- [ ] **`# kuki:ensures` directive** — Design by Contract for functions:
+  ```kukicha
+  # kuki:ensures result >= 0
+  func Abs(x int) int
+      if x < 0
+          return -x
+      return x
+  ```
+  Generates: `if !(result >= 0) { panic("ensures violated: result >= 0") }` in debug builds.
+
+- [ ] **`# kuki:requires` directive** — Precondition checks:
+  ```kukicha
+  # kuki:requires len(items) > 0
+  func First(items list of string) string
+      return items[0]
+  ```
+
+- [ ] **`# kuki:invariant` on types** — Struct invariants checked after construction:
+  ```kukicha
+  # kuki:invariant self.min <= self.max
+  type Range
+      min int
+      max int
+  ```
+
+- [ ] **Strip in release builds** — `kukicha build --release` omits all contract checks (zero runtime cost in production).
+
+---
+
+## Tier 5: Agent-Specific Security Checks
+
+**Goal:** Extend the security check system for risks specific to AI agent code.
+
+- [ ] **Unbounded loops** — Warn when a `for` loop has no obvious termination condition inside an HTTP handler or agent task.
+
+- [ ] **Data exfiltration** — Flag when `fetch.Post`/`fetch.Get` is called with data that originated from `files.Read` or `os.ReadFile` inside an agent context.
+
+- [ ] **Resource exhaustion** — Warn on unbounded `make(channel)`, unbounded `go` blocks, or allocation inside loops without size limits.
+
+- [ ] **Privilege escalation** — Flag `shell.Run` or `shell.Command` calls that use variables derived from external input (HTTP params, env vars, file contents).
+
+---
+
+## Tier 6: Formal Verification (long-term)
+
+**Goal:** Prove properties of the compiler itself using Lean 4 or similar.
+
+- [ ] **Formalize type compatibility rules** — The `typesCompatible()` function in `semantic_types.go` has ~20 cases with subtle interactions. A Lean 4 specification could prove:
+  - Reflexivity: `typesCompatible(T, T)` is always true
+  - Symmetry where expected
+  - No contradictions between cases
+
+- [ ] **Prove security check soundness** — For a defined threat model, prove that the pattern-matching in `semantic_security.go` has no false negatives (sound) and characterize false positive rate.
+
+- [ ] **Transpilation correctness for core constructs** — Formalize and prove semantic preservation for:
+  - Pipe chains (`a |> b |> c` == `c(b(a))`)
+  - `onerr` desugaring (error propagation preserves control flow)
+  - String interpolation (generated `fmt.Sprintf` matches source semantics)
+
+- [ ] **Explore Leanstral integration** — Use Leanstral (Apache 2.0, 6B active params, available via Mistral API) to assist with writing Lean 4 proofs about Kukicha's compiler properties. The meta-level: an AI proving that an AI-targeted compiler is correct.
+  - Leanstral can operate on real repositories (not just isolated theorems) — feed it the Lean formalization of Kukicha's type rules and let it fill in proofs
+  - Its sparse architecture makes it cost-efficient for iterative proof refinement
+
+---
+
+## Success Metrics
+
+| Tier | Metric | Target |
+|------|--------|--------|
+| 1 | Fuzz test coverage | Lexer, parser, full pipeline; 0 panics after 10M iterations |
+| 2 | Property violations found | Fix all violations; 0 remaining |
+| 3 | Agent error-fix rate | Agents can auto-fix 80%+ of compiler errors using structured diagnostics |
+| 4 | Contract adoption | All stdlib functions have `ensures`/`requires` where applicable |
+| 5 | Agent security coverage | 4+ new check categories beyond current 6 |
+| 6 | Formal proofs | Type compatibility + 1 security check category proven sound |
