@@ -3,6 +3,7 @@
 petiole concurrent_test
 
 import "stdlib/concurrent"
+import "stdlib/test"
 import "testing"
 
 # Test Parallel with empty task list
@@ -28,3 +29,56 @@ func TestParallelSingleTask(t reference testing.T)
     concurrent.Parallel(task)
     if not taskRun
         t.Errorf("Task should have been executed")
+
+# --- TestMap ---
+
+type MapCase
+    name string
+    input list of int
+    expected list of int
+
+func TestMap(t reference testing.T)
+    cases := list of MapCase{
+        MapCase{name: "double values", input: list of int{1, 2, 3}, expected: list of int{2, 4, 6}},
+        MapCase{name: "single element", input: list of int{5}, expected: list of int{10}},
+        MapCase{name: "empty list", input: list of int{}, expected: list of int{}},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            results := concurrent.Map(tc.input, (n int) => n * 2)
+            test.AssertEqual(t, len(results), len(tc.expected))
+            for i, v in results
+                test.AssertEqual(t, v, tc.expected[i])
+        )
+
+# --- TestMapWithLimit ---
+
+type MapWithLimitCase
+    name string
+    input list of int
+    limit int
+    expected list of int
+
+func TestMapWithLimit(t reference testing.T)
+    cases := list of MapWithLimitCase{
+        MapWithLimitCase{name: "limit 2", input: list of int{1, 2, 3, 4}, limit: 2, expected: list of int{10, 20, 30, 40}},
+        MapWithLimitCase{name: "limit 1", input: list of int{5, 10}, limit: 1, expected: list of int{50, 100}},
+        MapWithLimitCase{name: "empty list", input: list of int{}, limit: 4, expected: list of int{}},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            results := concurrent.MapWithLimit(tc.input, tc.limit, (n int) => n * 10)
+            test.AssertEqual(t, len(results), len(tc.expected))
+            for i, v in results
+                test.AssertEqual(t, v, tc.expected[i])
+        )
+
+# --- TestMapPreservesOrder ---
+
+func TestMapPreservesOrder(t reference testing.T)
+    input := list of int{5, 4, 3, 2, 1}
+    results := concurrent.Map(input, (n int) => n * n)
+    expected := list of int{25, 16, 9, 4, 1}
+    test.AssertEqual(t, len(results), len(expected))
+    for i, v in results
+        test.AssertEqual(t, v, expected[i])

@@ -35,6 +35,43 @@ func ParallelWithLimit(limit int, many tasks func())
         ()
     wg.Wait()
 
+# Map runs fn on every element of items concurrently.
+# Results are returned in the same order as items.
+# All goroutines run at once — use MapWithLimit for large lists.
+# Example: results := concurrent.Map(urls, url => check(url))
+func Map(items list of any, fn func(any) result) list of result
+    results := make(list of result, len(items))
+    wg := sync.WaitGroup{}
+    wg.Add(len(items))
+    for i, item in items
+        idx := i
+        it := item
+        go func()
+            results[idx] = fn(it)
+            wg.Done()
+        ()
+    wg.Wait()
+    return results
+
+# MapWithLimit is like Map but runs at most `limit` goroutines at once.
+# Example: results := concurrent.MapWithLimit(repos, 4, r => fetchDetails(r))
+func MapWithLimit(items list of any, limit int, fn func(any) result) list of result
+    results := make(list of result, len(items))
+    wg := sync.WaitGroup{}
+    semaphore := make(channel of int, limit)
+    wg.Add(len(items))
+    for i, item in items
+        idx := i
+        it := item
+        send 1 to semaphore
+        go func()
+            results[idx] = fn(it)
+            receive from semaphore
+            wg.Done()
+        ()
+    wg.Wait()
+    return results
+
 # Go runs a function in a new goroutine with WaitGroup tracking
 # Returns empty for now
 # Example: concurrent.Go(myFunc)

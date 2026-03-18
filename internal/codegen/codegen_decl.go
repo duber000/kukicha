@@ -158,6 +158,12 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 		for _, tp := range typeParams {
 			g.placeholderMap[tp.Placeholder] = tp.Name
 		}
+	} else if g.isStdlibConcurrent() {
+		// Generate type parameters from function signature for concurrent
+		typeParams = g.inferConcurrentTypeParameters(decl)
+		for _, tp := range typeParams {
+			g.placeholderMap[tp.Placeholder] = tp.Name
+		}
 	} else if g.isStdlibFetch() {
 		// Generate type parameters for selected fetch helpers (e.g., Json)
 		typeParams = g.inferFetchTypeParameters(decl)

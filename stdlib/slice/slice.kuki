@@ -122,11 +122,11 @@ func Filter(items list of any, predicate func(any) bool) list of any
 
 # Map transforms each element in the slice using the transform function
 # Returns a new slice with transformed values
-func Map(items list of any, transform func(any) any) list of any
-    result := make(list of any, len(items))
+func Map(items list of any, transform func(any) result) list of result
+    out := make(list of result, len(items))
     for i, item in items
-        result[i] = transform(item)
-    return result
+        out[i] = transform(item)
+    return out
 
 # GroupBy groups elements by a key function
 # Returns a map where keys are the result of keyFunc and values are slices of elements

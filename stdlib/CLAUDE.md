@@ -15,7 +15,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString |
 | `stdlib/crypto` | Hashing, HMAC, and secure random (Go stdlib only) | SHA256, SHA256Bytes, HMAC, HMACBytes, RandomToken, RandomBytes, Equal |
 | `stdlib/cli` | CLI argument parsing with subcommands | New, Description, Arg, AddFlag, Action, RunApp, Command, CommandFlag, CommandAction, GlobalFlag, CommandName, GetString, GetBool, GetInt, NewArgs |
-| `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
+| `stdlib/concurrent` | Parallel execution and concurrent map | Parallel, ParallelWithLimit, Map, MapWithLimit |
 | `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, PullAuth, LoginFromConfig, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
 | `stdlib/ctx` | Context timeout/cancellation helpers | Background, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err |
 | `stdlib/datetime` | Named formats, duration helpers, format constants | Format, Seconds, Minutes, Hours; Constants: ISO8601, RFC3339, Date, Time, DateTime |

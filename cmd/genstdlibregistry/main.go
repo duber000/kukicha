@@ -164,11 +164,14 @@ func scanRegistry(paths []string) (scanResult, []error) {
 			// Detect generic placeholder usage for stdlib functions.
 			// This drives codegen's type parameter inference so new functions
 			// don't need to be manually added to hardcoded allowlists.
-			if pkgName == "slice" || pkgName == "sort" {
+			if pkgName == "slice" || pkgName == "sort" || pkgName == "concurrent" {
 				usesAny := signatureContainsPlaceholder(fd, "any")
 				usesAny2 := signatureContainsPlaceholder(fd, "any2")
 				usesOrdered := signatureContainsPlaceholder(fd, "ordered")
-				if usesAny && usesOrdered {
+				usesResult := signatureContainsPlaceholder(fd, "result")
+				if usesAny && usesResult {
+					result.genericClass[key] = "TR"
+				} else if usesAny && usesOrdered {
 					result.genericClass[key] = "TO"
 				} else if usesAny && usesAny2 {
 					result.genericClass[key] = "TK"
@@ -216,7 +219,7 @@ func scanRegistry(paths []string) (scanResult, []error) {
 						// Qualify unqualified named types with the package name.
 						if tr.kind == "TypeKindNamed" && tr.name != "" &&
 							!strings.Contains(tr.name, ".") &&
-							tr.name != "any" && tr.name != "any2" && tr.name != "ordered" && tr.name != "error" {
+							tr.name != "any" && tr.name != "any2" && tr.name != "ordered" && tr.name != "result" && tr.name != "error" {
 							tr.name = pkgName + "." + tr.name
 						}
 						innerTypes[j] = tr
@@ -475,11 +478,12 @@ var generatedSecurityFunctions = map[string]string{
 %s
 }
 
-// generatedSliceGenericClass maps stdlib/slice function names to their generic
+// generatedSliceGenericClass maps stdlib function names to their generic
 // classification based on placeholder usage in their signatures:
 //   - "T"  = uses "any" placeholder only  → emits [T any]
 //   - "K"  = uses "any2" placeholder only → emits [K comparable]
 //   - "TK" = uses both                    → emits [T any, K comparable]
+//   - "TR" = uses "any" and "result"      → emits [T any, R any]
 //
 // Functions not in this map do not use placeholders and are not made generic.
 var generatedSliceGenericClass = map[string]string{

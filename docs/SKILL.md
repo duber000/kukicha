@@ -513,7 +513,7 @@ ok   := input.Confirm("Proceed?") onerr return
 idx  := input.Choose("Select:", options) onerr return
 ```
 
-**stdlib/concurrent** — Parallel execution
+**stdlib/concurrent** — Parallel execution and concurrent map
 
 ```kukicha
 # Run zero-argument functions concurrently, wait for all to finish
@@ -527,6 +527,12 @@ concurrent.ParallelWithLimit(4,
     () => processChunk(chunkA),
     () => processChunk(chunkB),
 )
+
+# Transform every element in parallel, results in original order
+results := concurrent.Map(urls, url => check(url))
+
+# Same with a concurrency cap (useful for rate-limited APIs)
+results := concurrent.MapWithLimit(repos, 4, r => fetchDetails(r))
 ```
 
 **stdlib/datetime** — Time formatting and durations

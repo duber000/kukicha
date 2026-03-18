@@ -142,6 +142,17 @@ func (g *Generator) isStdlibMaps() bool {
 	return strings.Contains(g.sourceFile, "stdlib/maps/") || strings.Contains(g.sourceFile, "stdlib\\maps\\")
 }
 
+// isStdlibConcurrent checks if we're generating code in stdlib/concurrent.
+func (g *Generator) isStdlibConcurrent() bool {
+	return strings.Contains(g.sourceFile, "stdlib/concurrent/") || strings.Contains(g.sourceFile, "stdlib\\concurrent\\")
+}
+
+// inferConcurrentTypeParameters infers type parameters for stdlib/concurrent functions.
+func (g *Generator) inferConcurrentTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
+	class := semantic.GetSliceGenericClass("concurrent." + decl.Name.Value)
+	return g.typeParamsFromClass(class)
+}
+
 // isStdlibFetch checks if we're generating code in stdlib/fetch.
 func (g *Generator) isStdlibFetch() bool {
 	return strings.Contains(g.sourceFile, "stdlib/fetch/") || strings.Contains(g.sourceFile, "stdlib\\fetch\\")
@@ -175,7 +186,7 @@ func (g *Generator) inferMapsTypeParameters(decl *ast.FunctionDecl) []*TypeParam
 	return g.typeParamsFromClass(class)
 }
 
-// typeParamsFromClass converts a generic class string ("T", "K", "TK", "O", "TO")
+// typeParamsFromClass converts a generic class string ("T", "K", "TK", "O", "TO", "TR")
 // into TypeParameter slices.
 func (g *Generator) typeParamsFromClass(class string) []*TypeParameter {
 	if class == "" {
@@ -203,6 +214,13 @@ func (g *Generator) typeParamsFromClass(class string) []*TypeParameter {
 			Name:        "K",
 			Placeholder: "ordered",
 			Constraint:  "cmp.Ordered",
+		})
+	}
+	if strings.Contains(class, "R") {
+		typeParams = append(typeParams, &TypeParameter{
+			Name:        "R",
+			Placeholder: "result",
+			Constraint:  "any",
 		})
 	}
 
