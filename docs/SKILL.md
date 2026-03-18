@@ -166,18 +166,27 @@ switch event as e
 
 ### Lambdas
 
+Lambda parameter types are inferred from calling context — explicit annotations are optional.
+
 ```kukicha
-# Expression lambda (auto-return)
+# Inferred param type (preferred) — compiler resolves type from the list being piped
+repos   |> slice.Filter(r => r.stars > 100)
+entries |> sort.ByKey(e => e.name)
+
+# Explicit param type (optional — only needed when inference can't determine the type)
 repos |> slice.Filter((r Repo) => r.stars > 100)
 
-# Single untyped param
-numbers |> slice.Filter(n => n > 0)
+# Zero params
+button.OnClick(() => print("clicked"))
 
 # Block lambda (multi-statement, explicit return)
-repos |> slice.Filter((r Repo) =>
+repos |> slice.Filter(r =>
     name := r.name |> strpkg.ToLower()
     return name |> strpkg.Contains("go")
 )
+
+# sort.By — two params, both inferred
+repos |> sort.By((a, b) => a.stars < b.stars)
 ```
 
 ### Collections
@@ -314,9 +323,9 @@ url  = fetch.URLWithQuery(url,
 **stdlib/slice** — List operations
 
 ```kukicha
-active  := slice.Filter(items, (x Item) => x.active)
-names   := slice.Map(items, (x Item) => x.name)
-byGroup := slice.GroupBy(items, (x Item) => x.category)
+active  := slice.Filter(items, x => x.active)
+names   := slice.Map(items, x => x.name)
+byGroup := slice.GroupBy(items, x => x.category)
 first   := slice.FirstOr(items, defaultVal)
 val     := slice.GetOr(items, 0, defaultVal)
 ok      := slices.Contains(items, value)   # note: slices (Go stdlib), not slice
@@ -507,8 +516,17 @@ idx  := input.Choose("Select:", options) onerr return
 **stdlib/concurrent** — Parallel execution
 
 ```kukicha
-results := concurrent.Parallel(tasks, (t Task) => process(t)) onerr panic "{error}"
-results := concurrent.ParallelWithLimit(tasks, 4, (t Task) => process(t)) onerr panic "{error}"
+# Run zero-argument functions concurrently, wait for all to finish
+concurrent.Parallel(
+    () => processChunk(chunkA),
+    () => processChunk(chunkB),
+)
+
+# Same with a concurrency limit
+concurrent.ParallelWithLimit(4,
+    () => processChunk(chunkA),
+    () => processChunk(chunkB),
+)
 ```
 
 **stdlib/datetime** — Time formatting and durations
