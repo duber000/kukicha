@@ -30,6 +30,9 @@ func (g *Generator) generateTypeDecl(decl *ast.TypeDecl) {
 
 	g.indent--
 	g.writeLine("}")
+
+	// Generate Validate() method for types with # kuki:invariant directives
+	g.generateInvariantMethod(decl)
 }
 
 func (g *Generator) generateInterfaceDecl(decl *ast.InterfaceDecl) {
@@ -193,9 +196,20 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	params := g.generateFunctionParameters(decl.Parameters)
 	signature += fmt.Sprintf("(%s)", params)
 
-	// Add return types
+	// Add return types — use named returns when ensures directives are present
 	g.processingReturnType = true
-	returns := g.generateReturnTypes(decl.Returns)
+	needsNamedReturns := hasEnsuresDirective(decl) && !g.releaseMode
+	var returns string
+	if needsNamedReturns && len(decl.Returns) > 0 {
+		returnNames := ensuresReturnNames(decl)
+		parts := make([]string, len(decl.Returns))
+		for i, ret := range decl.Returns {
+			parts[i] = fmt.Sprintf("%s %s", returnNames[i], g.generateTypeAnnotation(ret))
+		}
+		returns = "(" + strings.Join(parts, ", ") + ")"
+	} else {
+		returns = g.generateReturnTypes(decl.Returns)
+	}
 	g.processingReturnType = false
 
 	if returns != "" {
@@ -211,6 +225,10 @@ func (g *Generator) generateFunctionDecl(decl *ast.FunctionDecl) {
 	// Generate body
 	if decl.Body != nil {
 		g.indent++
+		// Emit ensures defer checks first (before any code runs)
+		g.generateEnsuresChecks(decl)
+		// Emit requires precondition checks
+		g.generateRequiresChecks(decl)
 		g.generateBlock(decl.Body)
 		g.indent--
 	}

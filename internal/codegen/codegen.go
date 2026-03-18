@@ -68,6 +68,7 @@ type Generator struct {
 	currentReturnIndex   int                      // Index of return value being generated (-1 if not in return)
 	stdlibModuleBase     string                   // Base module path for rewriting "stdlib/X" imports (default: defaultStdlibModuleBase)
 	reservedNames        map[string]bool          // User-declared identifiers — uniqueId skips these to avoid collisions
+	releaseMode          bool                     // When true, contract checks (requires/ensures/invariant) are stripped
 }
 
 // New creates a new code generator
@@ -138,6 +139,12 @@ func (g *Generator) SetExprTypes(types map[ast.Expression]*semantic.TypeInfo) {
 // SetMCPTarget enables special codegen for MCP servers (e.g., print to stderr)
 func (g *Generator) SetMCPTarget(v bool) {
 	g.mcpTarget = v
+}
+
+// SetReleaseMode enables release mode, stripping all contract checks
+// (requires/ensures/invariant) from generated code.
+func (g *Generator) SetReleaseMode(v bool) {
+	g.releaseMode = v
 }
 
 // Generate generates Go code from the AST

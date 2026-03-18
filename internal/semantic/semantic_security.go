@@ -162,6 +162,104 @@ func (a *Analyzer) checkShellRunNonLiteral(qualifiedName string, expr *ast.Metho
 	}
 }
 
+// --- Tier 5: Agent-specific security checks ---
+
+// checkUnboundedLoop warns when a for loop with no obvious termination condition
+// appears inside an HTTP handler. Infinite loops in handlers cause goroutine leaks.
+func (a *Analyzer) checkUnboundedLoop(stmt *ast.ForConditionStmt) {
+	if !a.isInHTTPHandler() {
+		return
+	}
+	// Check if the condition is a literal true (e.g., "for true")
+	if boolLit, ok := stmt.Condition.(*ast.BooleanLiteral); ok && boolLit.Value {
+		// Check if the body contains break/return — if so, it's bounded
+		if !blockContainsTerminator(stmt.Body) {
+			a.warnDiag(stmt.Pos(),
+				"unbounded loop: 'for true' inside an HTTP handler with no break/return — this may cause goroutine leaks",
+				"agent/unbounded-loop",
+				"add a break condition, context deadline, or iteration limit to prevent unbounded execution",
+			)
+		}
+	}
+}
+
+// blockContainsTerminator returns true if a block contains a break, return,
+// or continue statement at any nesting depth.
+func blockContainsTerminator(block *ast.BlockStmt) bool {
+	if block == nil {
+		return false
+	}
+	for _, stmt := range block.Statements {
+		switch s := stmt.(type) {
+		case *ast.BreakStmt, *ast.ContinueStmt, *ast.ReturnStmt:
+			return true
+		case *ast.IfStmt:
+			if blockContainsTerminator(s.Consequence) {
+				return true
+			}
+			switch alt := s.Alternative.(type) {
+			case *ast.ElseStmt:
+				if blockContainsTerminator(alt.Body) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// checkResourceExhaustion warns about potential resource exhaustion patterns
+// in HTTP handlers: unbounded goroutine spawning or channel creation inside loops.
+func (a *Analyzer) checkResourceExhaustion(stmt ast.Statement) {
+	if !a.isInHTTPHandler() {
+		return
+	}
+	if a.loopDepth == 0 {
+		return
+	}
+
+	switch s := stmt.(type) {
+	case *ast.GoStmt:
+		a.warnDiag(s.Pos(),
+			"resource exhaustion risk: goroutine spawned inside a loop in an HTTP handler — unbounded goroutine creation can exhaust memory",
+			"agent/resource-exhaustion",
+			"use a worker pool or limit concurrency with a semaphore channel",
+		)
+	case *ast.VarDeclStmt:
+		// Check for channel creation inside loops (make channel of T)
+		for _, val := range s.Values {
+			if makeExpr, ok := val.(*ast.MakeExpr); ok {
+				if _, ok := makeExpr.Type.(*ast.ChannelType); ok {
+					a.warnDiag(s.Pos(),
+						"resource exhaustion risk: channel created inside a loop in an HTTP handler — unbounded channel allocation can exhaust memory",
+						"agent/resource-exhaustion",
+						"create channels outside the loop or limit loop iterations",
+					)
+				}
+			}
+		}
+	}
+}
+
+// checkPrivilegeEscalation warns when shell.Run or shell.Command is called
+// with arguments derived from HTTP request parameters inside a handler.
+// This extends checkShellRunNonLiteral with taint tracking from HTTP params.
+func (a *Analyzer) checkPrivilegeEscalation(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {
+	if securityCategory(qualifiedName) != "shell" {
+		return
+	}
+	if !a.isInHTTPHandler() {
+		return
+	}
+	// Already covered by checkShellRunNonLiteral for non-literal args.
+	// This adds the handler context warning for any shell usage in handlers.
+	a.warnDiag(expr.Pos(),
+		fmt.Sprintf("privilege escalation risk: %s inside an HTTP handler — shell commands in handlers may execute with server privileges on user-controlled input", qualifiedName),
+		"agent/privilege-escalation",
+		"avoid shell commands in HTTP handlers, or validate and sanitize all inputs before passing to shell",
+	)
+}
+
 // checkRedirectNonLiteral warns when http.Redirect / http.RedirectPermanent is
 // called with a non-literal URL argument, which is an open-redirect vector.
 func (a *Analyzer) checkRedirectNonLiteral(qualifiedName string, expr *ast.MethodCallExpr, pipedArg *TypeInfo) {

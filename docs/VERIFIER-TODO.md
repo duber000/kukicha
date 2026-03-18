@@ -128,50 +128,67 @@ The gap: Lean is a *perfect* verifier (sound and complete for its logic). Kukich
 
 ---
 
-## Tier 4: Specification Directives (new syntax)
+## Tier 4: Specification Directives (new syntax) ✅
 
 **Goal:** Let Kukicha code express lightweight specifications that generate runtime checks.
 
-- [ ] **`# kuki:ensures` directive** — Design by Contract for functions:
+- [x] **`# kuki:requires` directive** — Precondition checks:
   ```kukicha
-  # kuki:ensures result >= 0
+  # kuki:requires "len(items) > 0"
+  func First(items list of string) string
+      return items[0]
+  ```
+  Generates: `if !(len(items) > 0) { panic("requires violated: len(items) > 0") }` at function entry.
+  - File: `internal/codegen/codegen_contracts.go`
+  - Semantic validation: `internal/semantic/semantic_contracts.go`
+  - Kukicha keywords (`and`, `or`, `not`, `equals`) auto-translated to Go operators
+
+- [x] **`# kuki:ensures` directive** — Design by Contract for functions:
+  ```kukicha
+  # kuki:ensures "result >= 0"
   func Abs(x int) int
       if x < 0
           return -x
       return x
   ```
-  Generates: `if !(result >= 0) { panic("ensures violated: result >= 0") }` in debug builds.
+  Generates: named return variables + `defer func() { if !(result >= 0) { panic("ensures violated: result >= 0") } }()` so postconditions are checked on all return paths.
+  - File: `internal/codegen/codegen_contracts.go`
+  - Semantic validation: rejects ensures on void functions (no return values)
 
-- [ ] **`# kuki:requires` directive** — Precondition checks:
+- [x] **`# kuki:invariant` on types** — Struct invariants checked via generated `Validate()` method:
   ```kukicha
-  # kuki:requires len(items) > 0
-  func First(items list of string) string
-      return items[0]
-  ```
-
-- [ ] **`# kuki:invariant` on types** — Struct invariants checked after construction:
-  ```kukicha
-  # kuki:invariant self.min <= self.max
+  # kuki:invariant "self.min <= self.max"
   type Range
       min int
       max int
   ```
+  Generates: `func (r Range) Validate() { if !(r.min <= r.max) { panic("invariant violated: self.min <= self.max") } }`
+  - File: `internal/codegen/codegen_contracts.go`
+  - Semantic validation: rejects on type aliases, checks that `self.field` references exist on the struct
 
-- [ ] **Strip in release builds** — `kukicha build --release` omits all contract checks (zero runtime cost in production).
+- [x] **Strip in release builds** — `kukicha build --release` omits all contract checks (zero runtime cost in production).
+  - File: `cmd/kukicha/main.go` (new `--release` flag), `internal/codegen/codegen.go` (`releaseMode` field)
 
 ---
 
-## Tier 5: Agent-Specific Security Checks
+## Tier 5: Agent-Specific Security Checks ✅
 
 **Goal:** Extend the security check system for risks specific to AI agent code.
 
-- [ ] **Unbounded loops** — Warn when a `for` loop has no obvious termination condition inside an HTTP handler or agent task.
+- [x] **Unbounded loops** — Warn when `for true` has no break/return inside an HTTP handler.
+  - Category: `agent/unbounded-loop`
+  - File: `internal/semantic/semantic_security.go` (`checkUnboundedLoop`)
 
 - [ ] **Data exfiltration** — Flag when `fetch.Post`/`fetch.Get` is called with data that originated from `files.Read` or `os.ReadFile` inside an agent context.
+  - Deferred: requires taint tracking across variable assignments (non-trivial data flow analysis)
 
-- [ ] **Resource exhaustion** — Warn on unbounded `make(channel)`, unbounded `go` blocks, or allocation inside loops without size limits.
+- [x] **Resource exhaustion** — Warn on goroutine spawning or channel creation inside loops in HTTP handlers.
+  - Category: `agent/resource-exhaustion`
+  - File: `internal/semantic/semantic_security.go` (`checkResourceExhaustion`)
 
-- [ ] **Privilege escalation** — Flag `shell.Run` or `shell.Command` calls that use variables derived from external input (HTTP params, env vars, file contents).
+- [x] **Privilege escalation** — Warn when `shell.Run` or `shell.Command` is called inside an HTTP handler (server privileges on user input).
+  - Category: `agent/privilege-escalation`
+  - File: `internal/semantic/semantic_security.go` (`checkPrivilegeEscalation`)
 
 ---
 

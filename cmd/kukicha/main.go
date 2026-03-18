@@ -40,16 +40,17 @@ func main() {
 		skipBuild := buildFlags.Bool("skip-build", false, "Skip go build step (for test files)")
 		ifChanged := buildFlags.Bool("if-changed", false, "Skip writing output if Go body (excluding generated header) is unchanged")
 		vulncheck := buildFlags.Bool("vulncheck", false, "Run govulncheck after successful build")
+		release := buildFlags.Bool("release", false, "Strip contract checks (requires/ensures/invariant)")
 		if err := buildFlags.Parse(args); err != nil {
-			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] [--skip-build] [--if-changed] [--vulncheck] <file.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] [--skip-build] [--if-changed] [--vulncheck] [--release] <file.kuki>")
 			os.Exit(1)
 		}
 		buildArgs := buildFlags.Args()
 		if len(buildArgs) < 1 {
-			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] [--skip-build] [--if-changed] [--vulncheck] <file.kuki>")
+			fmt.Fprintln(os.Stderr, "Usage: kukicha build [--target <target>] [--skip-build] [--if-changed] [--vulncheck] [--release] <file.kuki>")
 			os.Exit(1)
 		}
-		buildCommand(buildArgs[0], *target, *skipBuild, *ifChanged, *vulncheck)
+		buildCommand(buildArgs[0], *target, *skipBuild, *ifChanged, *vulncheck, *release)
 	case "run":
 		runFlags := flag.NewFlagSet("run", flag.ContinueOnError)
 		runFlags.SetOutput(os.Stderr)
@@ -222,7 +223,7 @@ func stripFirstLine(b []byte) []byte {
 	return b
 }
 
-func buildCommand(filename string, targetFlag string, skipBuild bool, ifChanged bool, vulncheck bool) {
+func buildCommand(filename string, targetFlag string, skipBuild bool, ifChanged bool, vulncheck bool, release bool) {
 	absFile, err := filepath.Abs(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
@@ -256,6 +257,9 @@ func buildCommand(filename string, targetFlag string, skipBuild bool, ifChanged 
 	gen.SetExprTypes(exprTypes)
 	if program.Target == "mcp" {
 		gen.SetMCPTarget(true)
+	}
+	if release {
+		gen.SetReleaseMode(true)
 	}
 	goCode, err := gen.Generate()
 	if err != nil {

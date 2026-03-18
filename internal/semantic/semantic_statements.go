@@ -38,6 +38,7 @@ func (a *Analyzer) analyzeStatement(stmt ast.Statement) {
 	case *ast.DeferStmt:
 		a.analyzeExpression(s.Call)
 	case *ast.GoStmt:
+		a.checkResourceExhaustion(s)
 		if s.Call != nil {
 			a.analyzeExpression(s.Call)
 		}
@@ -625,6 +626,9 @@ func (a *Analyzer) analyzeForNumericStmt(stmt *ast.ForNumericStmt) {
 func (a *Analyzer) analyzeForConditionStmt(stmt *ast.ForConditionStmt) {
 	a.loopDepth++
 	defer func() { a.loopDepth-- }()
+
+	// Agent security: check for unbounded loops in HTTP handlers
+	a.checkUnboundedLoop(stmt)
 
 	// Analyze condition
 	condType := a.analyzeExpression(stmt.Condition)

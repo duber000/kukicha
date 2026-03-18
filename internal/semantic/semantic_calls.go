@@ -249,6 +249,9 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 		// Security: detect shell.Run with non-literal argument (command injection)
 		a.checkShellRunNonLiteral(qualifiedName, expr, pipedArg)
 
+		// Agent security: detect shell commands inside HTTP handlers (privilege escalation)
+		a.checkPrivilegeEscalation(qualifiedName, expr, pipedArg)
+
 		// Security: detect http.Redirect with non-literal URL (open redirect)
 		a.checkRedirectNonLiteral(qualifiedName, expr, pipedArg)
 

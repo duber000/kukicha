@@ -311,6 +311,9 @@ func (a *Analyzer) analyzeConstDecl(decl *ast.ConstDecl) {
 }
 
 func (a *Analyzer) analyzeTypeDecl(decl *ast.TypeDecl) {
+	// Validate invariant directives (before alias early-return, since invariants can't apply to aliases)
+	a.validateInvariantDirectives(decl)
+
 	// Type alias: validate the alias type annotation
 	if decl.AliasType != nil {
 		a.validateTypeAnnotation(decl.AliasType)
@@ -449,6 +452,9 @@ func (a *Analyzer) analyzeFunctionDecl(decl *ast.FunctionDecl) {
 	for _, ret := range decl.Returns {
 		a.validateTypeAnnotation(ret)
 	}
+
+	// Validate contract directives
+	a.validateContractDirectives(decl)
 
 	// Analyze function body
 	if decl.Body != nil {
