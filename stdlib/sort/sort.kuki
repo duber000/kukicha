@@ -4,9 +4,9 @@
 # Examples:
 #   sorted := sort.Strings(names)
 #   sorted := sort.Ints(scores)
-#   sorted := sort.By(repos, (a Repo, b Repo) => a.Stars < b.Stars)
-#   sorted := sort.ByKey(repos, (r Repo) => r.Name)
-#   sorted := sort.Reverse(repos, (a Repo, b Repo) => a.Stars < b.Stars)
+#   sorted := sort.By(repos, (a, b) => a.Stars < b.Stars)
+#   sorted := sort.ByKey(repos, r => r.Name)
+#   sorted := sort.Reverse(repos, (a, b) => a.Stars < b.Stars)
 
 petiole sort
 
@@ -37,7 +37,7 @@ func Float64s(items list of float64) list of float64
 # By returns a sorted copy of items using a less(a, b) comparator.
 # less(a, b) should return true if a should come before b.
 # Uses a stable sort (preserves order of equal elements).
-# Example: sort.By(repos, (a Repo, b Repo) => a.Stars < b.Stars)
+# Example: sort.By(repos, (a, b) => a.Stars < b.Stars)
 func By(items list of any, less func(any, any) bool) list of any
     result := slices.Clone(items)
     sort.SliceStable(result, (i int, j int) => less(result[i], result[j]))
@@ -46,7 +46,7 @@ func By(items list of any, less func(any, any) bool) list of any
 # ByKey returns a sorted copy of items ordered by an extracted ordered key.
 # Pipe-friendly alternative to By when sorting by a single field.
 # Uses a stable sort (preserves order of equal elements).
-# Example: sort.ByKey(repos, (r Repo) => r.Name)
+# Example: sort.ByKey(repos, r => r.Name)
 func ByKey(items list of any, key func(any) ordered) list of any
     result := slices.Clone(items)
     sort.SliceStable(result, (i int, j int) => key(result[i]) < key(result[j]))
@@ -54,7 +54,7 @@ func ByKey(items list of any, key func(any) ordered) list of any
 
 # Reverse returns a copy of items sorted in descending order using less(a, b).
 # The less function defines the natural order; Reverse inverts it.
-# Example: sort.Reverse(repos, (a Repo, b Repo) => a.Stars < b.Stars)
+# Example: sort.Reverse(repos, (a, b) => a.Stars < b.Stars)
 func Reverse(items list of any, less func(any, any) bool) list of any
     result := slices.Clone(items)
     sort.SliceStable(result, (i int, j int) => less(result[j], result[i]))

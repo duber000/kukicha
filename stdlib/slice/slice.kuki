@@ -146,7 +146,7 @@ func GroupBy(items list of any, keyFunc func(any) any2) map of any2 to list of a
 # Convenience wrapper around sort.By for pipe-friendly usage from the slice package
 # less(a, b) should return true if a should come before b
 # Uses a stable sort (preserves order of equal elements)
-# Example: sorted := items |> slice.Sort((a Repo, b Repo) => a.Stars < b.Stars)
+# Example: sorted := items |> slice.Sort((a, b) => a.Stars < b.Stars)
 func Sort(items list of any, less func(any, any) bool) list of any
     result := slices.Clone(items)
     sort.SliceStable(result, (i int, j int) => less(result[i], result[j]))
@@ -155,7 +155,7 @@ func Sort(items list of any, less func(any, any) bool) list of any
 # SortBy returns a sorted copy of items ordered by an extracted ordered key
 # Convenience wrapper around sort.ByKey for pipe-friendly usage from the slice package
 # Uses a stable sort (preserves order of equal elements)
-# Example: sorted := repos |> slice.SortBy((r Repo) => r.Name)
+# Example: sorted := repos |> slice.SortBy(r => r.Name)
 func SortBy(items list of any, key func(any) ordered) list of any
     result := slices.Clone(items)
     sort.SliceStable(result, (i int, j int) => key(result[i]) < key(result[j]))

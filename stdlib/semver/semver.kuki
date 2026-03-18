@@ -107,6 +107,6 @@ func Highest(tags list of string) (string, error)
         v := Parse(tag) onerr continue
         parsed = append(parsed, v)
 
-    sorted := parsed |> sort.By((a Version, b Version) => Compare(a, b) < 0)
+    sorted := parsed |> sort.By((a, b) => Compare(a, b) < 0)
     best := sorted[len(sorted) - 1]
     return Format(best), empty
