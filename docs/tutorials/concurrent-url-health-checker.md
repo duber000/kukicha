@@ -324,17 +324,20 @@ Here's what you learned in this tutorial:
 | **Buffered channel** | `make(channel of T, 10)` | Channel that can hold values before blocking |
 | **Error wrapping** | `errors.Wrap(error, "msg")` | Adds context to an error |
 
-### stdlib Shortcut: `concurrent.Map`
+### stdlib Shortcut: `concurrent.Parallel`
 
-Now that you understand how goroutines and channels work, here's the secret: `stdlib/concurrent` wraps these patterns for you. The entire fan-out example from Step 5 can be written as:
+Now that you understand how goroutines and channels work, `stdlib/concurrent` wraps fire-and-forget patterns for you. `concurrent.Parallel` runs a list of zero-argument functions concurrently and waits for all to finish:
 
 ```kukicha
 import "stdlib/concurrent"
 
-results := concurrent.Map(urls, (url string) => check(url))
+concurrent.Parallel(
+    () => processChunk(urlsA),
+    () => processChunk(urlsB),
+)
 ```
 
-One line. Same parallel execution, same result ordering. Use the manual approach when you need custom control flow; use `concurrent.Map` when you just want parallel map.
+For a parallel map (transform each element concurrently with ordered results), use the manual goroutine + channel pattern from Step 5 — it gives you full control over result ordering and error handling.
 
 ### What's Next?
 

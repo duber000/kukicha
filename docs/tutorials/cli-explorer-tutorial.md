@@ -798,29 +798,20 @@ Now add a new `fetch-all` command to your `switch` block in `main`:
                 users := parts[1] |> string.Split(" ")
                 print("Fetching {len(users)} users in parallel...")
                 
-                # Fetch all users at the same time!
-                results := concurrent.Map(users, (u string) => FetchRepos(u))
-                
-                # Combine results
-                allRepos := empty list of Repo
-                for userRepos in results
-                    # the ... expands the list into individual items
-                    allRepos = append(allRepos, userRepos...)
-                
+                # Fetch each user sequentially and combine results
+                allRepos := list of Repo{}
+                for u in users
+                    allRepos = append(allRepos, FetchRepos(u)...)
+
                 ex.repos = allRepos
                 print("Fetched {len(ex.repos)} total repos from {len(users)} users.")
 ```
 
 **How it works:**
-- `concurrent.Map` takes a list (`users`) and a function.
-- It runs the function for *every item in the list at the same time*.
-- It returns a list of results in the same order.
+- Loops over each username, fetches their repos, and appends to a combined list.
+- `append(allRepos, FetchRepos(u)...)` spreads the returned slice into the append call.
 
-If you have 3 users and each takes 1 second to fetch:
-- **Python (sequential):** 1s + 1s + 1s = **3 seconds**
-- **Kukicha (concurrent):** max(1s, 1s, 1s) = **1 second**
-
-You just made your tool 3x faster with one line of code.
+For parallel fetching you would use goroutines + channels (see the [Concurrent URL Health Checker](concurrent-url-health-checker.md) tutorial).
 
 ---
 
@@ -914,7 +905,7 @@ Congratulations! You've built a real tool that talks to the internet. Let's revi
 | Concept | What It Does |
 |---------|--------------|
 | **Single Binary** | Compile your app for any OS with `kukicha build` |
-| **Concurrency** | Run tasks in parallel with `concurrent.Map` |
+| **Concurrency** | Run tasks concurrently with goroutines and channels |
 | **Custom Types** | Define your own data structures with `type Name` |
 | **JSON Aliases** | Map API fields to your type's fields with `as "..."` |
 | **Methods** | Attach functions to types with `function Name on receiver Type` |
