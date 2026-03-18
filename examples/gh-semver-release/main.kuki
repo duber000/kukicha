@@ -10,7 +10,9 @@ petiole main
 import "fmt"
 import "os"
 import "stdlib/cli"
+import "stdlib/concurrent"
 import "stdlib/env"
+import "stdlib/git"
 import "stdlib/input"
 import "stdlib/semver"
 import "stdlib/shell"
@@ -53,37 +55,20 @@ func nextTag(current string, bump string, initialTag string) (string, error)
 # ── GitHub helpers ─────────────────────────────────────────────
 
 func highestSemverTag(repo string) (string, error)
-    raw := shell.Output("gh", "api", "repos/{repo}/tags", "--paginate", "--jq", ".[].name") onerr return "", error "failed to fetch tags for {repo}"
+    tags := git.ListTags(repo) onerr return "", error "{error}"
 
-    if raw |> string.IsBlank()
+    if slice.IsEmpty(tags)
         return "", empty
 
-    tags := raw |> string.Lines()
     best, err := semver.Highest(tags)
     if err not equals empty
         return "", empty
     return best, empty
 
-func defaultBranch(repo string) (string, error)
-    branch := shell.Output("gh", "repo", "view", repo, "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name") onerr return "", error "{error}"
-    return branch |> string.TrimSpace(), empty
-
-func releaseExists(repo string, tag string) bool
-    result := shell.New("gh", "release", "view", tag, "--repo", repo) |> shell.Execute()
-    return shell.Success(result)
-
-func tagExists(repo string, tag string) bool
-    result := shell.New("gh", "api", "repos/{repo}/git/ref/tags/{tag}") |> shell.Execute()
-    return shell.Success(result)
-
-func currentUser() (string, error)
-    login := shell.Output("gh", "api", "user", "--jq", ".login") onerr return "", error "{error}"
-    return login |> string.TrimSpace(), empty
-
 # ── Repo discovery ─────────────────────────────────────────────
 
 func listReposWhereICommitted(org string) (list of string, error)
-    me := currentUser() onerr return list of string{}, error "failed to get current user: {error}"
+    me := git.CurrentUser() onerr return list of string{}, error "failed to get current user: {error}"
 
     query := """
         query($login: String!, $endCursor: String) {
@@ -135,6 +120,19 @@ func listReposWhereICommitted(org string) (list of string, error)
 
 # ── Commands ───────────────────────────────────────────────────
 
+# buildEntry fetches the current tag for a repo and computes the next one.
+# Returns a zero-name entry on failure (filtered out by the caller).
+func buildEntry(repo string, bump string, initialTag string) RepoEntry
+    current := highestSemverTag(repo) onerr
+        warn("{error}")
+        return RepoEntry{}
+
+    next := nextTag(current, bump, initialTag) onerr
+        warn("{error}")
+        return RepoEntry{}
+
+    return RepoEntry{name: repo, current: current, next: next}
+
 func doList(args cli.Args, initialTag string)
     org := cli.GetString(args, "org")
     bump := cli.GetString(args, "bump")
@@ -143,20 +141,10 @@ func doList(args cli.Args, initialTag string)
     repos := listReposWhereICommitted(org) onerr
         fatal("Error: {error}")
 
-    # Collect entries
-    entries := list of RepoEntry{}
-    for repo in repos
-        current := highestSemverTag(repo) onerr
-            warn("{error}")
-            continue
-
-        next := nextTag(current, bump, initialTag) onerr
-            warn("{error}")
-            continue
-
-        entries = append(entries, RepoEntry{name: repo, current: current, next: next})
-
-    entries = entries |> sort.ByKey(e => e.name)
+    # Fetch tags in parallel (at most 4 concurrent GitHub API calls)
+    entries := concurrent.MapWithLimit(repos, 4, r => buildEntry(r, bump, initialTag))
+        |> slice.Filter(e => e.name not equals "")
+        |> sort.ByKey(e => e.name)
 
     if csv
         print("\"repo\",\"current_tag\",\"next_tag\"")
@@ -189,8 +177,9 @@ func doRelease(args cli.Args, initialTag string)
         fatal("Repo '{repo}' is not under org '{org}'")
 
     # Verify repo exists
-    _ := shell.Output("gh", "repo", "view", repo) onerr
-        fatal("Failed to access repo: {error}")
+    repoOk := git.RepoExists(repo) onerr false
+    if not repoOk
+        fatal("Failed to access repo: {repo}")
 
     current := highestSemverTag(repo) onerr
         fatal("Error: {error}")
@@ -198,16 +187,24 @@ func doRelease(args cli.Args, initialTag string)
     next := nextTag(current, bump, initialTag) onerr
         fatal("Error: {error}")
 
-    if releaseExists(repo, next)
+    exists := git.ReleaseExists(repo, next) onerr false
+    if exists
         print("Release already exists:")
         print("  repo: {repo}")
         print("  tag:  {next}")
         return
 
-    branch := defaultBranch(repo) onerr
+    branch := git.DefaultBranch(repo) onerr
         fatal("Error: {error}")
 
-    tagAlreadyExists := tagExists(repo, next)
+    tagAlreadyExists := git.TagExists(repo, next) onerr false
+
+    # Build release options
+    opts := git.ReleaseOptions{}
+    if not tagAlreadyExists
+        opts.Target = branch
+    opts.GenerateNotes = generateNotes
+    opts.Draft = draft
 
     # Display summary
     displayCurrent := current
@@ -226,27 +223,15 @@ func doRelease(args cli.Args, initialTag string)
         print("Tag exists:     no")
     print("")
 
-    # Build command arguments
-    cmdArgs := list of string{"release", "create", next, "--repo", repo, "--title", next}
-
-    if not tagAlreadyExists
-        cmdArgs = append(cmdArgs, "--target", branch)
-    if generateNotes
-        cmdArgs = append(cmdArgs, "--generate-notes")
-    if draft
-        cmdArgs = append(cmdArgs, "--draft")
-
-    # Display the command
-    cmdStr := cmdArgs |> string.Join(" ")
     print("Command:")
-    print("  gh {cmdStr}")
+    print("  {git.PreviewRelease(repo, next, opts)}")
     print("")
 
     if dryRun
         print("Dry run only. No release created.")
         return
 
-    _ := shell.Output("gh", many cmdArgs) onerr
+    git.CreateRelease(repo, next, opts) onerr
         fmt.Fprintln(os.Stderr, "")
         fmt.Fprintln(os.Stderr, "Release creation failed. This may indicate a race condition")
         fatal("(another process may have created the release or tag).")
@@ -258,16 +243,9 @@ func doPick(args cli.Args, initialTag string)
     repos := listReposWhereICommitted(org) onerr
         fatal("Failed to list repos: {error}")
 
-    # Collect repos with their computed next tags
-    entries := list of RepoEntry{}
-    for repo in repos
-        current := highestSemverTag(repo) onerr
-            continue
-
-        next := nextTag(current, bump, initialTag) onerr
-            continue
-
-        entries = append(entries, RepoEntry{name: repo, current: current, next: next})
+    # Fetch tags in parallel and compute next versions
+    entries := concurrent.MapWithLimit(repos, 4, r => buildEntry(r, bump, initialTag))
+        |> slice.Filter(e => e.name not equals "")
 
     if slice.IsEmpty(entries)
         print("No repos found.")

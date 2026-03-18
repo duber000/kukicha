@@ -228,14 +228,14 @@ results := concurrent.MapWithLimit(repos, 4, r => fetchDetails(r))
 import "stdlib/iterator"
 names := repos
     |> iterator.Values()
-    |> iterator.Filter((r Repo) => r.Stars > 100)
-    |> iterator.Map((r Repo) => r.Name)
+    |> iterator.Filter(r => r.Stars > 100)
+    |> iterator.Map(r => r.Name)
     |> iterator.Collect()
 
 # Take first 5 results lazily
 top5 := items
     |> iterator.Values()
-    |> iterator.Filter((x Item) => x.Active)
+    |> iterator.Filter(x => x.Active)
     |> iterator.Take(5)
     |> iterator.Collect()
 
@@ -400,14 +400,14 @@ if crypto.Equal(expected, actual)
 import "stdlib/sort"
 sorted := sort.Strings(list of string{"banana", "apple", "cherry"})
 nums := sort.Ints(list of int{3, 1, 4, 1, 5})
-byLen := sort.By(words, (a string, b string) => len(a) < len(b))
-byName := sort.ByKey(repos, (r Repo) => r.Name)
+byLen := sort.By(words, (a, b) => len(a) < len(b))
+byName := sort.ByKey(repos, r => r.Name)
 reversed := sort.Reverse(sorted)
 
 # Convenience sort via slice package (pipe-friendly)
 import "stdlib/slice"
-sorted := repos |> slice.Sort((a Repo, b Repo) => a.Stars < b.Stars)
-sorted := repos |> slice.SortBy((r Repo) => r.Name)
+sorted := repos |> slice.Sort((a, b) => a.Stars < b.Stars)
+sorted := repos |> slice.SortBy(r => r.Name)
 
 # Deterministic map key iteration
 import "stdlib/maps"

@@ -778,12 +778,13 @@ Let's use **concurrency** to do multiple things at once. We'll add a `fetch-all`
 
 ### The Power of `stdlib/concurrent`
 
-In most languages, doing things in parallel is hard. In Kukicha, it's easy.
+In most languages, doing things in parallel is hard. In Kukicha, it's one line.
 
 First, import the concurrent package in `explorer.kuki`:
 
 ```kukicha
 import "stdlib/concurrent"
+import "stdlib/slice"
 ```
 
 Now add a new `fetch-all` command to your `switch` block in `main`:
@@ -794,24 +795,22 @@ Now add a new `fetch-all` command to your `switch` block in `main`:
                 if len(parts) < 2
                     print("Usage: fetch-all <user1> <user2> ...")
                     continue
-                
+
                 users := parts[1] |> string.Split(" ")
                 print("Fetching {len(users)} users in parallel...")
-                
-                # Fetch each user sequentially and combine results
-                allRepos := list of Repo{}
-                for u in users
-                    allRepos = append(allRepos, FetchRepos(u)...)
 
-                ex.repos = allRepos
+                # Fetch all users concurrently and flatten into one list
+                repoLists := concurrent.Map(users, u => FetchRepos(u))
+                ex.repos = slice.Concat(repoLists)
                 print("Fetched {len(ex.repos)} total repos from {len(users)} users.")
 ```
 
 **How it works:**
-- Loops over each username, fetches their repos, and appends to a combined list.
-- `append(allRepos, FetchRepos(u)...)` spreads the returned slice into the append call.
+- `concurrent.Map` runs `FetchRepos` for every username **at the same time** — each in its own goroutine — and collects results in order.
+- `slice.Concat` flattens the list of lists into a single list.
+- For large lists, use `concurrent.MapWithLimit(users, 3, u => FetchRepos(u))` to cap concurrency.
 
-For parallel fetching you would use goroutines + channels (see the [Concurrent URL Health Checker](concurrent-url-health-checker.md) tutorial).
+Want to understand how goroutines and channels work under the hood? See the [Concurrent URL Health Checker](concurrent-url-health-checker.md) tutorial.
 
 ---
 
