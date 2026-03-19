@@ -9,108 +9,108 @@ import (
 	"time"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:11
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:11
 func TestBackground(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:12
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:12
 	h := ctx.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:13
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:13
 	test.AssertNotEmpty(t, h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:14
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:14
 	test.AssertFalse(t, ctx.Done(h))
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:15
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:15
 	test.AssertEqual(t, ctx.Err(h), nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:18
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:18
 func TestWithTimeout(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:19
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:19
 	parent := ctx.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:20
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:20
 	h := ctx.WithTimeout(parent, 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:22
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:22
 	test.AssertNotEmpty(t, h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:23
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:23
 	test.AssertFalse(t, ctx.Done(h))
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:26
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:26
 	canceled := ctx.Cancel(h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:27
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:27
 	test.AssertTrue(t, canceled)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:30
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:30
 	test.AssertTrue(t, ctx.Done(h))
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:31
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:31
 	test.AssertNotEmpty(t, ctx.Err(h))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:34
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:34
 func TestWithTimeoutMs(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:35
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:35
 	parent := ctx.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:36
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:36
 	h := ctx.WithTimeoutMs(parent, 100)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:38
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:38
 	test.AssertNotEmpty(t, h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:39
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:39
 	test.AssertFalse(t, ctx.Done(h))
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:42
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:42
 	canceled := ctx.Cancel(h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:43
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:43
 	test.AssertTrue(t, canceled)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:44
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:44
 	test.AssertTrue(t, ctx.Done(h))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:47
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:47
 func TestWithDeadlineUnix(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:48
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:48
 	parent := ctx.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:49
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:49
 	deadline := (time.Now().Unix() + 10)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:50
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:50
 	h := ctx.WithDeadlineUnix(parent, deadline)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:52
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:52
 	test.AssertNotEmpty(t, h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:53
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:53
 	test.AssertFalse(t, ctx.Done(h))
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:56
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:56
 	canceled := ctx.Cancel(h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:57
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:57
 	test.AssertTrue(t, canceled)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:58
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:58
 	test.AssertTrue(t, ctx.Done(h))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:61
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:61
 func TestCancelNoCancelFunction(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:62
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:62
 	h := ctx.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:63
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:63
 	canceled := ctx.Cancel(h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:64
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:64
 	test.AssertFalse(t, canceled)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:67
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:67
 func TestDone(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:68
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:68
 	h := ctx.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:69
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:69
 	test.AssertFalse(t, ctx.Done(h))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:72
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:72
 func TestErr(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:73
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:73
 	h := ctx.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:74
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:74
 	test.AssertEqual(t, ctx.Err(h), nil)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:77
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:77
 func TestValue(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:78
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:78
 	h := ctx.Background()
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:79
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:79
 	goCtx := ctx.Value(h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/ctx/ctx_test.kuki:81
+//line /home/user/kukicha/stdlib/ctx/ctx_test.kuki:81
 	_ = goCtx
 }

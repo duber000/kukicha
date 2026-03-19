@@ -8,196 +8,196 @@ import (
 	"strings"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:12
+//line /home/user/kukicha/stdlib/string/string.kuki:12
 func ToUpper(s string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:13
+//line /home/user/kukicha/stdlib/string/string.kuki:13
 	return strings.ToUpper(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:16
+//line /home/user/kukicha/stdlib/string/string.kuki:16
 func ToLower(s string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:17
+//line /home/user/kukicha/stdlib/string/string.kuki:17
 	return strings.ToLower(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:21
+//line /home/user/kukicha/stdlib/string/string.kuki:21
 func Title(s string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:22
+//line /home/user/kukicha/stdlib/string/string.kuki:22
 	return cases.Title(language.Und).String(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:28
+//line /home/user/kukicha/stdlib/string/string.kuki:28
 func Trim(s string, cutset string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:29
+//line /home/user/kukicha/stdlib/string/string.kuki:29
 	return strings.Trim(s, cutset)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:32
+//line /home/user/kukicha/stdlib/string/string.kuki:32
 func TrimSpace(s string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:33
+//line /home/user/kukicha/stdlib/string/string.kuki:33
 	return strings.TrimSpace(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:37
+//line /home/user/kukicha/stdlib/string/string.kuki:37
 func TrimPrefix(s string, prefix string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:38
+//line /home/user/kukicha/stdlib/string/string.kuki:38
 	return strings.TrimPrefix(s, prefix)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:42
+//line /home/user/kukicha/stdlib/string/string.kuki:42
 func TrimSuffix(s string, suffix string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:43
+//line /home/user/kukicha/stdlib/string/string.kuki:43
 	return strings.TrimSuffix(s, suffix)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:46
+//line /home/user/kukicha/stdlib/string/string.kuki:46
 func TrimLeft(s string, cutset string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:47
+//line /home/user/kukicha/stdlib/string/string.kuki:47
 	return strings.TrimLeft(s, cutset)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:50
+//line /home/user/kukicha/stdlib/string/string.kuki:50
 func TrimRight(s string, cutset string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:51
+//line /home/user/kukicha/stdlib/string/string.kuki:51
 	return strings.TrimRight(s, cutset)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:56
+//line /home/user/kukicha/stdlib/string/string.kuki:56
 func Split(s string, sep string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:57
+//line /home/user/kukicha/stdlib/string/string.kuki:57
 	return strings.Split(s, sep)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:63
+//line /home/user/kukicha/stdlib/string/string.kuki:63
 func SplitN(s string, sep string, n int) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:64
+//line /home/user/kukicha/stdlib/string/string.kuki:64
 	return strings.SplitN(s, sep, n)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:67
+//line /home/user/kukicha/stdlib/string/string.kuki:67
 func Join(parts []string, sep string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:68
+//line /home/user/kukicha/stdlib/string/string.kuki:68
 	return strings.Join(parts, sep)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:71
+//line /home/user/kukicha/stdlib/string/string.kuki:71
 func Fields(s string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:72
+//line /home/user/kukicha/stdlib/string/string.kuki:72
 	return strings.Fields(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:77
+//line /home/user/kukicha/stdlib/string/string.kuki:77
 func Contains(s string, substr string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:78
+//line /home/user/kukicha/stdlib/string/string.kuki:78
 	return strings.Contains(s, substr)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:81
+//line /home/user/kukicha/stdlib/string/string.kuki:81
 func HasPrefix(s string, prefix string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:82
+//line /home/user/kukicha/stdlib/string/string.kuki:82
 	return strings.HasPrefix(s, prefix)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:85
+//line /home/user/kukicha/stdlib/string/string.kuki:85
 func HasSuffix(s string, suffix string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:86
+//line /home/user/kukicha/stdlib/string/string.kuki:86
 	return strings.HasSuffix(s, suffix)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:90
+//line /home/user/kukicha/stdlib/string/string.kuki:90
 func Index(s string, substr string) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:91
+//line /home/user/kukicha/stdlib/string/string.kuki:91
 	return strings.Index(s, substr)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:95
+//line /home/user/kukicha/stdlib/string/string.kuki:95
 func LastIndex(s string, substr string) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:96
+//line /home/user/kukicha/stdlib/string/string.kuki:96
 	return strings.LastIndex(s, substr)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:99
+//line /home/user/kukicha/stdlib/string/string.kuki:99
 func Count(s string, substr string) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:100
+//line /home/user/kukicha/stdlib/string/string.kuki:100
 	return strings.Count(s, substr)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:106
+//line /home/user/kukicha/stdlib/string/string.kuki:106
 func Replace(s string, old string, new string, n int) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:107
+//line /home/user/kukicha/stdlib/string/string.kuki:107
 	return strings.Replace(s, old, new, n)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:110
+//line /home/user/kukicha/stdlib/string/string.kuki:110
 func ReplaceAll(s string, old string, new string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:111
+//line /home/user/kukicha/stdlib/string/string.kuki:111
 	return strings.ReplaceAll(s, old, new)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:116
+//line /home/user/kukicha/stdlib/string/string.kuki:116
 func Repeat(s string, count int) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:117
+//line /home/user/kukicha/stdlib/string/string.kuki:117
 	return strings.Repeat(s, count)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:121
+//line /home/user/kukicha/stdlib/string/string.kuki:121
 func PadRight(s string, width int, padChar string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:122
+//line /home/user/kukicha/stdlib/string/string.kuki:122
 	length := len(s)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:123
+//line /home/user/kukicha/stdlib/string/string.kuki:123
 	if length >= width {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:124
+//line /home/user/kukicha/stdlib/string/string.kuki:124
 		return s
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:125
+//line /home/user/kukicha/stdlib/string/string.kuki:125
 	return (s + strings.Repeat(padChar, (width-length)))
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:129
+//line /home/user/kukicha/stdlib/string/string.kuki:129
 func PadLeft(s string, width int, padChar string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:130
+//line /home/user/kukicha/stdlib/string/string.kuki:130
 	length := len(s)
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:131
+//line /home/user/kukicha/stdlib/string/string.kuki:131
 	if length >= width {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:132
+//line /home/user/kukicha/stdlib/string/string.kuki:132
 		return s
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:133
+//line /home/user/kukicha/stdlib/string/string.kuki:133
 	return (strings.Repeat(padChar, (width-length)) + s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:150
+//line /home/user/kukicha/stdlib/string/string.kuki:150
 func EqualFold(s string, t string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:151
+//line /home/user/kukicha/stdlib/string/string.kuki:151
 	return strings.EqualFold(s, t)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:156
+//line /home/user/kukicha/stdlib/string/string.kuki:156
 func Len(s string) int {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:157
+//line /home/user/kukicha/stdlib/string/string.kuki:157
 	return len(s)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:160
+//line /home/user/kukicha/stdlib/string/string.kuki:160
 func IsEmpty(s string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:161
+//line /home/user/kukicha/stdlib/string/string.kuki:161
 	return (len(s) == 0)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:164
+//line /home/user/kukicha/stdlib/string/string.kuki:164
 func IsBlank(s string) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:165
+//line /home/user/kukicha/stdlib/string/string.kuki:165
 	return (len(strings.TrimSpace(s)) == 0)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:168
+//line /home/user/kukicha/stdlib/string/string.kuki:168
 func Lines(s string) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:169
+//line /home/user/kukicha/stdlib/string/string.kuki:169
 	return strings.Split(s, "\n")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:173
+//line /home/user/kukicha/stdlib/string/string.kuki:173
 func Concat(parts []string) string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/string/string.kuki:174
+//line /home/user/kukicha/stdlib/string/string.kuki:174
 	return strings.Join(parts, "")
 }

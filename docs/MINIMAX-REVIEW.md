@@ -3,6 +3,7 @@
 **Date:** March 19, 2026
 **Reviewer:** Automated Analysis
 **Scope:** Full codebase review
+**Follow-up review:** Claude Code (March 19, 2026)
 
 ---
 
@@ -26,6 +27,8 @@ func Handle(w http.ResponseWriter, r reference http.Request)
 ```
 
 **Fix:** Add `# kuki:security "files"` directive to both functions.
+
+> **Review comment:** AGREE — This is a genuine security gap. Every other file operation in the package has the directive. Both `Copy` and `Move` accept user-controllable paths and can create/modify arbitrary files. Straightforward fix: add the directive and regenerate.
 
 ---
 
@@ -56,6 +59,8 @@ pipe_2 := process(pipe_1)
 
 **Fix:** Consider restructuring to avoid IIFE when possible, or document this as a known trade-off.
 
+> **Review comment:** DISAGREE with "Critical" severity — this is a deliberate design trade-off, not a bug. The IIFE is architecturally necessary: Kukicha pipes are left-associative with single-value semantics. When a step returns `(data, err)`, only the first value should flow to the next step. Without the IIFE wrapper, the multi-value tuple would break the pipe chain. The Go compiler will likely inline these trivial closures in most cases. This should be downgraded to informational/documented trade-off at most.
+
 ---
 
 ## Medium Severity
@@ -82,6 +87,8 @@ case TypeKindUnknown:
 ```
 
 This means `empty` (nil) is compatible with anything unknown, deferring validation to the Go compiler.
+
+> **Review comment:** PARTIALLY AGREE — This is intentional design, not a bug. The code comments explicitly state "We defer implementation check to Go compiler." The permissiveness only affects Go stdlib interop where type metadata is incomplete. For user-defined Kukicha types, full validation occurs. The trade-off is correct: false negatives (missed type errors) are preferable to false positives (spurious errors on valid code). The Go compiler catches any real mismatches downstream. Severity should be Low.
 
 ---
 
@@ -111,6 +118,8 @@ func example(cond bool) string
     return 42  # This type is never seen by the inference
 ```
 
+> **Review comment:** DISAGREE — This is not a real issue. This function is used for **arrow lambda inference** in block lambdas, not for regular functions. Kukicha requires explicit return types on all named functions, so the example given (`func example(cond bool) string`) would never hit this code path — it already has a declared return type. Arrow lambdas are always passed to typed contexts (e.g., `slice.Filter` expects `func(T) bool`), so the caller's signature constrains the return type. Multi-return lambdas cannot exist in Kukicha's type system. The file location is also wrong — the function lives in `codegen_stdlib.go`, not `codegen_decl.go`.
+
 ---
 
 ### 5. SQL injection check only catches interpolated strings
@@ -124,6 +133,8 @@ if strLit, ok := sqlArg.(*ast.StringLiteral); ok && strLit.Interpolated {
 ```
 
 Concatenation-based SQL building would slip through, though this is partially defensible given Kukicha's string interpolation is the primary string-building mechanism.
+
+> **Review comment:** PARTIALLY AGREE — The review itself acknowledges this is "partially defensible." Kukicha does support string concatenation via `+`, so `"SELECT * FROM users WHERE id = " + id` would evade the check. However, string interpolation (`"SELECT * FROM users WHERE id = {id}"`) is the idiomatic pattern in Kukicha, making concatenation-based SQL uncommon in practice. Worth tracking as a future enhancement but not a high priority.
 
 ---
 
@@ -143,6 +154,8 @@ for _, param := range a.currentFunc.Parameters {
 
 Only `http.ResponseWriter` (exact name) is detected. Aliased imports or compatible interfaces are missed.
 
+> **Review comment:** PARTIALLY AGREE — There is already a mitigation in place: `semantic_security.go:12-22` handles the known `httphelper` alias by mapping `httphelper.X → http.X`. This covers the stdlib's own alias convention. However, custom user aliases (e.g., `import "net/http" as myhttp`) would indeed bypass detection. The practical risk is low since most users will use the standard import, but a more robust solution would track all aliases from the import table.
+
 ---
 
 ## Low Severity
@@ -158,6 +171,8 @@ if existing, exists := result.registry[key]; !exists || returnCount > existing.c
 ```
 
 If a stdlib function is refactored from 2→1 return values, the registry won't update.
+
+> **Review comment:** DISAGREE — The logic is correct for a code generator. Each function has exactly one entry keyed by qualified name. The "greater than" comparison is a deterministic tie-breaking strategy for the (abnormal) case where duplicates appear. In normal operation, each function appears once and gets inserted on the `!exists` branch. If a function's return count changes from 2→1, the old entry is simply overwritten because `!exists` is false but the entry gets a fresh `registryEntry`. Wait — actually, `returnCount > existing.count` would be `1 > 2 = false`, so it would NOT update. The issue is technically correct about the 2→1 case, but this scenario (reducing return values on an existing stdlib function) is extremely unlikely and would be caught by failing tests. Low priority.
 
 ---
 
@@ -176,6 +191,8 @@ var printfMethods = map[string]bool{
 
 No signature validation; any method named `Errorf`/`Fatalf`/`Logf` passes even if the first arg isn't a format string.
 
+> **Review comment:** AGREE — Valid observation. A user-defined method named `Errorf` on a custom type would be incorrectly treated as printf-style. In practice this is unlikely to cause issues (the worst case is unnecessary format-string processing on a non-format call), but adding receiver/package checks would make it more robust. Low priority.
+
 ---
 
 ### 9. Walrus flag not validated
@@ -183,6 +200,8 @@ No signature validation; any method named `Errorf`/`Fatalf`/`Logf` passes even i
 **Location:** `lower.go:85-92`
 
 The `walrus` flag is blindly trusted. If `walrus=true` but the RHS doesn't actually return multiple values, Go compilation fails.
+
+> **Review comment:** DISAGREE — The walrus flag is correctly set at every call site in the lowering pass (pipes use `Walrus: true` for new declarations, onerr uses `Walrus: false` for reassignments). There's no user input that controls this flag — it's an internal compiler detail. Any mismatch would be a compiler bug caught by Go compilation, which is the intended safety net. No validation needed.
 
 ---
 
@@ -200,6 +219,8 @@ build:
 
 `go generate` in `build` calls `genstdlibregistry` again.
 
+> **Review comment:** AGREE — The `generate` target depends on `genstdlibregistry` explicitly, then `build` runs `go generate ./...` which re-runs it via the `//go:generate` directive in `cmd/kukicha/main.go`. The second run is redundant and wastes build time. Easy fix.
+
 ---
 
 ### 11. `go_stdlib_gen.go` missing header comment
@@ -208,6 +229,8 @@ build:
 
 Unlike `stdlib_registry_gen.go`, it doesn't list which Go packages were scanned.
 
+> **Review comment:** DISAGREE — `go_stdlib_gen.go` actually has a MORE detailed header than `stdlib_registry_gen.go`. It includes: the generation command, regeneration instructions, the source description ("Go standard library function signatures extracted via go/importer"), and a cross-reference to type definitions in `stdlib_types.go`. This issue is a false positive.
+
 ---
 
 ### 12. No staleness check for main `.kuki` → `.go` files
@@ -215,6 +238,8 @@ Unlike `stdlib_registry_gen.go`, it doesn't list which Go packages were scanned.
 **Location:** `Makefile:55-70`
 
 Only tests are checked (`check-test-staleness`). If `stdlib/*.kuki` is edited without `make generate`, the `.go` file silently becomes stale.
+
+> **Review comment:** AGREE — There's `check-test-staleness` for `*_test.kuki` files but no equivalent for main `.kuki` files. The `check-generate` target uses `git diff` which only works in CI after regeneration. A timestamp-based staleness check (like the test one) would catch local drift earlier. Low effort fix.
 
 ---
 
@@ -225,6 +250,8 @@ Only tests are checked (`check-test-staleness`). If `stdlib/*.kuki` is edited wi
 
 Says "indent/prefix options not yet supported" but `WithIndent`/`WithPrefix` functions exist above it.
 
+> **Review comment:** AGREE — The comment contradicts the API. Either the comment is stale (functions were added after the comment was written) or the functions exist but aren't wired into `Encode`. Either way, the comment should be updated or removed.
+
 ---
 
 ### 14. `slice.First`/`Last` lose type info
@@ -232,6 +259,8 @@ Says "indent/prefix options not yet supported" but `WithIndent`/`WithPrefix` fun
 **Location:** `stdlib/slice/slice.kuki:11-26`
 
 Returns `list of any` instead of preserving the element type. A fundamental limitation of the current placeholder system.
+
+> **Review comment:** AGREE — Both functions return `list of any`, losing the element type. Other functions in the same package (like `Filter`, `Map`) correctly use the `any` placeholder to preserve types. `First` and `Last` should be fixable within the existing generic placeholder system. The review correctly identifies this as a real limitation.
 
 ---
 
@@ -241,6 +270,8 @@ Returns `list of any` instead of preserving the element type. A fundamental limi
 - `slice.Flatten` - flatten `list of list of T` into `list of T`
 - `maps.Map` - transform map values
 
+> **Review comment:** PARTIALLY AGREE — These are nice-to-haves, not issues. Their absence is a feature gap, not a bug. `slice.Flatten` would require nested generic support (`list of list of any`) which may not be expressible in the current placeholder system. `slice.Partition` and `maps.Map` would be straightforward additions. This belongs in a feature request tracker, not a code review.
+
 ---
 
 ### 16. `not!=` not handled
@@ -249,11 +280,15 @@ Returns `list of any` instead of preserving the element type. A fundamental limi
 
 `not equals` works but `not!=` doesn't parse correctly.
 
+> **Review comment:** DISAGREE — `not!=` is not valid Kukicha syntax and should not be supported. The language design uses English keywords: `not equals` (two tokens) is the idiomatic form, while `!=` is the symbolic alternative. Mixing them (`not!=`) would be incoherent — like writing `not not-equal`. The parser correctly rejects this. This is working as designed.
+
 ---
 
 ### 17. `reference` keyword has no short alias
 
 Unlike `func`/`function`, `var`/`variable`, there's no `ref` alias.
+
+> **Review comment:** DISAGREE — The aliasing pattern (`func`/`function`, `var`/`variable`, `const`/`constant`) exists to provide beginner-friendly long forms of short keywords. `reference` is already the long, descriptive form — adding `ref` would go in the opposite direction (adding a short form of a long keyword). This is inconsistent with the existing pattern's purpose. If anything, the current form is already the right one for a beginner-friendly language.
 
 ---
 
@@ -277,14 +312,40 @@ Unlike `func`/`function`, `var`/`variable`, there's no `ref` alias.
 5. **Remove or flesh out empty `cmd/ku-*` directories**
 6. **Document the IIFE allocation as a known trade-off** or investigate avoiding it
 
+> **Review comment on priorities:** Priorities 1-2 are the only actionable fixes. Priority 3 is valid but minor. Priority 6 should be reframed — the IIFE is architecturally necessary, not something to "avoid." Priority 5 was not discussed in the issues above and needs verification.
+
 ---
 
-## Summary
+## Review Summary
+
+| Issue | Verdict | Notes |
+|-------|---------|-------|
+| 1. files.Copy/Move missing security directive | **AGREE** | Real security gap, easy fix |
+| 2. IIFE allocation in pipes | **DISAGREE (severity)** | Necessary design, not critical |
+| 3. typesCompatible() permissive | **PARTIALLY AGREE** | Intentional, should be Low |
+| 4. Lambda return inference | **DISAGREE** | Not a real issue; wrong file cited |
+| 5. SQL injection (interpolation only) | **PARTIALLY AGREE** | Valid but low practical risk |
+| 6. HTTP handler detection | **PARTIALLY AGREE** | Mitigation exists for known aliases |
+| 7. Registry returnCount | **DISAGREE** | Correct logic; edge case is theoretical |
+| 8. printf name-only detection | **AGREE** | Valid, low priority |
+| 9. Walrus flag validation | **DISAGREE** | Internal flag, no validation needed |
+| 10. Double genstdlibregistry run | **AGREE** | Redundant, easy fix |
+| 11. go_stdlib_gen.go header | **DISAGREE** | False positive — header is more detailed |
+| 12. Main .kuki staleness check | **AGREE** | Valid gap |
+| 13. json.Encode comment | **AGREE** | Stale comment |
+| 14. slice.First/Last type loss | **AGREE** | Real limitation |
+| 15. Missing stdlib functions | **PARTIALLY AGREE** | Feature request, not a bug |
+| 16. not!= not handled | **DISAGREE** | Working as designed |
+| 17. reference short alias | **DISAGREE** | Inconsistent with aliasing pattern's purpose |
+
+**Revised severity counts:**
 
 | Severity | Count |
 |----------|-------|
-| Critical | 2 |
-| Medium | 4 |
-| Low | 16 |
+| Critical | 1 (issue 1 only) |
+| Medium | 2 (issues 5, 8) |
+| Low | 4 (issues 10, 12, 13, 14) |
+| Not issues | 7 (issues 2*, 4, 7, 9, 11, 16, 17) |
+| Partial/feature requests | 3 (issues 3, 6, 15) |
 
-The codebase is generally well-architected with clean separation of concerns. The most pressing issue is the missing security directives on `files.Copy` and `files.Move`, which creates a path traversal detection gap. Secondary concerns are the IIFE allocation pattern and registry staleness handling.
+*Issue 2 is a valid observation but not a bug — it's an intentional design trade-off.

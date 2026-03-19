@@ -141,6 +141,7 @@ func DeleteAll(path string) error
 # Creates the destination file if it doesn't exist
 # Returns any error that occurred
 # Example: files.Copy("source.txt", "destination.txt")
+# kuki:security "files"
 func Copy(src string, dst string) error
     sourceFile := os.Open(src) onerr return
     defer sourceFile.Close()
@@ -154,6 +155,7 @@ func Copy(src string, dst string) error
 # Move moves/renames a file or directory
 # Returns any error that occurred
 # Example: files.Move("old.txt", "new.txt")
+# kuki:security "files"
 func Move(src string, dst string) error
     return os.Rename(src, dst)
 

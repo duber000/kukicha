@@ -822,7 +822,7 @@ func (g *Generator) generateMethodCallExpr(expr *ast.MethodCallExpr) string {
 
 	// Check if this is a printf-style method (Errorf, Fatalf, Logf, Skipf, Printf, etc.)
 	// These methods require a constant format string in Go 1.26+
-	if g.isPrintfStyleMethod(method) && len(expr.Arguments) > 0 {
+	if g.isPrintfStyleCall(object, method) && len(expr.Arguments) > 0 {
 		if strLit, ok := expr.Arguments[0].(*ast.StringLiteral); ok {
 			format, formatArgs := g.parseStringPartsOrInterpolation(strLit)
 			if len(formatArgs) > 0 {
@@ -912,25 +912,54 @@ func (g *Generator) fillStdlibDefaults(goName string, exprNode ast.Expression, a
 	}
 }
 
-// printfMethods lists printf-style methods that expect a format string as their first argument.
-var printfMethods = map[string]bool{
-	"Errorf":  true,
-	"Fatalf":  true,
-	"Logf":    true,
-	"Skipf":   true,
-	"Printf":  true,
-	"Sprintf": true,
-	"Fprintf": true,
-	"Panicf":  true,
-	"Warnf":   true,
-	"Infof":   true,
+// printfPackageFuncs maps package-level printf-style functions (called as pkg.Func).
+var printfPackageFuncs = map[string]map[string]bool{
+	"fmt": {"Printf": true, "Sprintf": true, "Fprintf": true, "Errorf": true},
+	"log": {"Printf": true, "Fatalf": true, "Panicf": true},
+}
+
+// printfReceiverMethods lists printf-style methods called on receivers (e.g., t.Errorf).
+// These are only matched when the receiver is NOT a known package name, to avoid
+// false positives on user-defined types with the same method name.
+var printfReceiverMethods = map[string]bool{
+	"Errorf": true,
+	"Fatalf": true,
+	"Logf":   true,
+	"Skipf":  true,
+	"Printf": true,
+	"Warnf":  true,
+	"Infof":  true,
 	"Debugf":  true,
 }
 
-// isPrintfStyleMethod returns true if the method name is a printf-style method
-// that expects a format string as its first argument.
-func (g *Generator) isPrintfStyleMethod(method string) bool {
-	return printfMethods[method]
+// knownPackages lists import package names that should use printfPackageFuncs
+// instead of the receiver method lookup.
+var knownPackages = map[string]bool{
+	"fmt": true, "log": true, "os": true, "io": true, "strings": true,
+	"strconv": true, "math": true, "sync": true, "time": true,
+	"testing": true, "http": true, "json": true, "bytes": true,
+}
+
+// isPrintfStyleCall returns true if object.method is a known printf-style call.
+// For known package names it checks printfPackageFuncs; for receiver variables
+// it checks printfReceiverMethods.
+func (g *Generator) isPrintfStyleCall(object, method string) bool {
+	// Check if object is a known package (or aliased package)
+	pkg := object
+	for orig, alias := range g.pkgAliases {
+		if alias == object {
+			pkg = orig
+			break
+		}
+	}
+	if knownPackages[pkg] {
+		if fns, ok := printfPackageFuncs[pkg]; ok {
+			return fns[method]
+		}
+		return false
+	}
+	// Receiver variable — use the general method list
+	return printfReceiverMethods[method]
 }
 
 func (g *Generator) generateSliceExpr(expr *ast.SliceExpr) string {

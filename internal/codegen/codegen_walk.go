@@ -680,7 +680,7 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 		// For printf-style methods, skip argument 0 (the format string) — it is
 		// rendered inline via %v substitution, not via fmt.Sprintf.
 		startIdx := 0
-		if g.isPrintfStyleMethod(e.Method.Value) && len(e.Arguments) > 0 {
+		if g.isPrintfStyleCall(g.exprToString(e.Object), e.Method.Value) && len(e.Arguments) > 0 {
 			startIdx = 1
 		}
 		for i := startIdx; i < len(e.Arguments); i++ {

@@ -9,7 +9,7 @@ KUKI_SOURCES := $(wildcard stdlib/*/*.kuki)
 KUKI_MAIN := $(filter-out %_test.kuki stdlib/test/test.kuki,$(KUKI_SOURCES))
 KUKI_TESTS := $(filter %_test.kuki,$(KUKI_SOURCES))
 
-.PHONY: all build lsp generate generate-tests genstdlibregistry gengostdlib test lint check-generate check-test-staleness clean install-lsp install-hooks zed-test
+.PHONY: all build lsp generate generate-tests genstdlibregistry gengostdlib test lint check-generate check-test-staleness check-main-staleness clean install-lsp install-hooks zed-test
 
 all: build lsp
 
@@ -29,10 +29,10 @@ gengostdlib:
 	go run ./cmd/gengostdlib
 
 # Regenerate all stdlib .go files from .kuki sources.
-# Runs genstdlibregistry first so the semantic registry stays in sync,
-# then rebuilds the compiler with the fresh registry, then transpiles stdlib.
+# Rebuilds the compiler (which runs genstdlibregistry via go generate),
+# then transpiles stdlib .kuki files to .go.
 # Ignores go build errors (stdlib packages aren't standalone binaries).
-generate: genstdlibregistry build generate-tests
+generate: build generate-tests
 	@for f in $(KUKI_MAIN); do \
 		echo "Transpiling $$f ..."; \
 		out=$$($(KUKICHA) build --skip-build --if-changed "$$f" 2>&1); rc=$$?; \
@@ -69,8 +69,26 @@ check-test-staleness:
 		exit 1; \
 	fi
 
+# Check that .go files are not older than their .kuki sources (non-test).
+check-main-staleness:
+	@stale=0; \
+	for kuki in $(KUKI_MAIN); do \
+		gofile=$${kuki%.kuki}.go; \
+		if [ ! -f "$$gofile" ]; then \
+			echo "STALE: $$gofile does not exist (run 'make generate')"; \
+			stale=1; \
+		elif [ "$$kuki" -nt "$$gofile" ]; then \
+			echo "STALE: $$gofile is older than $$kuki (run 'make generate')"; \
+			stale=1; \
+		fi; \
+	done; \
+	if [ "$$stale" -eq 1 ]; then \
+		echo "Run 'make generate' to regenerate .go files."; \
+		exit 1; \
+	fi
+
 # Run all tests
-test: check-test-staleness
+test: check-test-staleness check-main-staleness
 	go test ./...
 
 # Run linter (requires golangci-lint: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest)

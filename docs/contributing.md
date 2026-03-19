@@ -232,7 +232,7 @@ make generate-tests   # transpile stdlib/*_test.kuki → *_test.go only
 
 ### Staleness check
 
-`make test` checks that every `*_test.go` is up to date with its `*_test.kuki` source before running the test suite. If any test file is missing or has an older timestamp than its source, the build fails immediately:
+`make test` checks that every `.go` file is up to date with its `.kuki` source before running the test suite. This covers both test files (`*_test.kuki`) and main library files. If any generated file is missing or has an older timestamp than its source, the build fails immediately:
 
 ```
 STALE: stdlib/files/files_test.go is older than stdlib/files/files_test.kuki (run 'make generate')
@@ -242,7 +242,8 @@ Run 'make generate' to regenerate test files.
 To check staleness without running tests:
 
 ```bash
-make check-test-staleness
+make check-test-staleness    # test files only
+make check-main-staleness    # non-test library files only
 ```
 
 ### Registry files (`stdlib_registry_gen.go`, `go_stdlib_gen.go`)
