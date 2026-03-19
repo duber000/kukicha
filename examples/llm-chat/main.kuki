@@ -38,39 +38,54 @@ func main()
     # 1. Quick one-shot completion
     # ──────────────────────────────────────
     print("--- Quick completion ---")
-    reply := llm.Complete("openai:gpt-4o-mini", "What is Kukicha tea in one sentence?") onerr 
-    print("Reply: {reply}")
+    reply, err1 := llm.Complete("openai:gpt-4o-mini", "What is Kukicha tea in one sentence?")
+    if (err1 not equals empty)
+        print("Error: {err1}")
+    else
+        print("Reply: {reply}")
     print("")
     # ──────────────────────────────────────
     # 2. Builder pattern with system prompt
     # ──────────────────────────────────────
     print("--- Builder with system prompt ---")
-    answer := llm.New("openai:gpt-4o-mini") |> llm.System("You are a concise assistant. Reply in one sentence.") |> llm.Temperature(0.3) |> llm.MaxTokens(100) |> llm.Ask("What is the pipe operator?") onerr 
-    print("Answer: {answer}")
+    answer, err2 := llm.New("openai:gpt-4o-mini") |> llm.System("You are a concise assistant. Reply in one sentence.") |> llm.Temperature(0.3) |> llm.MaxTokens(100) |> llm.Ask("What is the pipe operator?")
+    if (err2 not equals empty)
+        print("Error: {err2}")
+    else
+        print("Answer: {answer}")
     print("")
     # ──────────────────────────────────────
     # 3. Multi-turn conversation
     # ──────────────────────────────────────
     print("--- Multi-turn conversation ---")
-    response := llm.New("openai:gpt-4o-mini") |> llm.System("You are a friendly tutor.") |> llm.User("What is a goroutine?") |> llm.Assistant("A goroutine is a lightweight thread managed by the Go runtime.") |> llm.User("How do I create one?") |> llm.Send onerr 
-    print("Response: {response}")
+    response, err3 := llm.New("openai:gpt-4o-mini") |> llm.System("You are a friendly tutor.") |> llm.User("What is a goroutine?") |> llm.Assistant("A goroutine is a lightweight thread managed by the Go runtime.") |> llm.User("How do I create one?") |> llm.Send
+    if (err3 not equals empty)
+        print("Error: {err3}")
+    else
+        print("Response: {response}")
     print("")
     # ──────────────────────────────────────
     # 4. Streaming response
     # ──────────────────────────────────────
     print("--- Streaming ---")
-    streamed := llm.New("openai:gpt-4o-mini") |> llm.Temperature(0.9) |> llm.Stream(printChunk) |> llm.Ask("Write a haiku about programming") onerr 
-    print("")
-    print("(Full text: {streamed})")
+    streamed, err4 := llm.New("openai:gpt-4o-mini") |> llm.Temperature(0.9) |> llm.Stream(printChunk) |> llm.Ask("Write a haiku about programming")
+    if (err4 not equals empty)
+        print("\nStream error: {err4}")
+    else
+        print("")
+        print("(Full text: {streamed})")
     print("")
     # ──────────────────────────────────────
     # 5. Full response with usage stats
     # ──────────────────────────────────────
     print("--- Full response ---")
-    comp := llm.New("openai:gpt-4o-mini") |> llm.User("Say hello in three languages") |> llm.SendRaw onerr 
-    print("Content: {llm.GetContent(comp)}")
-    print("Model: {comp.Model}")
-    print("Tokens used: {comp.Usage.TotalTokens}")
+    comp, err5 := llm.New("openai:gpt-4o-mini") |> llm.User("Say hello in three languages") |> llm.SendRaw
+    if (err5 not equals empty)
+        print("Error: {err5}")
+    else
+        print("Content: {llm.GetContent(comp)}")
+        print("Model: {comp.Model}")
+        print("Tokens used: {comp.Usage.TotalTokens}")
     print("")
     # ──────────────────────────────────────
     # 6. Using any-llm-gateway

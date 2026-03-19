@@ -7,7 +7,6 @@ petiole main
 
 import "stdlib/pg"
 import "stdlib/env"
-import "fmt"
 
 func main()
     url := env.Get("DATABASE_URL") onerr panic "set DATABASE_URL"
@@ -24,7 +23,7 @@ func main()
         scanErr := pg.ScanRow(rows, reference of id, reference of name)
         if scanErr != empty
             continue
-        fmt.Printf("User %d: %s\n", id, name)
+        print("User {id}: {name}")
 
     # Transaction example
     tx := pg.Begin(pool) onerr panic "{error}"
