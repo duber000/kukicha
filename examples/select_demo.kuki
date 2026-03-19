@@ -1,11 +1,9 @@
-import "fmt"
-
 # select_demo.kuki - demonstrates select statement for channel multiplexing
 
 func main()
-    ch := make(channel of string)
-    done := make(channel of bool)
-    out := make(channel of string, 1)
+    ch := make channel of string
+    done := make channel of bool
+    out := make channel of string, 1
 
     # Send a message in a goroutine
     go
@@ -14,25 +12,25 @@ func main()
     # Receive from whichever channel is ready first
     select
         when msg := receive from ch
-            fmt.Println("received:", msg)
+            print("received: {msg}")
         when receive from done
-            fmt.Println("done")
+            print("done")
         otherwise
-            fmt.Println("no activity")
+            print("no activity")
 
     # Non-blocking send with otherwise (default)
     select
         when send "ping" to out
-            fmt.Println("sent ping")
+            print("sent ping")
         otherwise
-            fmt.Println("channel full")
+            print("channel full")
 
     # ok-check pattern for closed channel detection
     select
         when msg, ok := receive from out
             if ok
-                fmt.Println("got:", msg)
+                print("got: {msg}")
             else
-                fmt.Println("channel closed")
+                print("channel closed")
         otherwise
-            fmt.Println("nothing ready")
+            print("nothing ready")

@@ -7,43 +7,35 @@ import "stdlib/shell"
 # It provides restricted, structured actions over systemd to avoid raw bash.
 
 func main()
-    app := cli.New("ku-sys")
-    
-    app = app |> cli.Arg("command", "Subcommand: service-status, restart-service")
-    app = app |> cli.Arg("service", "Name of the systemd service")
-    
-    app = app |> cli.Action(runAppAction)
-    
-    err := cli.RunApp(app)
-    if err != empty
-        print("{{\"error\": \"CLI Run failed: {err}\"}}")
+    _ = cli.New("ku-sys")
+        |> cli.Arg("command", "Subcommand: service-status, restart-service")
+        |> cli.Arg("service", "Name of the systemd service")
+        |> cli.Action(runAppAction)
+        |> cli.RunApp() onerr
+            print("\{\"error\": \"CLI Run failed: {error}\"\}")
 
 func runAppAction(args cli.Args)
     command := cli.GetString(args, "command")
     service := cli.GetString(args, "service")
-    
+
     if service == ""
-        print("{{\"error\": \"Service name is required\"}}")
+        print("\{\"error\": \"Service name is required\"\}")
         return
 
-    if command == "service-status"
-        handleServiceStatus(service)
-    else if command == "restart-service"
-        handleRestartService(service)
-    else
-        print("{{\"error\": \"Unknown command. Use service-status or restart-service.\"}}")
+    switch command
+        when "service-status"
+            handleServiceStatus(service)
+        when "restart-service"
+            handleRestartService(service)
+        otherwise
+            print("\{\"error\": \"Unknown command. Use service-status or restart-service.\"\}")
 
 func handleServiceStatus(service string)
-    cmd := shell.New("systemctl", "status", "--no-pager", service)
-    result := shell.Execute(cmd)
-    
-    stdoutStr, outErr := cast.SmartString(shell.GetOutput(result))
-    if outErr != empty
-        stdoutStr = ""
-    stderrStr, errErr := cast.SmartString(shell.GetError(result))
-    if errErr != empty
-        stderrStr = ""
-    
+    result := shell.New("systemctl", "status", "--no-pager", service) |> shell.Execute()
+
+    stdoutStr := cast.SmartString(shell.GetOutput(result)) onerr ""
+    stderrStr := cast.SmartString(shell.GetError(result)) onerr ""
+
     state := "active"
     if not shell.Success(result)
         state = "inactive_or_failed"
@@ -58,25 +50,20 @@ func handleServiceStatus(service string)
         "systemctl_status": state,
         "output": combined
     }
-    
+
     printJsonResult(outMap)
 
 func handleRestartService(service string)
-    cmd := shell.New("systemctl", "restart", "--no-pager", service)
-    result := shell.Execute(cmd)
-    
-    stdoutStr, outErr := cast.SmartString(shell.GetOutput(result))
-    if outErr != empty
-        stdoutStr = ""
-    stderrStr, errErr := cast.SmartString(shell.GetError(result))
-    if errErr != empty
-        stderrStr = ""
-    
+    result := shell.New("systemctl", "restart", "--no-pager", service) |> shell.Execute()
+
+    stdoutStr := cast.SmartString(shell.GetOutput(result)) onerr ""
+    stderrStr := cast.SmartString(shell.GetError(result)) onerr ""
+
     outMap := map of string to any{
         "service": service,
         "action": "restart_service"
     }
-    
+
     if not shell.Success(result)
         outMap["status"] = "failed"
         outMap["error"] = stderrStr
@@ -85,18 +72,14 @@ func handleRestartService(service string)
         outMap["status"] = "success"
         outMap["message"] = "Service {service} restarted successfully."
         outMap["output"] = stdoutStr
-        
+
     printJsonResult(outMap)
 
 func printJsonResult(result any)
-    out, jsonErr := json.Marshal(result)
-    if jsonErr != empty
-        print("{{\"error\": \"Failed to marshal result\"}}")
+    out := json.Marshal(result) onerr
+        print("\{\"error\": \"Failed to marshal result\"\}")
         return
-        
-    s, castErr := cast.SmartString(out)
-    if castErr != empty
-        print("{{\"error\": \"Failed to format output\"}}")
+    s := cast.SmartString(out) onerr
+        print("\{\"error\": \"Failed to format output\"\}")
         return
-        
     print(s)

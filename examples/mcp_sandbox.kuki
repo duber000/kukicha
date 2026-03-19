@@ -15,7 +15,7 @@ func readFileTool(box sandbox.Root, args map of string to any) (any, error)
 func writeFileTool(box sandbox.Root, args map of string to any) (any, error)
     path := args["path"].(string)
     content := args["content"].(string)
-    writeErr := content |> sandbox.WriteString(box, path)
+    writeErr := sandbox.WriteString(box, content, path)
     if writeErr != empty
         return mcp.ErrorResult(writeErr.Error()), empty
     return "wrote {path}" as any, empty
