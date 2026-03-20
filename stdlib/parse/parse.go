@@ -11,121 +11,121 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//line /home/user/kukicha/stdlib/parse/parse.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:15
 func Json(data string) ([]byte, error) {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:16
 	return []byte(data), nil
 }
 
-//line /home/user/kukicha/stdlib/parse/parse.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:21
 func JsonLines(data string) ([]string, error) {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:22
 	lines := kukistring.Split(data, "\n")
-//line /home/user/kukicha/stdlib/parse/parse.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:23
 	result := make([]string, 0, len(lines))
-//line /home/user/kukicha/stdlib/parse/parse.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:24
 	for _, line := range lines {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:25
 		line = kukistring.TrimSpace(line)
-//line /home/user/kukicha/stdlib/parse/parse.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:26
 		if len(line) > 0 {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:27
 			result = append(result, line)
 		}
 	}
-//line /home/user/kukicha/stdlib/parse/parse.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:28
 	return result, nil
 }
 
-//line /home/user/kukicha/stdlib/parse/parse.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:33
 func JsonPretty(value any) ([]byte, error) {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:34
 	pretty, err_2 := json.MarshalPretty(value)
 	if err_2 != nil {
 		return []byte{}, err_2
 	}
-//line /home/user/kukicha/stdlib/parse/parse.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:35
 	return pretty, nil
 }
 
-//line /home/user/kukicha/stdlib/parse/parse.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:37
 func readAllCSV(reader *csv.Reader) ([][]string, error) {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:38
 	return reader.ReadAll()
 }
 
-//line /home/user/kukicha/stdlib/parse/parse.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:44
 func Csv(data string) ([][]string, error) {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:45
 	records, err_4 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
 	if err_4 != nil {
 		return [][]string{}, err_4
 	}
-//line /home/user/kukicha/stdlib/parse/parse.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:50
 	return records, nil
 }
 
-//line /home/user/kukicha/stdlib/parse/parse.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:57
 func CsvWithHeader(data string) ([]map[string]string, error) {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:58
 	records, err_6 := readAllCSV(csv.NewReader(bytes.NewBufferString(data)))
 	if err_6 != nil {
 		return []map[string]string{}, err_6
 	}
-//line /home/user/kukicha/stdlib/parse/parse.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:64
 	if len(records) == 0 {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:65
 		return nil, errors.New("no data in CSV")
 	}
-//line /home/user/kukicha/stdlib/parse/parse.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:67
 	headers := records[0]
-//line /home/user/kukicha/stdlib/parse/parse.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:68
 	result := make([]map[string]string, 0, (len(records) - 1))
-//line /home/user/kukicha/stdlib/parse/parse.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:71
 	numRecords := len(records)
-//line /home/user/kukicha/stdlib/parse/parse.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:72
 	{
 		_iStart, _iEnd, _iStep := 1, numRecords, 1
 		if _iStart > _iEnd {
 			_iStep = -1
 		}
 		for i := _iStart; i != _iEnd; i += _iStep {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:73
 			row := records[i]
-//line /home/user/kukicha/stdlib/parse/parse.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:74
 			rowMap := make(map[string]string)
-//line /home/user/kukicha/stdlib/parse/parse.kuki:77
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:77
 			numHeaders := len(headers)
-//line /home/user/kukicha/stdlib/parse/parse.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:78
 			numCols := len(row)
-//line /home/user/kukicha/stdlib/parse/parse.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:79
 			maxCols := min(numCols, numHeaders)
-//line /home/user/kukicha/stdlib/parse/parse.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:81
 			for j := range maxCols {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:82
 				rowMap[headers[j]] = row[j]
 			}
-//line /home/user/kukicha/stdlib/parse/parse.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:84
 			result = append(result, rowMap)
 		}
 	}
-//line /home/user/kukicha/stdlib/parse/parse.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:86
 	return result, nil
 }
 
-//line /home/user/kukicha/stdlib/parse/parse.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:91
 func Yaml(data string) ([]byte, error) {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:92
 	return []byte(data), nil
 }
 
-//line /home/user/kukicha/stdlib/parse/parse.kuki:96
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:96
 func YamlPretty(value any) ([]byte, error) {
-//line /home/user/kukicha/stdlib/parse/parse.kuki:97
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:97
 	val, err_7 := yaml.Marshal(value)
 	if err_7 != nil {
 		return []byte{}, err_7
 	}
-//line /home/user/kukicha/stdlib/parse/parse.kuki:98
+//line /Users/tluker/repos/go/kukicha/stdlib/parse/parse.kuki:98
 	return val, nil
 }

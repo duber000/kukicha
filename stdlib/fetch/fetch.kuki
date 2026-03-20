@@ -26,6 +26,18 @@ import "stdlib/retry"
 import "stdlib/sandbox"
 import "stdlib/netguard"
 
+# limitReadCloser wraps an io.Reader with a separate io.Closer so that
+# io.LimitReader can cap reads while still delegating Close to the original body
+type limitReadCloser
+    r io.Reader
+    c io.Closer
+
+func Read on b reference limitReadCloser (p list of byte) (int, error)
+    return b.r.Read(p)
+
+func Close on b reference limitReadCloser () error
+    return b.c.Close()
+
 # Request represents an HTTP request with builder pattern support
 type Request
     url string
@@ -136,7 +148,7 @@ func doOnce(req Request) (reference http.Response, error)
 
     resp := client.Do(httpReq) onerr return
     if req.maxBodySize > 0
-        resp.Body = io.NopCloser(io.LimitReader(resp.Body, req.maxBodySize))
+        resp.Body = reference of limitReadCloser{r: io.LimitReader(resp.Body, req.maxBodySize), c: resp.Body}
     return resp, empty
 
 # Do executes the configured HTTP request.

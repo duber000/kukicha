@@ -8,42 +8,42 @@ import (
 	"testing"
 )
 
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:10
 type GetContentCase struct {
 	name    string
 	content string
 	want    string
 }
 
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:15
 func TestGetContent(t *testing.T) {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:16
 	cases := []GetContentCase{GetContentCase{name: "basic content", content: "response text", want: "response text"}, GetContentCase{name: "empty content", content: "", want: ""}}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:20
 	for _, tc := range cases {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:21
 		t.Run(tc.name, func(t *testing.T) {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:22
 			msg := llm.ResponseMessage{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:23
 			msg.Role = "assistant"
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:24
 			msg.Content = tc.content
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:26
 			choice := llm.Choice{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:27
 			choice.Message = msg
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:29
 			completion := llm.Completion{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:30
 			completion.Choices = []llm.Choice{choice}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:32
 			test.AssertEqual(t, llm.GetContent(completion), tc.want)
 		})
 	}
 }
 
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:36
 type GetToolCallsCase struct {
 	name      string
 	callID    string
@@ -51,90 +51,90 @@ type GetToolCallsCase struct {
 	wantCount int
 }
 
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:42
 func TestGetToolCalls(t *testing.T) {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:43
 	cases := []GetToolCallsCase{GetToolCallsCase{name: "one tool call", callID: "call-1", funcName: "do_thing", wantCount: 1}}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:46
 	for _, tc := range cases {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:47
 		t.Run(tc.name, func(t *testing.T) {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:48
 			toolFunc := llm.ToolCallFunction{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:49
 			toolFunc.Name = tc.funcName
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:50
 			toolFunc.Arguments = "{}"
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:52
 			toolCall := llm.ToolCall{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:53
 			toolCall.ID = tc.callID
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:54
 			toolCall.Type = "function"
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:55
 			toolCall.Function = toolFunc
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:57
 			msg := llm.ResponseMessage{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:58
 			msg.Role = "assistant"
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:59
 			msg.ToolCalls = []llm.ToolCall{toolCall}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:61
 			choice := llm.Choice{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:62
 			choice.Message = msg
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:63
 			completion := llm.Completion{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:64
 			completion.Choices = []llm.Choice{choice}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:66
 			calls := llm.GetToolCalls(completion)
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:67
 			test.AssertEqual(t, len(calls), tc.wantCount)
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:68
 			if len(calls) > 0 {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:69
 				test.AssertEqual(t, calls[0].Function.Name, tc.funcName)
 			}
 		})
 	}
 }
 
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:73
 type HasToolCallsCase struct {
 	name     string
 	hasCalls bool
 	want     bool
 }
 
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:78
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:78
 func TestHasToolCalls(t *testing.T) {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:79
 	cases := []HasToolCallsCase{HasToolCallsCase{name: "no calls", hasCalls: false, want: false}, HasToolCallsCase{name: "has calls", hasCalls: true, want: true}}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:83
 	for _, tc := range cases {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:84
 		t.Run(tc.name, func(t *testing.T) {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:85
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:85
 			completion := llm.Completion{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:86
 			if tc.hasCalls {
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:87
 				toolCall := llm.ToolCall{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:88
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:88
 				toolCall.ID = "call-1"
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:89
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:89
 				msg := llm.ResponseMessage{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:90
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:90
 				msg.ToolCalls = []llm.ToolCall{toolCall}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:91
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:91
 				choice := llm.Choice{}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:92
 				choice.Message = msg
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:93
 				completion.Choices = []llm.Choice{choice}
 			}
-//line /home/user/kukicha/stdlib/llm/llm_test.kuki:95
+//line /Users/tluker/repos/go/kukicha/stdlib/llm/llm_test.kuki:95
 			test.AssertEqual(t, llm.HasToolCalls(completion), tc.want)
 		})
 	}

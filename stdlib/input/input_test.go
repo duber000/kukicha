@@ -7,81 +7,81 @@ import (
 	"testing"
 )
 
-//line /home/user/kukicha/stdlib/input/input_test.kuki:9
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:9
 type ReadLineCase struct {
 	name string
 	want bool
 }
 
-//line /home/user/kukicha/stdlib/input/input_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:13
 func TestReadLine(t *testing.T) {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:14
 	cases := []ReadLineCase{ReadLineCase{name: "function exists", want: true}}
-//line /home/user/kukicha/stdlib/input/input_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:17
 	for _, tc := range cases {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:18
 		t.Run(tc.name, func(t *testing.T) {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:21
 			test.AssertNoError(t, nil)
 		})
 	}
 }
 
-//line /home/user/kukicha/stdlib/input/input_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:25
 type PromptCase struct {
 	name string
 	want bool
 }
 
-//line /home/user/kukicha/stdlib/input/input_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:29
 func TestPrompt(t *testing.T) {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:30
 	cases := []PromptCase{PromptCase{name: "function exists", want: true}}
-//line /home/user/kukicha/stdlib/input/input_test.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:33
 	for _, tc := range cases {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:34
 		t.Run(tc.name, func(t *testing.T) {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:37
 			test.AssertNoError(t, nil)
 		})
 	}
 }
 
-//line /home/user/kukicha/stdlib/input/input_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:41
 type ConfirmCase struct {
 	name string
 	want bool
 }
 
-//line /home/user/kukicha/stdlib/input/input_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:45
 func TestConfirm(t *testing.T) {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:46
 	cases := []ConfirmCase{ConfirmCase{name: "function exists", want: true}}
-//line /home/user/kukicha/stdlib/input/input_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:49
 	for _, tc := range cases {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:50
 		t.Run(tc.name, func(t *testing.T) {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:53
 			test.AssertNoError(t, nil)
 		})
 	}
 }
 
-//line /home/user/kukicha/stdlib/input/input_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:57
 type ChooseCase struct {
 	name string
 	want bool
 }
 
-//line /home/user/kukicha/stdlib/input/input_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:61
 func TestChoose(t *testing.T) {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:62
 	cases := []ChooseCase{ChooseCase{name: "function exists", want: true}}
-//line /home/user/kukicha/stdlib/input/input_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:65
 	for _, tc := range cases {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:66
 		t.Run(tc.name, func(t *testing.T) {
-//line /home/user/kukicha/stdlib/input/input_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/input/input_test.kuki:69
 			test.AssertNoError(t, nil)
 		})
 	}

@@ -13,8 +13,8 @@ func Parallel(many tasks func())
     for task in tasks
         t := task
         go func()
+            defer wg.Done()
             t()
-            wg.Done()
         ()
     wg.Wait()
 
@@ -29,9 +29,9 @@ func ParallelWithLimit(limit int, many tasks func())
         send 1 to semaphore
         t := task
         go func()
+            defer wg.Done()
             t()
             receive from semaphore
-            wg.Done()
         ()
     wg.Wait()
 
@@ -47,8 +47,8 @@ func Map(items list of any, fn func(any) result) list of result
         idx := i
         it := item
         go func()
+            defer wg.Done()
             results[idx] = fn(it)
-            wg.Done()
         ()
     wg.Wait()
     return results
@@ -65,9 +65,9 @@ func MapWithLimit(items list of any, limit int, fn func(any) result) list of res
         it := item
         send 1 to semaphore
         go func()
+            defer wg.Done()
             results[idx] = fn(it)
             receive from semaphore
-            wg.Done()
         ()
     wg.Wait()
     return results

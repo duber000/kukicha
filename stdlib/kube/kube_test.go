@@ -7,70 +7,70 @@ import (
 	"testing"
 )
 
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:11
 type NewConfigCase struct {
 	name string
 }
 
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:14
 func TestNewConfig(t *testing.T) {
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:15
 	cases := []NewConfigCase{NewConfigCase{name: "builder"}}
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:18
 	for _, tc := range cases {
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:19
 		t.Run(tc.name, func(t *testing.T) {
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:20
 			cfg := kube.New()
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:21
 			cfg = kube.Kubeconfig(cfg, "/tmp/test-kubeconfig")
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:22
 			cfg = kube.Context(cfg, "test-context")
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:23
 			_ = cfg
 		})
 	}
 }
 
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:27
 type InClusterCase struct {
 	name string
 }
 
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:30
 func TestInCluster(t *testing.T) {
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:31
 	cases := []InClusterCase{InClusterCase{name: "in cluster"}}
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:34
 	for _, tc := range cases {
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:35
 		t.Run(tc.name, func(t *testing.T) {
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:36
 			cfg := kube.InCluster(kube.New())
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:37
 			_ = cfg
 		})
 	}
 }
 
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:41
 type NamespaceCase struct {
 	name string
 }
 
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:44
 func TestNamespace(t *testing.T) {
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:45
 	cases := []NamespaceCase{NamespaceCase{name: "namespace scoping"}}
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:48
 	for _, tc := range cases {
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:49
 		t.Run(tc.name, func(t *testing.T) {
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:50
 			c := kube.Cluster{}
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:51
 			scoped := kube.Namespace(c, "production")
-//line /home/user/kukicha/stdlib/kube/kube_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/kube/kube_test.kuki:52
 			_ = scoped
 		})
 	}

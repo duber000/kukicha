@@ -71,8 +71,13 @@ func Env(cmd Command, key string, value string) Command
 # Execute runs the command and returns a Result
 # Example: result := cmd |> shell.Execute()
 func Execute(cmd Command) Result
-    # Build the exec.Cmd
-    execCmd := buildExecCmd(cmd)
+    # Build the exec.Cmd — timeout context must be deferred here, not in a helper,
+    # so cancel fires after the command finishes rather than before it starts
+    execCmd := exec.Command(cmd.name, many cmd.args)
+    if cmd.timeout > 0
+        h := ctxpkg.WithTimeout(ctxpkg.Background(), cmd.timeout as int64)
+        defer ctxpkg.Cancel(h)
+        execCmd = exec.CommandContext(ctxpkg.Value(h), cmd.name, many cmd.args)
 
     # Set working directory if specified
     if cmd.dir != ""
@@ -98,15 +103,6 @@ func Execute(cmd Command) Result
     exitCode := getExitCode(err)
 
     return Result{stdout: stdoutBuf.Bytes(), stderr: stderrBuf.Bytes(), exitCode: exitCode, err: err}
-
-# buildExecCmd creates an exec.Cmd with optional timeout
-func buildExecCmd(cmd Command) reference exec.Cmd
-    if cmd.timeout > 0
-        h := ctxpkg.WithTimeout(ctxpkg.Background(), cmd.timeout as int64)
-        defer ctxpkg.Cancel(h)
-        return exec.CommandContext(ctxpkg.Value(h), cmd.name, many cmd.args)
-
-    return exec.Command(cmd.name, many cmd.args)
 
 # getExitCode extracts the exit code from an error
 func getExitCode(err error) int

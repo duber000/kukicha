@@ -7,26 +7,26 @@ import (
 	"testing"
 )
 
-//line /home/user/kukicha/stdlib/retry/retry_test.kuki:9
+//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:9
 func TestRetryConfiguration(t *testing.T) {
-//line /home/user/kukicha/stdlib/retry/retry_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:10
 	cfg := retry.New()
-//line /home/user/kukicha/stdlib/retry/retry_test.kuki:12
+//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:12
 	cfg = retry.Delay(cfg, 100)
-//line /home/user/kukicha/stdlib/retry/retry_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:13
 	cfg = retry.Attempts(cfg, 5)
-//line /home/user/kukicha/stdlib/retry/retry_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:15
 	t.Logf("Retry config created with Delay and Attempts")
 }
 
-//line /home/user/kukicha/stdlib/retry/retry_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:18
 func TestRetryWithLinear(t *testing.T) {
-//line /home/user/kukicha/stdlib/retry/retry_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:19
 	cfg := retry.New()
-//line /home/user/kukicha/stdlib/retry/retry_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:20
 	cfg = retry.Delay(cfg, 250)
-//line /home/user/kukicha/stdlib/retry/retry_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:21
 	cfg = retry.Linear(cfg)
-//line /home/user/kukicha/stdlib/retry/retry_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/retry/retry_test.kuki:23
 	t.Logf("Retry config created with linear strategy")
 }

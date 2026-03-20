@@ -7,136 +7,136 @@ import (
 	"testing"
 )
 
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:9
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:9
 func TestStringValidators(t *testing.T) {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:10
 	_, err := validate.NotEmpty("text")
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:11
 	if err != nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:12
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:12
 		t.Fatalf("NotEmpty should succeed for non-empty string")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:13
 	_, err2 := validate.NotEmpty("   ")
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:14
 	if err2 == nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:15
 		t.Fatalf("NotEmpty should fail for whitespace-only strings")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:17
 	_, err3 := validate.Email("user@example.com")
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:18
 	if err3 != nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:19
 		t.Fatalf("Email validation failed for valid address")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:20
 	_, err4 := validate.Email("bad-email")
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:21
 	if err4 == nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:22
 		t.Fatalf("Email should reject invalid addresses")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:24
 	_, err5 := validate.URL("https://example.com")
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:25
 	if err5 != nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:26
 		t.Fatalf("Valid URL should pass")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:27
 	_, err6 := validate.URL("://bad")
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:28
 	if err6 == nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:29
 		t.Fatalf("Invalid URL should fail")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:31
 	_, err7 := validate.MinLength("hello", 3)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:32
 	if err7 != nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:33
 		t.Fatalf("MinLength should succeed when length sufficient")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:34
 	_, err8 := validate.MinLength("hi", 3)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:35
 	if err8 == nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:36
 		t.Fatalf("MinLength should fail when too short")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:38
 	_, err9 := validate.MaxLength("hi", 5)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:39
 	if err9 != nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:40
 		t.Fatalf("MaxLength should accept short string")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:41
 	_, err10 := validate.MaxLength("longer", 3)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:42
 	if err10 == nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:43
 		t.Fatalf("MaxLength should fail when string too long")
 	}
 }
 
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:46
 func TestNumberValidators(t *testing.T) {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:47
 	_, err11 := validate.InRange(5, 1, 10)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:48
 	if err11 != nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:49
 		t.Fatalf("InRange should accept value inside range")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:50
 	_, err12 := validate.InRange(-1, 0, 5)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:51
 	if err12 == nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:52
 		t.Fatalf("InRange should reject values outside range")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:54
 	_, err13 := validate.Positive(1)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:55
 	if err13 != nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:56
 		t.Fatalf("Positive should accept positives")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:57
 	_, err14 := validate.Positive(0)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:58
 	if err14 == nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:59
 		t.Fatalf("Positive should reject zero")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:61
 	_, err15 := validate.Negative(-1)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:62
 	if err15 != nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:63
 		t.Fatalf("Negative should accept negatives")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:64
 	_, err16 := validate.Negative(0)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:65
 	if err16 == nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:66
 		t.Fatalf("Negative should reject zero")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:68
 	_, err17 := validate.NonZero(2)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:69
 	if err17 != nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:70
 		t.Fatalf("NonZero should accept non-zero values")
 	}
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:71
 	_, err18 := validate.NonZero(0)
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:72
 	if err18 == nil {
-//line /home/user/kukicha/stdlib/validate/validate_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/validate/validate_test.kuki:73
 		t.Fatalf("NonZero should reject zero")
 	}
 }

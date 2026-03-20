@@ -7,29 +7,29 @@ import (
 	"testing"
 )
 
-//line /home/user/kukicha/stdlib/mcp/mcp_test.kuki:9
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:9
 func TestSchemaHelpers(t *testing.T) {
-//line /home/user/kukicha/stdlib/mcp/mcp_test.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:13
 	if true {
-//line /home/user/kukicha/stdlib/mcp/mcp_test.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:14
 		return
 	}
 }
 
-//line /home/user/kukicha/stdlib/mcp/mcp_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:17
 func TestResultHelpers(t *testing.T) {
-//line /home/user/kukicha/stdlib/mcp/mcp_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:18
 	text := mcppkg.TextResult("hello")
-//line /home/user/kukicha/stdlib/mcp/mcp_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:20
 	if text == nil {
-//line /home/user/kukicha/stdlib/mcp/mcp_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:21
 		t.Errorf("TextResult should return non-empty result")
 	}
-//line /home/user/kukicha/stdlib/mcp/mcp_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:23
 	errRes := mcppkg.ErrorResult("boom")
-//line /home/user/kukicha/stdlib/mcp/mcp_test.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:25
 	if errRes == nil {
-//line /home/user/kukicha/stdlib/mcp/mcp_test.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/mcp/mcp_test.kuki:26
 		t.Errorf("ErrorResult should return non-empty result")
 	}
 }
