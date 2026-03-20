@@ -578,6 +578,71 @@ kukicha build --vulncheck app.kuki
 
 When updating stdlib dependencies (the `stdlibGoMod` constant in `cmd/kukicha/stdlib.go`), always run `kukicha audit` afterward to verify no new vulnerabilities were introduced.
 
+## Common Pitfalls
+
+Patterns that look correct but introduce subtle bugs. Each has burned us before.
+
+### WaitGroups in goroutines — use `defer wg.Done()`
+
+Always make `defer wg.Done()` the **first statement** in a goroutine body. An explicit `wg.Done()` at the end is silently skipped if the task panics, hanging `wg.Wait()` forever.
+
+```kukicha
+# WRONG — hangs if t() panics
+go func()
+    t()
+    wg.Done()
+()
+
+# CORRECT — defer fires even on panic
+go func()
+    defer wg.Done()
+    t()
+()
+```
+
+### Context/cancel lifetime — defer cancel in the function that owns the resource
+
+Never call `defer ctxpkg.Cancel(h)` inside a helper that *returns* a resource built with that context. The cancel fires when the helper returns — before the resource is ever used — making the timeout dead on arrival. Defer cancel in the same function whose lifetime covers the resource's use.
+
+```kukicha
+# WRONG — cancel fires when buildCmd returns, context is already done
+func buildCmd(cmd Command) reference exec.Cmd
+    h := ctxpkg.WithTimeout(ctxpkg.Background(), cmd.timeout as int64)
+    defer ctxpkg.Cancel(h)   # fires here, before exec.Run
+    return exec.CommandContext(ctxpkg.Value(h), cmd.name, many cmd.args)
+
+# CORRECT — cancel deferred in Execute, fires after execCmd.Run() completes
+func Execute(cmd Command) Result
+    execCmd := exec.Command(cmd.name, many cmd.args)
+    if cmd.timeout > 0
+        h := ctxpkg.WithTimeout(ctxpkg.Background(), cmd.timeout as int64)
+        defer ctxpkg.Cancel(h)   # fires after Run()
+        execCmd = exec.CommandContext(ctxpkg.Value(h), cmd.name, many cmd.args)
+    ...
+```
+
+### io.ReadCloser wrapping — never use `io.NopCloser` on a live body
+
+`io.NopCloser` replaces `Close()` with a no-op. Wrapping a response body with it means `Close()` never reaches the underlying connection, leaking it. When you need to cap reads with `io.LimitReader`, preserve the original closer with a wrapper type that delegates both `Read` and `Close`.
+
+```kukicha
+# WRONG — NopCloser silences Close(), TCP connection is never released
+resp.Body = io.NopCloser(io.LimitReader(resp.Body, maxSize))
+
+# CORRECT — limitReadCloser delegates Read to LimitReader, Close to original body
+type limitReadCloser
+    r io.Reader
+    c io.Closer
+
+func Read on b reference limitReadCloser (p list of byte) (int, error)
+    return b.r.Read(p)
+
+func Close on b reference limitReadCloser () error
+    return b.c.Close()
+
+resp.Body = reference of limitReadCloser{r: io.LimitReader(resp.Body, maxSize), c: resp.Body}
+```
+
 ## Critical Rules
 
 1. **Never edit generated `*.go` files in stdlib** — edit `.kuki` source, then `make generate`

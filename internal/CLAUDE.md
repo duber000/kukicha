@@ -322,14 +322,14 @@ The IR is intentionally thin — it models only the constructs needed by the one
 |------|---------|
 | `codegen.go` | Core `Generator` struct, public API (`New`, `SetSourceFile`, `SetExprReturnCounts`, …), `Generate`, top-level `generatePackage/Skill/Declaration`, output helpers (`write`, `writeLine`, `emitLineDirective`, `uniqueId`) |
 | `codegen_decl.go` | Declaration generators (`generateTypeDecl`, `generateInterfaceDecl`, `generateFunctionDecl`, `generateFunctionLiteral`, `generateArrowLambda`, `generateTypeAnnotation`, `generateReturnTypes`, …) |
-| `codegen_stmt.go` | Statement generators (`generateBlock`, `generateStatement`, `generateVarDeclStmt`, `generateAssignStmt`, `generateReturnStmt`, `coerceReturnValue`, `generateIfStmt`, `generateFor*`, `generateSwitch*`, `generateSelect*`) |
-| `codegen_expr.go` | Expression generators (`exprToString`, `generatePipeExpr`, `generateCallExpr`, string interpolation, …) |
+| `codegen_stmt.go` | Statement generators (`generateBlock`, `generateStatement`, `generateVarDeclStmt`, `generateAssignStmt`, `generateReturnStmt`, `coerceReturnValue`, `generateIfStmt`, `generateFor*`, `generateSwitch*`, `generateSelect*`); also `replaceGenericZeroExprs` post-processor |
+| `codegen_expr.go` | Expression generators (`exprToString`, `generatePipeExpr`, `generateCallExpr`, string interpolation, `generateErrorExpr`, …) |
 | `codegen_onerr.go` | `onerr` code generation (`generateOnErrVarDecl`, `generateOnErrHandler`); delegates pipe-chain and piped-switch onerr to Lowerer |
 | `lower.go` | `Lowerer` struct — transforms pipe chains, onerr clauses, and piped switches into IR nodes. Key methods: `lowerPipeChain`, `lowerOnErrPipeChain`, `lowerPipedSwitchVarDecl`, `lowerOnErrWithExplicitErr` |
 | `emit.go` | `emitIR` / `emitIRNode` — walks IR blocks and emits Go source via `g.writeLine`. Handles `Assign`, `VarDecl`, `IfErrCheck`, `Goto`, `Label`, `ScopedBlock`, `RawStmt`, `ReturnStmt`, `ExprStmt`, `Comment` |
 | `codegen_imports.go` | Import generation and auto-import scanning (`generateImports`, `scanStmtForAutoImports`, …) |
 | `codegen_stdlib.go` | Stdlib/generics type inference (`inferStdlibTypeParameters`, `zeroValueForType`, …) |
-| `codegen_walk.go` | Unified AST visitor (`walkProgram`, `walkBlock`, `walkStmt`, `walkExpr`) and `needsXxx` helpers |
+| `codegen_walk.go` | Unified AST visitor (`walkProgram`, `walkBlock`, `walkStmt`, `walkExpr`) and `needsXxx` helpers; `needsErrorsPackage` skips interpolated `ErrorExpr` nodes (those use `fmt.Errorf`) |
 
 ### Generator state
 
@@ -347,7 +347,7 @@ The IR is intentionally thin — it models only the constructs needed by the one
 | `currentReturnTypes []ast.TypeAnnotation` | Return types of current function (for type coercion in returns and `onerr` zero-value generation) |
 | `currentOnErrVar string` | Error variable name in active `onerr` block (for `{error}` interpolation) |
 | `currentOnErrAlias string` | User-specified alias in `onerr as e` blocks |
-| `currentReturnIndex int` | Index of return value being generated (-1 if not in return); used to emit `*new(T)` vs `nil` for bare `empty` in generic stdlib functions |
+| `currentReturnIndex int` | Index of return value being generated (-1 if not in return); used to resolve the correct placeholder type for bare `empty` in generic stdlib return positions |
 | `tempCounter int` | Counter for generating unique temporary variable names via `uniqueId()` |
 | `exprReturnCounts map[ast.Expression]int` | From semantic — drives `onerr` multi-value split |
 | `exprTypes map[ast.Expression]*TypeInfo` | From semantic — used by `isErrorOnlyReturn()` for error-only pipe step detection |
@@ -381,7 +381,7 @@ Piped switches participate in the same machinery. For `pipe |> switch ... onerr 
 
 When codegen encounters an `Identifier` with value `"empty"`, it consults `exprTypes` to decide what to emit:
 
-- **`TypeKindNil`** (not shadowed) → emit `nil`. In generic stdlib context with a placeholder return type, emit `*new(T)` or `*new(K)` instead.
+- **`TypeKindNil`** (not shadowed) → emit `nil`. In generic stdlib context with a placeholder return type, `exprToString` returns `*new(T)` or `*new(K)` as an intermediate marker; `replaceGenericZeroExprs` (called from `generateReturnStmt`) converts this to `var _zeroN T; return _zeroN`.
 - **Not `TypeKindNil`** (shadowed by a user variable) → emit `empty` as-is, preserving the variable name.
 
 This prevents `empty |> iterator.Values()` from silently becoming `iterator.Values(nil)` when the user declared `empty := list of int{}`.
@@ -412,11 +412,20 @@ When `isStdlibIter` is true (or per-function for `stdlib/slice`, `stdlib/sort`, 
 1. Builds a `placeholderMap` mapping placeholder → Go type param name (`T`, `K`, `R`)
 2. Emits `[T any, K comparable]`, `[T any, K cmp.Ordered]`, or `[T any, R any]` on the function signature
 3. Substitutes placeholders throughout parameter and return types
-4. Emits `*new(T)`, `*new(K)`, or `*new(R)` for bare `empty` in return position when the return type uses a placeholder (otherwise emits `nil`)
+4. `exprToString` returns `*new(T)`, `*new(K)`, or `*new(R)` as an intermediate marker for bare `empty` in generic return position; `replaceGenericZeroExprs` in `generateReturnStmt` (and `buildReturnNode` in `lower.go`) rewrites these to `var _zeroN T; return _zeroN` before emission (otherwise emits `nil`)
 
 All `stdlib/slice`, `stdlib/sort`, and `stdlib/concurrent` generic functions use this system. The generic classification (`T`, `K`, `TK`, `O`, `TO`, `TR`) is auto-derived from placeholder usage in `.kuki` function signatures and stored in `generatedSliceGenericClass` (generated by `genstdlibregistry`). The `ordered` placeholder maps to `cmp.Ordered` constraint (auto-imports `cmp`). The `result` placeholder maps to `R any` (unconstrained second type parameter, used for transform output types). `inferSliceTypeParameters`, `inferSortTypeParameters`, and `inferConcurrentTypeParameters` read this via `semantic.GetSliceGenericClass()`.
 
 Application code never sees this — it just calls functions normally.
+
+### Error expression codegen (`codegen_expr.go`)
+
+`generateErrorExpr(strLit)` is called for `error "..."` expressions (`*ast.ErrorExpr`):
+- **Plain string** → `errors.New("literal")` (auto-imports `errors`)
+- **Interpolated string** (Parts populated) → `fmt.Errorf("format", args...)` via `parseStringPartsOrInterpolation` (auto-imports `fmt`, no `errors` import needed)
+- **`\sep`-only string** (no Parts) → `errors.New(fmt.Sprintf(...))` fallback
+
+`needsErrorsPackage()` in `codegen_walk.go` walks the AST for `ErrorExpr` nodes; it skips interpolated ones (which use `fmt.Errorf`) so the `errors` import is only added when actually needed.
 
 ### String literal codegen (`codegen_expr.go`)
 
