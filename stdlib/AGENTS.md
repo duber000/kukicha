@@ -15,7 +15,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString |
 | `stdlib/crypto` | Hashing, HMAC, and secure random (Go stdlib only) | SHA256, SHA256Bytes, HMAC, HMACBytes, RandomToken, RandomBytes, Equal |
 | `stdlib/cli` | CLI argument parsing with subcommands | New, Description, Arg, AddFlag, Action, RunApp, Command, CommandFlag, CommandAction, GlobalFlag, CommandName, GetString, GetBool, GetInt, NewArgs |
-| `stdlib/concurrent` | Parallel execution | Parallel, ParallelWithLimit |
+| `stdlib/concurrent` | Parallel execution and concurrent map | Parallel, ParallelWithLimit, Map, MapWithLimit |
 | `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, PullAuth, LoginFromConfig, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
 | `stdlib/ctx` | Context timeout/cancellation helpers | Background, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err |
 | `stdlib/datetime` | Named formats, duration helpers, format constants | Format, Seconds, Minutes, Hours; Constants: ISO8601, RFC3339, Date, Time, DateTime |
@@ -217,18 +217,25 @@ pool := pg.New(url) |> pg.Retry(5, 500) |> pg.Open() onerr panic "db: {error}"
 import "stdlib/kube"
 cluster := kube.New() |> kube.Retry(5, 1000) |> kube.Open() onerr panic "k8s: {error}"
 
+# Concurrent map — transform every element in parallel, ordered results
+import "stdlib/concurrent"
+results := concurrent.Map(urls, url => check(url))
+
+# With concurrency cap (useful for rate-limited APIs)
+results := concurrent.MapWithLimit(repos, 4, r => fetchDetails(r))
+
 # Iterator-based pipelines (lazy evaluation via Go 1.23 iter.Seq)
 import "stdlib/iterator"
 names := repos
     |> iterator.Values()
-    |> iterator.Filter((r Repo) => r.Stars > 100)
-    |> iterator.Map((r Repo) => r.Name)
+    |> iterator.Filter(r => r.Stars > 100)
+    |> iterator.Map(r => r.Name)
     |> iterator.Collect()
 
 # Take first 5 results lazily
 top5 := items
     |> iterator.Values()
-    |> iterator.Filter((x Item) => x.Active)
+    |> iterator.Filter(x => x.Active)
     |> iterator.Take(5)
     |> iterator.Collect()
 
@@ -393,14 +400,14 @@ if crypto.Equal(expected, actual)
 import "stdlib/sort"
 sorted := sort.Strings(list of string{"banana", "apple", "cherry"})
 nums := sort.Ints(list of int{3, 1, 4, 1, 5})
-byLen := sort.By(words, (a string, b string) => len(a) < len(b))
-byName := sort.ByKey(repos, (r Repo) => r.Name)
+byLen := sort.By(words, (a, b) => len(a) < len(b))
+byName := sort.ByKey(repos, r => r.Name)
 reversed := sort.Reverse(sorted)
 
 # Convenience sort via slice package (pipe-friendly)
 import "stdlib/slice"
-sorted := repos |> slice.Sort((a Repo, b Repo) => a.Stars < b.Stars)
-sorted := repos |> slice.SortBy((r Repo) => r.Name)
+sorted := repos |> slice.Sort((a, b) => a.Stars < b.Stars)
+sorted := repos |> slice.SortBy(r => r.Name)
 
 # Deterministic map key iteration
 import "stdlib/maps"
