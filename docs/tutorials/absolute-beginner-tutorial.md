@@ -53,10 +53,16 @@ Kukicha compiles to Go (another programming language), which means your Kukicha 
 
 **The Botanical Metaphor:**
 Kukicha uses plant terms to organize code:
-- **Stem** = Your whole project (like a "module")
-- **Petiole** = A package (a collection of related code)
+- **Stem** = Your whole project (like a "module" in Go or Python)
+- **Petiole** = A package (a collection of related code within a project)
 
-Don't worry if this seems confusing now - it'll make sense as we go!
+For simple single-file programs like this tutorial, you don't need either — just define your `function main()` and you're good. When you start organizing code across multiple files (covered in later tutorials), you'll use:
+
+```kukicha
+petiole mypackage    # At the top of a file - declares the package name
+```
+
+For now, just know that `petiole main` is implied for simple programs.
 
 ---
 
@@ -103,6 +109,51 @@ Hello, World!
 ```
 
 Congratulations! You're now a programmer! 🎉
+
+---
+
+## Imports
+
+When you want to use functionality from other packages (either Kukicha's standard library or external packages), you import them at the top of your file.
+
+### Where to Place Imports
+
+Imports always go **before** any other code — at the very top of the file:
+
+```kukicha
+import "stdlib/string"    # Import at the top
+import "stdlib/slice"
+
+function main()
+    # Your code here
+```
+
+### Common Standard Library Packages
+
+Kukicha comes with a standard library of useful packages:
+
+| Package | What it provides |
+|---------|------------------|
+| `stdlib/string` | String manipulation (trim, split, contains, etc.) |
+| `stdlib/slice` | List operations (filter, map, sort, etc.) |
+| `stdlib/fetch` | HTTP client for making web requests |
+| `stdlib/json` | JSON encoding and decoding |
+| `stdlib/shell` | Run shell commands safely |
+| `stdlib/files` | File reading and writing |
+| `stdlib/env` | Environment variables |
+
+### Using Imported Functions
+
+Once imported, use the package name followed by the function:
+
+```kukicha
+import "stdlib/string"
+
+function main()
+    text := "  Hello World  "
+    clean := text |> string.TrimSpace()  # string.Trim() comes from stdlib/string
+    print(clean)  # Prints: Hello World
+```
 
 ---
 
@@ -816,6 +867,24 @@ Count: 4
 - `len(list)` returns the number of items
 - `append(list, item)` returns a new list with the item added at the end
 
+### Empty Lists
+
+Sometimes you need to create an empty list that will hold items later. You specify the type so Kukicha knows what kind of items the list will contain:
+
+```kukicha
+    # Create an empty list of strings
+    names := empty list of string
+    
+    # Add items later
+    names = append(names, "Alice")
+    names = append(names, "Bob")
+    
+    # Create an empty list of integers
+    scores := empty list of int
+```
+
+Think of `empty list of string` as "a list that will hold strings, but starts empty." You can also write `list of string{}` with empty braces — both forms mean the same thing.
+
 ---
 
 ## Loops - Repeating Actions
@@ -1103,6 +1172,7 @@ Congratulations! You now know:
 - ✅ How to store multiple items in **lists**
 - ✅ How to get a portion of a list with **slices** (`list[:n]`, `list[n:]`, `list[start:end]`)
 - ✅ How to repeat actions with **loops** (`for`, `break`, `continue`)
+- ✅ How to import and use packages from the standard library
 
 ### Continue Your Journey
 
@@ -1110,8 +1180,8 @@ Ready for the next step? Follow this learning path:
 
 | # | Tutorial | What You'll Learn |
 |---|----------|-------------------|
-| 1 | ✅ *You are here* | Variables, functions, strings, decisions, lists, loops, pipes |
-| 2 | **[Data & AI Scripting](data-scripting-tutorial.md)** ← Next! | Maps (Key-Value), parsing CSVs, shell commands, AI scripting |
+| 1 | ✅ *You are here* | Variables, functions, strings, decisions, lists, loops, imports |
+| 2 | **[Data & AI Scripting](data-scripting-tutorial.md)** ← Next! | Maps (Key-Value), parsing CSVs, shell commands, AI scripting, pipes |
 | 3 | **[CLI Explorer](cli-explorer-tutorial.md)** | Custom types, methods, API data, arrow lambdas, error handling |
 | 4 | **[Link Shortener](web-app-tutorial.md)** | HTTP servers, JSON, REST APIs, redirects |
 | 5 | **[Production Patterns](production-patterns-tutorial.md)** | Databases, concurrency, Go conventions |

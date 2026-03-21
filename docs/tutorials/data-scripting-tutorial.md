@@ -210,6 +210,25 @@ data := readSomething() onerr
     return "", errors.Wrap(error, "read failed")
 ```
 
+### Custom Error Variable Names with `onerr as`
+
+By default, the caught error inside an `onerr` block is named `error`. You can give it a custom name for clarity:
+
+```kukicha
+# Default: use {error} to reference the caught error
+result := riskyOperation() onerr
+    print("Failed: {error}")    # {error} is the caught error
+    return
+
+# Custom name: use "as" to rename it
+result := riskyOperation() onerr as e
+    print("Failed: {e}")        # {e} works now
+    print("Also: {error}")     # {error} STILL works - both names available
+    return
+```
+
+Use `onerr as e` when you want a shorter name or when `error` might conflict with a variable in outer scope.
+
 ---
 
 ## Part 6: AI Scripting (The Fun Part)

@@ -2,6 +2,47 @@
 
 Kukicha transpiles to Go. Write `.kuki` files with Kukicha syntax — not Go.
 
+### Project Structure
+
+**Single-file programs:** No `petiole` needed. Just write `function main()`.
+
+```kukicha
+# hello.kuki — minimal working program
+import "stdlib/string"
+
+function main()
+    name := "world"
+    print("Hello {string.ToUpper(name)}!")
+```
+
+Run with: `kukicha run hello.kuki`
+
+**Multi-file packages:** Use `petiole <name>` at the top of each file. Files in the same directory with the same `petiole` name share a namespace. One file must define `function main()`.
+
+```kukicha
+# main.kuki
+petiole myapp
+
+import "myapp/handlers"
+
+function main()
+    handlers.Serve()
+```
+
+```kukicha
+# handlers.kuki
+petiole myapp
+
+import "net/http"
+
+function Serve()
+    http.HandleFunc("/", handleHome)
+    http.ListenAndServe(":8080", empty)
+
+function handleHome(w http.ResponseWriter, r reference http.Request)
+    w.Write("Hello!")
+```
+
 ### Syntax vs Go
 
 | Kukicha | Go |
@@ -328,15 +369,15 @@ names   := slice.Map(items, x => x.name)
 byGroup := slice.GroupBy(items, x => x.category)
 first   := slice.FirstOr(items, defaultVal)
 val     := slice.GetOr(items, 0, defaultVal)
-ok      := slices.Contains(items, value)   # note: slices (Go stdlib), not slice
+ok      := slice.Contains(items, value)
 ```
 
 **stdlib/files** — File I/O
 
 ```kukicha
 data := files.Read("path.txt")        onerr panic "{error}"
-       files.Write("out.txt", data)   onerr panic "{error}"
-       files.Append("log.txt", line)  onerr discard
+       files.Write(data, "out.txt")   onerr panic "{error}"
+       files.Append(line, "log.txt")  onerr discard
 ok   := files.Exists("path.txt")
        files.Copy(from: src, to: dst) onerr panic "{error}"
 ```
@@ -381,13 +422,13 @@ result := jsonpkg.Unmarshal(data, empty Repo) onerr panic "{error}"
 **stdlib/mcp** — MCP server
 
 ```kukicha
-func getPrice(symbol string) string
-    return "GOOG: $180.00"
-
 func main()
-    server := mcp.NewServer()
-    server |> mcp.Tool("get_price", "Get stock price by ticker", getPrice)
-    server |> mcp.Serve()
+    server := mcp.New("stock-tool", "1.0.0")
+    schema := mcp.Schema(list of mcp.SchemaProperty{
+        mcp.Prop("symbol", "string", "Ticker symbol"),
+    }) |> mcp.Required(list of string{"symbol"})
+    mcp.Tool(server, "get_price", "Get stock price by ticker", schema, handler)
+    mcp.Serve(server) onerr panic "{error}"
 ```
 
 **stdlib/shell** — Run commands
@@ -460,7 +501,7 @@ httphelper.JSON(w, data)                        # 200 OK with JSON body
 httphelper.JSONCreated(w, data)                 # 201 Created
 httphelper.JSONNotFound(w, "not found")         # 404
 httphelper.JSONBadRequest(w, "bad input")       # 400
-httphelper.JSONError(w, 500, "server error")    # any status
+httphelper.JSONError(w, "server error", 500)    # any status
 
 httphelper.ReadJSONLimit(r, 1<<20, reference of input) onerr return   # parse + size cap
 httphelper.SafeHTML(w, userContent)             # HTML-escape before write
@@ -473,8 +514,7 @@ http.ListenAndServe(":8080", httphelper.SecureHeaders(mux))   # middleware form
 
 ```kukicha
 # text/template (no HTML escaping — for plain text only)
-tmpl := template.New("t") |> template.Parse(src) onerr return
-template.Execute(tmpl, data) onerr return
+result := template.RenderSimple(src, data) onerr return
 
 # html/template (auto-escapes {{ }} values — use for HTML responses)
 html := template.HTMLRenderSimple(tmplStr, map of string to any{"name": username}) onerr return
@@ -681,8 +721,108 @@ func TestClamp(t reference testing.T)
         )
 ```
 
-Assertions: `test.AssertEqual`, `test.AssertTrue`, `test.AssertFalse`, `test.AssertNoError`, `test.AssertError`, `test.AssertNotEmpty`.
+Assertions: `test.AssertEqual`, `test.AssertNotEqual`, `test.AssertTrue`, `test.AssertFalse`, `test.AssertNoError`, `test.AssertError`, `test.AssertNotEmpty`, `test.AssertNil`, `test.AssertNotNil`.
 
 ---
 
-**All available packages:** `a2a`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`, `http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`, `random`, `retry`, `sandbox`, `shell`, `slice`, `string`, `template`, `test`, `validate`
+**All available packages:** `a2a`, `cast`, `cli`, `concurrent`, `container`, `crypto`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`, `git`, `http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`, `random`, `regex`, `retry`, `sandbox`, `semver`, `shell`, `slice`, `sort`, `string`, `table`, `template`, `test`, `validate`
+
+---
+
+## Troubleshooting
+
+| Error Message | Cause | Fix |
+|---------------|-------|-----|
+| `syntax error: unexpected '{'` | Using Go braces instead of indentation | Remove braces, use 4-space indentation |
+| `use {error} not {err} inside onerr` | Wrong error variable name in `onerr` block | Change `{err}` to `{error}` or use `onerr as e` |
+| `undefined: {err}` | Referencing `err` inside `onerr` | The caught error is always named `error`. Use `{error}` in interpolation, or write `onerr as e` then use `{e}` |
+| `cannot use '&&' operator` | Go boolean operators in Kukicha | Use `and`, `or`, `not` instead of `&&`, `||`, `!` |
+| `cannot use '==' operator` | Go equality in Kukicha | Use `equals` (or `==`) for comparison; both work, but `equals` is preferred for readability |
+| `cannot use 'nil'` | Go's nil in Kukicha | Use `empty` (also: `empty list of T`, `empty map of K to V`) |
+| `cannot use '[]string' type` | Go slice syntax in Kukicha | Use `list of string` |
+| `cannot use 'map[string]int' type` | Go map syntax in Kukicha | Use `map of string to int` |
+| `cannot use '*User' type` | Go pointer syntax in Kukicha | Use `reference User` for the type, `reference of user` to take address |
+| `variable 'data' not used` | Declared but never read | Use `_ := f()` to discard return values, or remove the variable |
+| `function must declare return type` | Implicit return type | Function signatures require explicit return types: `func F() int` not `func F()` |
+| `onerr return requires return type` | Using `onerr return` in function that doesn't return values | Use `onerr discard` to ignore the error, or add a return type to your function |
+| `cannot take reference of ...` | Trying to get pointer of something | Use `reference of x` for variables, `empty T` for typed zero values |
+| `SSRF risk: fetch.Get inside HTTP handler` | Security check triggering | Use `fetch.SafeGet(url)` inside HTTP handlers |
+| `command injection risk` | Using `shell.Run` with variable interpolation | Use `shell.Output("cmd", arg1, arg2)` where args are separate parameters |
+| `path traversal risk: files.Read inside HTTP handler` | Security check triggering | Use `sandbox.New(root)` + `sandbox.Read(box, path)` in handler code |
+| `XSS risk: http.HTML with non-literal content` | Security check triggering | Use `httphelper.SafeHTML(w, content)` for user content |
+
+---
+
+### Common Mistakes
+
+**1. Writing Go syntax in Kukicha files**
+
+```kukicha
+# WRONG — Go syntax
+if err != nil {
+    return err
+}
+
+# CORRECT — Kukicha syntax
+result, err := doSomething()
+if err not equals empty
+    return err
+return result, empty
+```
+
+**2. Wrong error variable in `onerr`**
+
+```kukicha
+# WRONG — {err} is not defined inside onerr
+data := fetch.Get(url) onerr
+    print("failed: {err}")    # compile error
+
+# CORRECT — {error} is the always-available name
+data := fetch.Get(url) onerr
+    print("failed: {error}")
+
+# ALSO CORRECT — rename if you prefer
+data := fetch.Get(url) onerr as e
+    print("failed: {e}")
+```
+
+**3. Forgetting `petiole` in multi-file projects**
+
+```kukicha
+# WRONG — files won't see each other
+# (file 1: main.kuki — no petiole)
+function main()
+    serve()
+
+# (file 2: serve.kuki — no petiole)
+function serve()
+    print("hello")
+
+# CORRECT — same petiole name connects files
+# main.kuki
+petiole myapp
+function main()
+    serve()
+
+# serve.kuki
+petiole myapp
+function serve()
+    print("hello")
+```
+
+**4. Using `onerr return` in void functions**
+
+```kukicha
+# WRONG — no return type, can't use 'onerr return'
+function logError(msg string)
+    data := fetch(msg) onerr return    # compile error
+
+# CORRECT — use 'onerr discard' or handle explicitly
+function logError(msg string)
+    _ := fetch(msg) onerr discard
+
+# ALSO CORRECT — return an error type
+function logError(msg string) error
+    data := fetch(msg) onerr return empty, error "{error}"
+    return empty
+```

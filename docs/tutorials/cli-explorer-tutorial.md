@@ -704,10 +704,14 @@ Arrow lambdas come in two forms:
 - **Expression form** (one line, auto-return): `r => r.Stars > 100`
 - **Block form** (multi-statement, explicit `return`):
   ```kukicha
-  r =>
+  repos |> slice.Filter(r =>
       name := r.Name |> string.ToLower()
-      return name |> string.Contains(term)
+      desc := r.Description |> string.ToLower()
+      return name |> string.Contains(term) or desc |> string.Contains(term)
+  )
   ```
+
+In the block form, you **must use `return`** explicitly because the lambda contains multiple statements. The expression form works without `return` because there's only one expression — the result is automatically returned.
 
 They're especially useful with `slice.Filter`, `slice.Map`, and other functional helpers where a full `function(...)` literal would be verbose.
 

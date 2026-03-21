@@ -11,50 +11,47 @@ Import with: `import "stdlib/slice"`
 | Package | Purpose | Key Functions |
 |---------|---------|---------------|
 | `stdlib/a2a` | Agent-to-Agent protocol client | Discover, Ask, Send, Stream, New/Text/Context |
-| `stdlib/accel` | Smart inference fallback (native → web) | Init, InitWith, Cleanup, Backend, Version, IsAvailable, New/Threads/InterOpThreads/OptLevel/EP/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
-| `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString |
-| `stdlib/crypto` | Hashing, HMAC, and secure random (Go stdlib only) | SHA256, SHA256Bytes, HMAC, HMACBytes, RandomToken, RandomBytes, Equal |
+| `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString, Atoi, ParseFloat |
 | `stdlib/cli` | CLI argument parsing with subcommands | New, Description, Arg, AddFlag, Action, RunApp, Command, CommandFlag, CommandAction, GlobalFlag, CommandName, GetString, GetBool, GetInt, NewArgs |
-| `stdlib/concurrent` | Parallel execution and concurrent map | Parallel, ParallelWithLimit, Map, MapWithLimit |
-| `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ListContainers, ListImages, Pull, PullAuth, LoginFromConfig, Run, Stop, Remove, Build, Logs, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
-| `stdlib/ctx` | Context timeout/cancellation helpers | Background, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err |
-| `stdlib/datetime` | Named formats, duration helpers, format constants | Format, Seconds, Minutes, Hours; Constants: ISO8601, RFC3339, Date, Time, DateTime |
-| `stdlib/encoding` | Base64 and hex encoding/decoding | Base64Encode, Base64Decode, Base64URLEncode, HexEncode, HexDecode |
-| `stdlib/env` | Typed env vars with onerr | Get, GetInt, GetBool, GetFloat, GetOr, Set |
+| `stdlib/concurrent` | Parallel execution and concurrent map | Parallel, ParallelWithLimit, Map, MapWithLimit, Go |
+| `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ConnectRemote, New/Host/APIVersion/Open, ListContainers, ListImages, Pull, PullAuth, LoginFromConfig, Run, Stop, Remove, Build, Logs, LogsTail, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
+| `stdlib/crypto` | Hashing, HMAC, and secure random (Go stdlib only) | SHA256, SHA256Bytes, HMAC, HMACBytes, RandomToken, RandomBytes, Equal |
+| `stdlib/ctx` | Context timeout/cancellation helpers | Background, WithTimeout, WithTimeoutMs, WithDeadlineUnix, Cancel, Done, Err, Value |
+| `stdlib/datetime` | Named formats, duration helpers, arithmetic, comparison | Format, Parse, Now, Today, AddDays, IsBefore, Unix, Sleep; Constants: ISO8601, RFC3339, Date, Time, DateTime |
+| `stdlib/encoding` | Base64 and hex encoding/decoding | Base64Encode, Base64Decode, Base64URLEncode, Base64URLDecode, Base64RawEncode, Base64RawURLEncode, HexEncode, HexDecode |
+| `stdlib/env` | Typed env vars with onerr | Get, GetOr, GetInt, GetIntOrDefault, GetBool, GetBoolOrDefault, GetFloat, GetList, Set, Unset, IsSet, All |
 | `stdlib/errors` | Error wrapping and inspection | Wrap, Opaque, Is, Unwrap, New, Join, NewPublic, Public |
-| `stdlib/fetch` | HTTP client (Builder, Auth, Sessions, Safe URL helpers, Retry) | Get, SafeGet, Post, Json, Decode, URLTemplate, URLWithQuery, PathEscape, QueryEscape, New/Header/Timeout/Retry/MaxBodySize/Do, BearerAuth, BasicAuth, FormData, NewSession |
-| `stdlib/files` | File I/O operations | Read, Write, Append, Exists, Copy, Move, Delete, Watch |
+| `stdlib/fetch` | HTTP client (Builder, Auth, Sessions, Safe URL helpers, Retry) | Get, SafeGet, Post, Json, Decode, Text, Bytes, CheckStatus, URLTemplate, URLWithQuery, PathEscape, QueryEscape, New/Header/Timeout/Retry/MaxBodySize/Transport/Do, BearerAuth, BasicAuth, FormData, NewSession, DownloadTo |
+| `stdlib/files` | File I/O operations | Read, ReadBytes, Write, WriteString, Append, AppendString, Exists, IsDir, IsFile, Copy, Move, Delete, DeleteAll, List, ListRecursive, MkDir, MkDirAll, TempFile, TempDir, Size, ModTime, Basename, Dirname, Extension, Join, Abs, UseWith, Watch |
 | `stdlib/git` | Git/GitHub operations via gh CLI | ListTags, TagExists, DefaultBranch, CurrentBranch, ReleaseExists, CreateRelease, PreviewRelease, RepoExists, CurrentUser, Clone, CloneShallow |
-| `stdlib/http` | HTTP response/request helpers + security | JSON, JSONError, JSONNotFound, ReadJSON, ReadJSONLimit, SafeURL, HTML, SafeHTML, Redirect, SafeRedirect, SetSecureHeaders, SecureHeaders; Constants: StatusOK/NotFound/etc, HeaderContentType, ContentJSON |
-| `stdlib/infer` | ONNX Runtime inference (CPU; Phase 1) | Init, InitWithPath, Cleanup, IsAvailable, Version, New/Threads/InterOpThreads/OptLevel/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
+| `stdlib/http` | HTTP response/request helpers + security | JSON, JSONStatus, JSONCreated, JSONError, JSONBadRequest, JSONNotFound, Text, HTML, SafeHTML, ReadJSON, ReadJSONLimit, Redirect, SafeRedirect, SafeURL, SetSecureHeaders, SecureHeaders, WithCSRF, Serve, MethodNotAllowed, IsGet/IsPost/IsPut/IsDelete/IsPatch, GetQueryParam, GetHeader; Constants: StatusOK/NotFound/etc, HeaderContentType, ContentJSON |
 | `stdlib/input` | User input utilities | ReadLine, Prompt, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration (Go 1.23 iter.Seq) | Values, Filter, Map, FlatMap, Take, Skip, Enumerate, Chunk, Zip, Reduce, Collect, Any, All, Find |
-| `stdlib/json` | encoding/json wrapper | Marshal, Unmarshal, UnmarshalRead, MarshalWrite, DecodeRead |
-| `stdlib/kube` | Kubernetes client via client-go | Connect, New/Kubeconfig/Context/InCluster/Retry/Open, Namespace, ListPods, GetPod, ListDeployments, ScaleDeployment, RolloutRestart, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, PodLogs |
-| `stdlib/llm` | Large language model client (Chat Completions, OpenResponses, Anthropic; Retry) | Ask/Send/Complete, RAsk/RSend/Respond, MAsk/MSend/AnthropicComplete, Retry/RRetry/MRetry |
+| `stdlib/json` | encoding/json wrapper | Marshal, MarshalPretty, Unmarshal, MarshalWrite, UnmarshalRead, DecodeRead, NewEncoder, NewDecoder, Encode, Decode, WithDeterministic, WithIndent |
+| `stdlib/kube` | Kubernetes client via client-go | Connect, New/Kubeconfig/Context/InCluster/Retry/Open, Namespace, ListPods, ListPodsLabeled, GetPod, DeletePod, PodLogs, PodLogsTail, ListDeployments, GetDeployment, ScaleDeployment, RolloutRestart, DeleteDeployment, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, ListServices, ListNodes, ListNamespaces |
+| `stdlib/llm` | Large language model client (Chat Completions, OpenResponses, Anthropic; Retry) | New/Ask/Send/SendRaw/Complete, NewResponse/RAsk/RSend/Respond, NewMessages/MAsk/MSend/AnthropicComplete, Retry/RRetry/MRetry, Stream/RStream/MStream |
+| `stdlib/maps` | Map utilities | Keys, Values, Contains, Has, Merge, SortedKeys |
 | `stdlib/math` | Mathematical operations | Abs, Round, Floor, Ceil, Min, Max, Pow, Sqrt, Log, Log2, Log10, Pi, E, Clamp |
-| `stdlib/maps` | Map utilities | Keys, Values, Has, Merge, SortedKeys |
-| `stdlib/mcp` | Model Context Protocol support | NewServer, Tool, Resource, Prompt |
-| `stdlib/must` | Panic-on-error startup helpers | Env, EnvInt, EnvIntOr, Do, OkMsg |
-| `stdlib/net` | IP address and CIDR utilities | ParseIP, ParseCIDR, Contains, SplitHostPort, LookupHost, IsLoopback, IsPrivate |
+| `stdlib/mcp` | Model Context Protocol server | New, Serve, Tool, Prop, Schema, Required, TextResult, ErrorResult |
+| `stdlib/must` | Panic-on-error startup helpers | Do, DoMsg, Ok, OkMsg, Env, EnvOr, EnvInt, EnvIntOr, EnvBool, EnvBoolOr, EnvList, EnvListOr, True, False, NotEmpty, NotNil |
+| `stdlib/net` | IP address and CIDR utilities | ParseIP, ParseCIDR, Contains, SplitHostPort, JoinHostPort, LookupHost, IsLoopback, IsPrivate, IsMulticast, IsNil, IPString |
 | `stdlib/netguard` | Network restriction & SSRF protection | NewSSRFGuard, NewAllow, NewBlock, Check, DialContext, HTTPTransport, HTTPClient |
-| `stdlib/obs` | Structured observability helpers | New, Component, WithCorrelation, NewCorrelationID, Info, Warn, Error, Start, Stop, Fail |
-| `stdlib/parse` | Data format parsing | Csv, CsvWithHeader, Yaml, YamlPretty, Json, JsonLines, JsonPretty |
-| `stdlib/pg` | PostgreSQL client via pgx | Connect, New/MaxConns/MinConns/Retry/Open, Query, QueryRow, Exec, Begin, Commit, Rollback, ScanRow, CollectRows |
-| `stdlib/random` | Random number generation | Int, IntRange, Float, String, Choice |
-| `stdlib/regex` | Regular expression matching and replacement | Match, Find, FindAll, FindGroups, Replace, ReplaceFunc, Split, IsValid, Compile, MustCompile |
-| `stdlib/retry` | Retry with backoff | New, Attempts, Delay, Sleep |
-| `stdlib/sandbox` | os.Root filesystem sandboxing | New, Read, Write, List, Exists, Delete |
+| `stdlib/obs` | Structured observability helpers | New, Component, WithCorrelation, NewCorrelationID, Debug, Info, Warn, Error, Log, Start, Stop, Fail |
+| `stdlib/parse` | Data format parsing | Json, JsonLines, JsonPretty, Csv, CsvWithHeader, Yaml, YamlPretty |
+| `stdlib/pg` | PostgreSQL client via pgx | Connect, New/MaxConns/MinConns/MaxConnLifetime/MaxConnIdleTime/Retry/Open, Query, QueryRow, Exec, Begin, Commit, Rollback, Scan, ScanString, ScanInt, ScanInt64, ScanBool, ScanFloat64, ScanRow, CollectRows, Next, Close, ClosePool, RowsAffected |
+| `stdlib/random` | Random string generation | String, Alphanumeric |
+| `stdlib/regex` | Regular expression matching and replacement | Match, Find, FindAll, FindGroups, FindAllGroups, Replace, ReplaceFunc, Split, IsValid, Compile, MustCompile + compiled variants |
+| `stdlib/retry` | Retry with backoff | New, Attempts, Delay, Linear, Sleep |
+| `stdlib/sandbox` | os.Root filesystem sandboxing | New, Close, Read, ReadString, Write, WriteString, Append, AppendString, MkDir, MkDirAll, List, Exists, IsDir, IsFile, Stat, Delete, DeleteAll, Rename, Path, FS |
 | `stdlib/semver` | Semantic versioning (parse, bump, compare) | Parse, Bump, Format, Valid, Compare, Greater, Highest |
-| `stdlib/shell` | Safe command execution | Run, Output, New/Dir/Env/Execute, Args/FlagIf/Preview, Which, Getenv |
-| `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Sort, SortBy, Get, Find, FindLast, Unique, Contains, Pop, Shift |
+| `stdlib/shell` | Safe command execution | Run, Output, New/Dir/SetTimeout/Env/Execute, Args/FlagIf/Preview, Success, GetOutput, GetError, ExitCode, Which, Getenv, Setenv, Unsetenv, Environ |
+| `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Sort, SortBy, First, Last, Drop, DropLast, Reverse, Unique, Chunk, Contains, IndexOf, Concat, Get, GetOr, FirstOne, FirstOr, LastOne, LastOr, Find, FindOr, FindIndex, FindLast, FindLastOr, IsEmpty, IsNotEmpty, Pop, Shift |
 | `stdlib/sort` | Sorting slices (strings, ints, floats, custom) | Strings, Ints, Float64s, By, ByKey, Reverse |
-| `stdlib/string` | String utilities | Split, Join, Trim, Contains, Replace, ToUpper, ToLower |
+| `stdlib/string` | String utilities | ToUpper, ToLower, Title, Trim, TrimSpace, TrimPrefix, TrimSuffix, TrimLeft, TrimRight, Split, SplitN, Join, Fields, Contains, HasPrefix, HasSuffix, Index, LastIndex, Count, Replace, ReplaceAll, Repeat, PadRight, PadLeft, Concat, EqualFold, Len, IsEmpty, IsBlank, Lines |
 | `stdlib/table` | Terminal table rendering (plain, box, markdown) | New, AddRow, Print, PrintWithStyle, ToString, ToStringWithStyle |
-| `stdlib/template` | Text templating (plain + HTML-safe) | Execute, New, HTMLExecute, HTMLRenderSimple |
-| `stdlib/test` | Test assertion helpers (use in `*_test.kuki` only) | AssertEqual, AssertTrue, AssertFalse, AssertNoError, AssertError, AssertNotEmpty |
-| `stdlib/validate` | Input validation | Email, URL, InRange, NotEmpty, MinLen, MaxLen |
-| `stdlib/webinfer` | ONNX inference via headless Chromium (Playwright) | Init, Cleanup, IsAvailable, Version, New/EP/Load, Run, Close, Shape, NewFloat32, ZeroFloat32, NewInt64, ZeroInt64, GetFloat32, GetInt64, Destroy, Inspect |
+| `stdlib/template` | Text templating (plain + HTML-safe) | New, Render, Parse, Data, WithContent, Execute, RenderSimple, HTMLExecute, HTMLRenderSimple, Must, Funcs |
+| `stdlib/test` | Test assertion helpers (use in `*_test.kuki` only) | AssertEqual, AssertNotEqual, AssertTrue, AssertFalse, AssertNoError, AssertError, AssertNotEmpty, AssertNil, AssertNotNil |
+| `stdlib/validate` | Input validation | NotEmpty, MinLength, MaxLength, Length, LengthBetween, Matches, Email, URL, Alpha, Alphanumeric, Numeric, NoWhitespace, StartsWith, EndsWith, Contains, OneOf, Positive, Negative, NonNegative, NonZero, InRange, Min, Max, PositiveFloat, InRangeFloat, ParseInt, ParsePositiveInt, ParseFloat, ParseBool, NotEmptyList, ListMinLength, ListMaxLength, WithMessage, Require, NoHTML, SafeFilename, NoNullBytes, CompilePattern, MatchesCompiled |
 
 ## Testing Stdlib Packages
 
@@ -429,34 +426,49 @@ encoded := encoding.Base64Encode("hello" as list of byte)
 decoded := encoding.Base64Decode(encoded) onerr panic "invalid base64: {error}"
 hexStr := encoding.HexEncode(hashBytes)
 
-# ONNX Runtime inference (CPU)
-import "stdlib/infer"
-env := infer.Init() onerr panic "ort: {error}"
-defer infer.Cleanup(env)
-input, _ := infer.NewFloat32(infer.Shape(1, 10), inputData)
-output, _ := infer.ZeroFloat32(infer.Shape(1, 5))
-model := infer.New() |> infer.Threads(4) |> infer.Load("model.onnx", inNames, outNames, ins, outs) onerr panic "{error}"
-defer infer.Close(model)
-infer.Run(model) onerr panic "inference: {error}"
-results := infer.GetFloat32(output)
+# MCP server
+import "stdlib/mcp"
+server := mcp.New("my-tool", "1.0.0")
+schema := mcp.Schema(list of mcp.SchemaProperty{
+    mcp.Prop("query", "string", "The search query"),
+}) |> mcp.Required(list of string{"query"})
+mcp.Tool(server, "search", "Search for items", schema, handler)
+mcp.Serve(server) onerr panic "{error}"
 
-# Smart inference fallback (native → web)
-import "stdlib/accel"
-env := accel.Init() onerr panic "no inference: {error}"
-defer accel.Cleanup(env)
-print("Backend: {accel.Backend(env)}")
-input := accel.NewFloat32(env, accel.Shape(1, 10), inputData) onerr panic "{error}"
-output := accel.ZeroFloat32(env, accel.Shape(1, 5)) onerr panic "{error}"
-model := accel.New() |> accel.Threads(4) |> accel.EP("webnn")
-    |> accel.Load(env, "model.onnx", inNames, outNames, ins, outs) onerr panic "{error}"
-defer accel.Close(model)
-accel.Run(model) onerr panic "{error}"
-results := accel.GetFloat32(output)
+# A2A client
+import "stdlib/a2a"
+agent := a2a.Discover("https://agent.example.com") onerr panic "{error}"
+reply := a2a.Ask(agent, "What's the weather?") onerr panic "{error}"
+print(reply)
+
+# Sandbox (restricted filesystem)
+import "stdlib/sandbox"
+box := sandbox.New("/var/data") onerr panic "{error}"
+defer sandbox.Close(box)
+content := sandbox.Read(box, "config.json") onerr panic "{error}"
+sandbox.WriteString(box, "hello", "output.txt") onerr panic "{error}"
+
+# Template rendering
+import "stdlib/template"
+result := template.RenderSimple("Hello {{.Name}}!", map of string to any{"Name": "World"}) onerr panic "{error}"
+# HTML-safe rendering (auto-escapes values)
+safe := template.HTMLRenderSimple(tmplStr, data) onerr panic "{error}"
 ```
 
 ## Security Patterns
 
 The compiler enforces several security checks. Use the safe alternatives below to avoid compile errors.
+
+### Security Check Table
+
+| Category | Unsafe (compiler error) | Safe alternative |
+|----------|------------------------|------------------|
+| **XSS** | `http.HTML(w, userInput)` | `http.SafeHTML(w, userInput)` or `template.HTMLRenderSimple(...)` |
+| **SQL Injection** | `pg.Query(pool, "... '{name}'")` | `pg.Query(pool, "... $1", name)` |
+| **SSRF** | `fetch.Get(url)` (in HTTP handler) | `fetch.SafeGet(url)` |
+| **Open Redirect** | `http.Redirect(w, r, userURL)` | `http.SafeRedirect(w, r, url, "example.com")` |
+| **Path Traversal** | `files.Read(userInput)` (in HTTP handler) | `sandbox.New("/var/data")` + `sandbox.Read(box, userInput)` |
+| **Command Injection** | `shell.Run("git log {branch}")` | `shell.Output("git", "log", branch)` |
 
 ```kukicha
 # --- XSS Prevention ---
@@ -525,8 +537,8 @@ httphelper.SetSecureHeaders(w)
 # --- HTML Templates (auto-escaping) ---
 # UNSAFE — text/template performs NO HTML escaping
 import "stdlib/template"
-tmpl := template.New("page") |> template.Parse(tmplStr) onerr return
-template.Execute(tmpl, data) onerr return  # WARNING: plaintext only — no HTML escaping
+tmpl := template.New() |> template.WithContent(tmplStr)
+template.Execute(tmpl) onerr return  # WARNING: plaintext only — no HTML escaping
 
 # SAFE — html/template auto-escapes {{ }} values
 result := template.HTMLRenderSimple(tmplStr, data) onerr return
@@ -536,9 +548,9 @@ result := template.HTMLRenderSimple(tmplStr, data) onerr return
 
 Every stdlib module is **pure Kukicha**: `<name>.kuki` source + `<name>.go` generated output. No `_helper.go` or `_tool.go` files.
 
-All packages: `a2a`, `accel`, `cast`, `cli`, `concurrent`, `container`, `ctx`, `crypto`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
-`git`, `http`, `infer`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
-`random`, `regex`, `retry`, `sandbox`, `semver`, `shell`, `slice`, `sort`, `string`, `table`, `template`, `test`, `validate`, `webinfer`
+All packages: `a2a`, `cast`, `cli`, `concurrent`, `container`, `crypto`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
+`git`, `http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
+`random`, `regex`, `retry`, `sandbox`, `semver`, `shell`, `slice`, `sort`, `string`, `table`, `template`, `test`, `validate`
 
 ## Import Aliases
 
@@ -649,7 +661,7 @@ resp.Body = reference of limitReadCloser{r: io.LimitReader(resp.Body, maxSize), 
 2. **Never edit `internal/semantic/stdlib_registry_gen.go` or `go_stdlib_gen.go`** — both are auto-generated; `make generate` regenerates `stdlib_registry_gen.go` automatically, and `make gengostdlib` regenerates `go_stdlib_gen.go` from Go stdlib signatures via `go/importer`
 3. **Types must be defined in `.kuki`** — so the Kukicha compiler knows about them
 4. **After adding an exported function to a stdlib `.kuki` file**, run `make genstdlibregistry` (or just `make generate`) so `onerr` and pipe expressions work correctly with the new function
-7. **To deprecate a stdlib function**, add `# kuki:deprecated "Use NewFunc instead"` above it in the `.kuki` source, then run `make genstdlibregistry` — callers will get a compile-time warning
-8. **To mark a function as security-sensitive**, add `# kuki:security "category"` above it (categories: `sql`, `html`, `fetch`, `files`, `redirect`, `shell`), then run `make genstdlibregistry` — the compiler will enforce the corresponding security check
-5. **Every stdlib package must have a `*_test.kuki` file** using the table-driven pattern (see "Testing Stdlib Packages" above)
-6. **`stdlib/test` is test-only** — import it only in `*_test.kuki` files, never in library `.kuki` files
+5. **To deprecate a stdlib function**, add `# kuki:deprecated "Use NewFunc instead"` above it in the `.kuki` source, then run `make genstdlibregistry` — callers will get a compile-time warning
+6. **To mark a function as security-sensitive**, add `# kuki:security "category"` above it (categories: `sql`, `html`, `fetch`, `files`, `redirect`, `shell`), then run `make genstdlibregistry` — the compiler will enforce the corresponding security check
+7. **Every stdlib package must have a `*_test.kuki` file** using the table-driven pattern (see "Testing Stdlib Packages" above)
+8. **`stdlib/test` is test-only** — import it only in `*_test.kuki` files, never in library `.kuki` files

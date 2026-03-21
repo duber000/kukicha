@@ -227,35 +227,7 @@ import "strconv"
 import "stdlib/json"
 import "stdlib/string"
 import "stdlib/maps"
-import "stdlib/http" as httphelper
-
-# --- Data Types ---
-
-type Link
-    code string
-    url string
-    clicks int
-
-type ShortenRequest
-    url string
-
-type ShortenResponse
-    code string
-    url string
-    shortUrl string as "short_url"
-
-# --- Store ---
-# (In the Production tutorial, we'll replace this with a database)
-
-type LinkStore
-    links map of string to Link
-    nextId int
-
-# --- Helper Functions ---
-
-function generateCode on store reference LinkStore() string
-    store.nextId = store.nextId + 1
-    return strconv.FormatInt(int64(store.nextId), 36)
+import "stdlib/http" as httphelper   # Alias to avoid conflict with "net/http"
 ```
 
 > **💡 Notice:** We don't need manual `sendJSON` or `sendError` helpers anymore. `stdlib/http` (imported as `httphelper`) provides `JSON()`, `JSONError()`, `ReadJSON()`, and more — with correct headers, status codes, and content types built in.

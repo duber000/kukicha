@@ -32,10 +32,10 @@ Ship it
 ## Prerequisites
 
 1. **Kukicha compiler installed**
-   ```bash
-   go install github.com/duber000/kukicha/cmd/kukicha@v0.0.15
-   kukicha version  # Confirm it works
-   ```
+```bash
+go install github.com/duber000/kukicha/cmd/kukicha@latest
+kukicha version  # Confirm it works
+```
 
 2. **An AI coding agent** — one of:
    - [Claude Code](https://claude.com/claude-code) (recommended)

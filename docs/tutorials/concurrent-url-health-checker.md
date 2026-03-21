@@ -1,7 +1,9 @@
 # Build a Concurrent URL Health Checker
 
 **Level:** Intermediate/Advanced
-**Prerequisite:** [Link Shortener Tutorial](web-app-tutorial.md)
+**Prerequisites:** 
+- [CLI Explorer Tutorial](cli-explorer-tutorial.md) — types, methods, API data
+- [Link Shortener Tutorial](web-app-tutorial.md) — HTTP servers, JSON (optional but helpful)
 
 In the previous tutorials, everything happened one step at a time: fetch a URL, parse the JSON, display the result, then move on. That works fine when you have a handful of things to do. But what if you need to check whether 100 websites are online? Doing them one at a time means waiting for each response before starting the next — most of your program's time is spent idle, waiting on the network.
 
