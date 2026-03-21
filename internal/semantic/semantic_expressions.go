@@ -151,21 +151,35 @@ func (a *Analyzer) analyzeExpression(expr ast.Expression) (result *TypeInfo) {
 			if param.Type != nil {
 				a.validateTypeAnnotation(param.Type)
 			}
+			paramType := a.typeAnnotationToTypeInfo(param.Type)
+			// If param has no explicit type annotation, check if semantic inference
+			// (inferLambdaParamTypes) already recorded an inferred type for it.
+			if paramType == nil || paramType.Kind == TypeKindUnknown {
+				if inferred, ok := a.exprTypes[param.Name]; ok && inferred != nil && inferred.Kind != TypeKindUnknown {
+					paramType = inferred
+				}
+			}
 			paramSymbol := &Symbol{
 				Name:    param.Name.Value,
 				Kind:    SymbolParameter,
-				Type:    a.typeAnnotationToTypeInfo(param.Type),
+				Type:    paramType,
 				Defined: param.Name.Pos(),
 			}
 			if err := a.symbolTable.Define(paramSymbol); err != nil {
 				a.error(param.Name.Pos(), err.Error())
 			}
 		}
+		var bodyType *TypeInfo
 		if e.Body != nil {
-			a.analyzeExpression(e.Body)
+			bodyType = a.analyzeExpression(e.Body)
 		}
 		if e.Block != nil {
 			a.analyzeBlock(e.Block)
+		}
+		// Return a function type with the body's return type so callers can
+		// resolve generic placeholders (e.g., "result" in concurrent.MapWithLimit).
+		if bodyType != nil && bodyType.Kind != TypeKindUnknown {
+			return &TypeInfo{Kind: TypeKindFunction, Returns: []*TypeInfo{bodyType}}
 		}
 		return &TypeInfo{Kind: TypeKindUnknown}
 	case *ast.ReturnExpr:

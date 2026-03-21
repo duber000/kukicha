@@ -240,27 +240,42 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 		}
 	}
 
-	// Always analyze positional arguments to ensure their types are recorded
+	// Analyze non-lambda arguments first so their types are available for inference.
 	var providedArgTypes []*TypeInfo
 	if pipedArg != nil && !hasPlaceholder {
 		providedArgTypes = append(providedArgTypes, pipedArg)
 	}
-	for _, arg := range expr.Arguments {
+	lambdaIndices := make(map[int]bool)
+	for i, arg := range expr.Arguments {
 		if hasPlaceholder && pipedArg != nil {
 			if ident, ok := arg.(*ast.Identifier); ok && ident.Value == "_" {
-				// Placeholder takes the piped arg's type and records it in exprTypes
 				providedArgTypes = append(providedArgTypes, pipedArg)
 				a.recordType(ident, pipedArg)
 				continue
 			}
 		}
-		providedArgTypes = append(providedArgTypes, a.analyzeExpression(arg))
+		if _, isLambda := arg.(*ast.ArrowLambda); isLambda {
+			lambdaIndices[i] = true
+			providedArgTypes = append(providedArgTypes, &TypeInfo{Kind: TypeKindUnknown})
+		} else {
+			providedArgTypes = append(providedArgTypes, a.analyzeExpression(arg))
+		}
 	}
 
-	// Infer lambda param types from calling context (for untyped arrow lambda params).
-	// Must run after providedArgTypes is built so elementType can be derived from
-	// the piped/first argument. Runs before validation so it covers all call shapes.
+	// Infer lambda param types before analyzing lambda bodies, so that
+	// parameters have their types in scope during body analysis.
 	a.inferLambdaParamTypes(expr, funcType, providedArgTypes, pipedArg, hasPlaceholder)
+
+	// Now analyze lambda arguments — params are already typed from inference.
+	for i, arg := range expr.Arguments {
+		if lambdaIndices[i] {
+			offset := 0
+			if pipedArg != nil && !hasPlaceholder {
+				offset = 1
+			}
+			providedArgTypes[i+offset] = a.analyzeExpression(arg)
+		}
+	}
 
 	// Validate usage of named arguments
 	if len(expr.NamedArguments) > 0 {
@@ -375,16 +390,88 @@ func (a *Analyzer) analyzeCallExpr(expr *ast.CallExpr, pipedArg *TypeInfo) []*Ty
 	return []*TypeInfo{{Kind: TypeKindUnknown}}
 }
 
+// goStdlibTypeToTypeInfo converts a goStdlibType to a TypeInfo, including nested
+// element/key/value types for lists and maps.
+func goStdlibTypeToTypeInfo(gt goStdlibType) *TypeInfo {
+	ti := &TypeInfo{Kind: gt.Kind, Name: gt.Name}
+	if gt.ElementType != nil {
+		ti.ElementType = goStdlibTypeToTypeInfo(*gt.ElementType)
+	}
+	if gt.KeyType != nil {
+		ti.KeyType = goStdlibTypeToTypeInfo(*gt.KeyType)
+	}
+	if gt.ValueType != nil {
+		ti.ValueType = goStdlibTypeToTypeInfo(*gt.ValueType)
+	}
+	return ti
+}
+
 // goStdlibEntryToTypeInfos converts a generated Go stdlib entry to a slice of TypeInfo.
 func goStdlibEntryToTypeInfos(entry goStdlibEntry) []*TypeInfo {
 	types := make([]*TypeInfo, entry.Count)
 	for i, gt := range entry.Types {
-		types[i] = &TypeInfo{Kind: gt.Kind, Name: gt.Name}
+		types[i] = goStdlibTypeToTypeInfo(gt)
 	}
 	for i := len(entry.Types); i < entry.Count; i++ {
 		types[i] = &TypeInfo{Kind: TypeKindUnknown}
 	}
 	return types
+}
+
+// isPlaceholderType returns true if the type is a generic placeholder (any, any2, ordered, result).
+func isPlaceholderType(ti *TypeInfo) bool {
+	return ti != nil && ti.Kind == TypeKindNamed &&
+		(ti.Name == "any" || ti.Name == "any2" || ti.Name == "ordered" || ti.Name == "result")
+}
+
+// resolveGenericPlaceholders resolves placeholder element types in return types
+// using the actual call-site arguments. For example, if a function returns
+// "list of result" and a lambda argument returns RepoEntry, the element type
+// is resolved to RepoEntry.
+func resolveGenericPlaceholders(types []*TypeInfo, argTypes []*TypeInfo, pipedArg *TypeInfo) {
+	// Resolve "any" placeholder from the first list argument's element type
+	var anyType *TypeInfo
+	if pipedArg != nil && pipedArg.ElementType != nil && !isPlaceholderType(pipedArg.ElementType) {
+		anyType = pipedArg.ElementType
+	} else {
+		for _, at := range argTypes {
+			if at != nil && at.Kind == TypeKindList && at.ElementType != nil && !isPlaceholderType(at.ElementType) {
+				anyType = at.ElementType
+				break
+			}
+		}
+	}
+
+	// Resolve "result" placeholder from lambda argument return types
+	var resultType *TypeInfo
+	for _, at := range argTypes {
+		if at != nil && at.Kind == TypeKindFunction && len(at.Returns) > 0 {
+			ret := at.Returns[0]
+			if ret != nil && ret.Kind != TypeKindUnknown && !isPlaceholderType(ret) {
+				resultType = ret
+				break
+			}
+		}
+	}
+
+	// Apply resolutions to return types
+	for _, ti := range types {
+		if ti == nil {
+			continue
+		}
+		if isPlaceholderType(ti.ElementType) {
+			switch ti.ElementType.Name {
+			case "any", "any2", "ordered":
+				if anyType != nil {
+					ti.ElementType = anyType
+				}
+			case "result":
+				if resultType != nil {
+					ti.ElementType = resultType
+				}
+			}
+		}
+	}
 }
 
 func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *TypeInfo) []*TypeInfo {
@@ -399,13 +486,25 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 		a.analyzeExpression(namedArg.Value)
 	}
 
-	// Analyze arguments
-	for _, arg := range expr.Arguments {
-		a.analyzeExpression(arg)
+	// Analyze non-lambda arguments first so their types are available for inference.
+	argTypes := make([]*TypeInfo, len(expr.Arguments))
+	for i, arg := range expr.Arguments {
+		if _, isLambda := arg.(*ast.ArrowLambda); !isLambda {
+			argTypes[i] = a.analyzeExpression(arg)
+		}
 	}
 
-	// Infer lambda param types for untyped arrow lambda args in method calls.
+	// Infer lambda param types before analyzing lambda bodies, so that
+	// parameters have their types in scope during body analysis (e.g.,
+	// e.name resolves correctly when e is inferred as RepoEntry).
 	a.inferLambdaParamTypesMethod(expr, pipedArg)
+
+	// Now analyze lambda arguments — params are already typed from inference.
+	for i, arg := range expr.Arguments {
+		if _, isLambda := arg.(*ast.ArrowLambda); isLambda {
+			argTypes[i] = a.analyzeExpression(arg)
+		}
+	}
 
 	// Handle known stdlib method return types
 	methodName := expr.Method.Value
@@ -448,6 +547,7 @@ func (a *Analyzer) analyzeMethodCallExpr(expr *ast.MethodCallExpr, pipedArg *Typ
 			a.checkPanics(expr, methodName, qualifiedName)
 
 			types := goStdlibEntryToTypeInfos(entry)
+			resolveGenericPlaceholders(types, argTypes, pipedArg)
 			a.recordReturnCount(expr, entry.Count)
 			return types
 		}

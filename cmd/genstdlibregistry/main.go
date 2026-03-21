@@ -59,8 +59,11 @@ type registryEntry struct {
 
 // typeRepr is the generator's representation of a type, emitted as goStdlibType.
 type typeRepr struct {
-	kind string // TypeKind constant name (e.g., "TypeKindInt")
-	name string // For TypeKindNamed (e.g., "error", "time.Time")
+	kind        string     // TypeKind constant name (e.g., "TypeKindInt")
+	name        string     // For TypeKindNamed (e.g., "error", "time.Time")
+	elementType *typeRepr  // element type for TypeKindList
+	keyType     *typeRepr  // key type for TypeKindMap
+	valueType   *typeRepr  // value type for TypeKindMap
 }
 
 // scanResult holds the scanned registry and deprecated map.
@@ -328,9 +331,12 @@ func typeAnnotationToRepr(ann ast.TypeAnnotation) typeRepr {
 	case *ast.NamedType:
 		return typeRepr{kind: "TypeKindNamed", name: t.Name}
 	case *ast.ListType:
-		return typeRepr{kind: "TypeKindList"}
+		elem := typeAnnotationToRepr(t.ElementType)
+		return typeRepr{kind: "TypeKindList", elementType: &elem}
 	case *ast.MapType:
-		return typeRepr{kind: "TypeKindMap"}
+		key := typeAnnotationToRepr(t.KeyType)
+		val := typeAnnotationToRepr(t.ValueType)
+		return typeRepr{kind: "TypeKindMap", keyType: &key, valueType: &val}
 	case *ast.ChannelType:
 		return typeRepr{kind: "TypeKindChannel"}
 	case *ast.ReferenceType:
@@ -344,10 +350,29 @@ func typeAnnotationToRepr(ann ast.TypeAnnotation) typeRepr {
 
 // formatTypeRepr formats a typeRepr as a Go source literal for goStdlibType.
 func formatTypeRepr(tr typeRepr) string {
+	parts := []string{fmt.Sprintf("Kind: %s", tr.kind)}
 	if tr.name != "" {
-		return fmt.Sprintf("{Kind: %s, Name: %q}", tr.kind, tr.name)
+		parts = append(parts, fmt.Sprintf("Name: %q", tr.name))
 	}
-	return fmt.Sprintf("{Kind: %s}", tr.kind)
+	if tr.elementType != nil {
+		parts = append(parts, fmt.Sprintf("ElementType: &goStdlibType{%s}", formatTypeReprInner(*tr.elementType)))
+	}
+	if tr.keyType != nil {
+		parts = append(parts, fmt.Sprintf("KeyType: &goStdlibType{%s}", formatTypeReprInner(*tr.keyType)))
+	}
+	if tr.valueType != nil {
+		parts = append(parts, fmt.Sprintf("ValueType: &goStdlibType{%s}", formatTypeReprInner(*tr.valueType)))
+	}
+	return "{" + strings.Join(parts, ", ") + "}"
+}
+
+// formatTypeReprInner formats a typeRepr for use inside a nested &goStdlibType{}.
+func formatTypeReprInner(tr typeRepr) string {
+	parts := []string{fmt.Sprintf("Kind: %s", tr.kind)}
+	if tr.name != "" {
+		parts = append(parts, fmt.Sprintf("Name: %q", tr.name))
+	}
+	return strings.Join(parts, ", ")
 }
 
 // defaultValueToGo converts an AST default value expression to a Go expression string.

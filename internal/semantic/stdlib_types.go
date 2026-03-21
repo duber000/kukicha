@@ -3,8 +3,11 @@ package semantic
 // goStdlibType holds the TypeKind and optional name for one return position.
 // Used by both the Go stdlib and Kukicha stdlib registries.
 type goStdlibType struct {
-	Kind TypeKind
-	Name string // non-empty for TypeKindNamed (e.g. "error")
+	Kind        TypeKind
+	Name        string         // non-empty for TypeKindNamed (e.g. "error")
+	ElementType *goStdlibType  // element type for TypeKindList (e.g. list of string → &goStdlibType{Kind: TypeKindString})
+	KeyType     *goStdlibType  // key type for TypeKindMap
+	ValueType   *goStdlibType  // value type for TypeKindMap
 }
 
 // goStdlibEntry holds the return signature info for a stdlib function:
