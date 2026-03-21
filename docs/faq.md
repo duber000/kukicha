@@ -17,10 +17,6 @@ Kukicha keeps the parts of shell scripting that work — pipes, running commands
 | `if [ ... ]; then ... fi` | `if condition` with indentation |
 | Arrays (`"${arr[@]}"`) | `list of string{"a", "b"}` |
 
-**What about Python as a bash replacement?**
-
-Python is a solid option. But Kukicha compiles to a static binary — no runtime, no `pip install`, no virtualenv. `scp` the binary and run it. For scripts that run on remote servers or in containers that matters.
-
 **Where to start:** [Shell Scripters Guide](tutorials/beginner-tutorial.md)
 
 ---
