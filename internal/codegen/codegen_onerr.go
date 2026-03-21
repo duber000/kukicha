@@ -454,6 +454,11 @@ func (g *Generator) stmtHasExplain(stmt ast.Statement) bool {
 		if s.Consequence != nil && g.blockHasExplain(s.Consequence) {
 			return true
 		}
+		if s.Alternative != nil {
+			if g.stmtHasExplain(s.Alternative) {
+				return true
+			}
+		}
 	case *ast.ForRangeStmt:
 		if s.Body != nil && g.blockHasExplain(s.Body) {
 			return true
@@ -464,6 +469,37 @@ func (g *Generator) stmtHasExplain(stmt ast.Statement) bool {
 		}
 	case *ast.ForConditionStmt:
 		if s.Body != nil && g.blockHasExplain(s.Body) {
+			return true
+		}
+	case *ast.SwitchStmt:
+		for _, c := range s.Cases {
+			if c.Body != nil && g.blockHasExplain(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil && g.blockHasExplain(s.Otherwise.Body) {
+			return true
+		}
+	case *ast.TypeSwitchStmt:
+		for _, c := range s.Cases {
+			if c.Body != nil && g.blockHasExplain(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil && g.blockHasExplain(s.Otherwise.Body) {
+			return true
+		}
+	case *ast.SelectStmt:
+		for _, c := range s.Cases {
+			if c.Body != nil && g.blockHasExplain(c.Body) {
+				return true
+			}
+		}
+		if s.Otherwise != nil && s.Otherwise.Body != nil && g.blockHasExplain(s.Otherwise.Body) {
+			return true
+		}
+	case *ast.GoStmt:
+		if s.Block != nil && g.blockHasExplain(s.Block) {
 			return true
 		}
 	}

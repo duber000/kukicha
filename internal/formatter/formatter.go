@@ -303,6 +303,10 @@ func (p *PrinterWithComments) printStatementWithComments(stmt ast.Statement) {
 		channel := p.exprToString(s.Channel)
 		value := p.exprToString(s.Value)
 		p.writeLine(fmt.Sprintf("send %s to %s", value, channel))
+	case *ast.BreakStmt:
+		p.writeLine("break")
+	case *ast.ContinueStmt:
+		p.writeLine("continue")
 	case *ast.ExpressionStmt:
 		p.writeLine(p.exprToString(s.Expression))
 	}

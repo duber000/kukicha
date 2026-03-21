@@ -3,7 +3,6 @@ package lexer
 import (
 	"fmt"
 	"strings"
-	"unicode"
 	"unique"
 )
 
@@ -518,7 +517,13 @@ func dedentTripleQuote(raw string) string {
 				stripped++
 				j++
 			} else if line[j] == '\t' {
-				stripped += 4
+				tabWidth := 4
+				if stripped+tabWidth > minIndent {
+					// Tab overshoots — only strip what's needed
+					stripped = minIndent
+				} else {
+					stripped += tabWidth
+				}
 				j++
 			} else {
 				break
@@ -663,20 +668,24 @@ func (l *Lexer) scanStringEscape(value *strings.Builder) {
 		}
 	case 'x':
 		// Hex escape: \xHH
-		if !l.isAtEnd() {
-			h1 := l.advance()
-			if !l.isAtEnd() {
-				h2 := l.advance()
-				hi, ok1 := hexDigit(h1)
-				lo, ok2 := hexDigit(h2)
-				if ok1 && ok2 {
-					value.WriteRune(rune(hi*16 + lo))
-				} else {
-					value.WriteString(`\x`)
-					value.WriteRune(h1)
-					value.WriteRune(h2)
-				}
-			}
+		if l.isAtEnd() {
+			l.error("Incomplete hex escape '\\x' at end of string")
+			return
+		}
+		h1 := l.advance()
+		if l.isAtEnd() {
+			l.error("Incomplete hex escape '\\x' — expected 2 hex digits")
+			return
+		}
+		h2 := l.advance()
+		hi, ok1 := hexDigit(h1)
+		lo, ok2 := hexDigit(h2)
+		if ok1 && ok2 {
+			value.WriteRune(rune(hi*16 + lo))
+		} else {
+			value.WriteString(`\x`)
+			value.WriteRune(h1)
+			value.WriteRune(h2)
 		}
 	default:
 		value.WriteRune(escaped)
@@ -839,7 +848,7 @@ func (l *Lexer) addTokenWithLexeme(tokenType TokenType, lexeme string) {
 		Type:   tokenType,
 		Lexeme: lexeme,
 		Line:   l.line,
-		Column: l.column - len([]rune(lexeme)),
+		Column: max(0, l.column-len([]rune(lexeme))),
 		File:   l.file,
 	}
 	l.tokens = append(l.tokens, token)
@@ -891,11 +900,6 @@ func IsKeyword(s string) bool {
 	return ok
 }
 
-// Helper to check if a rune is a letter (for identifiers)
-func isLetter(c rune) bool {
-	return unicode.IsLetter(c) || c == '_'
-}
-
 // isPipeAtStartOfNextLine checks if the next non-whitespace characters
 // on the upcoming line form a pipe operator "|>".  Called from the '\n'
 // (or '\r') case after advance() has already consumed the newline, so
@@ -917,7 +921,7 @@ func (l *Lexer) isOnErrAtStartOfNextLine() bool {
 		return false
 	}
 	if idx+5 <= len(l.source) && string(l.source[idx:idx+5]) == "onerr" {
-		if idx+5 == len(l.source) || !isLetter(l.source[idx+5]) && !isDigit(l.source[idx+5]) {
+		if idx+5 == len(l.source) || !isAlpha(l.source[idx+5]) && !isDigit(l.source[idx+5]) {
 			return true
 		}
 	}

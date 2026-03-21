@@ -440,5 +440,23 @@ func (g *Generator) scanExprForAutoImports(expr ast.Expression) {
 			g.scanExprForAutoImports(p.Key)
 			g.scanExprForAutoImports(p.Value)
 		}
+	case *ast.ErrorExpr:
+		g.scanExprForAutoImports(e.Message)
+	case *ast.PanicExpr:
+		g.scanExprForAutoImports(e.Message)
+	case *ast.TypeCastExpr:
+		g.scanExprForAutoImports(e.Expression)
+	case *ast.TypeAssertionExpr:
+		g.scanExprForAutoImports(e.Expression)
+	case *ast.AddressOfExpr:
+		g.scanExprForAutoImports(e.Operand)
+	case *ast.DerefExpr:
+		g.scanExprForAutoImports(e.Operand)
+	case *ast.BlockExpr:
+		if e.Body != nil {
+			g.scanBlockForAutoImports(e.Body)
+		}
+	case *ast.PipedSwitchExpr:
+		g.scanExprForAutoImports(e.Left)
 	}
 }

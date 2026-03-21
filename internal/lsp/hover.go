@@ -14,6 +14,9 @@ import (
 
 // handleHover handles textDocument/hover requests
 func (s *Server) handleHover(ctx context.Context, req *jsonrpc2.Request) (*lsp.Hover, error) {
+	if req.Params == nil {
+		return nil, nil
+	}
 	var params lsp.TextDocumentPositionParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err

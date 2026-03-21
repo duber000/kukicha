@@ -12,6 +12,9 @@ import (
 
 // handleDefinition handles textDocument/definition requests
 func (s *Server) handleDefinition(ctx context.Context, req *jsonrpc2.Request) ([]lsp.Location, error) {
+	if req.Params == nil {
+		return nil, nil
+	}
 	var params lsp.TextDocumentPositionParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err

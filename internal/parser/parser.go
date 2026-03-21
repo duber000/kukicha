@@ -182,11 +182,7 @@ func (p *Parser) peekToken() lexer.Token {
 }
 
 func (p *Parser) peekNextToken() lexer.Token {
-	p.skipIgnoredTokens()
-	if p.pos+1 >= len(p.tokens) {
-		return lexer.Token{Type: lexer.TOKEN_EOF}
-	}
-	return p.tokens[p.pos+1]
+	return p.peekAt(1)
 }
 
 func (p *Parser) peekAt(offset int) lexer.Token {

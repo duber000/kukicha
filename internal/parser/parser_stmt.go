@@ -157,6 +157,7 @@ func (p *Parser) parseIfStmt() *ast.IfStmt {
 	// We try to parse an expression or assignment.
 	// If it's followed by a semicolon, it's an init statement.
 	savePos := p.pos
+	saveDirectives := p.pendingDirectives
 
 	// Support both declarations (x := 1) and assignments (x = 1)
 	// parseExpressionOrAssignmentStmt is appropriate but it usually consumes the newline.
@@ -174,6 +175,7 @@ func (p *Parser) parseIfStmt() *ast.IfStmt {
 
 		// Let's try again with a more direct approach.
 		p.pos = savePos
+		p.pendingDirectives = saveDirectives
 
 		// We peek ahead for the semicolon to decide if we parse a statement first.
 		hasSemicolon := false

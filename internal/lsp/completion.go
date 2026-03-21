@@ -13,6 +13,9 @@ import (
 
 // handleCompletion handles textDocument/completion requests
 func (s *Server) handleCompletion(ctx context.Context, req *jsonrpc2.Request) (*lsp.CompletionList, error) {
+	if req.Params == nil {
+		return nil, nil
+	}
 	var params lsp.CompletionParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err

@@ -76,6 +76,9 @@ func isExported(name string) bool {
 }
 
 func isNumericType(t *TypeInfo) bool {
+	if t == nil {
+		return false
+	}
 	return t.Kind == TypeKindInt || t.Kind == TypeKindFloat || t.Kind == TypeKindUnknown
 }
 

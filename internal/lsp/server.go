@@ -134,6 +134,9 @@ func (s *Server) handleInitialize(ctx context.Context, req *jsonrpc2.Request) (*
 }
 
 func (s *Server) handleDidOpen(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+	if req.Params == nil {
+		return nil, nil
+	}
 	var params lsp.DidOpenTextDocumentParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
@@ -150,6 +153,9 @@ func (s *Server) handleDidOpen(ctx context.Context, req *jsonrpc2.Request) (any,
 }
 
 func (s *Server) handleDidChange(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+	if req.Params == nil {
+		return nil, nil
+	}
 	var params lsp.DidChangeTextDocumentParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
@@ -167,6 +173,9 @@ func (s *Server) handleDidChange(ctx context.Context, req *jsonrpc2.Request) (an
 }
 
 func (s *Server) handleDidSave(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+	if req.Params == nil {
+		return nil, nil
+	}
 	var params lsp.DidSaveTextDocumentParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err
@@ -181,6 +190,9 @@ func (s *Server) handleDidSave(ctx context.Context, req *jsonrpc2.Request) (any,
 }
 
 func (s *Server) handleDidClose(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+	if req.Params == nil {
+		return nil, nil
+	}
 	var params lsp.DidCloseTextDocumentParams
 	if err := json.Unmarshal(*req.Params, &params); err != nil {
 		return nil, err

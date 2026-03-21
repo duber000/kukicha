@@ -51,21 +51,25 @@ func NewDocumentStore() *DocumentStore {
 
 // Open adds a new document to the store
 func (ds *DocumentStore) Open(uri lsp.DocumentURI, content string, version int) *Document {
-	ds.mu.Lock()
-	defer ds.mu.Unlock()
-
+	// Run analysis outside the lock to avoid blocking other operations
 	doc := newDocument(uri, content, version)
+
+	ds.mu.Lock()
 	ds.documents[uri] = doc
+	ds.mu.Unlock()
+
 	return cloneDocument(doc)
 }
 
 // Update updates an existing document
 func (ds *DocumentStore) Update(uri lsp.DocumentURI, content string, version int) *Document {
-	ds.mu.Lock()
-	defer ds.mu.Unlock()
-
+	// Run analysis outside the lock to avoid blocking other operations
 	doc := newDocument(uri, content, version)
+
+	ds.mu.Lock()
 	ds.documents[uri] = doc
+	ds.mu.Unlock()
+
 	return cloneDocument(doc)
 }
 

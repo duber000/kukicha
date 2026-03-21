@@ -338,6 +338,8 @@ func (t TokenType) String() string {
 		return "EOF"
 	case TOKEN_COMMENT:
 		return "COMMENT"
+	case TOKEN_DIRECTIVE:
+		return "DIRECTIVE"
 	case TOKEN_SEMICOLON:
 		return "SEMICOLON"
 	default:
@@ -424,7 +426,9 @@ func Keywords() []string {
 			cachedKeywords = append(cachedKeywords, kw)
 		}
 	})
-	return cachedKeywords
+	result := make([]string, len(cachedKeywords))
+	copy(result, cachedKeywords)
+	return result
 }
 
 // LookupKeyword returns the token type for a keyword, or TOKEN_IDENTIFIER if not a keyword

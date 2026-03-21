@@ -25,6 +25,22 @@ func (a *Analyzer) analyzeOnErrClause(clause *ast.OnErrClause) {
 		return
 	}
 
+	// Validate "onerr continue" — must be inside a loop.
+	if clause.ShorthandContinue {
+		if a.loopDepth == 0 {
+			a.error(pos, "'onerr continue' used outside of a loop")
+		}
+		return
+	}
+
+	// Validate "onerr break" — must be inside a loop or switch.
+	if clause.ShorthandBreak {
+		if a.loopDepth == 0 && a.switchDepth == 0 {
+			a.error(pos, "'onerr break' used outside of a loop or switch")
+		}
+		return
+	}
+
 	// Lint: onerr discard outside test files silently swallows errors.
 	if _, isDiscard := clause.Handler.(*ast.DiscardExpr); isDiscard {
 		if !strings.HasSuffix(a.sourceFile, "_test.kuki") {

@@ -215,6 +215,7 @@ func (p *Parser) parseUnaryExpr() ast.Expression {
 	}
 
 	// Handle "reference of expr" for address-of
+	saveRefPos := p.pos
 	if p.match(lexer.TOKEN_REFERENCE) {
 		refToken := p.previousToken()
 		if p.match(lexer.TOKEN_OF) {
@@ -224,8 +225,8 @@ func (p *Parser) parseUnaryExpr() ast.Expression {
 				Operand: operand,
 			}
 		}
-		// If not followed by 'of', we have an error - revert
-		p.pos-- // Back up to before 'reference'
+		// If not followed by 'of', revert to before 'reference'
+		p.pos = saveRefPos
 	}
 
 	// Handle "dereference expr"
@@ -559,7 +560,7 @@ func (p *Parser) parseInterpolatedStringLiteral() *ast.StringLiteral {
 		})
 	}
 
-	for {
+	for !p.isAtEnd() {
 		// Parse the interpolated expression using the normal expression parser.
 		// Track token positions to reconstruct the raw expression text for Value.
 		startPos := p.pos

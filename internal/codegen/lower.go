@@ -46,7 +46,11 @@ func (l *Lowerer) lowerPipeChain(pipe *ast.PipeExpr) (*ir.Block, string) {
 		for i := range blanks {
 			blanks[i] = "_"
 		}
-		baseExpr = fmt.Sprintf("func() any { val, %s := %s; return val }()", strings.Join(blanks, ", "), baseExpr)
+		retType := l.gen.inferExprReturnType(base)
+		if retType == "" {
+			retType = "any"
+		}
+		baseExpr = fmt.Sprintf("func() %s { val, %s := %s; return val }()", retType, strings.Join(blanks, ", "), baseExpr)
 	}
 
 	block.Add(&ir.Assign{Names: []string{current}, Expr: baseExpr, Walrus: true})
@@ -63,7 +67,11 @@ func (l *Lowerer) lowerPipeChain(pipe *ast.PipeExpr) (*ir.Block, string) {
 			for i := range blanks {
 				blanks[i] = "_"
 			}
-			callExpr = fmt.Sprintf("func() any { val, %s := %s; return val }()", strings.Join(blanks, ", "), callExpr)
+			retType := l.gen.inferExprReturnType(step)
+			if retType == "" {
+				retType = "any"
+			}
+			callExpr = fmt.Sprintf("func() %s { val, %s := %s; return val }()", retType, strings.Join(blanks, ", "), callExpr)
 		}
 
 		block.Add(&ir.Assign{Names: []string{next}, Expr: callExpr, Walrus: true})

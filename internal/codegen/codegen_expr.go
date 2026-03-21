@@ -206,18 +206,9 @@ func (g *Generator) exprToString(expr ast.Expression) string {
 
 func (g *Generator) generatePipedSwitchExpr(expr *ast.PipedSwitchExpr) string {
 	left := g.exprToString(expr.Left)
-	tempGen := &Generator{
-		program:        g.program,
-		output:         strings.Builder{},
-		indent:         g.indent + 1,
-		placeholderMap: g.placeholderMap,
-		autoImports:    g.autoImports,
-		pkgAliases:     g.pkgAliases,
-		funcDefaults:   g.funcDefaults,
-		isStdlibIter:   g.isStdlibIter,
-		sourceFile:     g.sourceFile,
-		exprTypes:      g.exprTypes,
-	}
+	tempGen := g.childGenerator(1)
+	tempGen.currentFuncName = g.currentFuncName
+	tempGen.currentReturnTypes = g.currentReturnTypes
 
 	switch stmt := expr.Switch.(type) {
 	case *ast.SwitchStmt:

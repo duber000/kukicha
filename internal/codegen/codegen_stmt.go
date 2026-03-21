@@ -293,8 +293,8 @@ func (g *Generator) coerceReturnValue(valStr string, val ast.Expression, returnT
 func (g *Generator) generateIfStmt(stmt *ast.IfStmt) {
 	if stmt.Init != nil {
 		g.write("if ")
-		// Use a separate generator to avoid adding newline to main output
-		tempGen := New(g.program)
+		// Use a child generator to avoid adding newline to main output
+		tempGen := g.childGenerator(0)
 		tempGen.indent = 0
 		tempGen.generateStatement(stmt.Init)
 		initStr := strings.TrimSpace(tempGen.output.String())

@@ -132,6 +132,10 @@ func (a *Analyzer) typeAnnotationToTypeInfo(typeAnn ast.TypeAnnotation) *TypeInf
 
 // isReferenceType checks if a type can be nil
 func (a *Analyzer) isReferenceType(t *TypeInfo) bool {
+	return a.isReferenceTypeWithVisited(t, nil)
+}
+
+func (a *Analyzer) isReferenceTypeWithVisited(t *TypeInfo, visited map[string]bool) bool {
 	if t == nil {
 		return false
 	}
@@ -142,7 +146,7 @@ func (a *Analyzer) isReferenceType(t *TypeInfo) bool {
 		if t.Name == "any" || t.Name == "any2" || t.Name == "ordered" || t.Name == "result" || t.Name == "error" || t.Name == "interface{}" {
 			return true
 		}
-		
+
 		// If qualified name (contains dot), assume it might be a reference/interface (e.g. io.Reader)
 		// We can't verify external types, so be lenient and let Go compiler catch errors.
 		if strings.Contains(t.Name, ".") {
@@ -156,7 +160,15 @@ func (a *Analyzer) isReferenceType(t *TypeInfo) bool {
 				return true
 			}
 			if sym.Kind == SymbolType {
-				return a.isReferenceType(sym.Type)
+				// Guard against recursive type aliases
+				if visited == nil {
+					visited = make(map[string]bool)
+				}
+				if visited[t.Name] {
+					return false
+				}
+				visited[t.Name] = true
+				return a.isReferenceTypeWithVisited(sym.Type, visited)
 			}
 		}
 		return false
@@ -242,8 +254,11 @@ func (a *Analyzer) typesCompatible(t1, t2 *TypeInfo) bool {
 			return true
 		}
 		// Allow unqualified vs qualified name match (e.g., "Handle" == "ctx.Handle")
-		// This handles cross-package type references where one side is unqualified.
-		return unqualifiedName(t1.Name) == unqualifiedName(t2.Name)
+		// only when at least one side is unqualified (no package prefix).
+		if !strings.Contains(t1.Name, ".") || !strings.Contains(t2.Name, ".") {
+			return unqualifiedName(t1.Name) == unqualifiedName(t2.Name)
+		}
+		return false
 	default:
 		return true
 	}

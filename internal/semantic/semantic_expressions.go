@@ -360,6 +360,9 @@ func (a *Analyzer) analyzeBinaryExpr(expr *ast.BinaryExpr) *TypeInfo {
 }
 
 func isBitwiseType(t *TypeInfo) bool {
+	if t == nil {
+		return false
+	}
 	return t.Kind == TypeKindInt || t.Kind == TypeKindUnknown
 }
 
@@ -491,7 +494,7 @@ func (a *Analyzer) analyzeListLiteral(expr *ast.ListLiteralExpr) *TypeInfo {
 		for i, elem := range expr.Elements[1:] {
 			et := a.analyzeExpression(elem)
 			if !a.typesCompatible(elemType, et) {
-				a.error(expr.Pos(), fmt.Sprintf("list element %d: incompatible type %s, expected %s", i+1, et, elemType))
+				a.error(expr.Pos(), fmt.Sprintf("list element %d: incompatible type %s, expected %s", i+2, et, elemType))
 			}
 		}
 	} else if expr.Type != nil {

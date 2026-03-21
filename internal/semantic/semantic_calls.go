@@ -72,7 +72,12 @@ func (a *Analyzer) resolveExpectedLambdaParams(
 			hasAny := false
 			for j, gt := range innerTypes {
 				switch {
-				case gt.Kind == TypeKindNamed && (gt.Name == "any" || gt.Name == "any2" || gt.Name == "ordered" || gt.Name == "result"):
+				case gt.Kind == TypeKindNamed && gt.Name == "result":
+					// "result" placeholder represents transform output type,
+					// not element type. Skip here — it will be resolved after
+					// lambda body analysis via resolveGenericPlaceholders.
+					hasAny = true
+				case gt.Kind == TypeKindNamed && (gt.Name == "any" || gt.Name == "any2" || gt.Name == "ordered"):
 					if elementType != nil {
 						result[j] = elementType
 						hasAny = true

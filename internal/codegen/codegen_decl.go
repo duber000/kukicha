@@ -333,7 +333,7 @@ func (g *Generator) generateArrowLambda(lambda *ast.ArrowLambda) string {
 		if returnType != "" {
 			return fmt.Sprintf("func(%s) %s { return %s }", params, returnType, bodyStr)
 		}
-		return fmt.Sprintf("func(%s) { return %s }", params, bodyStr)
+		return fmt.Sprintf("func(%s) any { return %s }", params, bodyStr)
 	}
 
 	if lambda.Block != nil {

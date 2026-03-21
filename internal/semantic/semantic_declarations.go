@@ -145,7 +145,29 @@ func (a *Analyzer) collectTypeDecl(decl *ast.TypeDecl) {
 	// Determine type kind based on alias vs struct
 	typeKind := TypeKindStruct
 	if decl.AliasType != nil {
-		typeKind = TypeKindFunction
+		switch decl.AliasType.(type) {
+		case *ast.FunctionType:
+			typeKind = TypeKindFunction
+		case *ast.ListType:
+			typeKind = TypeKindList
+		case *ast.MapType:
+			typeKind = TypeKindMap
+		case *ast.ChannelType:
+			typeKind = TypeKindChannel
+		case *ast.ReferenceType:
+			typeKind = TypeKindReference
+		case *ast.PrimitiveType:
+			pt := decl.AliasType.(*ast.PrimitiveType)
+			if info := primitiveTypeFromString(pt.Name); info != nil {
+				typeKind = info.Kind
+			} else {
+				typeKind = TypeKindNamed
+			}
+		case *ast.NamedType:
+			typeKind = TypeKindNamed
+		default:
+			typeKind = TypeKindUnknown
+		}
 	}
 
 	// Build fields map for struct types so struct literals can validate field names.
@@ -354,7 +376,7 @@ func (a *Analyzer) analyzeGlobalVarDecl(stmt *ast.VarDeclStmt) {
 	}
 
 	// Register each name in the global scope
-	for _, name := range stmt.Names {
+	for i, name := range stmt.Names {
 		if !isValidIdentifier(name.Value) {
 			a.error(name.Pos(), fmt.Sprintf("invalid variable name '%s'", name.Value))
 			continue
@@ -364,6 +386,8 @@ func (a *Analyzer) analyzeGlobalVarDecl(stmt *ast.VarDeclStmt) {
 		var varType *TypeInfo
 		if stmt.Type != nil {
 			varType = a.typeAnnotationToTypeInfo(stmt.Type)
+		} else if i < len(stmt.Values) {
+			varType = a.analyzeExpression(stmt.Values[i])
 		} else if len(stmt.Values) > 0 {
 			varType = a.analyzeExpression(stmt.Values[0])
 		} else {

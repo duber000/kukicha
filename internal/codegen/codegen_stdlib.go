@@ -137,11 +137,6 @@ func (g *Generator) isStdlibSort() bool {
 	return strings.Contains(g.sourceFile, "stdlib/sort/") || strings.Contains(g.sourceFile, "stdlib\\sort\\")
 }
 
-// isStdlibMaps checks if we're generating code in stdlib/maps.
-func (g *Generator) isStdlibMaps() bool {
-	return strings.Contains(g.sourceFile, "stdlib/maps/") || strings.Contains(g.sourceFile, "stdlib\\maps\\")
-}
-
 // isStdlibConcurrent checks if we're generating code in stdlib/concurrent.
 func (g *Generator) isStdlibConcurrent() bool {
 	return strings.Contains(g.sourceFile, "stdlib/concurrent/") || strings.Contains(g.sourceFile, "stdlib\\concurrent\\")
@@ -177,12 +172,6 @@ func (g *Generator) inferSliceTypeParameters(decl *ast.FunctionDecl) []*TypePara
 // inferSortTypeParameters infers type parameters for stdlib/sort functions.
 func (g *Generator) inferSortTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
 	class := semantic.GetSliceGenericClass("sort." + decl.Name.Value)
-	return g.typeParamsFromClass(class)
-}
-
-// inferMapsTypeParameters infers type parameters for stdlib/maps functions.
-func (g *Generator) inferMapsTypeParameters(decl *ast.FunctionDecl) []*TypeParameter {
-	class := semantic.GetSliceGenericClass("maps." + decl.Name.Value)
 	return g.typeParamsFromClass(class)
 }
 

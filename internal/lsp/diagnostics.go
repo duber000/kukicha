@@ -9,6 +9,9 @@ import (
 	"github.com/sourcegraph/go-lsp"
 )
 
+// errorPattern matches compiler error format: "filename:line:column: message"
+var errorPattern = regexp.MustCompile(`^(.+):(\d+):(\d+): (.+)$`)
+
 // publishDiagnostics analyzes the document and publishes diagnostics to the client
 func (s *Server) publishDiagnostics(ctx context.Context, uri lsp.DocumentURI) {
 	doc := s.documents.Get(uri)
@@ -35,10 +38,7 @@ func (s *Server) publishDiagnostics(ctx context.Context, uri lsp.DocumentURI) {
 func errorToDiagnostic(err error) lsp.Diagnostic {
 	msg := err.Error()
 
-	// Parse error format: "filename:line:column: message"
-	// Example: "test.kuki:5:10: undefined identifier 'foo'"
-	re := regexp.MustCompile(`^(.+):(\d+):(\d+): (.+)$`)
-	matches := re.FindStringSubmatch(msg)
+	matches := errorPattern.FindStringSubmatch(msg)
 
 	var line, col int
 	var message string

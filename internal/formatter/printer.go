@@ -128,39 +128,23 @@ func (p *Printer) printInterfaceDecl(decl *ast.InterfaceDecl) {
 }
 
 func (p *Printer) printFunctionDecl(decl *ast.FunctionDecl) {
-	signature := "func "
+	params := p.parametersToString(decl.Parameters)
+	returns := p.returnTypesToString(decl.Returns)
 
-	// Add receiver for methods
+	var line string
 	if decl.Receiver != nil {
+		// Method declaration
 		receiverType := p.typeAnnotationToString(decl.Receiver.Type)
-		p.writeLine(fmt.Sprintf("func %s on %s %s", decl.Name.Value, decl.Receiver.Name.Value, receiverType))
+		line = fmt.Sprintf("func %s on %s %s(%s)", decl.Name.Value, decl.Receiver.Name.Value, receiverType, params)
 	} else {
 		// Regular function
-		signature += decl.Name.Value
+		line = fmt.Sprintf("func %s(%s)", decl.Name.Value, params)
 	}
 
-	if decl.Receiver == nil {
-		// Add parameters
-		params := p.parametersToString(decl.Parameters)
-		signature += fmt.Sprintf("(%s)", params)
-
-		// Add return types
-		returns := p.returnTypesToString(decl.Returns)
-		if returns != "" {
-			signature += " " + returns
-		}
-
-		p.writeLine(signature)
-	} else {
-		// Method - parameters on same line after receiver
-		params := p.parametersToString(decl.Parameters)
-		returns := p.returnTypesToString(decl.Returns)
-		line := fmt.Sprintf("func %s on %s %s(%s)", decl.Name.Value, decl.Receiver.Name.Value, p.typeAnnotationToString(decl.Receiver.Type), params)
-		if returns != "" {
-			line += " " + returns
-		}
-		p.writeLine(line)
+	if returns != "" {
+		line += " " + returns
 	}
+	p.writeLine(line)
 
 	// Print body
 	if decl.Body != nil {
@@ -179,7 +163,7 @@ func (p *Printer) parametersToString(params []*ast.Parameter) string {
 	for i, param := range params {
 		paramType := p.typeAnnotationToString(param.Type)
 		if param.Variadic {
-			parts[i] = fmt.Sprintf("%s many %s", param.Name.Value, paramType)
+			parts[i] = fmt.Sprintf("many %s %s", param.Name.Value, paramType)
 		} else {
 			parts[i] = fmt.Sprintf("%s %s", param.Name.Value, paramType)
 		}
