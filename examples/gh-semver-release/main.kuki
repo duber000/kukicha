@@ -1,8 +1,8 @@
 # gh-semver-release — create GitHub releases with auto-bumped semver tags
 #
 # Usage:
-#   kukicha run main.kuki list [--org ORG] [--bump patch|minor|major] [--csv]
-#   kukicha run main.kuki release --repo OWNER/REPO [--bump patch|minor|major] [--dry-run] [--draft|--publish]
+#   kukicha run main.kuki list [--org ORG] [--bump patch|minor|major] [--csv] [--json]
+#   kukicha run main.kuki release --repo OWNER/REPO [--bump patch|minor|major] [--dry-run] [--draft|--publish] [--json]
 #   kukicha run main.kuki pick [--org ORG] [--bump patch|minor|major] [--dry-run] [--draft|--publish]
 
 petiole main
@@ -14,6 +14,7 @@ import "stdlib/concurrent"
 import "stdlib/env"
 import "stdlib/git"
 import "stdlib/input"
+import "stdlib/json" as jsonpkg
 import "stdlib/semver"
 import "stdlib/shell"
 import "stdlib/slice"
@@ -36,6 +37,20 @@ type RepoEntry
     current string
     next string
 
+# ListEntryJSON is the JSON representation of a single repo entry.
+# current_tag is a nullable string pointer so absent tags serialize as null.
+type ListEntryJSON
+    repo string as "repo"
+    current_tag reference string as "current_tag"
+    next_tag string as "next_tag"
+
+# ReleaseResult is emitted as JSON by the release command when --json is active.
+# status is one of: "created", "already_exists", "dry_run"
+type ReleaseResult
+    repo string as "repo"
+    tag string as "tag"
+    status string as "status"
+
 # ── Helpers ───────────────────────────────────────────────────
 
 func fatal(msg string)
@@ -44,6 +59,14 @@ func fatal(msg string)
 
 func warn(msg string)
     fmt.Fprintln(os.Stderr, "Warning: {msg}")
+
+# printJSON marshals v as indented JSON and writes it to stdout.
+# On marshal error it writes to stderr and exits 1.
+func printJSON(v any)
+    bytes := jsonpkg.MarshalPretty(v) onerr
+        fmt.Fprintln(os.Stderr, "json marshal error: {error}")
+        os.Exit(1)
+    fmt.Println(string(bytes))
 
 # nextTag computes the next semver tag from the current one, falling back to initialTag
 func nextTag(current string, bump string, initialTag string) (string, error)
@@ -137,16 +160,30 @@ func doList(args cli.Args, initialTag string)
     org := cli.GetString(args, "org")
     bump := cli.GetString(args, "bump")
     csv := cli.GetBool(args, "csv")
+    jsonOut := cli.GetBool(args, "json")
 
     repos := listReposWhereICommitted(org) onerr
-        fatal("Error: {error}")
+        if jsonOut
+            printJSON(map of string to string{"error": "{error}"})
+        else
+            fmt.Fprintln(os.Stderr, "Error: {error}")
+        os.Exit(1)
 
     # Fetch tags in parallel (at most 4 concurrent GitHub API calls)
     entries := concurrent.MapWithLimit(repos, 4, r => buildEntry(r, bump, initialTag))
         |> slice.Filter(e => e.name not equals "")
         |> sort.ByKey(e => e.name)
 
-    if csv
+    if jsonOut
+        result := list of ListEntryJSON{}
+        for entry in entries
+            je := ListEntryJSON{repo: entry.name, next_tag: entry.next}
+            if entry.current not equals ""
+                ct := entry.current
+                je.current_tag = reference of ct
+            result = append(result, je)
+        printJSON(result)
+    else if csv
         print("\"repo\",\"current_tag\",\"next_tag\"")
         for entry in entries
             display := entry.current
@@ -168,34 +205,59 @@ func doRelease(args cli.Args, initialTag string)
     repo := cli.GetString(args, "repo")
     dryRun := cli.GetBool(args, "dry-run")
     draft := cli.GetBool(args, "draft")
+    jsonOut := cli.GetBool(args, "json")
     generateNotes := env.GetBoolOrDefault(GenerateNotesEnv, true)
 
     if repo equals ""
+        if jsonOut
+            printJSON(map of string to string{"error": "release requires --repo OWNER/REPO"})
+            os.Exit(1)
         fatal("release requires --repo OWNER/REPO")
 
     if org not equals "" and not (repo |> string.HasPrefix("{org}/"))
+        if jsonOut
+            printJSON(map of string to string{"error": "repo '{repo}' is not under org '{org}'"})
+            os.Exit(1)
         fatal("Repo '{repo}' is not under org '{org}'")
 
     # Verify repo exists
     repoOk := git.RepoExists(repo) onerr false
     if not repoOk
+        if jsonOut
+            printJSON(map of string to string{"error": "failed to access repo: {repo}"})
+            os.Exit(1)
         fatal("Failed to access repo: {repo}")
 
     current := highestSemverTag(repo) onerr
-        fatal("Error: {error}")
+        if jsonOut
+            printJSON(map of string to string{"error": "{error}"})
+        else
+            fmt.Fprintln(os.Stderr, "Error: {error}")
+        os.Exit(1)
 
     next := nextTag(current, bump, initialTag) onerr
-        fatal("Error: {error}")
+        if jsonOut
+            printJSON(map of string to string{"error": "{error}"})
+        else
+            fmt.Fprintln(os.Stderr, "Error: {error}")
+        os.Exit(1)
 
     exists := git.ReleaseExists(repo, next) onerr false
     if exists
+        if jsonOut
+            printJSON(ReleaseResult{repo: repo, tag: next, status: "already_exists"})
+            return
         print("Release already exists:")
         print("  repo: {repo}")
         print("  tag:  {next}")
         return
 
     branch := git.DefaultBranch(repo) onerr
-        fatal("Error: {error}")
+        if jsonOut
+            printJSON(map of string to string{"error": "{error}"})
+        else
+            fmt.Fprintln(os.Stderr, "Error: {error}")
+        os.Exit(1)
 
     tagAlreadyExists := git.TagExists(repo, next) onerr false
 
@@ -206,35 +268,44 @@ func doRelease(args cli.Args, initialTag string)
     opts.GenerateNotes = generateNotes
     opts.Draft = draft
 
-    # Display summary
-    displayCurrent := current
-    if displayCurrent equals ""
-        displayCurrent = "<none>"
+    # Display summary (suppressed in JSON mode — agent cares only about the result)
+    if not jsonOut
+        displayCurrent := current
+        if displayCurrent equals ""
+            displayCurrent = "<none>"
 
-    print("Repo:           {repo}")
-    print("Current tag:    {displayCurrent}")
-    print("Next tag:       {next}")
-    print("Default branch: {branch}")
-    if org not equals ""
-        print("Org filter:     {org}")
-    if tagAlreadyExists
-        print("Tag exists:     yes")
-    else
-        print("Tag exists:     no")
-    print("")
+        print("Repo:           {repo}")
+        print("Current tag:    {displayCurrent}")
+        print("Next tag:       {next}")
+        print("Default branch: {branch}")
+        if org not equals ""
+            print("Org filter:     {org}")
+        if tagAlreadyExists
+            print("Tag exists:     yes")
+        else
+            print("Tag exists:     no")
+        print("")
 
-    print("Command:")
-    print("  {git.PreviewRelease(repo, next, opts)}")
-    print("")
+        print("Command:")
+        print("  {git.PreviewRelease(repo, next, opts)}")
+        print("")
 
     if dryRun
+        if jsonOut
+            printJSON(ReleaseResult{repo: repo, tag: next, status: "dry_run"})
+            return
         print("Dry run only. No release created.")
         return
 
     git.CreateRelease(repo, next, opts) onerr
         fmt.Fprintln(os.Stderr, "")
         fmt.Fprintln(os.Stderr, "Release creation failed. This may indicate a race condition")
+        if jsonOut
+            printJSON(map of string to string{"error": "release creation failed (another process may have created the release or tag)"})
         fatal("(another process may have created the release or tag).")
+
+    if jsonOut
+        printJSON(ReleaseResult{repo: repo, tag: next, status: "created"})
 
 func doPick(args cli.Args, initialTag string)
     org := cli.GetString(args, "org")
@@ -289,6 +360,7 @@ func main()
         |> cli.Description("Create GitHub releases with auto-bumped semver tags")
         |> cli.GlobalFlag("org", "Limit to repos under this org", "")
         |> cli.GlobalFlag("bump", "Bump type: patch, minor, major", DefaultBump)
+        |> cli.GlobalFlag("json", "Emit machine-readable JSON instead of human-readable output", "false")
         |> cli.Command("list", "List repos with current and next semver tags")
         |> cli.CommandFlag("list", "csv", "CSV output", "false")
         |> cli.Command("release", "Create a release for a specific repo")

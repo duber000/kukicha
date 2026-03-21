@@ -3,27 +3,43 @@
 # Also writes the new entry alone to changelog-entry.md for use as GitHub release notes.
 #
 # Usage:
-#   kukicha run scripts/changelog.kuki [version]
+#   kukicha run scripts/changelog.kuki [version] [--json]
 #
 # Examples:
-#   kukicha run scripts/changelog.kuki v0.5.0   # specify version
-#   kukicha run scripts/changelog.kuki           # auto-label as "Unreleased"
+#   kukicha run scripts/changelog.kuki v0.5.0         # specify version
+#   kukicha run scripts/changelog.kuki                # auto-label as "Unreleased"
+#   kukicha run scripts/changelog.kuki v0.5.0 --json  # agent-friendly output
 #
 # Prerequisites:
 #   export MISTRAL_API_KEY="..."
 
+import "fmt"
+import "os"
 import "stdlib/cli"
 import "stdlib/files"
+import "stdlib/json" as jsonpkg
 import "stdlib/llm"
 import "stdlib/semver"
 import "stdlib/shell"
 import "stdlib/slice"
 import "stdlib/string" as strpkg
 
+type ChangelogResult
+    version string as "version"
+    date string as "date"
+    entry string as "entry"
+
+func printJSON(v any)
+    bytes := jsonpkg.MarshalPretty(v) onerr
+        fmt.Fprintln(os.Stderr, "json marshal error: {error}")
+        os.Exit(1)
+    fmt.Println(string(bytes))
+
 func main()
     _ = cli.New("changelog")
         |> cli.Description("Generate CHANGELOG.md entries from git history using an LLM")
         |> cli.Arg("version", "Release version (e.g. v0.5.0). Defaults to 'Unreleased'")
+        |> cli.GlobalFlag("json", "Emit machine-readable JSON instead of progress prose", "false")
         |> cli.Action(run)
         |> cli.RunApp() onerr panic "{error}"
 
@@ -31,9 +47,10 @@ func run(args cli.Args)
     version := cli.GetString(args, "version")
     if version == ""
         version = "Unreleased"
-    generateChangelog(version)
+    jsonOut := cli.GetBool(args, "json")
+    generateChangelog(version, jsonOut)
 
-func generateChangelog(version string)
+func generateChangelog(version string, jsonOut bool)
     # Get sorted tag list and find the previous release tag using semver
     tagsRaw := shell.Output("git", "tag", "-l") onerr ""
     tagsRaw = strpkg.Trim(tagsRaw, "\n")
@@ -62,6 +79,9 @@ func generateChangelog(version string)
 
     gitLog = strpkg.Trim(gitLog, "\n")
     if gitLog == ""
+        if jsonOut
+            printJSON(map of string to string{"error": "no new commits since {lastTag}"})
+            os.Exit(0)
         print("No new commits since {lastTag}. Nothing to add to CHANGELOG.md.")
         return
 
@@ -78,14 +98,15 @@ func generateChangelog(version string)
         sysDate := shell.Output("date", "-u", "+%Y-%m-%d") onerr ""
         releaseDate = strpkg.Trim(sysDate, "\n")
 
-    # Show what we're working with
-    if lastTag != ""
-        print("Generating changelog for {version} ({releaseDate}) (commits since {lastTag})...")
-    else
-        print("Generating changelog for {version} ({releaseDate}) (no prior tags found, using last 50 commits)...")
-    print("")
-    print(gitLog)
-    print("")
+    # Show what we're working with (suppressed in JSON mode)
+    if not jsonOut
+        if lastTag != ""
+            print("Generating changelog for {version} ({releaseDate}) (commits since {lastTag})...")
+        else
+            print("Generating changelog for {version} ({releaseDate}) (no prior tags found, using last 50 commits)...")
+        print("")
+        print(gitLog)
+        print("")
 
     # Read existing CHANGELOG.md if present
     existing := ""
@@ -121,6 +142,10 @@ func generateChangelog(version string)
 
     files.WriteString(newContent, "CHANGELOG.md") onerr panic "Failed to write CHANGELOG.md: {error}"
     files.WriteString(entry, "changelog-entry.md") onerr panic "Failed to write changelog-entry.md: {error}"
+
+    if jsonOut
+        printJSON(ChangelogResult{version: version, date: releaseDate, entry: entry})
+        return
 
     print("CHANGELOG.md updated.")
     print("")
