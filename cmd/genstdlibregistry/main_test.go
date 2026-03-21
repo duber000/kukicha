@@ -503,10 +503,6 @@ func TestTypeAnnotationToRepr(t *testing.T) {
 				t.Fatalf("parse errors: %v", parseErrs)
 			}
 
-			result, scanErrs := scanRegistry([]string{})
-			_ = result
-			_ = scanErrs
-
 			// Get the function declaration
 			fd := prog.Declarations[0].(*ast.FunctionDecl)
 			repr := typeAnnotationToRepr(fd.Returns[0])

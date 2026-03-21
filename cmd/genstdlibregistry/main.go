@@ -114,6 +114,7 @@ func scanRegistry(paths []string) (scanResult, []error) {
 			for _, e := range parseErrs {
 				errs = append(errs, fmt.Errorf("parse error %s: %v", path, e))
 			}
+			continue
 		}
 		if prog == nil || prog.PetioleDecl == nil {
 			continue

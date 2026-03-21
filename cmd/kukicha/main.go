@@ -139,12 +139,12 @@ func printUsage() {
 func loadAndAnalyze(filename string) (*ast.Program, map[ast.Expression]int, map[ast.Expression]*semantic.TypeInfo, error) {
 	source, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Error reading file: %v", err)
+		return nil, nil, nil, fmt.Errorf("error reading file: %v", err)
 	}
 
 	p, err := parser.New(string(source), filename)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Lexer error: %v", err)
+		return nil, nil, nil, fmt.Errorf("lexer error: %v", err)
 	}
 
 	program, parseErrors := p.Parse()
@@ -153,7 +153,7 @@ func loadAndAnalyze(filename string) (*ast.Program, map[ast.Expression]int, map[
 		for _, e := range parseErrors {
 			msgs = append(msgs, fmt.Sprintf("  %v", e))
 		}
-		return nil, nil, nil, fmt.Errorf("Parse errors:\n%s", strings.Join(msgs, "\n"))
+		return nil, nil, nil, fmt.Errorf("parse errors:\n%s", strings.Join(msgs, "\n"))
 	}
 
 	analyzer := semantic.NewWithFile(program, filename)
@@ -163,16 +163,104 @@ func loadAndAnalyze(filename string) (*ast.Program, map[ast.Expression]int, map[
 		for _, e := range semanticErrors {
 			msgs = append(msgs, fmt.Sprintf("  %v", e))
 		}
-		return nil, nil, nil, fmt.Errorf("Semantic errors:\n%s", strings.Join(msgs, "\n"))
+		return nil, nil, nil, fmt.Errorf("semantic errors:\n%s", strings.Join(msgs, "\n"))
 	}
 
 	return program, analyzer.ReturnCounts(), analyzer.ExprTypes(), nil
 }
 
+// compileResult holds the output of the shared compile pipeline.
+type compileResult struct {
+	absFile    string
+	projectDir string
+	program    *ast.Program
+	goCode     string
+	formatted  []byte
+}
+
+// compile runs the shared pipeline: resolve path, parse, analyze, detect target,
+// generate Go code, and format it. targetFlag overrides auto-detection when non-empty.
+// defaultTarget is used when no flag is given and no target directive is found in source.
+func compile(filename, targetFlag, defaultTarget string) compileResult {
+	absFile, err := filepath.Abs(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
+		os.Exit(1)
+	}
+	projectDir := findProjectDir(absFile)
+
+	program, returnCounts, exprTypes, err := loadAndAnalyze(absFile)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	// Detect target from source if not provided by flag
+	if targetFlag != "" {
+		program.Target = targetFlag
+	} else {
+		t, readErr := detectTargetFromFile(absFile)
+		if readErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not read %s for target detection: %v\n", absFile, readErr)
+		}
+		if t != "" {
+			program.Target = t
+		} else if defaultTarget != "" {
+			program.Target = defaultTarget
+		}
+	}
+
+	// Generate Go code
+	gen := codegen.New(program)
+	gen.SetSourceFile(absFile)
+	gen.SetExprReturnCounts(returnCounts)
+	gen.SetExprTypes(exprTypes)
+	if program.Target == "mcp" {
+		gen.SetMCPTarget(true)
+	}
+	goCode, err := gen.Generate()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Code generation error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Format with gofmt
+	formatted, err := format.Source([]byte(goCode))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: gofmt failed, using unformatted output: %v\n", err)
+		formatted = []byte(goCode)
+	}
+
+	return compileResult{
+		absFile:    absFile,
+		projectDir: projectDir,
+		program:    program,
+		goCode:     goCode,
+		formatted:  formatted,
+	}
+}
+
+// ensureStdlibIfNeeded checks if the generated Go code imports Kukicha stdlib
+// packages and, if so, extracts the stdlib and configures go.mod.
+func ensureStdlibIfNeeded(goCode, projectDir string) {
+	if !needsStdlib(goCode, projectDir) {
+		return
+	}
+	stdlibPath, err := ensureStdlib(projectDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", err)
+		os.Exit(1)
+	}
+	if err := ensureGoMod(projectDir, stdlibPath); err != nil {
+		fmt.Fprintf(os.Stderr, "Error updating go.mod: %v\n", err)
+		os.Exit(1)
+	}
+}
+
 func detectTarget(source string) string {
 	lines := strings.Split(source, "\n")
 	for i, line := range lines {
-		if i > 10 { // Only look at first 10 lines
+		if i >= 10 { // Only look at first 10 lines
 			break
 		}
 		line = strings.TrimSpace(line)
@@ -220,88 +308,31 @@ func stripFirstLine(b []byte) []byte {
 }
 
 func buildCommand(filename string, targetFlag string, skipBuild bool, ifChanged bool, vulncheck bool) {
-	absFile, err := filepath.Abs(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
-		os.Exit(1)
-	}
-	projectDir := findProjectDir(absFile)
-
-	program, returnCounts, exprTypes, err := loadAndAnalyze(absFile)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	// Detect target from source if not provided by flag
-	if targetFlag != "" {
-		program.Target = targetFlag
-	} else {
-		t, readErr := detectTargetFromFile(absFile)
-		if readErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not read %s for target detection: %v\n", absFile, readErr)
-		}
-		if t != "" {
-			program.Target = t
-		}
-	}
-
-	// Generate Go code
-	gen := codegen.New(program)
-	gen.SetSourceFile(absFile) // Enable special transpilation detection
-	gen.SetExprReturnCounts(returnCounts)
-	gen.SetExprTypes(exprTypes)
-	if program.Target == "mcp" {
-		gen.SetMCPTarget(true)
-	}
-	goCode, err := gen.Generate()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Code generation error: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Format with gofmt
-	formatted, err := format.Source([]byte(goCode))
-	if err != nil {
-		// If formatting fails, use unformatted code (shouldn't happen)
-		formatted = []byte(goCode)
-	}
+	cr := compile(filename, targetFlag, "")
 
 	// Write Go file
-	outputFile := strings.TrimSuffix(absFile, ".kuki") + ".go"
+	outputFile := strings.TrimSuffix(cr.absFile, ".kuki") + ".go"
 
 	if ifChanged {
 		if existing, readErr := os.ReadFile(outputFile); readErr == nil {
-			if bytes.Equal(stripFirstLine(existing), stripFirstLine(formatted)) {
+			if bytes.Equal(stripFirstLine(existing), stripFirstLine(cr.formatted)) {
 				return // body unchanged — preserve old version comment, skip write+build
 			}
 		}
 	}
 
-	err = os.WriteFile(outputFile, formatted, 0644)
-	if err != nil {
+	if err := os.WriteFile(outputFile, cr.formatted, 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing output file: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Successfully compiled %s to %s\n", absFile, outputFile)
+	fmt.Printf("Successfully compiled %s to %s\n", cr.absFile, outputFile)
 
-	// If the generated code imports Kukicha stdlib, extract it and configure go.mod
-	if needsStdlib(goCode, projectDir) {
-		stdlibPath, stdlibErr := ensureStdlib(projectDir)
-		if stdlibErr != nil {
-			fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", stdlibErr)
-			os.Exit(1)
-		}
-		if modErr := ensureGoMod(projectDir, stdlibPath); modErr != nil {
-			fmt.Fprintf(os.Stderr, "Error updating go.mod: %v\n", modErr)
-			os.Exit(1)
-		}
-	}
+	ensureStdlibIfNeeded(cr.goCode, cr.projectDir)
 
 	// Determine the output binary name. When cross-compiling for Windows
 	// (GOOS=windows), append .exe so the binary is recognised as executable.
-	binaryName := strings.TrimSuffix(filepath.Base(absFile), ".kuki")
+	binaryName := strings.TrimSuffix(filepath.Base(cr.absFile), ".kuki")
 	targetOS := os.Getenv("GOOS")
 	if targetOS == "" {
 		targetOS = runtime.GOOS
@@ -309,20 +340,20 @@ func buildCommand(filename string, targetFlag string, skipBuild bool, ifChanged 
 	if targetOS == "windows" {
 		binaryName += ".exe"
 	}
-	binaryPath := filepath.Join(projectDir, binaryName)
+	binaryPath := filepath.Join(cr.projectDir, binaryName)
 
 	// Run go build on the generated file. Use -mod=mod so go.sum is updated
 	// automatically when stdlib transitive dependencies are not yet listed.
 	if !skipBuild {
 		cmd := exec.Command("go", "build", "-mod=mod", "-o", binaryPath, outputFile)
-		cmd.Dir = projectDir
+		cmd.Dir = cr.projectDir
 		cmd.Env = os.Environ()
 		cmd.Stdout = os.Stdout
 		var stderrBuf bytes.Buffer
 		cmd.Stderr = &stderrBuf
-		err = cmd.Run()
+		err := cmd.Run()
 		if stderrBuf.Len() > 0 {
-			os.Stderr.Write(rewriteGoErrors(stderrBuf.Bytes(), outputFile, absFile))
+			os.Stderr.Write(rewriteGoErrors(stderrBuf.Bytes(), outputFile, cr.absFile))
 		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: go build failed: %v\n", err)
@@ -333,7 +364,7 @@ func buildCommand(filename string, targetFlag string, skipBuild bool, ifChanged 
 	}
 
 	if vulncheck {
-		code := runAudit(AuditOptions{Dir: projectDir})
+		code := runAudit(AuditOptions{Dir: cr.projectDir})
 		if code != 0 {
 			os.Exit(code)
 		}
@@ -341,59 +372,15 @@ func buildCommand(filename string, targetFlag string, skipBuild bool, ifChanged 
 }
 
 func runCommand(filename string, targetFlag string, scriptArgs []string) {
-	absFile, err := filepath.Abs(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
-		os.Exit(1)
-	}
-	projectDir := findProjectDir(absFile)
-
-	program, returnCounts, exprTypes, err := loadAndAnalyze(absFile)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	// Detect target from source if not provided by flag
-	if targetFlag != "" {
-		program.Target = targetFlag
-	} else {
-		t, readErr := detectTargetFromFile(absFile)
-		if readErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not read %s for target detection: %v\n", absFile, readErr)
-		}
-		if t != "" {
-			program.Target = t
-		}
-	}
-
-	// Generate Go code
-	gen := codegen.New(program)
-	gen.SetSourceFile(absFile) // Enable special transpilation detection
-	gen.SetExprReturnCounts(returnCounts)
-	gen.SetExprTypes(exprTypes)
-	if program.Target == "mcp" {
-		gen.SetMCPTarget(true)
-	}
-	goCode, err := gen.Generate()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Code generation error: %v\n", err)
-		os.Exit(1)
-	}
+	cr := compile(filename, targetFlag, "")
 
 	// If stdlib is needed, extract it and ensure go.mod is configured.
 	// Keep temp source in project context so local replace directives resolve.
 	var tmp *os.File
-	if needsStdlib(goCode, projectDir) {
-		stdlibPath, stdlibErr := ensureStdlib(projectDir)
-		if stdlibErr != nil {
-			fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", stdlibErr)
-			os.Exit(1)
-		}
-		if modErr := ensureGoMod(projectDir, stdlibPath); modErr != nil {
-			fmt.Fprintf(os.Stderr, "Error updating go.mod: %v\n", modErr)
-			os.Exit(1)
-		}
-		tmp, err = os.CreateTemp(filepath.Join(projectDir, ".kukicha"), "run-*.go")
+	var err error
+	if needsStdlib(cr.goCode, cr.projectDir) {
+		ensureStdlibIfNeeded(cr.goCode, cr.projectDir)
+		tmp, err = os.CreateTemp(filepath.Join(cr.projectDir, ".kukicha"), "run-*.go")
 	} else {
 		tmp, err = os.CreateTemp("", "kukicha-run-*.go")
 	}
@@ -404,12 +391,7 @@ func runCommand(filename string, targetFlag string, scriptArgs []string) {
 	tmpFile := tmp.Name()
 	defer os.Remove(tmpFile)
 
-	formatted, fmtErr := format.Source([]byte(goCode))
-	if fmtErr != nil {
-		formatted = []byte(goCode)
-	}
-
-	if _, err := tmp.Write(formatted); err != nil {
+	if _, err := tmp.Write(cr.formatted); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing temporary file: %v\n", err)
 		os.Exit(1)
 	}
@@ -422,7 +404,7 @@ func runCommand(filename string, targetFlag string, scriptArgs []string) {
 	// stdlib transitive dependencies (e.g. gopkg.in/yaml.v3) are not yet listed.
 	goArgs := append([]string{"run", "-mod=mod", tmpFile}, scriptArgs...)
 	cmd := exec.Command("go", goArgs...)
-	cmd.Dir = projectDir
+	cmd.Dir = cr.projectDir
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	var stderrBuf bytes.Buffer
@@ -430,7 +412,7 @@ func runCommand(filename string, targetFlag string, scriptArgs []string) {
 	cmd.Stdin = os.Stdin
 	err = cmd.Run()
 	if stderrBuf.Len() > 0 {
-		os.Stderr.Write(rewriteGoErrors(stderrBuf.Bytes(), tmpFile, absFile))
+		os.Stderr.Write(rewriteGoErrors(stderrBuf.Bytes(), tmpFile, cr.absFile))
 	}
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -444,13 +426,13 @@ func runCommand(filename string, targetFlag string, scriptArgs []string) {
 func checkCommand(filename string, strictOnerr bool) {
 	source, err := os.ReadFile(filename)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Errorf("Error reading file: %v", err))
+		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
 		os.Exit(1)
 	}
 
 	p, err := parser.New(string(source), filename)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Errorf("Lexer error: %v", err))
+		fmt.Fprintf(os.Stderr, "Lexer error: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -460,7 +442,7 @@ func checkCommand(filename string, strictOnerr bool) {
 		for _, e := range parseErrors {
 			msgs = append(msgs, fmt.Sprintf("  %v", e))
 		}
-		fmt.Fprintln(os.Stderr, fmt.Errorf("Parse errors:\n%s", strings.Join(msgs, "\n")))
+		fmt.Fprintf(os.Stderr, "Parse errors:\n%s\n", strings.Join(msgs, "\n"))
 		os.Exit(1)
 	}
 
@@ -471,7 +453,7 @@ func checkCommand(filename string, strictOnerr bool) {
 		for _, e := range semanticErrors {
 			msgs = append(msgs, fmt.Sprintf("  %v", e))
 		}
-		fmt.Fprintln(os.Stderr, fmt.Errorf("Semantic errors:\n%s", strings.Join(msgs, "\n")))
+		fmt.Fprintf(os.Stderr, "Semantic errors:\n%s\n", strings.Join(msgs, "\n"))
 		os.Exit(1)
 	}
 

@@ -47,6 +47,11 @@ func fmtCommand(args []string) {
 		}
 	}
 
+	if writeInPlace && checkOnly {
+		fmt.Fprintln(os.Stderr, "Error: -w and --check are mutually exclusive")
+		os.Exit(1)
+	}
+
 	if len(files) == 0 {
 		fmt.Fprintln(os.Stderr, "Error: no files specified")
 		os.Exit(1)
@@ -63,11 +68,11 @@ func fmtCommand(args []string) {
 
 		if info.IsDir() {
 			// Find all .kuki files in directory
-			err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+			err := filepath.WalkDir(file, func(path string, d os.DirEntry, err error) error {
 				if err != nil {
 					return err
 				}
-				if !info.IsDir() && strings.HasSuffix(path, ".kuki") {
+				if !d.IsDir() && strings.HasSuffix(path, ".kuki") {
 					allFiles = append(allFiles, path)
 				}
 				return nil

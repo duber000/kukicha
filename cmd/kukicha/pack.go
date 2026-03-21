@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"go/format"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,54 +11,29 @@ import (
 	"unicode"
 
 	"github.com/duber000/kukicha/internal/ast"
-	"github.com/duber000/kukicha/internal/codegen"
 	"gopkg.in/yaml.v3"
 )
 
 func packCommand(filename string, outputDir string) {
-	absFile, err := filepath.Abs(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error resolving file path: %v\n", err)
-		os.Exit(1)
-	}
+	cr := compile(filename, "", "mcp")
 
-	// 1. Parse and analyze
-	program, returnCounts, exprTypes, err := loadAndAnalyze(absFile)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	// 2. Validate skill declaration exists
-	if program.SkillDecl == nil {
+	// Validate skill declaration exists
+	if cr.program.SkillDecl == nil {
 		fmt.Fprintln(os.Stderr, "Error: no skill declaration found in file")
 		os.Exit(1)
 	}
-	skill := program.SkillDecl
+	skill := cr.program.SkillDecl
 
-	// Detect target from source (default to mcp for skills)
-	t, readErr := detectTargetFromFile(absFile)
-	if readErr != nil {
-		fmt.Fprintf(os.Stderr, "Warning: could not read %s for target detection: %v\n", absFile, readErr)
-	}
-	if t != "" {
-		program.Target = t
-	} else {
-		program.Target = "mcp"
-	}
-
-	// 3. Determine output directory
+	// Determine output directory
 	if outputDir == "" {
-		outputDir = filepath.Join(filepath.Dir(absFile), toSnakeCase(skill.Name.Value))
+		outputDir = filepath.Join(filepath.Dir(cr.absFile), toSnakeCase(skill.Name.Value))
 	}
 
-	// 4. Extract function schemas from AST
-	functions := extractFunctionSchemas(program)
-
-	// 5. Generate SKILL.md
+	// Extract function schemas from AST and generate SKILL.md
+	functions := extractFunctionSchemas(cr.program)
 	skillMD := generateSkillMD(skill, functions)
 
-	// 6. Create output directory structure
+	// Create output directory structure
 	scriptsDir := filepath.Join(outputDir, "scripts")
 	if err := os.MkdirAll(scriptsDir, 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating output directory: %v\n", err)
@@ -74,43 +48,14 @@ func packCommand(filename string, outputDir string) {
 	}
 	fmt.Printf("Generated %s\n", skillMDPath)
 
-	// 7. Compile binary with target=mcp
-	gen := codegen.New(program)
-	gen.SetSourceFile(absFile)
-	gen.SetExprReturnCounts(returnCounts)
-	gen.SetExprTypes(exprTypes)
-	gen.SetMCPTarget(true)
-	goCode, err := gen.Generate()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Code generation error: %v\n", err)
-		os.Exit(1)
-	}
-
-	formatted, fmtErr := format.Source([]byte(goCode))
-	if fmtErr != nil {
-		formatted = []byte(goCode)
-	}
-
-	// Write Go file to temp location for building
-	goFile := strings.TrimSuffix(absFile, ".kuki") + ".go"
-	if err := os.WriteFile(goFile, formatted, 0644); err != nil {
+	// Write Go file for building
+	goFile := strings.TrimSuffix(cr.absFile, ".kuki") + ".go"
+	if err := os.WriteFile(goFile, cr.formatted, 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing Go file: %v\n", err)
 		os.Exit(1)
 	}
 
-	// If the generated code imports Kukicha stdlib, extract it and configure go.mod
-	projectDir := findProjectDir(absFile)
-	if needsStdlib(goCode, projectDir) {
-		stdlibPath, stdlibErr := ensureStdlib(projectDir)
-		if stdlibErr != nil {
-			fmt.Fprintf(os.Stderr, "Error extracting stdlib: %v\n", stdlibErr)
-			os.Exit(1)
-		}
-		if modErr := ensureGoMod(projectDir, stdlibPath); modErr != nil {
-			fmt.Fprintf(os.Stderr, "Error updating go.mod: %v\n", modErr)
-			os.Exit(1)
-		}
-	}
+	ensureStdlibIfNeeded(cr.goCode, cr.projectDir)
 
 	// Build binary into scripts/
 	binaryName := toSnakeCase(skill.Name.Value)
@@ -123,14 +68,14 @@ func packCommand(filename string, outputDir string) {
 	}
 	binaryPath := filepath.Join(scriptsDir, binaryName)
 	cmd := exec.Command("go", "build", "-o", binaryPath, goFile)
-	cmd.Dir = projectDir
+	cmd.Dir = cr.projectDir
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	var stderrBuf bytes.Buffer
 	cmd.Stderr = &stderrBuf
 	if err := cmd.Run(); err != nil {
 		if stderrBuf.Len() > 0 {
-			os.Stderr.Write(rewriteGoErrors(stderrBuf.Bytes(), goFile, absFile))
+			os.Stderr.Write(rewriteGoErrors(stderrBuf.Bytes(), goFile, cr.absFile))
 		}
 		fmt.Fprintf(os.Stderr, "Error building binary: %v\n", err)
 		os.Exit(1)
@@ -323,13 +268,22 @@ func defaultValueToYAML(expr ast.Expression) (any, bool) {
 	return nil, false
 }
 
-// toSnakeCase converts PascalCase to snake_case
+// toSnakeCase converts PascalCase to snake_case, handling consecutive
+// uppercase letters (acronyms) correctly: "HTTPClient" → "http_client".
 func toSnakeCase(s string) string {
+	runes := []rune(s)
 	var result strings.Builder
-	for i, r := range s {
+	for i, r := range runes {
 		if unicode.IsUpper(r) {
 			if i > 0 {
-				result.WriteByte('_')
+				prev := runes[i-1]
+				// Insert underscore before an uppercase letter when:
+				// - previous char is lowercase (e.g., "tC" in "getClient")
+				// - previous char is uppercase AND next char is lowercase
+				//   (e.g., "PC" in "HTTPClient" at the 'C' of "Client")
+				if unicode.IsLower(prev) || (unicode.IsUpper(prev) && i+1 < len(runes) && unicode.IsLower(runes[i+1])) {
+					result.WriteByte('_')
+				}
 			}
 			result.WriteRune(unicode.ToLower(r))
 		} else {

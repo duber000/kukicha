@@ -101,7 +101,9 @@ func ensureStdlib(projectDir string) (string, error) {
 			return stdlibPath, nil
 		}
 		// Version mismatch — remove stale cache and re-extract.
-		_ = os.RemoveAll(stdlibPath)
+		if err := os.RemoveAll(stdlibPath); err != nil {
+			return "", fmt.Errorf("removing stale stdlib cache: %w", err)
+		}
 	}
 
 	// Extract from embedded FS
