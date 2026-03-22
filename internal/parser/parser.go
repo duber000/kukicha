@@ -127,9 +127,9 @@ func parseDirective(t lexer.Token) ast.Directive {
 	// Split into name and remaining args
 	name := content
 	var args []string
-	if idx := strings.IndexByte(content, ' '); idx >= 0 {
-		name = content[:idx]
-		argStr := strings.TrimSpace(content[idx+1:])
+	if before, after, ok := strings.Cut(content, " "); ok {
+		name = before
+		argStr := strings.TrimSpace(after)
 		if argStr != "" {
 			// Parse quoted strings as single args, unquoted as space-split
 			args = parseDirectiveArgs(argStr)

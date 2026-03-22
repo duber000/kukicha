@@ -167,7 +167,6 @@ type BufferPtr
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p, err := parser.New(tt.source, "test.kuki")
@@ -289,7 +288,6 @@ func main()
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p, err := parser.New(tt.source, "test.kuki")

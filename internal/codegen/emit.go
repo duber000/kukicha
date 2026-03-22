@@ -57,7 +57,7 @@ func (g *Generator) emitIRNode(node ir.Node) {
 
 	case *ir.RawStmt:
 		if strings.Contains(n.Code, "\n") {
-			for _, line := range strings.Split(n.Code, "\n") {
+			for line := range strings.SplitSeq(n.Code, "\n") {
 				g.writeLine(line)
 			}
 		} else {

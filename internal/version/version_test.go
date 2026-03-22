@@ -41,7 +41,6 @@ func TestVersionShape(t *testing.T) {
 	}
 
 	for _, check := range checks {
-		check := check
 		t.Run(check.name, func(t *testing.T) {
 			t.Parallel()
 			check.run(t)

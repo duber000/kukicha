@@ -172,8 +172,8 @@ func extractSignatures(imp types.Importer, specs []funcSpec) ([]entry, []error) 
 					QualifiedName: qualName,
 					ReturnCount:   results.Len(),
 				}
-				for i := 0; i < results.Len(); i++ {
-					e.Returns = append(e.Returns, goTypeToRepr(results.At(i).Type()))
+				for v := range results.Variables() {
+					e.Returns = append(e.Returns, goTypeToRepr(v.Type()))
 				}
 				entries = append(entries, e)
 			} else if typeName, ok := obj.(*types.TypeName); ok {
@@ -189,8 +189,8 @@ func extractSignatures(imp types.Importer, specs []funcSpec) ([]entry, []error) 
 				// Use MethodSet on pointer type to get both pointer and value methods
 				ptr := types.NewPointer(named)
 				mset := types.NewMethodSet(ptr)
-				for i := 0; i < mset.Len(); i++ {
-					m := mset.At(i).Obj().(*types.Func)
+				for method := range mset.Methods() {
+					m := method.Obj().(*types.Func)
 					if !m.Exported() {
 						continue
 					}
@@ -215,8 +215,8 @@ func extractSignatures(imp types.Importer, specs []funcSpec) ([]entry, []error) 
 						ReturnCount:   results.Len(),
 					}
 
-					for j := 0; j < results.Len(); j++ {
-						repr := goTypeToRepr(results.At(j).Type())
+					for v := range results.Variables() {
+						repr := goTypeToRepr(v.Type())
 						eVal.Returns = append(eVal.Returns, repr)
 						ePtr.Returns = append(ePtr.Returns, repr)
 					}
@@ -317,8 +317,8 @@ func isErrorType(t types.Type) bool {
 	if !ok {
 		return false
 	}
-	for i := 0; i < iface.NumMethods(); i++ {
-		m := iface.Method(i)
+	for m := range iface.Methods() {
+		m := m
 		if m.Name() == "Error" {
 			sig := m.Type().(*types.Signature)
 			if sig.Params().Len() == 0 && sig.Results().Len() == 1 {

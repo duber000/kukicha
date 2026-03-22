@@ -11,7 +11,7 @@ import (
 )
 
 //line /var/home/tluker/repos/go/kukicha/examples/duckdb/main.kuki:8
-func mustExec(db *sql.DB, query string, args ...interface{}) sql.Result {
+func mustExec(db *sql.DB, query string, args ...any) sql.Result {
 //line /var/home/tluker/repos/go/kukicha/examples/duckdb/main.kuki:9
 	result, err_1 := db.Exec(query, args...)
 	if err_1 != nil {

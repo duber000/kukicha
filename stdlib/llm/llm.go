@@ -915,13 +915,13 @@ type Response struct {
 	Status             string            `json:"status"`
 	Model              string            `json:"model"`
 	Output             []OutputItem      `json:"output"`
-	Error              ResponseError     `json:"error,omitempty"`
+	Error              ResponseError     `json:"error,omitzero"`
 	PreviousResponseID string            `json:"previous_response_id,omitempty"`
 	Instructions       string            `json:"instructions,omitempty"`
 	Temperature        float64           `json:"temperature,omitempty"`
 	TopP               float64           `json:"top_p,omitempty"`
 	MaxOutputTokens    int               `json:"max_output_tokens,omitempty"`
-	Usage              ResponseUsage     `json:"usage,omitempty"`
+	Usage              ResponseUsage     `json:"usage,omitzero"`
 	Tools              []any             `json:"tools,omitempty"`
 	ToolChoice         any               `json:"tool_choice,omitempty"`
 	Truncation         string            `json:"truncation,omitempty"`
@@ -953,11 +953,11 @@ type ResponseRequest struct {
 type StreamEvent struct {
 	Type           string     `json:"type"`
 	SequenceNumber int        `json:"sequence_number"`
-	Response       Response   `json:"response,omitempty"`
+	Response       Response   `json:"response,omitzero"`
 	OutputIndex    int        `json:"output_index,omitempty"`
 	ContentIndex   int        `json:"content_index,omitempty"`
 	ItemID         string     `json:"item_id,omitempty"`
-	Item           OutputItem `json:"item,omitempty"`
+	Item           OutputItem `json:"item,omitzero"`
 	Delta          string     `json:"delta,omitempty"`
 	Text           string     `json:"text,omitempty"`
 	Part           any        `json:"part,omitempty"`
@@ -1905,10 +1905,10 @@ type MessagesRequest struct {
 type AnthropicStreamEvent struct {
 	Type         string            `json:"type"`
 	Index        int               `json:"index,omitempty"`
-	Message      AnthropicResponse `json:"message,omitempty"`
-	ContentBlock ContentBlock      `json:"content_block,omitempty"`
-	Delta        AnthropicDelta    `json:"delta,omitempty"`
-	Usage        AnthropicUsage    `json:"usage,omitempty"`
+	Message      AnthropicResponse `json:"message,omitzero"`
+	ContentBlock ContentBlock      `json:"content_block,omitzero"`
+	Delta        AnthropicDelta    `json:"delta,omitzero"`
+	Usage        AnthropicUsage    `json:"usage,omitzero"`
 }
 
 //line /var/home/tluker/repos/go/kukicha/stdlib/llm/llm.kuki:1485

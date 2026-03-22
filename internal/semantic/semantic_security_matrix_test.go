@@ -72,7 +72,6 @@ func Good(pool pg.Pool)
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p, err := parser.New(tt.source, "test.kuki")
@@ -141,7 +140,6 @@ func Handle(w http.ResponseWriter, r reference http.Request)
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p, err := parser.New(tt.source, "test.kuki")
@@ -224,7 +222,6 @@ func FetchData(url string) (string, error)
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p, err := parser.New(tt.source, "test.kuki")
@@ -303,7 +300,6 @@ func LoadConfig(path string) (list of byte, error)
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p, err := parser.New(tt.source, "test.kuki")
@@ -368,7 +364,6 @@ func RunStatus() (string, error)
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p, err := parser.New(tt.source, "test.kuki")
@@ -444,7 +439,6 @@ func Handle(w http.ResponseWriter, r reference http.Request)
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p, err := parser.New(tt.source, "test.kuki")

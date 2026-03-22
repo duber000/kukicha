@@ -2,6 +2,7 @@ package semantic
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
 )
@@ -108,16 +109,16 @@ func (tk TypeKind) String() string {
 // TypeInfo represents type information
 type TypeInfo struct {
 	Kind         TypeKind
-	Name         string      // For named types and placeholders
-	ElementType  *TypeInfo   // For lists, channels, references
-	KeyType      *TypeInfo   // For maps
-	ValueType    *TypeInfo   // For maps
-	Params       []*TypeInfo // For functions
-	Returns      []*TypeInfo // For functions
-	Constraint   string      // For placeholders: "any", "comparable", "cmp.Ordered"
-	Variadic     bool        // For functions: true if last param is variadic
-	ParamNames   []string    // For functions: parameter names (for named argument validation)
-	DefaultCount int         // For functions: number of parameters with default values
+	Name         string               // For named types and placeholders
+	ElementType  *TypeInfo            // For lists, channels, references
+	KeyType      *TypeInfo            // For maps
+	ValueType    *TypeInfo            // For maps
+	Params       []*TypeInfo          // For functions
+	Returns      []*TypeInfo          // For functions
+	Constraint   string               // For placeholders: "any", "comparable", "cmp.Ordered"
+	Variadic     bool                 // For functions: true if last param is variadic
+	ParamNames   []string             // For functions: parameter names (for named argument validation)
+	DefaultCount int                  // For functions: number of parameters with default values
 	Fields       map[string]*TypeInfo // For structs: field name → field type
 	Methods      map[string]*TypeInfo // For structs: method name → function TypeInfo
 }
@@ -153,12 +154,12 @@ func (ti *TypeInfo) String() string {
 		}
 		return "reference"
 	case TypeKindFunction:
-		params := ""
+		var params strings.Builder
 		for i, p := range ti.Params {
 			if i > 0 {
-				params += ", "
+				params.WriteString(", ")
 			}
-			params += p.String()
+			params.WriteString(p.String())
 		}
 		returns := ""
 		for i, r := range ti.Returns {
@@ -168,9 +169,9 @@ func (ti *TypeInfo) String() string {
 			returns += r.String()
 		}
 		if returns != "" {
-			return fmt.Sprintf("func(%s) %s", params, returns)
+			return fmt.Sprintf("func(%s) %s", params.String(), returns)
 		}
-		return fmt.Sprintf("func(%s)", params)
+		return fmt.Sprintf("func(%s)", params.String())
 	default:
 		return ti.Kind.String()
 	}

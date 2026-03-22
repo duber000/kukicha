@@ -750,7 +750,7 @@ func TestDeeplyNestedIndentation(t *testing.T) {
 	}
 
 	// Count tab depth — innermost return should have 11 tabs
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		trimmed := strings.TrimLeft(line, "\t")
 		if strings.Contains(trimmed, "return n") {
 			tabs := len(line) - len(trimmed)

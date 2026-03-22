@@ -301,8 +301,8 @@ func rewriteGoErrors(stderr []byte, goFile, kukiFile string) []byte {
 // stripFirstLine removes the first line (including its newline) from b.
 // Used to compare generated Go files while ignoring the version header.
 func stripFirstLine(b []byte) []byte {
-	if i := bytes.IndexByte(b, '\n'); i >= 0 {
-		return b[i+1:]
+	if _, after, ok := bytes.Cut(b, []byte{'\n'}); ok {
+		return after
 	}
 	return b
 }

@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/duber000/kukicha/internal/ast"
@@ -483,12 +484,7 @@ func (g *Generator) needsStringInterpolation() bool {
 // block would require fmt.Sprintf (i.e., is not the format string of a printf-style
 // method call).
 func (g *Generator) blockHasNonPrintfInterpolation(block *ast.BlockStmt) bool {
-	for _, stmt := range block.Statements {
-		if g.stmtHasNonPrintfInterpolation(stmt) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(block.Statements, g.stmtHasNonPrintfInterpolation)
 }
 
 // stmtHasNonPrintfInterpolation recurses through a statement checking for
@@ -496,28 +492,22 @@ func (g *Generator) blockHasNonPrintfInterpolation(block *ast.BlockStmt) bool {
 func (g *Generator) stmtHasNonPrintfInterpolation(stmt ast.Statement) bool {
 	switch s := stmt.(type) {
 	case *ast.VarDeclStmt:
-		for _, v := range s.Values {
-			if g.exprHasNonPrintfInterpolation(v) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.exprHasNonPrintfInterpolation) {
+			return true
 		}
 		if s.OnErr != nil && g.exprHasNonPrintfInterpolation(s.OnErr.Handler) {
 			return true
 		}
 	case *ast.AssignStmt:
-		for _, v := range s.Values {
-			if g.exprHasNonPrintfInterpolation(v) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.exprHasNonPrintfInterpolation) {
+			return true
 		}
 		if s.OnErr != nil && g.exprHasNonPrintfInterpolation(s.OnErr.Handler) {
 			return true
 		}
 	case *ast.ReturnStmt:
-		for _, v := range s.Values {
-			if g.exprHasNonPrintfInterpolation(v) {
-				return true
-			}
+		if slices.ContainsFunc(s.Values, g.exprHasNonPrintfInterpolation) {
+			return true
 		}
 	case *ast.IfStmt:
 		if g.exprHasNonPrintfInterpolation(s.Condition) {
@@ -568,10 +558,8 @@ func (g *Generator) stmtHasNonPrintfInterpolation(stmt ast.Statement) bool {
 			return true
 		}
 		for _, c := range s.Cases {
-			for _, v := range c.Values {
-				if g.exprHasNonPrintfInterpolation(v) {
-					return true
-				}
+			if slices.ContainsFunc(c.Values, g.exprHasNonPrintfInterpolation) {
+				return true
 			}
 			if c.Body != nil && g.blockHasNonPrintfInterpolation(c.Body) {
 				return true
@@ -663,10 +651,8 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 		if g.exprHasNonPrintfInterpolation(e.Function) {
 			return true
 		}
-		for _, arg := range e.Arguments {
-			if g.exprHasNonPrintfInterpolation(arg) {
-				return true
-			}
+		if slices.ContainsFunc(e.Arguments, g.exprHasNonPrintfInterpolation) {
+			return true
 		}
 		for _, na := range e.NamedArguments {
 			if g.exprHasNonPrintfInterpolation(na.Value) {
@@ -702,16 +688,12 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 	case *ast.PanicExpr:
 		return g.exprHasNonPrintfInterpolation(e.Message)
 	case *ast.ReturnExpr:
-		for _, v := range e.Values {
-			if g.exprHasNonPrintfInterpolation(v) {
-				return true
-			}
+		if slices.ContainsFunc(e.Values, g.exprHasNonPrintfInterpolation) {
+			return true
 		}
 	case *ast.MakeExpr:
-		for _, arg := range e.Args {
-			if g.exprHasNonPrintfInterpolation(arg) {
-				return true
-			}
+		if slices.ContainsFunc(e.Args, g.exprHasNonPrintfInterpolation) {
+			return true
 		}
 	case *ast.CloseExpr:
 		return g.exprHasNonPrintfInterpolation(e.Channel)
@@ -744,10 +726,8 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 			}
 		}
 	case *ast.ListLiteralExpr:
-		for _, elem := range e.Elements {
-			if g.exprHasNonPrintfInterpolation(elem) {
-				return true
-			}
+		if slices.ContainsFunc(e.Elements, g.exprHasNonPrintfInterpolation) {
+			return true
 		}
 	case *ast.MapLiteralExpr:
 		for _, pair := range e.Pairs {
@@ -777,10 +757,8 @@ func (g *Generator) exprHasNonPrintfInterpolation(expr ast.Expression) bool {
 		switch s := e.Switch.(type) {
 		case *ast.SwitchStmt:
 			for _, c := range s.Cases {
-				for _, v := range c.Values {
-					if g.exprHasNonPrintfInterpolation(v) {
-						return true
-					}
+				if slices.ContainsFunc(c.Values, g.exprHasNonPrintfInterpolation) {
+					return true
 				}
 				if c.Body != nil && g.blockHasNonPrintfInterpolation(c.Body) {
 					return true

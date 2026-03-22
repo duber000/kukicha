@@ -304,7 +304,6 @@ func main()
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p, err := parser.New(tt.source, "test.kuki")
@@ -403,10 +402,10 @@ func main()
 		expected bool
 	}{
 		{"error", true},
-		{"Storer", true},     // local interface
-		{"io.Reader", true},  // Go stdlib interface
+		{"Storer", true},    // local interface
+		{"io.Reader", true}, // Go stdlib interface
 		{"http.Handler", true},
-		{"User", false},      // unknown type, not interface
+		{"User", false}, // unknown type, not interface
 		{"int", false},
 	}
 
