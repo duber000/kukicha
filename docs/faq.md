@@ -4,10 +4,6 @@
 
 **Why not just keep writing bash scripts?**
 
-Bash is great for quick one-liners. But once your script hits a few hundred lines, you start running into problems: quoting issues, no real data structures, `set -e` surprises, no type safety.
-
-Kukicha keeps the parts of shell scripting that work — pipes, running commands, readable flow — and adds real types, proper error handling, and compiled binaries.
-
 | Bash Pain Point | Kukicha Solution |
 |---|---|
 | Quoting hell (`"${var}"`) | `{var}` in strings |
@@ -40,7 +36,7 @@ The syntax will feel familiar — `and`/`or`/`not`, indentation, `for x in items
 | `try: ... except Exception as e:` | `result onerr return` |
 | `[x for x in items if pred(x)]` | `items \|> slice.Filter((x T) => pred(x))` |
 
-If your work is ML/data science, Python's ecosystem (numpy, pandas, PyTorch) has no equivalent here. Kukicha is aimed at infrastructure automation, CLI tools, and AI agent tooling.
+If your work is ML/data science, stick with Python — Kukicha is aimed at CLI tools, automation, and AI agent tooling.
 
 **Where to start:** [Beginner Tutorial](tutorials/absolute-beginner-tutorial.md) or skim and jump to the [Quick Reference](kukicha-quick-reference.md).
 
@@ -82,25 +78,6 @@ Use `_` to control where the piped value lands when it isn't the first argument:
 todo |> json.MarshalWrite(response, _)  # Becomes: json.MarshalWrite(response, todo)
 ```
 
-**Piped switch** lets you pipe into control flow without intermediate variables:
-
-```kukicha
-user.Role |> switch
-    when "admin"
-        grantAccess()
-    otherwise
-        checkPermissions()
-```
-
-**Pipeline-level onerr** catches errors from any step in a pipe chain:
-
-```kukicha
-items := fetch.Get(url)
-    |> fetch.CheckStatus()
-    |> fetch.Json(list of Repo)
-    onerr panic "pipeline failed: {error}"
-```
-
 **Where to start:** [Quick Reference](kukicha-quick-reference.md) — it's a direct Go-to-Kukicha translation table.
 
 ---
@@ -126,36 +103,7 @@ No. The compiler transpiles your code to standard, idiomatic Go. Once compiled b
 
 Yes. Import any Go package (standard library or third-party) and use it directly. The compiler trusts external packages it hasn't seen before, giving you the full Go ecosystem.
 
-### Does Kukicha support named arguments and default parameters?
-
-Yes.
-
-```kukicha
-func Connect(host string, port int = 8080, timeout int = 30)
-    # ...
-
-Connect("localhost", timeout: 60)
-Connect("api.example.com", port: 443, timeout: 120)
-```
-
-Named arguments must come after positional arguments. Parameters with defaults must come after those without.
-
-### Does the Kukicha standard library depend on third-party packages?
-
-Most packages use only Go's standard library. The exceptions are packages that wrap functionality Go simply doesn't provide:
-
-| Package | Dependency | Reason |
-|---------|-----------|--------|
-| `stdlib/parse` | `gopkg.in/yaml.v3` | No built-in YAML parser |
-| `stdlib/pg` | `github.com/jackc/pgx/v5` | No built-in PostgreSQL driver |
-| `stdlib/container` | `github.com/docker/docker/client` | No built-in Docker SDK |
-| `stdlib/kube` | `k8s.io/client-go` | No built-in Kubernetes client |
-| `stdlib/mcp` | `github.com/modelcontextprotocol/go-sdk/mcp` | No built-in MCP support |
-| `stdlib/a2a` | `github.com/a2aproject/a2a-go` | No built-in A2A protocol |
-
-`go mod tidy` pulls in the relevant dependency when you import one of these packages.
-
-### Which languages which this inspired by
+### Which languages was this inspired by
 
 Besides go, so far Python, Elixir and Nim
 
@@ -164,7 +112,3 @@ Besides go, so far Python, Elixir and Nim
 Yes, applications will become specialized neural micro-models whose weights encode behavior; vector embeddings will replace rigid syntax, control flow is differentiable and self-adjusting, and correctness is ensured through formal mathematical proofs instead of tests.
 
 But in the meantime let's try and keep a human in the loop!
-
-### Will Kukicha add macros or metaprogramming?
-
-No. Kukicha deliberately avoids macros, compile-time code generation, and metaprogramming. The generated Go code should be predictable — what you write is what you get, with no hidden transformations. Macros add a layer of indirection that makes code harder to read, debug, and review, which directly contradicts the goal of keeping a human in the loop. If you need compile-time customization, write a Go generator or use `go generate` — Kukicha's output is standard Go, so the entire Go toolchain is available.

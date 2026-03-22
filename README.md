@@ -55,24 +55,15 @@ func main()
 
 ## What to Read in Agent-Generated Code
 
-When AI writes Kukicha for you, here's the decoder ring:
+Most of the syntax above reads naturally, but you'll see a few things worth knowing:
 
 | You'll see | It means |
 |-----------|---------|
-| `onerr panic "message"` | If this fails, crash with message |
-| `onerr return` | If this fails, pass the error up |
-| `onerr 0` or `onerr "unknown"` | If this fails, use this default value |
-| `\|>` | Then pass result to the next step |
-| `expr \|> switch` | Pipe a value into a switch (choose based on it) |
-| `expr \|> switch as v` | Pipe a value into a type switch (branch on its type) |
-| `list of string` | A collection of text values |
+| `onerr return` | If this fails, pass the error up to the caller |
+| `onerr 0` or `onerr "default"` | If this fails, use this default value instead |
 | `map of string to int` | A lookup table: text key → number |
 | `reference User` | A reference to a User (like a bookmark) |
-| `(x) => x + 1` | A shorthand function: given x, return x + 1 |
-| `for item in items` | Do this for each item |
-| `:=` | Create a new variable |
 | `defer f()` | Clean up when this function exits |
-| `petiole main` | This file belongs to the `main` package |
 
 **Key question when reviewing:** Does each `onerr` say what to do when something fails? If it panics, is that appropriate? If it returns an error, will the caller handle it?
 
@@ -151,46 +142,7 @@ func main()
 
 Compile to a single binary and register it with Claude Desktop or any MCP-compatible agent.
 
-### A Simple Automation Script
-
-```kukicha
-import "stdlib/files"
-import "stdlib/string"
-
-func main()
-    content := "notes.txt" |> files.Read() onerr panic "can't read file: {error}"
-    lines := content |> string.Split("\n")
-    for line in lines
-        if line |> string.Contains("TODO")
-            print(line)
-```
-
-Read a file, find every line containing "TODO", and print them out.
-
-### A CLI Release Tool
-
-```kukicha
-import "stdlib/cli"
-import "stdlib/semver"
-import "stdlib/shell"
-import "stdlib/sort"
-import "stdlib/table"
-
-func main()
-    repos := listMyRepos() onerr panic "{error}"
-    entries := repos
-        |> slice.Map(r => buildEntry(r, bump))
-        |> sort.ByKey(e => e.name)
-
-    t := table.New(list of string{"repo", "current", "next"})
-    for entry in entries
-        t = t |> table.AddRow(list of string{entry.name, entry.current, entry.next})
-    t |> table.Print()
-```
-
-Parse semver tags, sort repos, and display a formatted table — all with stdlib pipes. See the full [gh-semver-release](examples/gh-semver-release/main.kuki) example.
-
-**More examples:** [AI commit messages](docs/tutorials/data-scripting-tutorial.md), [Concurrent URL health checker](docs/tutorials/concurrent-url-health-checker.md), [REST API link shortener](docs/tutorials/web-app-tutorial.md), [CLI repo explorer](docs/tutorials/cli-explorer-tutorial.md)
+**More examples:** [Automation scripts](docs/tutorials/data-scripting-tutorial.md), [CLI tools](docs/tutorials/cli-explorer-tutorial.md), [Concurrent health checker](docs/tutorials/concurrent-url-health-checker.md), [REST API server](docs/tutorials/web-app-tutorial.md), [Release tooling](examples/gh-semver-release/main.kuki)
 
 ---
 
