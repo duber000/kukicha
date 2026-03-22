@@ -41,7 +41,7 @@ type Repo
     stars int as "stargazers_count"
     language string as "language"
 
-func main()
+function main()
     repos := fetch.Get("https://api.github.com/users/golang/repos")
         |> fetch.CheckStatus()
         |> fetch.Json(list of Repo) onerr panic "fetch failed: {error}"
@@ -58,22 +58,6 @@ func main()
 ```
 
 **What just happened:** Fetch repos from GitHub, keep the popular ones, sort by stars, print a formatted table. The `|>` pipe passes results between steps. `onerr panic` means "if something fails, stop and show this message." Four stdlib packages, zero boilerplate.
-
----
-
-## What to Read in Agent-Generated Code
-
-Most of the syntax above reads naturally, but you'll see a few things worth knowing:
-
-| You'll see | It means |
-|-----------|---------|
-| `onerr return` | If this fails, pass the error up to the caller |
-| `onerr 0` or `onerr "default"` | If this fails, use this default value instead |
-| `map of string to int` | A lookup table: text key → number |
-| `reference User` | A reference to a User (like a bookmark) |
-| `defer f()` | Clean up when this function exits |
-
-**Key question when reviewing:** Does each `onerr` say what to do when something fails? If it panics, is that appropriate? If it returns an error, will the caller handle it?
 
 ---
 
@@ -136,12 +120,13 @@ kukicha run hello.kuki
 import "stdlib/mcp"
 import "stdlib/fetch"
 
-func getPrice(symbol string) string
+function getPrice(symbol string) string
     price := fetch.Get("https://api.example.com/price/{symbol}")
         |> fetch.CheckStatus()
         |> fetch.Text() onerr return "unavailable"
     return "{symbol}: {price}"
 
+# you can use functon or func to define a function
 func main()
     server := mcp.NewServer()
     server |> mcp.Tool("get_price", "Get stock price by ticker symbol", getPrice)
@@ -160,9 +145,7 @@ Kukicha compiles to Go — single binaries, goroutines, strong typing, memory sa
 
 But readability alone isn't enough. AI writes [nearly half of all committed code](https://shiftmag.dev/state-of-code-2025-7978/), yet [45% of it contains security flaws](https://www.veracode.com/blog/genai-code-security-report/) and AI-generated code introduces [1.7x more issues](https://www.coderabbit.ai/blog/state-of-ai-vs-human-code-generation-report). In 2026, [security debt hit 82% of organizations](https://www.veracode.com/resources/analyst-reports/state-of-software-security-2026/) and AI-generated code [introduces 15–18% more security vulnerabilities](https://opsera.ai/resources/report/ai-coding-impact-2025-benchmark-report/) at enterprise scale.
 
-The Kukicha compiler catches common AI-generated vulnerabilities **at build time** — SQL injection, XSS, SSRF, path traversal, command injection, and open redirects — and tells both you and the AI agent what safe alternative to use instead.
-
-AI is the writer. You are the editor.
+The Kukicha compiler catches common AI-generated vulnerabilities **at build time** — SQL injection, XSS, SSRF, path traversal, command injection, and open redirects while telling both you and the AI agent what safe alternative to use instead.
 
 ---
 
