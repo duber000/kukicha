@@ -3,13 +3,8 @@
 petiole maps_test
 
 import "stdlib/maps"
+import "stdlib/slice"
 import "testing"
-
-func containsValue(items list of any, target any) bool
-    for item in items
-        if item == target
-            return true
-    return false
 
 # Test Keys, Values, and Contains helpers
 func TestMapHelpers(t reference testing.T)
@@ -19,13 +14,13 @@ func TestMapHelpers(t reference testing.T)
     keys := maps.Keys(sample)
     if len(keys) != 2
         t.Fatalf("Expected 2 keys, got {len(keys)}")
-    if not containsValue(keys, "a")
+    if not slice.Contains(keys, "a")
         t.Errorf("Keys should include 'a'")
 
     values := maps.Values(sample)
     if len(values) != 2
         t.Fatalf("Expected 2 values, got {len(values)}")
-    if not containsValue(values, "2")
+    if not slice.Contains(values, "2")
         t.Errorf("Values should include '2'")
 
     if not maps.Contains(sample, "a")
@@ -48,11 +43,11 @@ func TestMerge(t reference testing.T)
     merged := maps.Merge(base, overlay)
     if len(merged) != 3
         t.Fatalf("Expected 3 keys, got {len(merged)}")
-    if not containsValue(list of any{merged["a"]}, "1")
+    if merged["a"] != "1"
         t.Errorf("Merge should keep base key 'a'")
-    if not containsValue(list of any{merged["b"]}, "99")
+    if merged["b"] != "99"
         t.Errorf("Merge should prefer overlay value for 'b'")
-    if not containsValue(list of any{merged["c"]}, "3")
+    if merged["c"] != "3"
         t.Errorf("Merge should include overlay key 'c'")
 
 # --- TestSortedKeys ---

@@ -572,7 +572,6 @@ func watchPodsWithContext(h ctx.Handle, c Cluster) (list of PodEvent, error)
                     phase: p.Status.Phase as string,
                     ready: ready,
                 })
-    return events, empty
 
 # WatchPods streams pod events for the namespace and returns collected events until timeout.
 # timeoutSeconds <= 0 defaults to 30 seconds.

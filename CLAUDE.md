@@ -380,6 +380,8 @@ The compiler enforces SQL injection, XSS, SSRF, path traversal, command injectio
 make build                # Build the kukicha compiler
 make test                 # Run all tests
 make lint                 # Run golangci-lint (errcheck, unused, staticcheck, etc.)
+make vet                  # Run go vet on everything including stdlib
+make modernize            # Check for outdated Go patterns (go fix -diff)
 make generate             # Regenerate stdlib_registry_gen.go + all stdlib .go files
 make genstdlibregistry    # Regenerate only internal/semantic/stdlib_registry_gen.go
 make gengostdlib          # Regenerate only internal/semantic/go_stdlib_gen.go
@@ -441,6 +443,8 @@ Use `as alias` whenever the package's last path segment clashes with a local var
 4. **Explicit function signatures** - Parameters and return types must be declared
 5. **Test with `make test`** - Run the full test suite
 6. **Lint with `make lint`** - Catch unused code, unchecked errors, and other issues
+7. **Vet with `make vet`** - Catch bugs in stdlib that golangci-lint excludes
+8. **Modernize with `make modernize`** - Ensure generated Go uses current patterns
 
 ## Adding Features to the Compiler
 

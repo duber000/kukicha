@@ -4,80 +4,75 @@ package maps
 
 import (
 	"fmt"
+	gomaps "maps"
 	"sort"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:11
-func Keys(m map[any]any) []any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:12
-	keys := make([]any, 0, len(m))
+func Keys(m map[any]any) []any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:13
-	for k := range m {
+	keys := make([]any, 0, len(m))
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:14
+	for k := range m {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:15
 		keys = append(keys, k)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:15
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:16
 	return keys
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:19
-func Values(m map[any]any) []any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:20
-	values := make([]any, 0, len(m))
+func Values(m map[any]any) []any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:21
-	for _, v := range m {
+	values := make([]any, 0, len(m))
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:22
+	for _, v := range m {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:23
 		values = append(values, v)
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:23
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:24
 	return values
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:26
-func Contains(m map[any]any, key any) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:27
-	_, ok := m[key]
+func Contains(m map[any]any, key any) bool {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:28
-	return ok
-}
-
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:31
-func Has(m map[any]any, key any) bool {
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:32
 	_, ok := m[key]
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:33
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:29
 	return ok
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:37
-func Merge(base map[any]any, overlay map[any]any) map[any]any {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:32
+func Has(m map[any]any, key any) bool {
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:33
+	_, ok := m[key]
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:34
+	return ok
+}
+
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:38
-	result := make(map[any]any, (len(base) + len(overlay)))
+func Merge(base map[any]any, overlay map[any]any) map[any]any {
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:39
-	for k, v := range base {
+	result := make(map[any]any, (len(base) + len(overlay)))
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:40
-		result[k] = v
-	}
+	gomaps.Copy(result, base)
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:41
-	for k, v := range overlay {
+	gomaps.Copy(result, overlay)
 //line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:42
-		result[k] = v
-	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:43
 	return result
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:49
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:48
 func SortedKeys(m map[any]any) []string {
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:50
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:49
 	keys := make([]string, 0, len(m))
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:51
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:50
 	for k := range m {
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:52
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:51
 		keys = append(keys, fmt.Sprint(k))
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:53
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:52
 	sort.Strings(keys)
-//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:54
+//line /var/home/tluker/repos/go/kukicha/stdlib/maps/maps.kuki:53
 	return keys
 }

@@ -56,14 +56,16 @@ make build   # re-embed the updated .go files
 
 This regenerates `internal/semantic/stdlib_registry_gen.go`, all `stdlib/*/*.go`, all `stdlib/*/*_test.go`, then rebuilds the compiler with the updated files embedded.
 
-### 5. Run tests and lint
+### 5. Run tests, lint, vet, and modernize
 
 ```bash
 make test
 make lint
+make vet
+make modernize
 ```
 
-All tests must pass and lint must be clean before tagging. Do not proceed if either fails.
+All tests must pass, lint/vet must be clean, and `make modernize` must find no outdated patterns before tagging. Do not proceed if any fails.
 
 ### 6. Commit
 
@@ -103,6 +105,8 @@ git push origin vX.X.X
 - [ ] `make generate && make build` succeeded
 - [ ] `make test` — all packages pass
 - [ ] `make lint` — zero issues
+- [ ] `make vet` — zero issues (covers stdlib, which golangci-lint excludes)
+- [ ] `make modernize` — no outdated Go patterns in generated code
 - [ ] Single commit with all generated + doc changes
 - [ ] Tag created and pushed
 - [ ] `git ls-remote --tags origin` confirms tag is present

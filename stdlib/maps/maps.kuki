@@ -4,6 +4,7 @@
 petiole maps
 
 import "fmt"
+import "maps" as gomaps
 import "sort"
 
 # Keys returns a list of all keys in the map
@@ -36,10 +37,8 @@ func Has(m map of any to any, key any) bool
 # If both maps have the same key, the value from the second map wins
 func Merge(base map of any to any, overlay map of any to any) map of any to any
     result := make(map of any to any, len(base) + len(overlay))
-    for k, v in base
-        result[k] = v
-    for k, v in overlay
-        result[k] = v
+    gomaps.Copy(result, base)
+    gomaps.Copy(result, overlay)
     return result
 
 # SortedKeys returns all keys of a map in sorted (ascending) order

@@ -5,6 +5,7 @@ petiole http
 
 import "net/http"
 import "stdlib/json"
+import "stdlib/slice"
 import "stdlib/string"
 import "stdlib/fetch"
 import "stdlib/validate"
@@ -244,10 +245,9 @@ func SafeRedirect(w http.ResponseWriter, r reference http.Request, redirectURL s
         http.Redirect(w, r, redirectURL, 302)
         return empty
     # Absolute URL — verify the host is explicitly allowed
-    for host in allowedHosts
-        if parsed.Host == host
-            http.Redirect(w, r, redirectURL, 302)
-            return empty
+    if slice.Contains(allowedHosts, parsed.Host)
+        http.Redirect(w, r, redirectURL, 302)
+        return empty
     return error "redirect to '{parsed.Host}' is not in the allowed hosts list"
 
 # SafeURL builds URLs with safe-by-default escaping semantics.

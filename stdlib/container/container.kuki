@@ -387,7 +387,6 @@ func eventsWithContext(engine Engine, h ctxpkg.Handle) (list of ContainerEvent, 
                 if not ok
                     return events, empty
                 events = append(events, convertEvent(msg))
-    return events, empty
 
 # Events collects runtime events for a bounded duration.
 # timeoutSeconds <= 0 defaults to 15 seconds.

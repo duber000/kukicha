@@ -1023,78 +1023,76 @@ func watchPodsWithContext(h ctx.Handle, c Cluster) ([]PodEvent, error) {
 			events = append(events, PodEvent{eventType: string(event.Type), name: p.Name, namespace: p.Namespace, phase: string(p.Status.Phase), ready: ready})
 		}
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:575
-	return events, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:579
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:578
 func WatchPods(c Cluster, timeoutSeconds int64) ([]PodEvent, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:580
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:579
 	if timeoutSeconds <= 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:581
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:580
 		timeoutSeconds = 30
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:582
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:581
 	h := ctx.WithTimeout(ctx.Background(), timeoutSeconds)
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:583
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:582
 	defer ctx.Cancel(h)
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:584
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:583
 	return watchPodsWithContext(h, c)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:587
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:586
 func WatchPodsCtx(c Cluster, h ctx.Handle) ([]PodEvent, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:588
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:587
 	return watchPodsWithContext(h, c)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:594
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:593
 func PodLogs(c Cluster, name string, handles ...ctx.Handle) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:595
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:594
 	goCtx := ctx.Value(ctx.Background())
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:596
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:595
 	if len(handles) > 0 {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:597
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:596
 		goCtx = ctx.Value(handles[0])
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:598
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:597
 	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{})
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:599
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:598
 	stream, err_31 := req.Stream(goCtx)
 	if err_31 != nil {
 		err_31 = fmt.Errorf("kube pod logs: %w", err_31)
 		return "", err_31
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:600
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:599
 	defer stream.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:601
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:600
 	data, err_32 := io.ReadAll(stream)
 	if err_32 != nil {
 		err_32 = fmt.Errorf("kube pod logs read: %w", err_32)
 		return "", err_32
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:602
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:601
 	return string(data), nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:605
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:604
 func PodLogsTail(c Cluster, name string, lines int64) (string, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:606
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:605
 	req := clientset(c).CoreV1().Pods(c.namespace).GetLogs(name, &corev1.PodLogOptions{TailLines: &lines})
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:607
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:606
 	stream, err_33 := req.Stream(ctx.Value(ctx.Background()))
 	if err_33 != nil {
 		err_33 = fmt.Errorf("kube pod logs tail: %w", err_33)
 		return "", err_33
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:608
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:607
 	defer stream.Close()
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:609
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:608
 	data, err_34 := io.ReadAll(stream)
 	if err_34 != nil {
 		err_34 = fmt.Errorf("kube pod logs tail read: %w", err_34)
 		return "", err_34
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:610
+//line /var/home/tluker/repos/go/kukicha/stdlib/kube/kube.kuki:609
 	return string(data), nil
 }

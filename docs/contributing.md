@@ -42,7 +42,7 @@ git checkout -b fix/your-bug-fix
 
 Follow the existing code style and patterns in the codebase.
 
-### 3. Test and Lint Your Changes
+### 3. Test, Lint, and Verify Your Changes
 
 ```bash
 # Run all tests
@@ -51,6 +51,12 @@ make test
 # Run linter
 make lint
 
+# Run go vet on everything including stdlib (golangci-lint excludes stdlib/)
+make vet
+
+# Check for outdated Go patterns in generated code
+make modernize
+
 # Run with verbose output
 go test ./... -v
 
@@ -58,7 +64,7 @@ go test ./... -v
 go test ./internal/lexer/... -v
 ```
 
-The linter (`golangci-lint`) catches unused code, unchecked errors, and common mistakes that tests alone don't detect. All lint issues must be resolved before merging.
+The linter (`golangci-lint`) catches unused code, unchecked errors, and common mistakes that tests alone don't detect. `make vet` covers stdlib packages that golangci-lint excludes. `make modernize` runs `go fix -diff` to detect outdated Go patterns in generated `.go` files — if it finds anything, update the `.kuki` source or hand-written Go code. All issues must be resolved before merging.
 
 ### 4. Commit Your Changes
 
@@ -199,6 +205,8 @@ When reporting issues, please include:
 - Update documentation as needed
 - Ensure all tests pass (`make test`)
 - Ensure lint is clean (`make lint`)
+- Ensure vet passes (`make vet`)
+- Ensure no outdated patterns (`make modernize`)
 - Request review from maintainers
 
 ## Project Areas
@@ -382,7 +390,7 @@ Follow these steps in order. Skipping step 3 is how the stdlib `.go` files end u
    for f in stdlib/*/*_test.kuki; do ./kukicha build --skip-build "$f"; done
    make build   # re-embed the updated .go files
    ```
-4. Run `make test && make lint` to confirm everything passes before tagging.
+4. Run `make test && make lint && make vet && make modernize` to confirm everything passes before tagging.
 5. Commit the regenerated `.go`/`*_test.go` files and doc/version updates in a single commit. (The `.kuki` sources are inputs, not outputs — only stage them if you changed them.)
 6. Tag and push (push the tag explicitly — `--follow-tags` can silently skip tags):
 

@@ -161,15 +161,15 @@ func (ti *TypeInfo) String() string {
 			}
 			params.WriteString(p.String())
 		}
-		returns := ""
+		var returns strings.Builder
 		for i, r := range ti.Returns {
 			if i > 0 {
-				returns += ", "
+				returns.WriteString(", ")
 			}
-			returns += r.String()
+			returns.WriteString(r.String())
 		}
-		if returns != "" {
-			return fmt.Sprintf("func(%s) %s", params.String(), returns)
+		if returns.Len() > 0 {
+			return fmt.Sprintf("func(%s) %s", params.String(), returns.String())
 		}
 		return fmt.Sprintf("func(%s)", params.String())
 	default:

@@ -318,7 +318,6 @@ func isErrorType(t types.Type) bool {
 		return false
 	}
 	for m := range iface.Methods() {
-		m := m
 		if m.Name() == "Error" {
 			sig := m.Type().(*types.Signature)
 			if sig.Params().Len() == 0 && sig.Results().Len() == 1 {

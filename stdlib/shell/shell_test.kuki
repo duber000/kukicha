@@ -3,6 +3,7 @@
 petiole shell_test
 
 import "stdlib/shell"
+import "stdlib/slice"
 import "stdlib/test"
 import "stdlib/string"
 import "testing"
@@ -203,14 +204,8 @@ func TestEnv(t reference testing.T)
             got := shell.Getenv(key)
             test.AssertEqual(t, got, val)
 
-            found := false
             envs := shell.Environ()
-            for e in envs
-                if e == "{key}={val}"
-                    found = true
-                    break
-
-            test.AssertTrue(t, found)
+            test.AssertTrue(t, slice.Contains(envs, "{key}={val}"))
 
             shell.Unsetenv(key)
             test.AssertEqual(t, shell.Getenv(key), "")

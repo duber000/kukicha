@@ -130,9 +130,7 @@ func renderMarkdownSep(widths list of int) string
     sb := strings.Builder{}
     sb.WriteString("|")
     for i from 0 to len(widths)
-        dashes := widths[i]
-        if dashes < 3
-            dashes = 3
+        dashes := max(widths[i], 3)
         sb.WriteString(" ")
         sb.WriteString(strings.Repeat("-", dashes))
         sb.WriteString(" |")
