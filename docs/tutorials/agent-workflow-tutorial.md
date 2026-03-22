@@ -1,18 +1,6 @@
 # Agent-Assisted Development with Kukicha
 
-You describe what you want. AI writes the code. You read and approve it. You compile and ship a single binary.
-
-```
-You describe what you want
-        ↓
-AI agent writes Kukicha
-        ↓
-You read and approve it  ← Kukicha makes this step possible
-        ↓
-kukicha build → single binary
-        ↓
-Ship it
-```
+Describe what you want. AI writes the code. You can read it.
 
 ## Who is this for?
 
@@ -29,7 +17,7 @@ go install github.com/duber000/kukicha/cmd/kukicha@latest
 kukicha version
 ```
 
-2. **An AI coding agent** — [Claude Code](https://claude.com/claude-code) (recommended), [Cursor](https://www.cursor.com/), or [ChatGPT](https://chatgpt.com/)
+2. **An AI coding agent** — [Claude Code](https://claude.com/claude-code) (recommended), [OpenCode](https://opencode.ai/), or [Cursor](https://www.cursor.com/)
 
 3. **Initialize your project:**
    ```bash
@@ -95,29 +83,19 @@ Four stdlib packages, zero boilerplate. The output is a formatted terminal table
 
 ### Prompt templates
 
-**Claude Code:**
+**Claude Code or OpenCode:**
 ```
 Write a Kukicha program that fetches Go repos from GitHub, filters to >100 stars,
 sorts by stars descending, and prints a table with name, stars, and language.
 Use stdlib/fetch, stdlib/slice, stdlib/sort, and stdlib/table.
 ```
 
-**Cursor** (create `repos.kuki`, then in composer):
+**Cursor or VSCode with Roo Code Extension** (create `repos.kuki`, then in composer):
 ```
 Generate a Kukicha program (not Go) that fetches golang repos from the GitHub API,
 filters by star count > 100, sorts by stars descending, and displays a table.
 ```
 
-**ChatGPT or other LLMs:**
-```
-Write a complete Kukicha program (not Go) that:
-1. Imports stdlib/fetch, stdlib/slice, stdlib/sort, stdlib/table
-2. Defines a Repo type with name, stars (JSON: "stargazers_count"), and language
-3. Fetches repos from https://api.github.com/users/golang/repos
-4. Filters repos with > 100 stars, sorts by stars descending
-5. Prints results in a formatted table
-Use onerr for error handling and |> pipes throughout.
-```
 
 ---
 
