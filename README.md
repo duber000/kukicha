@@ -91,7 +91,7 @@ Create a file called `hello.kuki`:
 
 ```kukicha
 # hello.kuki
-func main()
+function main()
     name := "World"
     print("Hello, {name}!")
 ```
