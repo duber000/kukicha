@@ -1,6 +1,6 @@
 # Agent-Assisted Development with Kukicha
 
-Kukicha is designed for a specific workflow: you describe what you want, an AI agent writes the code, you read and approve it, then you compile and ship. This works because Kukicha's syntax is intentionally readable — no cryptic symbols, no class hierarchies, no boilerplate.
+You describe what you want. AI writes the code. You read and approve it. You compile and ship a single binary.
 
 ```
 You describe what you want
@@ -16,33 +16,22 @@ Ship it
 
 ## Who is this for?
 
-- **Non-programmers** — People who want to build custom tools by directing an AI, without needing to learn a full programming language.
-- **SREs / Sysadmins / DevOps engineers** — Operators who want to automate workflows without getting bogged down in C-style syntax.
-- **AI-First Developers** — People who use Claude Code, Cursor, or similar tools as their primary development interface.
-- **Go/Python Devs** — Developers who want a cleaner, more readable target for AI code generation.
-
-## What You'll Learn
-
-- How to prompt AI agents to write Kukicha code
-- How to read and approve agent-generated Kukicha (no programming background needed)
-- How to iterate: ask your agent to add features, fix bugs, or refactor
-- How to build MCP servers that extend your AI agent
-- How Kukicha concepts transfer to Go and Python
+- **Non-programmers** — Build custom tools by directing an AI, no programming language required.
+- **SREs / DevOps** — Automate workflows without C-style syntax.
+- **AI-First Developers** — Use Claude Code, Cursor, or similar tools as your primary dev interface.
+- **Go/Python Devs** — Cleaner, more readable target for AI code generation.
 
 ## Prerequisites
 
 1. **Kukicha compiler installed**
 ```bash
 go install github.com/duber000/kukicha/cmd/kukicha@latest
-kukicha version  # Confirm it works
+kukicha version
 ```
 
-2. **An AI coding agent** — one of:
-   - [Claude Code](https://claude.com/claude-code) (recommended)
-   - [Cursor](https://www.cursor.com/)
-   - [ChatGPT](https://chatgpt.com/) with Code Interpreter
+2. **An AI coding agent** — [Claude Code](https://claude.com/claude-code) (recommended), [Cursor](https://www.cursor.com/), or [ChatGPT](https://chatgpt.com/)
 
-3. **Initialize your project** — this sets up the stdlib and the language reference your agent needs:
+3. **Initialize your project:**
    ```bash
    mkdir go_agent_go && cd go_agent_go
    kukicha init
@@ -60,81 +49,90 @@ No prior programming experience needed.
 
 ## Step 1: Describe Your Intent
 
-The first step is writing a clear prompt. You don't write code — you describe what the program should do.
+You don't write code — you describe what the program should do.
 
-**Example intent:**
-> "Fetch the Go repositories from GitHub, keep only the ones with more than 1000 stars, and print the name and star count of each."
+> "Fetch the Go repositories from GitHub, sort them by stars descending, and print a formatted table showing name, stars, and language."
 
-That's it. The AI handles the rest.
+That's it.
 
 ---
 
 ## Step 2: Agent Generates Kukicha
 
-Here's what the agent should generate for the prompt above:
+Here's what the agent generates:
 
 ```kukicha
 import "stdlib/fetch"
 import "stdlib/slice"
+import "stdlib/sort"
+import "stdlib/table"
 
 type Repo
     name string as "name"
     stars int as "stargazers_count"
+    language string as "language"
 
 function main()
-    # Fetch the repos list from the GitHub API
     repos := fetch.Get("https://api.github.com/users/golang/repos")
         |> fetch.CheckStatus()
         |> fetch.Json(list of Repo) onerr panic "fetch failed: {error}"
 
-    # Filter to repos with more than 1000 stars
-    popular := repos |> slice.Filter(r => r.stars > 1000)
+    popular := repos
+        |> slice.Filter(r => r.stars > 100)
+        |> sort.ByKey(r => r.stars)
+        |> slice.Reverse()
 
-    # Print each result
+    t := table.New("Name", "Stars", "Language")
     for repo in popular
-        print("{repo.name}: {repo.stars} stars")
+        lang := repo.language
+        if lang equals ""
+            lang = "—"
+        t |> table.AddRow(repo.name, "{repo.stars}", lang)
+    t |> table.Print()
 ```
 
-### Prompt templates to try
+Four stdlib packages, zero boilerplate. The output is a formatted terminal table, not raw text.
 
-**Claude Code** (run in your terminal):
+### Prompt templates
+
+**Claude Code:**
 ```
-Write a Kukicha program that fetches the latest Go repositories from GitHub,
-filters ones with >1000 stars, and prints the name and star count for each.
-Use stdlib/fetch and stdlib/slice.
+Write a Kukicha program that fetches Go repos from GitHub, filters to >100 stars,
+sorts by stars descending, and prints a table with name, stars, and language.
+Use stdlib/fetch, stdlib/slice, stdlib/sort, and stdlib/table.
 ```
 
 **Cursor** (create `repos.kuki`, then in composer):
 ```
 Generate a Kukicha program (not Go) that fetches golang repos from the GitHub API,
-filters by star count > 1000, and prints name + stars for each result.
+filters by star count > 100, sorts by stars descending, and displays a table.
 ```
 
-**ChatGPT or other LLMs**:
+**ChatGPT or other LLMs:**
 ```
-Write a complete, working Kukicha program (not Go) that:
-1. Imports stdlib/fetch and stdlib/slice
-2. Defines a type Repo with fields name (JSON: "name") and stars (JSON: "stargazers_count")
+Write a complete Kukicha program (not Go) that:
+1. Imports stdlib/fetch, stdlib/slice, stdlib/sort, stdlib/table
+2. Defines a Repo type with name, stars (JSON: "stargazers_count"), and language
 3. Fetches repos from https://api.github.com/users/golang/repos
-4. Filters repos with > 1000 stars using slice.Filter
-5. Prints the name and star count of each result
-Use fetch.Json(list of Repo) for JSON decoding and onerr for error handling.
+4. Filters repos with > 100 stars, sorts by stars descending
+5. Prints results in a formatted table
+Use onerr for error handling and |> pipes throughout.
 ```
 
 ---
 
 ## Step 3: Read and Approve
 
-This is the most important step. You don't need to understand every detail — you need to verify the program does what you intended.
+You don't need to understand every detail — verify the program does what you intended.
 
 ### Decoder ring
 
 | You'll see | It means |
 |-----------|---------|
-| `onerr panic "message"` | If this fails, stop the program with this message |
+| `onerr panic "message"` | If this fails, stop with this message |
 | `onerr return` | If this fails, pass the error to the caller |
 | `onerr "default"` | If this fails, use this value instead |
-| `\|>` | Take the result and pass it to the next step |
+| `\|>` | Pass the result to the next step |
 | `list of string` | A collection of text values |
 | `map of string to int` | A lookup table: text key → number |
 | `reference User` | A reference/pointer to a User value |
@@ -146,95 +144,137 @@ This is the most important step. You don't need to understand every detail — y
 
 ### Review checklist
 
-Before running the code, ask yourself:
-
-- [ ] Does it do what I described? Read through the steps in `main()`.
+- [ ] Does it do what I described? Read through `main()`.
 - [ ] Are errors handled? Every operation that can fail should have `onerr`.
-- [ ] Does `onerr panic` make sense here? Panicking is fine for prototype tools; for production you'd prefer `onerr return`.
-- [ ] Are there any hardcoded secrets or credentials? (There shouldn't be — use `stdlib/env` or `stdlib/must` for those.)
-- [ ] Does the output format match what you want? Check any `print()` calls.
-- [ ] Are external URLs correct? Verify any API endpoints match what you intended.
-
-**In the example above:**
-- `fetch.Get(...)` — fetches from GitHub. Correct URL?
-- `|> fetch.CheckStatus()` — fails if the API returns an error. Good.
-- `|> fetch.Json(list of Repo)` — decodes the JSON as a list of Repos. Matches the `type Repo` definition?
-- `onerr panic "fetch failed: {error}"` — crashes with an error message if anything in the pipeline fails. Acceptable for a one-off tool.
-- `slice.Filter(r => r.stars > 1000)` — keeps repos with > 1000 stars. Matches the intent?
+- [ ] Does `onerr panic` make sense here? Fine for tools; prefer `onerr return` for production.
+- [ ] Any hardcoded secrets? (Use `stdlib/env` or `stdlib/must` for those.)
+- [ ] Are external URLs correct?
 
 ---
 
 ## Step 4: Compile and Run
 
 ```bash
-# Validate syntax first
-kukicha check repos.kuki
-
-# Run it
-kukicha run repos.kuki
-
-# Or build a binary to ship
-kukicha build repos.kuki -o repos
+kukicha check repos.kuki    # validate syntax
+kukicha run repos.kuki       # compile and run
+kukicha build repos.kuki -o repos   # build a binary to ship
 ./repos
 ```
 
-If `kukicha check` reports errors, paste the error into your agent and ask it to fix them.
+If `kukicha check` reports errors, paste the error into your agent and ask it to fix.
 
 ---
 
 ## Iterating With Your Agent
 
-Your agent doesn't just generate code once — you can refine, add features, and debug together.
+### Add retry + logging
 
-### Add retry logic
-
-Ask:
 ```
-Add retry logic to the fetch call. Retry 3 times with 500ms delay between attempts.
+Add retry logic (3 attempts, 500ms delay) and structured logging.
 ```
 
-Agent adds one line:
 ```kukicha
+import "stdlib/obs"
+import "stdlib/fetch"
+
+function main()
+    log := obs.New("repos")
+    log |> obs.Info("fetching repositories")
+
     repos := fetch.Get("https://api.github.com/users/golang/repos")
-        |> fetch.Retry(3, 500)      # ← Agent added this
+        |> fetch.Retry(3, 500)
         |> fetch.CheckStatus()
         |> fetch.Json(list of Repo) onerr panic "fetch failed: {error}"
+
+    log |> obs.Info("found {len(repos)} repos")
 ```
 
-### Add a CLI flag
+### Add a CLI with flags
 
-Ask:
 ```
-Add a --min-stars flag (default 1000) so the user can control the minimum star count.
+Add a --min-stars flag (default 100) and a --format flag (table or json).
 ```
 
-Agent adds:
 ```kukicha
 import "stdlib/cli"
+import "stdlib/json"
+import "stdlib/table"
 
 function run(args cli.Args)
     minStars := cli.GetInt(args, "min-stars")
-    # ... use minStars instead of the hardcoded 1000 ...
+    format := cli.GetString(args, "format")
+
+    # ... fetch and filter repos ...
+
+    if format equals "json"
+        repos |> json.MarshalPretty() |> print
+    else
+        t := table.New("Name", "Stars")
+        for repo in popular
+            t |> table.AddRow(repo.name, "{repo.stars}")
+        t |> table.Print()
 
 function main()
     app := cli.New("repos")
-        |> cli.AddFlag("min-stars", "Minimum star count", "1000")
+        |> cli.Description("Browse GitHub repos by star count")
+        |> cli.AddFlag("min-stars", "Minimum star count", "100")
+        |> cli.AddFlag("format", "Output format: table or json", "table")
         |> cli.Action(run)
-    cli.RunApp(app) onerr panic "failed: {error}"
+    cli.RunApp(app) onerr panic "{error}"
 ```
 
-### Add output to a file
+### Fetch in parallel
 
-Ask:
 ```
-Write the results to a file called output.txt instead of printing to the screen.
+Fetch repos from multiple GitHub users concurrently.
 ```
 
-Agent will add `import "stdlib/files"` and replace the `print()` calls with `files.Append("output.txt", ...)`.
+```kukicha
+import "stdlib/concurrent"
+import "stdlib/fetch"
+import "stdlib/slice"
+
+function fetchUser(user string) list of Repo
+    repos := fetch.Get("https://api.github.com/users/{user}/repos")
+        |> fetch.Retry(3, 500)
+        |> fetch.CheckStatus()
+        |> fetch.Json(list of Repo) onerr panic "fetch {user} failed: {error}"
+    return repos
+
+function main()
+    users := list of string{"golang", "googlecloudplatform", "kubernetes"}
+
+    allRepos := users
+        |> concurrent.Map(u => fetchUser(u))
+        |> slice.Concat()
+        |> slice.Filter(r => r.stars > 100)
+        |> sort.ByKey(r => r.stars)
+        |> slice.Reverse()
+
+    # ... print table ...
+```
+
+`concurrent.Map` fetches all three users in parallel and collects the results.
+
+### Write results to CSV
+
+```
+Write the results to results.csv instead of printing a table.
+```
+
+```kukicha
+import "stdlib/files"
+import "stdlib/string"
+
+    header := "name,stars,language"
+    lines := popular |> slice.Map(r => "{r.name},{r.stars},{r.language}")
+    content := string.Join(slice.Concat(list of string{header}, lines), "\n")
+    files.Write("results.csv", content) onerr panic "write failed: {error}"
+```
 
 ### Debug a problem
 
-If something goes wrong, paste the error output into your agent:
+Paste the error output into your agent:
 ```
 Running repos.kuki failed with this error:
 <paste the error here>
@@ -245,66 +285,72 @@ Fix it.
 
 ## Building an MCP Server
 
-MCP (Model Context Protocol) lets you extend AI agents with custom tools written in Kukicha. You build a single binary that the agent can call.
+MCP (Model Context Protocol) lets you extend AI agents with custom tools. Build a single binary that your agent can call.
 
-### Example: stock price tool
+### Example: DNS lookup tool
 
-Ask your agent:
-```
-Write a Kukicha MCP server with a tool called "get_price" that takes a stock ticker symbol
-as a string and returns a hardcoded price as a string. Register it with mcp.Tool and serve it.
-```
-
-Agent output:
 ```kukicha
 import "stdlib/mcp"
+import "stdlib/net"
+import "stdlib/string"
 
-function getPrice(symbol string) string
-    # Replace with a real API call in production
-    if symbol equals "GOOG"
-        return "GOOG: $180.00"
-    if symbol equals "AAPL"
-        return "AAPL: $220.00"
-    return "{symbol}: price unavailable"
+function lookupHost(hostname string) string
+    ips := net.LookupHost(hostname) onerr return "lookup failed: {error}"
+    return string.Join(ips, ", ")
 
 function main()
     server := mcp.NewServer()
-    server |> mcp.Tool("get_price", "Get stock price by ticker symbol", getPrice)
+    server |> mcp.Tool("dns_lookup", "Resolve a hostname to IP addresses", lookupHost)
+    server |> mcp.Serve()
+```
+
+### Example: secure file reader (sandboxed)
+
+```kukicha
+import "stdlib/mcp"
+import "stdlib/sandbox"
+
+function readFile(path string) string
+    sb := sandbox.New("/var/data") onerr return "sandbox error: {error}"
+    defer sb |> sandbox.Close()
+    content := sb |> sandbox.ReadString(path) onerr return "read failed: {error}"
+    return content
+
+function main()
+    server := mcp.NewServer()
+    server |> mcp.Tool("read_data", "Read a file from the data directory (sandboxed)", readFile)
     server |> mcp.Serve()
 ```
 
 ### Compile and register
 
 ```bash
-kukicha build prices.kuki -o prices-server
-./prices-server
+kukicha build dns-tool.kuki -o dns-tool
 ```
 
-Add to `~/.claude/config.json` (Claude Desktop):
+Add to Claude Code's MCP config:
 ```json
 {
   "mcpServers": {
-    "prices": {
-      "command": "/absolute/path/to/prices-server"
+    "dns": {
+      "command": "/absolute/path/to/dns-tool"
     }
   }
 }
 ```
 
-Restart Claude Desktop. Claude now has a `get_price` tool it can call.
+### MCP review checklist
 
-### Review checklist for MCP servers
-
-- [ ] Does each tool function take only simple types (string, int, bool)?
-- [ ] Does the tool return a string or simple value?
-- [ ] Are errors handled so the server doesn't crash on bad input?
-- [ ] Is the tool description (second argument to `mcp.Tool`) clear enough for the AI to know when to use it?
+- [ ] Tool functions take only simple types (string, int, bool)?
+- [ ] Tool returns a string or simple value?
+- [ ] Errors handled so the server doesn't crash on bad input?
+- [ ] Tool description clear enough for the AI to know when to use it?
 
 ---
 
 ## Where Concepts Transfer
 
-Everything you learn in Kukicha maps directly to Go and Python. You're not learning a dead end.
+Everything you learn maps directly to Go and Python.
 
 | Concept | Kukicha | Go | Python |
 |---------|---------|-----|--------|
@@ -314,52 +360,46 @@ Everything you learn in Kukicha maps directly to Go and Python. You're not learn
 | Error handling | `result onerr panic "msg"` | `if err != nil { panic("msg") }` | `try: ... except: raise` |
 | Function | `func Add(a int, b int) int` | `func Add(a int, b int) int` | `def add(a: int, b: int) -> int:` |
 | Null check | `if x equals empty` | `if x == nil` | `if x is None:` |
-| Struct | `type User` | `type User struct { ... }` | `@dataclass\nclass User:` |
-| Pointer | `reference User` | `*User` | *(implicit reference)* |
 | Pipe/chain | `data \|> f() \|> g()` | `g(f(data))` | `g(f(data))` |
 
-**The key insight:** Kukicha is Go with English keywords and indentation instead of symbols and braces. If you can read Kukicha, you can read Go. The logic is identical.
+Kukicha is Go with English keywords and indentation instead of symbols and braces. If you can read Kukicha, you can read Go.
 
 ---
 
 ## Next Steps
 
-- [Absolute Beginner Tutorial](absolute-beginner-tutorial.md) — learn Kukicha syntax from scratch
+- [Absolute Beginner Tutorial](absolute-beginner-tutorial.md) — syntax from scratch
 - [Data & AI Scripting](data-scripting-tutorial.md) — maps, CSV, LLM integration
 - [Production Patterns](production-patterns-tutorial.md) — databases, validation, retry, auth
-- [Stdlib Reference](../../stdlib/AGENTS.md) — all available packages
 
 ---
 
 ## Tips for Effective Agent Prompting
 
 1. **Be specific about intent, not implementation**
-   - ❌ "Add error handling"
-   - ✅ "If the API call fails, print the error and exit"
+   - Bad: "Add error handling"
+   - Good: "If the API call fails, print the error and exit"
 
-2. **Name the stdlib packages you want used**
-   - ✅ "Use stdlib/fetch for HTTP and stdlib/slice for filtering"
+2. **Name the stdlib packages you want**
+   - "Use stdlib/fetch for HTTP, stdlib/slice for filtering, stdlib/table for output"
 
-3. **Request testable code**
-   - ✅ "Include a main() that demonstrates the function with example data"
+3. **Iterate in small steps**
+   - Bad: "Make this production-ready with logging, metrics, and retries"
+   - Good: "Add structured logging using stdlib/obs"
 
-4. **Iterate in small steps**
-   - ❌ "Make this production-ready with logging, metrics, and retries"
-   - ✅ "Add structured logging using stdlib/obs"
-
-5. **Always validate before shipping**
+4. **Always validate before shipping**
    ```bash
-   kukicha check file.kuki   # syntax check
-   kukicha run file.kuki     # test it
-   kukicha build file.kuki   # compile for distribution
+   kukicha check file.kuki
+   kukicha run file.kuki
+   kukicha build file.kuki
    ```
 
-6. **If the agent generates Go syntax by mistake**, remind it:
+5. **If the agent generates Go syntax by mistake:**
    ```
-   You wrote Go syntax. Rewrite it in Kukicha:
-   - Use "and", "or", "not" instead of &&, ||, !
-   - Use "list of string" instead of []string
-   - Use "equals" instead of ==
-   - Use 4-space indentation instead of curly braces
-   - Use "onerr" instead of "if err != nil"
+   You wrote Go syntax. Rewrite in Kukicha:
+   - "and", "or", "not" instead of &&, ||, !
+   - "list of string" instead of []string
+   - "equals" instead of ==
+   - 4-space indentation, no braces
+   - "onerr" instead of "if err != nil"
    ```

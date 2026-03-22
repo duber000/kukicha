@@ -33,23 +33,31 @@ See if you can follow it:
 ```kukicha
 import "stdlib/fetch"
 import "stdlib/slice"
+import "stdlib/sort"
+import "stdlib/table"
 
 type Repo
     name string as "name"
     stars int as "stargazers_count"
+    language string as "language"
 
 func main()
     repos := fetch.Get("https://api.github.com/users/golang/repos")
         |> fetch.CheckStatus()
         |> fetch.Json(list of Repo) onerr panic "fetch failed: {error}"
 
-    popular := repos |> slice.Filter(repo => repo.stars > 1000)
+    popular := repos
+        |> slice.Filter(r => r.stars > 100)
+        |> sort.ByKey(r => r.stars)
+        |> slice.Reverse()
 
+    t := table.New("Name", "Stars", "Language")
     for repo in popular
-        print("{repo.name}: {repo.stars} stars")
+        t |> table.AddRow(repo.name, "{repo.stars}", repo.language)
+    t |> table.Print()
 ```
 
-**What just happened:** This program fetches a list of repositories from GitHub, keeps only the ones with more than 1,000 stars, and prints each name with its star count. The `|>` (pipe) passes the result of one step into the next. `onerr panic` means "if something goes wrong, stop and show this message."
+**What just happened:** Fetch repos from GitHub, keep the popular ones, sort by stars, print a formatted table. The `|>` pipe passes results between steps. `onerr panic` means "if something fails, stop and show this message." Four stdlib packages, zero boilerplate.
 
 ---
 
