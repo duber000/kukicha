@@ -38,31 +38,12 @@ Computers are very literal - they do exactly what you tell them, nothing more, n
 ## What is Kukicha?
 
 **Kukicha** is a programming language designed specifically for beginners. Unlike many languages that use lots of symbols (`&&`, `||`, `!=`, etc.), Kukicha uses plain English words:
+- For example, instead of `==`, we write `equals`
 
-- Instead of `==`, we write `equals`
-- Instead of `&&`, we write `and`
-- Instead of `||`, we write `or`
-- Instead of `!`, we write `not`
-
-We also prefer full English words for definitions:
+We also allow full English words for definitions:
 - `function` (instead of `func`)
-- `variable` (instead of `var`)
-- `reference` (instead of pointers)
 
 Kukicha compiles to Go (another programming language), which means your Kukicha programs run fast and can use Go's huge ecosystem of tools.
-
-**The Botanical Metaphor:**
-Kukicha uses plant terms to organize code:
-- **Stem** = Your whole project (like a "module" in Go or Python)
-- **Petiole** = A package (a collection of related code within a project)
-
-For simple single-file programs like this tutorial, you don't need either — just define your `function main()` and you're good. When you start organizing code across multiple files (covered in later tutorials), you'll use:
-
-```kukicha
-petiole mypackage    # At the top of a file - declares the package name
-```
-
-For now, just know that `petiole main` is implied for simple programs.
 
 ---
 
@@ -77,10 +58,10 @@ Before writing code, let's set up a project folder:
 ```bash
 mkdir my-kukicha-project
 cd my-kukicha-project
-kukicha init              # Create Go module, extract Kukicha stdlib, configure go.mod
+kukicha init             
 ```
 
-The `kukicha init` command creates a `go.mod` file (using the directory name as the module name), then sets up the Kukicha standard library. This is needed when using `import "stdlib/..."` packages. For simple programs that don't use stdlib, you can skip this step.
+The `kukicha init` command creates a the ncessary framework for kukicha to run in that directory.
 
 ### Writing Your First Program
 
@@ -134,13 +115,10 @@ Kukicha comes with a standard library of useful packages:
 
 | Package | What it provides |
 |---------|------------------|
-| `stdlib/string` | String manipulation (trim, split, contains, etc.) |
-| `stdlib/slice` | List operations (filter, map, sort, etc.) |
-| `stdlib/fetch` | HTTP client for making web requests |
-| `stdlib/json` | JSON encoding and decoding |
-| `stdlib/shell` | Run shell commands safely |
+| `stdlib/string` | String manipulation (trim, split, contains, etc.) A string is text. |
+| `stdlib/slice` | List operations (filter, map, sort, etc.) A list is group of words |
+| `stdlib/fetch` | Make web requests |
 | `stdlib/files` | File reading and writing |
-| `stdlib/env` | Environment variables |
 
 ### Using Imported Functions
 
@@ -151,7 +129,7 @@ import "stdlib/string"
 
 function main()
     text := "  Hello World  "
-    clean := text |> string.TrimSpace()  # string.Trim() comes from stdlib/string
+    clean := text |> string.TrimSpace()  #  string.Trim() comes from stdlib/string
     print(clean)  # Prints: Hello World
 ```
 
@@ -266,7 +244,7 @@ function main()
 kukicha run variables.kuki
 ```
 
-> **💡 Note:** Kukicha is designed to read like English. While you might see `func` or `var` in some advanced code (shortcuts), we recommend using `function` and `variable` to keep your code readable and friendly.
+> **💡 Note:** Kukicha is designed to read like English. While you might see `func` or `var` in some advanced code, we recommend using `function` and `variable` to keep your code readable and friendly.
 
 ---
 
