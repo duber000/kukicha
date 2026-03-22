@@ -4,7 +4,9 @@
 petiole json
 
 import "encoding/json"
+import "fmt"
 import "io"
+import "os"
 
 # Encoder wraps encoding/json for pipe-friendly encoding with builder pattern
 type Encoder
@@ -105,6 +107,17 @@ func MarshalWrite(writer io.Writer, value any) error
 # Example: request.Body |> json.UnmarshalRead(_, reference todo) onerr return
 func UnmarshalRead(reader io.Reader, target any) error
     return reader |> NewDecoder() |> Decode(target)
+
+# WriteOutput writes compact JSON to os.Stdout.
+# Use onerr to handle encoding errors in agent-facing CLI tools.
+# Compact (not pretty) output reduces token usage when agents consume it.
+# Example: result |> json.WriteOutput(_) onerr panic "{error}"
+func WriteOutput(v any) error
+    bytes, err := json.Marshal(v)
+    if err != empty
+        return err
+    _, err = fmt.Fprintln(os.Stdout, bytes as string)
+    return err
 
 # DecodeRead reads JSON from an io.Reader into a typed value using the sample pattern.
 # Pass a typed empty value to drive type inference — no pre-declared variable needed.

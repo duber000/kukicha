@@ -1,0 +1,82 @@
+# Tests for Kukicha Standard Library - Skills Package
+
+petiole skills_test
+
+import "stdlib/skills"
+import "stdlib/test"
+import "os"
+import "path/filepath"
+import "testing"
+
+# --- TestDiscoverMissing ---
+# Discovering a non-existent directory must return an empty list, not an error.
+func TestDiscoverMissing(t reference testing.T)
+    result := skills.Discover("/nonexistent-xyzzy-path-for-skills-test") onerr
+        t.Fatal("expected no error for missing dir, got: {error}")
+        return
+    test.AssertEqual(t, len(result), 0)
+
+# --- TestDiscover ---
+func TestDiscover(t reference testing.T)
+    dir := os.MkdirTemp("", "skills_test_") onerr
+        t.Fatal("MkdirTemp: {error}")
+        return
+    defer os.RemoveAll(dir)
+
+    # Create changelog/SKILL.md
+    changelogDir := filepath.Join(dir, "changelog")
+    os.MkdirAll(changelogDir, 0755) onerr
+        t.Fatal("MkdirAll changelog: {error}")
+        return
+    changelogContent := "# Changelog\nGenerates CHANGELOG.md entries."
+    os.WriteFile(filepath.Join(changelogDir, "SKILL.md"), changelogContent as list of byte, 0644) onerr
+        t.Fatal("WriteFile changelog: {error}")
+        return
+
+    # Create release/SKILL.md
+    releaseDir := filepath.Join(dir, "release")
+    os.MkdirAll(releaseDir, 0755) onerr
+        t.Fatal("MkdirAll release: {error}")
+        return
+    releaseContent := "# Release\nCuts a release."
+    os.WriteFile(filepath.Join(releaseDir, "SKILL.md"), releaseContent as list of byte, 0644) onerr
+        t.Fatal("WriteFile release: {error}")
+        return
+
+    # Non-SKILL.md file should be ignored
+    os.WriteFile(filepath.Join(changelogDir, "README.md"), "ignore me" as list of byte, 0644) onerr discard
+
+    result := skills.Discover(dir) onerr
+        t.Fatal("Discover: {error}")
+        return
+
+    test.AssertEqual(t, len(result), 2)
+
+    foundChangelog := false
+    for s in result
+        if s.Name equals "changelog"
+            foundChangelog = true
+            test.AssertEqual(t, s.Content, changelogContent)
+    test.AssertTrue(t, foundChangelog)
+
+# --- TestAgentSkills ---
+# AgentSkills on a project without .agent/skills/ returns an empty list.
+func TestAgentSkillsMissing(t reference testing.T)
+    origDir := os.Getwd() onerr
+        t.Fatal("Getwd: {error}")
+        return
+
+    tmpDir := os.MkdirTemp("", "skills_agent_test_") onerr
+        t.Fatal("MkdirTemp: {error}")
+        return
+    defer os.RemoveAll(tmpDir)
+
+    os.Chdir(tmpDir) onerr
+        t.Fatal("Chdir: {error}")
+        return
+    defer os.Chdir(origDir)
+
+    result := skills.AgentSkills() onerr
+        t.Fatal("AgentSkills: {error}")
+        return
+    test.AssertEqual(t, len(result), 0)

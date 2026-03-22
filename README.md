@@ -109,6 +109,7 @@ kukicha run hello.kuki
 | `kukicha check file.kuki` | Validates syntax without running anything | Before committing — catches errors early |
 | `kukicha run file.kuki` | Compiles and runs immediately | While developing and testing |
 | `kukicha build file.kuki` | Compiles to a standalone binary | When you're ready to ship |
+| `kukicha pack skill.kuki` | Packages a skill into SKILL.md + binary | When building tools for agent pipelines |
 
 ---
 
@@ -133,7 +134,7 @@ func main()
     server |> mcp.Serve()
 ```
 
-Compile to a single binary and register it with Claude Desktop or any MCP-compatible agent.
+Compile to a single binary and register it with Claude Desktop or any MCP-compatible agent. Add a `skill` declaration and run `kukicha pack` to generate a machine-readable manifest alongside the binary — see the [Agent Workflow Tutorial](docs/tutorials/agent-workflow-tutorial.md#packaging-skills-for-agent-pipelines).
 
 **More examples:** [Automation scripts](docs/tutorials/data-scripting-tutorial.md), [CLI tools](docs/tutorials/cli-explorer-tutorial.md), [Concurrent health checker](docs/tutorials/concurrent-url-health-checker.md), [REST API server](docs/tutorials/web-app-tutorial.md), [Release tooling](examples/gh-semver-release/main.kuki)
 
@@ -176,7 +177,7 @@ Every Kukicha concept maps 1:1 to Go and Python — see the [Quick Reference](do
 | **Logic** | `slice`, `maps`, `string`, `math`, `sort` (custom comparators, ByKey), `iterator` (lazy iter.Seq pipelines), `random` |
 | **Security** | `crypto` (SHA-256, HMAC, secure random), `netguard`, `sandbox` |
 | **Infrastructure** | `pg`, `kube`, `container`, `shell`, `net` |
-| **AI & Agents** | `llm`, `mcp`, `a2a` |
+| **AI & Agents** | `llm`, `mcp`, `a2a`, `skills` |
 | **Web** | `http`, `fetch`, `validate`, `template` |
 | **Config & Ops** | `env`, `must`, `cli`, `semver`, `obs`, `retry`, `ctx`, `datetime`, `concurrent` |
 | **Output** | `table` (terminal tables: plain, box, markdown), `input` (interactive prompts) |

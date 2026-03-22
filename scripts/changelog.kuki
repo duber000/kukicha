@@ -13,7 +13,6 @@
 # Prerequisites:
 #   export MISTRAL_API_KEY="..."
 
-import "fmt"
 import "os"
 import "stdlib/cli"
 import "stdlib/datetime"
@@ -30,12 +29,6 @@ type ChangelogResult
     date string as "date"
     entry string as "entry"
 
-func printJSON(v any)
-    bytes := jsonpkg.MarshalPretty(v) onerr
-        fmt.Fprintln(os.Stderr, "json marshal error: {error}")
-        os.Exit(1)
-    fmt.Println(bytes as string)
-
 func main()
     _ = cli.New("changelog")
         |> cli.Description("Generate CHANGELOG.md entries from git history using an LLM")
@@ -48,7 +41,7 @@ func run(args cli.Args)
     version := cli.GetString(args, "version")
     if version == ""
         version = "Unreleased"
-    jsonOut := cli.GetBool(args, "json")
+    jsonOut := cli.IsJSON(args)
     generateChangelog(version, jsonOut)
 
 func generateChangelog(version string, jsonOut bool)
@@ -82,7 +75,7 @@ func generateChangelog(version string, jsonOut bool)
     gitLog = gitLog |> strpkg.TrimSpace()
     if gitLog == ""
         if jsonOut
-            printJSON(map of string to string{"error": "no new commits since {lastTag}"})
+            jsonpkg.WriteOutput(map of string to string{"error": "no new commits since {lastTag}"}) onerr panic "{error}"
             os.Exit(0)
         print("No new commits since {lastTag}. Nothing to add to CHANGELOG.md.")
         return
@@ -145,7 +138,7 @@ func generateChangelog(version string, jsonOut bool)
     files.WriteString(entry, "changelog-entry.md") onerr panic "Failed to write changelog-entry.md: {error}"
 
     if jsonOut
-        printJSON(ChangelogResult{version: version, date: releaseDate, entry: entry})
+        jsonpkg.WriteOutput(ChangelogResult{version: version, date: releaseDate, entry: entry}) onerr panic "{error}"
         return
 
     print("CHANGELOG.md updated.")

@@ -322,6 +322,8 @@ kukicha check file.kuki        # validate syntax without compiling
 kukicha run file.kuki          # transpile, compile, and run
 kukicha build file.kuki        # transpile and compile to binary
 kukicha fmt -w file.kuki       # format in place
+kukicha pack skill.kuki        # package skill into directory with SKILL.md + binary
+kukicha audit                  # check dependencies for known vulnerabilities
 ```
 
 ---
@@ -691,6 +693,76 @@ Functions: `Values`, `Filter`, `Map`, `FlatMap`, `Take`, `Skip`, `Enumerate`, `C
 
 ---
 
+### Skills (Agent Tool Packaging)
+
+The `skill` keyword declares a Kukicha package as a self-describing agent tool. `kukicha pack` compiles it into a distributable directory with a machine-readable manifest. `stdlib/skills` discovers these manifests at runtime.
+
+#### Declaring a skill
+
+```kukicha
+# target: mcp
+petiole weather
+
+skill WeatherService
+    description: "Provides weather forecasts."
+    version: "1.0.0"
+
+import "stdlib/mcp"
+
+func GetForecast(city string) string
+    return "sunny in {city}"
+
+func main()
+    server := mcp.New("weather", "1.0.0")
+    schema := mcp.Schema(list of mcp.SchemaProperty{
+        mcp.Prop("city", "string", "City name"),
+    }) |> mcp.Required(list of string{"city"})
+    mcp.Tool(server, "get_forecast", "Get weather forecast", schema, handleForecast)
+    mcp.Serve(server) onerr panic "{error}"
+```
+
+Rules enforced by the compiler:
+- Name must be exported (uppercase first letter)
+- Requires a `petiole` declaration (skills are packages, not standalone programs)
+- Must have a `description`
+- `version` must be valid semver if present
+
+#### Packaging with `kukicha pack`
+
+```bash
+kukicha pack weather.kuki
+```
+
+Produces a self-contained directory:
+
+```
+weather_service/
+├── SKILL.md              # YAML manifest (name, description, version, exported functions + param types)
+└── scripts/
+    └── weather_service   # compiled MCP server binary
+```
+
+The generated `SKILL.md` contains a YAML frontmatter manifest describing the skill's API — function names, parameter types, and defaults — so orchestrators can discover what the tool offers without running it.
+
+#### Discovering skills at runtime with `stdlib/skills`
+
+```kukicha
+import "stdlib/skills"
+
+# Discover all SKILL.md manifests under a directory
+tools := skills.Discover("./tools") onerr panic "{error}"
+for tool in tools
+    print("{tool.Name}: {tool.Content}")
+
+# Convenience helpers for standard locations
+agent := skills.AgentSkills() onerr panic "{error}"    # .agent/skills/
+claude := skills.ClaudeSkills() onerr panic "{error}"  # .claude/skills/
+```
+
+An orchestrator written in Kukicha uses `skills.Discover()` to find packed skill manifests, reads their descriptions, and can feed them to an LLM or use the binary over MCP.
+
+---
+
 ### Testing
 
 Test files use the `*_test.kuki` suffix and the table-driven pattern:
@@ -725,7 +797,7 @@ Assertions: `test.AssertEqual`, `test.AssertNotEqual`, `test.AssertTrue`, `test.
 
 ---
 
-**All available packages:** `a2a`, `cast`, `cli`, `concurrent`, `container`, `crypto`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`, `git`, `http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`, `random`, `regex`, `retry`, `sandbox`, `semver`, `shell`, `slice`, `sort`, `string`, `table`, `template`, `test`, `validate`
+**All available packages:** `a2a`, `cast`, `cli`, `concurrent`, `container`, `crypto`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`, `git`, `http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`, `random`, `regex`, `retry`, `sandbox`, `semver`, `shell`, `skills`, `slice`, `sort`, `string`, `table`, `template`, `test`, `validate`
 
 ---
 

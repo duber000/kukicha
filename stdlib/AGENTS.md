@@ -12,7 +12,7 @@ Import with: `import "stdlib/slice"`
 |---------|---------|---------------|
 | `stdlib/a2a` | Agent-to-Agent protocol client | Discover, Ask, Send, Stream, New/Text/Context |
 | `stdlib/cast` | Smart type coercion (any → scalar) | SmartInt, SmartFloat64, SmartBool, SmartString, Atoi, ParseFloat |
-| `stdlib/cli` | CLI argument parsing with subcommands | New, Description, Arg, AddFlag, Action, RunApp, Command, CommandFlag, CommandAction, GlobalFlag, CommandName, GetString, GetBool, GetInt, NewArgs |
+| `stdlib/cli` | CLI argument parsing with subcommands | New, Description, Arg, AddFlag, Action, RunApp, Command, CommandFlag, CommandAction, GlobalFlag, CommandName, GetString, GetBool, GetInt, NewArgs, IsJSON |
 | `stdlib/concurrent` | Parallel execution and concurrent map | Parallel, ParallelWithLimit, Map, MapWithLimit, Go |
 | `stdlib/container` | Docker/Podman client via Docker SDK | Connect, ConnectRemote, New/Host/APIVersion/Open, ListContainers, ListImages, Pull, PullAuth, LoginFromConfig, Run, Stop, Remove, Build, Logs, LogsTail, Inspect, Wait/WaitCtx, Exec, Events/EventsCtx, CopyFrom, CopyTo |
 | `stdlib/crypto` | Hashing, HMAC, and secure random (Go stdlib only) | SHA256, SHA256Bytes, HMAC, HMACBytes, RandomToken, RandomBytes, Equal |
@@ -27,7 +27,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/http` | HTTP response/request helpers + security | JSON, JSONStatus, JSONCreated, JSONError, JSONBadRequest, JSONNotFound, Text, HTML, SafeHTML, ReadJSON, ReadJSONLimit, Redirect, SafeRedirect, SafeURL, SetSecureHeaders, SecureHeaders, WithCSRF, Serve, MethodNotAllowed, IsGet/IsPost/IsPut/IsDelete/IsPatch, GetQueryParam, GetHeader; Constants: StatusOK/NotFound/etc, HeaderContentType, ContentJSON |
 | `stdlib/input` | User input utilities | ReadLine, Prompt, Confirm, Choose |
 | `stdlib/iterator` | Functional iteration (Go 1.23 iter.Seq) | Values, Filter, Map, FlatMap, Take, Skip, Enumerate, Chunk, Zip, Reduce, Collect, Any, All, Find |
-| `stdlib/json` | encoding/json wrapper | Marshal, MarshalPretty, Unmarshal, MarshalWrite, UnmarshalRead, DecodeRead, NewEncoder, NewDecoder, Encode, Decode, WithDeterministic, WithIndent |
+| `stdlib/json` | encoding/json wrapper | Marshal, MarshalPretty, Unmarshal, MarshalWrite, UnmarshalRead, DecodeRead, NewEncoder, NewDecoder, Encode, Decode, WithDeterministic, WithIndent, WriteOutput |
 | `stdlib/kube` | Kubernetes client via client-go | Connect, New/Kubeconfig/Context/InCluster/Retry/Open, Namespace, ListPods, ListPodsLabeled, GetPod, DeletePod, PodLogs, PodLogsTail, ListDeployments, GetDeployment, ScaleDeployment, RolloutRestart, DeleteDeployment, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, ListServices, ListNodes, ListNamespaces |
 | `stdlib/llm` | Large language model client (Chat Completions, OpenResponses, Anthropic; Retry) | New/Ask/Send/SendRaw/Complete, NewResponse/RAsk/RSend/Respond, NewMessages/MAsk/MSend/AnthropicComplete, Retry/RRetry/MRetry, Stream/RStream/MStream |
 | `stdlib/maps` | Map utilities | Keys, Values, Contains, Has, Merge, SortedKeys |
@@ -45,6 +45,7 @@ Import with: `import "stdlib/slice"`
 | `stdlib/sandbox` | os.Root filesystem sandboxing | New, Close, Read, ReadString, Write, WriteString, Append, AppendString, MkDir, MkDirAll, List, Exists, IsDir, IsFile, Stat, Delete, DeleteAll, Rename, Path, FS |
 | `stdlib/semver` | Semantic versioning (parse, bump, compare) | Parse, Bump, Format, Valid, Compare, Greater, Highest |
 | `stdlib/shell` | Safe command execution | Run, Output, New/Dir/SetTimeout/Env/Execute, Args/FlagIf/Preview, Success, GetOutput, GetError, ExitCode, Which, Getenv, Setenv, Unsetenv, Environ |
+| `stdlib/skills` | Runtime discovery of agent SKILL.md manifests | Discover, AgentSkills, ClaudeSkills |
 | `stdlib/slice` | Slice operations (all generic) | Filter, Map, GroupBy, Sort, SortBy, First, Last, Drop, DropLast, Reverse, Unique, Chunk, Contains, IndexOf, Concat, Get, GetOr, FirstOne, FirstOr, LastOne, LastOr, Find, FindOr, FindIndex, FindLast, FindLastOr, IsEmpty, IsNotEmpty, Pop, Shift |
 | `stdlib/sort` | Sorting slices (strings, ints, floats, custom) | Strings, Ints, Float64s, By, ByKey, Reverse |
 | `stdlib/string` | String utilities | ToUpper, ToLower, Title, Trim, TrimSpace, TrimPrefix, TrimSuffix, TrimLeft, TrimRight, Split, SplitN, Join, Fields, Contains, HasPrefix, HasSuffix, Index, LastIndex, Count, Replace, ReplaceAll, Repeat, PadRight, PadLeft, Concat, EqualFold, Len, IsEmpty, IsBlank, Lines |
@@ -399,7 +400,7 @@ sorted := sort.Strings(list of string{"banana", "apple", "cherry"})
 nums := sort.Ints(list of int{3, 1, 4, 1, 5})
 byLen := sort.By(words, (a, b) => len(a) < len(b))
 byName := sort.ByKey(repos, r => r.Name)
-reversed := sort.Reverse(sorted)
+reversed := sort.Reverse(words, (a, b) => len(a) < len(b))
 
 # Convenience sort via slice package (pipe-friendly)
 import "stdlib/slice"

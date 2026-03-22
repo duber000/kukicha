@@ -1,0 +1,53 @@
+# Kukicha Standard Library - Skills
+# Runtime discovery of .agent/skills/ and .claude/skills/ SKILL.md manifests.
+# Lets an orchestrator written in Kukicha load available tool descriptions on demand.
+
+petiole skills
+
+import "os"
+import "path/filepath"
+
+# Skill represents a discovered SKILL.md file.
+type Skill
+    Name string     # directory name (e.g. "changelog", "release")
+    Path string     # absolute path to the SKILL.md file
+    Content string  # full file content
+
+# Discover reads all SKILL.md files under a given directory tree.
+# dir is typically ".agent/skills" or ".claude/skills".
+# Returns an empty list (no error) if the directory does not exist.
+# Example: skills := skills.Discover(".agent/skills") onerr panic "{error}"
+func Discover(dir string) (list of Skill, error)
+    result := make(list of Skill, 0)
+    _, statErr := os.Stat(dir)
+    if statErr != empty
+        return result, empty
+    filepath.Walk(dir, func(filePath string, info os.FileInfo, err error) error
+        if err != empty
+            return err
+        if info.IsDir()
+            return empty
+        if filepath.Base(filePath) != "SKILL.md"
+            return empty
+        raw, readErr := os.ReadFile(filePath)
+        if readErr != empty
+            return empty
+        absPath, _ := filepath.Abs(filePath)
+        skillName := filepath.Base(filepath.Dir(filePath))
+        entry := Skill{Name: skillName, Path: absPath, Content: raw as string}
+        result = append(result, entry)
+        return empty
+    ) onerr return
+    return result, empty
+
+# AgentSkills reads .agent/skills/ in the current working directory.
+# Returns an empty list (no error) if the directory does not exist.
+# Example: skills := skills.AgentSkills() onerr panic "{error}"
+func AgentSkills() (list of Skill, error)
+    return Discover(".agent/skills")
+
+# ClaudeSkills reads .claude/skills/ in the current working directory.
+# Returns an empty list (no error) if the directory does not exist.
+# Example: skills := skills.ClaudeSkills() onerr panic "{error}"
+func ClaudeSkills() (list of Skill, error)
+    return Discover(".claude/skills")

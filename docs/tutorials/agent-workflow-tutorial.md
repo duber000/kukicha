@@ -326,6 +326,83 @@ Add to Claude Code's MCP config:
 
 ---
 
+## Packaging Skills for Agent Pipelines
+
+When you want an agent orchestrator to discover and use your MCP tools automatically, add a `skill` declaration and use `kukicha pack`.
+
+### Add a skill declaration
+
+The `skill` keyword marks a package as a self-describing agent tool:
+
+```kukicha
+# target: mcp
+petiole dns
+
+skill DnsLookup
+    description: "Resolve hostnames to IP addresses."
+    version: "1.0.0"
+
+import "stdlib/mcp"
+import "stdlib/net" as netutil
+import "stdlib/string" as strpkg
+
+function lookupHost(hostname string) string
+    ips := netutil.LookupHost(hostname) onerr return "lookup failed: {error}"
+    return strpkg.Join(ips, ", ")
+
+function main()
+    server := mcp.New("dns-lookup", "1.0.0")
+    schema := mcp.Schema(list of mcp.SchemaProperty{
+        mcp.Prop("hostname", "string", "Hostname to resolve"),
+    }) |> mcp.Required(list of string{"hostname"})
+    mcp.Tool(server, "dns_lookup", "Resolve a hostname to IP addresses", schema, lookupHost)
+    mcp.Serve(server) onerr panic "{error}"
+```
+
+The compiler enforces:
+- Name must be exported (uppercase first letter)
+- Requires a `petiole` (skills are packages)
+- Must have a `description`
+- `version` must be valid semver if present
+
+### Package it
+
+```bash
+kukicha pack dns-tool.kuki
+```
+
+This produces a self-contained directory:
+
+```
+dns_lookup/
+├── SKILL.md              # YAML manifest with function names, param types, defaults
+└── scripts/
+    └── dns_lookup        # compiled MCP server binary
+```
+
+The generated `SKILL.md` is a machine-readable manifest — not hand-written docs. Orchestrators read it to learn what the tool can do without running it.
+
+### Discover skills at runtime
+
+An orchestrator written in Kukicha uses `stdlib/skills` to find packed tools:
+
+```kukicha
+import "stdlib/skills"
+
+function main()
+    tools := skills.Discover("./tools") onerr panic "{error}"
+    for tool in tools
+        print("{tool.Name}: {tool.Content}")
+```
+
+`skills.Discover()` walks a directory tree and returns every `SKILL.md` it finds. Two convenience helpers cover standard locations:
+- `skills.AgentSkills()` — reads `.agent/skills/*/SKILL.md`
+- `skills.ClaudeSkills()` — reads `.claude/skills/*/SKILL.md`
+
+Both return an empty list (no error) when the directory doesn't exist.
+
+---
+
 ## Where Concepts Transfer
 
 Everything you learn maps directly to Go and Python.
@@ -349,6 +426,47 @@ Kukicha is Go with English keywords and indentation instead of symbols and brace
 - [Absolute Beginner Tutorial](absolute-beginner-tutorial.md) — syntax from scratch
 - [Data & AI Scripting](data-scripting-tutorial.md) — maps, CSV, LLM integration
 - [Production Patterns](production-patterns-tutorial.md) — databases, validation, retry, auth
+
+---
+
+## JSON Output for Agents
+
+When a Kukicha script is invoked as a subprocess tool by an AI agent, the agent parses stdout as JSON. Two stdlib functions cover this pattern cleanly.
+
+### Use `json.WriteOutput` — not `MarshalPretty`
+
+```kukicha
+import "stdlib/json" as jsonpkg
+import "stdlib/cli"
+
+type Result
+    repo string as "repo"
+    tag  string as "tag"
+
+func run(args cli.Args)
+    if cli.IsJSON(args)
+        result := Result{repo: "myorg/myapp", tag: "v1.2.3"}
+        jsonpkg.WriteOutput(result) onerr panic "{error}"
+        return
+    print("myorg/myapp → v1.2.3")
+```
+
+**Why compact, not pretty**: `MarshalPretty` adds 2-space indentation that agents discard after parsing. Compact output (`WriteOutput`) saves 30–50% tokens with identical parse results.
+
+### The `cli.IsJSON` shorthand
+
+`cli.IsJSON(args)` is equivalent to `cli.GetBool(args, "json")` — a one-liner for checking the `--json` global flag. Pair it with a `GlobalFlag` registration:
+
+```kukicha
+_ = cli.New("mytool")
+    |> cli.GlobalFlag("json", "Machine-readable JSON output", "false")
+    |> cli.Action(run)
+    |> cli.RunApp() onerr panic "{error}"
+```
+
+### Skill discovery for orchestrators
+
+Use `stdlib/skills` to discover tool manifests at runtime instead of front-loading every SKILL.md into a system prompt. See [Packaging Skills for Agent Pipelines](#packaging-skills-for-agent-pipelines) for the full workflow — `skill` declaration, `kukicha pack`, and `skills.Discover()`.
 
 ---
 

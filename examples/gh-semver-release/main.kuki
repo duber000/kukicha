@@ -60,14 +60,6 @@ func fatal(msg string)
 func warn(msg string)
     fmt.Fprintln(os.Stderr, "Warning: {msg}")
 
-# printJSON marshals v as indented JSON and writes it to stdout.
-# On marshal error it writes to stderr and exits 1.
-func printJSON(v any)
-    bytes := jsonpkg.MarshalPretty(v) onerr
-        fmt.Fprintln(os.Stderr, "json marshal error: {error}")
-        os.Exit(1)
-    fmt.Println(string(bytes))
-
 # nextTag computes the next semver tag from the current one, falling back to initialTag
 func nextTag(current string, bump string, initialTag string) (string, error)
     if current equals ""
@@ -160,11 +152,11 @@ func doList(args cli.Args, initialTag string)
     org := cli.GetString(args, "org")
     bump := cli.GetString(args, "bump")
     csv := cli.GetBool(args, "csv")
-    jsonOut := cli.GetBool(args, "json")
+    jsonOut := cli.IsJSON(args)
 
     repos := listReposWhereICommitted(org) onerr
         if jsonOut
-            printJSON(map of string to string{"error": "{error}"})
+            _ = jsonpkg.WriteOutput(map of string to string{"error": "{error}"})
         else
             fmt.Fprintln(os.Stderr, "Error: {error}")
         os.Exit(1)
@@ -182,7 +174,7 @@ func doList(args cli.Args, initialTag string)
                 ct := entry.current
                 je.current_tag = reference of ct
             result = append(result, je)
-        printJSON(result)
+        jsonpkg.WriteOutput(result) onerr panic "{error}"
     else if csv
         print("\"repo\",\"current_tag\",\"next_tag\"")
         for entry in entries
@@ -205,18 +197,18 @@ func doRelease(args cli.Args, initialTag string)
     repo := cli.GetString(args, "repo")
     dryRun := cli.GetBool(args, "dry-run")
     draft := cli.GetBool(args, "draft")
-    jsonOut := cli.GetBool(args, "json")
+    jsonOut := cli.IsJSON(args)
     generateNotes := env.GetBoolOrDefault(GenerateNotesEnv, true)
 
     if repo equals ""
         if jsonOut
-            printJSON(map of string to string{"error": "release requires --repo OWNER/REPO"})
+            _ = jsonpkg.WriteOutput(map of string to string{"error": "release requires --repo OWNER/REPO"})
             os.Exit(1)
         fatal("release requires --repo OWNER/REPO")
 
     if org not equals "" and not (repo |> string.HasPrefix("{org}/"))
         if jsonOut
-            printJSON(map of string to string{"error": "repo '{repo}' is not under org '{org}'"})
+            _ = jsonpkg.WriteOutput(map of string to string{"error": "repo '{repo}' is not under org '{org}'"})
             os.Exit(1)
         fatal("Repo '{repo}' is not under org '{org}'")
 
@@ -224,20 +216,20 @@ func doRelease(args cli.Args, initialTag string)
     repoOk := git.RepoExists(repo) onerr false
     if not repoOk
         if jsonOut
-            printJSON(map of string to string{"error": "failed to access repo: {repo}"})
+            _ = jsonpkg.WriteOutput(map of string to string{"error": "failed to access repo: {repo}"})
             os.Exit(1)
         fatal("Failed to access repo: {repo}")
 
     current := highestSemverTag(repo) onerr
         if jsonOut
-            printJSON(map of string to string{"error": "{error}"})
+            _ = jsonpkg.WriteOutput(map of string to string{"error": "{error}"})
         else
             fmt.Fprintln(os.Stderr, "Error: {error}")
         os.Exit(1)
 
     next := nextTag(current, bump, initialTag) onerr
         if jsonOut
-            printJSON(map of string to string{"error": "{error}"})
+            _ = jsonpkg.WriteOutput(map of string to string{"error": "{error}"})
         else
             fmt.Fprintln(os.Stderr, "Error: {error}")
         os.Exit(1)
@@ -245,7 +237,7 @@ func doRelease(args cli.Args, initialTag string)
     exists := git.ReleaseExists(repo, next) onerr false
     if exists
         if jsonOut
-            printJSON(ReleaseResult{repo: repo, tag: next, status: "already_exists"})
+            jsonpkg.WriteOutput(ReleaseResult{repo: repo, tag: next, status: "already_exists"}) onerr panic "{error}"
             return
         print("Release already exists:")
         print("  repo: {repo}")
@@ -254,7 +246,7 @@ func doRelease(args cli.Args, initialTag string)
 
     branch := git.DefaultBranch(repo) onerr
         if jsonOut
-            printJSON(map of string to string{"error": "{error}"})
+            _ = jsonpkg.WriteOutput(map of string to string{"error": "{error}"})
         else
             fmt.Fprintln(os.Stderr, "Error: {error}")
         os.Exit(1)
@@ -292,7 +284,7 @@ func doRelease(args cli.Args, initialTag string)
 
     if dryRun
         if jsonOut
-            printJSON(ReleaseResult{repo: repo, tag: next, status: "dry_run"})
+            jsonpkg.WriteOutput(ReleaseResult{repo: repo, tag: next, status: "dry_run"}) onerr panic "{error}"
             return
         print("Dry run only. No release created.")
         return
@@ -301,11 +293,11 @@ func doRelease(args cli.Args, initialTag string)
         fmt.Fprintln(os.Stderr, "")
         fmt.Fprintln(os.Stderr, "Release creation failed. This may indicate a race condition")
         if jsonOut
-            printJSON(map of string to string{"error": "release creation failed (another process may have created the release or tag)"})
+            _ = jsonpkg.WriteOutput(map of string to string{"error": "release creation failed (another process may have created the release or tag)"})
         fatal("(another process may have created the release or tag).")
 
     if jsonOut
-        printJSON(ReleaseResult{repo: repo, tag: next, status: "created"})
+        jsonpkg.WriteOutput(ReleaseResult{repo: repo, tag: next, status: "created"}) onerr panic "{error}"
 
 func doPick(args cli.Args, initialTag string)
     org := cli.GetString(args, "org")

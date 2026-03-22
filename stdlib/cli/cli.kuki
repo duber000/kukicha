@@ -301,6 +301,12 @@ func GetBool(args Args, name string) bool
     val := args.values[name]
     return val == "true" or val == "1" or val == "yes"
 
+# IsJSON returns true if the --json global flag was passed.
+# Shorthand for cli.GetBool(args, "json").
+# Example: if cli.IsJSON(args)
+func IsJSON(args Args) bool
+    return GetBool(args, "json")
+
 # GetInt returns the integer value of an argument
 # Example: count := cli.GetInt(args, "count")
 func GetInt(args Args, name string) (int, error)
