@@ -55,7 +55,7 @@ Import with: `import "stdlib/slice"`
 
 ## Testing Stdlib Packages
 
-Use the **table-driven pattern** for all `*_test.kuki` files. This produces self-describing failure messages (`TestFirst/3_elements` instead of a bare `t.Errorf`) and makes adding new cases trivial.
+Use the **table-driven pattern** for all `*_test.kuki` files. This produces self-describing failure messages (`TestClamp/below_min` instead of a bare `t.Errorf`) and makes adding new cases trivial.
 
 ```kukicha
 petiole slice_test
@@ -267,7 +267,7 @@ for attempt from 0 to cfg.MaxAttempts
     retry.Sleep(cfg, attempt)
 
 # HTTP fetch with builder
-resp := fetch.New(url) |> fetch.BearerAuth(token) |> fetch.Timeout(30000000000) |> fetch.Do() onerr panic "{error}"
+resp := fetch.New(url) |> fetch.BearerAuth(token) |> fetch.Timeout(30 * time.Second) |> fetch.Do() onerr panic "{error}"
 text := fetch.Text(resp) onerr panic "{error}"
 
 # Typed JSON decode (readable API flow)
@@ -548,8 +548,8 @@ result := template.HTMLRenderSimple(tmplStr, data) onerr return
 Every stdlib module is **pure Kukicha**: `<name>.kuki` source + `<name>.go` generated output. No `_helper.go` or `_tool.go` files.
 
 All packages: `a2a`, `cast`, `cli`, `concurrent`, `container`, `crypto`, `ctx`, `datetime`, `encoding`, `env`, `errors`, `fetch`, `files`,
-`git`, `http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `math`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
-`random`, `regex`, `retry`, `sandbox`, `semver`, `shell`, `slice`, `sort`, `string`, `table`, `template`, `test`, `validate`
+`git`, `http`, `input`, `iterator`, `json`, `kube`, `llm`, `maps`, `mcp`, `must`, `net`, `netguard`, `obs`, `parse`, `pg`,
+`random`, `regex`, `retry`, `sandbox`, `semver`, `shell`, `skills`, `slice`, `sort`, `string`, `table`, `template`, `test`, `validate`
 
 ## Import Aliases
 
