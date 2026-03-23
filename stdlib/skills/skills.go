@@ -7,74 +7,74 @@ import (
 	"path/filepath"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:11
 type Skill struct {
 	Name    string
 	Path    string
 	Content string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:20
 func Discover(dir string) ([]Skill, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:21
 	result := make([]Skill, 0)
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:22
 	_, statErr := os.Stat(dir)
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:23
 	if statErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:24
 		return result, nil
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:25
 	err_1 := filepath.Walk(dir, func(filePath string, info os.FileInfo, err error) error {
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:26
 		if err != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:27
 			return err
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:28
 		if info.IsDir() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:29
 			return nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:30
 		if filepath.Base(filePath) != "SKILL.md" {
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:31
 			return nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:32
 		raw, readErr := os.ReadFile(filePath)
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:33
 		if readErr != nil {
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:34
 			return nil
 		}
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:35
 		absPath, _ := filepath.Abs(filePath)
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:36
 		skillName := filepath.Base(filepath.Dir(filePath))
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:37
 		entry := Skill{Name: skillName, Path: absPath, Content: string(raw)}
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:38
 		result = append(result, entry)
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:39
 		return nil
 	})
 	if err_1 != nil {
 		return []Skill{}, err_1
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:41
 	return result, nil
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:46
 func AgentSkills() ([]Skill, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:47
 	return Discover(".agent/skills")
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:52
 func ClaudeSkills() ([]Skill, error) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/skills/skills.kuki:53
 	return Discover(".claude/skills")
 }

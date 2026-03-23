@@ -8,75 +8,75 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:10
 type GetStringCase struct {
 	name string
 	key  string
 	want string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:15
 func TestGetString(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:16
 	values := make(map[string]string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:17
 	values["format"] = "json"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:18
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:18
 	values["output"] = "result.txt"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:19
 	values["input"] = "main.kuki"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:20
 	args := cli.NewArgs(values)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:22
 	cases := []GetStringCase{GetStringCase{name: "existing key 1", key: "format", want: "json"}, GetStringCase{name: "existing key 2", key: "output", want: "result.txt"}, GetStringCase{name: "missing key", key: "missing", want: ""}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:27
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:28
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:29
 			got := cli.GetString(args, tc.key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:30
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:34
 type GetBoolCase struct {
 	name string
 	key  string
 	want bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:39
 func TestGetBool(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:40
 	values := make(map[string]string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:41
 	values["verbose"] = "true"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:42
 	values["quiet"] = "false"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:43
 	values["debug"] = "yes"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:44
 	values["enabled"] = "1"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:45
 	args := cli.NewArgs(values)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:47
 	cases := []GetBoolCase{GetBoolCase{name: "true string", key: "verbose", want: true}, GetBoolCase{name: "false string", key: "quiet", want: false}, GetBoolCase{name: "yes string", key: "debug", want: true}, GetBoolCase{name: "1 string", key: "enabled", want: true}, GetBoolCase{name: "missing flag", key: "missing", want: false}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:54
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:55
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:56
 			got := cli.GetBool(args, tc.key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:57
 			test.AssertEqual(t, got, tc.want)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:61
 type GetIntCase struct {
 	name    string
 	key     string
@@ -84,61 +84,61 @@ type GetIntCase struct {
 	wantErr bool
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:67
 func TestGetInt(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:68
 	values := make(map[string]string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:69
 	values["count"] = "42"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:70
 	values["port"] = "8080"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:71
 	values["invalid"] = "not-a-number"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:72
 	args := cli.NewArgs(values)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:74
 	cases := []GetIntCase{GetIntCase{name: "valid int 1", key: "count", want: 42, wantErr: false}, GetIntCase{name: "valid int 2", key: "port", want: 8080, wantErr: false}, GetIntCase{name: "invalid int", key: "invalid", want: 0, wantErr: true}, GetIntCase{name: "missing value", key: "missing", want: 0, wantErr: true}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:80
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:81
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:81
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:82
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:82
 			got, err := cli.GetInt(args, tc.key)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:83
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:83
 			if tc.wantErr {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:84
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:84
 				test.AssertError(t, err)
 			} else {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:86
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:86
 				test.AssertNoError(t, err)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:87
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:87
 				test.AssertEqual(t, got, tc.want)
 			}
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:92
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:92
 func TestBuilderChain(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:93
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:93
 	handler := func(args cli.Args) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:94
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:94
 		_ = args
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:96
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:96
 	_ = cli.Command(cli.CommandAction(cli.CommandFlag(cli.Command(cli.GlobalFlag(cli.Description(cli.New("myapp"), "A great tool"), "verbose", "Enable verbose output", "false"), "list", "List items"), "list", "csv", "CSV output", "false"), "list", handler), "add", "Add an item")
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:103
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:103
 	test.AssertTrue(t, true)
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:106
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:106
 func TestCommandName(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:107
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:107
 	values := make(map[string]string)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:108
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:108
 	values["__command__"] = "list"
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:109
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:109
 	args := cli.NewArgs(values)
-//line /var/home/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:110
+//line /Users/tluker/repos/go/kukicha/stdlib/cli/cli_test.kuki:110
 	test.AssertEqual(t, cli.CommandName(args), "list")
 }

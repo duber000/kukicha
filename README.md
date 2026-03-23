@@ -174,7 +174,7 @@ Every Kukicha concept maps 1:1 to Go and Python — see the [Quick Reference](do
 | Category | Packages |
 |---------|---------|
 | **Data** | `fetch`, `files`, `json`, `parse`, `encoding`, `cast` |
-| **Logic** | `slice`, `maps`, `string`, `math`, `sort` (custom comparators, ByKey), `iterator` (lazy iter.Seq pipelines), `random` |
+| **Logic** | `slice`, `maps`, `string`, `sort` (custom comparators, ByKey), `iterator` (lazy iter.Seq pipelines), `random` |
 | **Security** | `crypto` (SHA-256, HMAC, secure random), `netguard`, `sandbox` |
 | **Infrastructure** | `pg`, `kube`, `container`, `shell`, `net` |
 | **AI & Agents** | `llm`, `mcp`, `a2a`, `skills` |

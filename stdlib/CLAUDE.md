@@ -31,7 +31,6 @@ Import with: `import "stdlib/slice"`
 | `stdlib/kube` | Kubernetes client via client-go | Connect, New/Kubeconfig/Context/InCluster/Retry/Open, Namespace, ListPods, ListPodsLabeled, GetPod, DeletePod, PodLogs, PodLogsTail, ListDeployments, GetDeployment, ScaleDeployment, RolloutRestart, DeleteDeployment, WaitDeploymentReady/WaitDeploymentReadyCtx, WaitPodReady/WaitPodReadyCtx, WatchPods/WatchPodsCtx, ListServices, ListNodes, ListNamespaces |
 | `stdlib/llm` | Large language model client (Chat Completions, OpenResponses, Anthropic; Retry) | New/Ask/Send/SendRaw/Complete, NewResponse/RAsk/RSend/Respond, NewMessages/MAsk/MSend/AnthropicComplete, Retry/RRetry/MRetry, Stream/RStream/MStream |
 | `stdlib/maps` | Map utilities | Keys, Values, Contains, Has, Merge, SortedKeys |
-| `stdlib/math` | Mathematical operations | Abs, Round, Floor, Ceil, Min, Max, Pow, Sqrt, Log, Log2, Log10, Pi, E, Clamp |
 | `stdlib/mcp` | Model Context Protocol server | New, Serve, Tool, Prop, Schema, Required, TextResult, ErrorResult |
 | `stdlib/must` | Panic-on-error startup helpers | Do, DoMsg, Ok, OkMsg, Env, EnvOr, EnvInt, EnvIntOr, EnvBool, EnvBoolOr, EnvList, EnvListOr, True, False, NotEmpty, NotNil |
 | `stdlib/net` | IP address and CIDR utilities | ParseIP, ParseCIDR, Contains, SplitHostPort, JoinHostPort, LookupHost, IsLoopback, IsPrivate, IsMulticast, IsNil, IPString |
@@ -52,36 +51,35 @@ Import with: `import "stdlib/slice"`
 | `stdlib/table` | Terminal table rendering (plain, box, markdown) | New, AddRow, Print, PrintWithStyle, ToString, ToStringWithStyle |
 | `stdlib/template` | Text templating (plain + HTML-safe) | New, Render, Parse, Data, WithContent, Execute, RenderSimple, HTMLExecute, HTMLRenderSimple, Must, Funcs |
 | `stdlib/test` | Test assertion helpers (use in `*_test.kuki` only) | AssertEqual, AssertNotEqual, AssertTrue, AssertFalse, AssertNoError, AssertError, AssertNotEmpty, AssertNil, AssertNotNil |
-| `stdlib/validate` | Input validation | NotEmpty, MinLength, MaxLength, Length, LengthBetween, Matches, Email, URL, Alpha, Alphanumeric, Numeric, NoWhitespace, StartsWith, EndsWith, Contains, OneOf, Positive, Negative, NonNegative, NonZero, InRange, Min, Max, PositiveFloat, InRangeFloat, ParseInt, ParsePositiveInt, ParseFloat, ParseBool, NotEmptyList, ListMinLength, ListMaxLength, WithMessage, Require, NoHTML, SafeFilename, NoNullBytes, CompilePattern, MatchesCompiled |
+| `stdlib/validate` | Input validation | NotEmpty, MinLength, MaxLength, Length, LengthBetween, Matches, Email, URL, Alpha, Alphanumeric, Numeric, NoWhitespace, StartsWith, EndsWith, Contains, OneOf, Positive, Negative, NonNegative, NonZero, InRange, Min, Max, PositiveFloat, InRangeFloat, ParseInt, ParsePositiveInt, ParseFloat, ParseBool, NotEmptyList, ListMinLength, ListMaxLength, WithMessage, Require, NoHTML, SafeFilename, NoNullBytes |
 
 ## Testing Stdlib Packages
 
 Use the **table-driven pattern** for all `*_test.kuki` files. This produces self-describing failure messages (`TestClamp/below_min` instead of a bare `t.Errorf`) and makes adding new cases trivial.
 
 ```kukicha
-petiole math_test
+petiole slice_test
 
-import "stdlib/math"
+import "stdlib/slice"
 import "stdlib/test"
 import "testing"
 
-type ClampCase
-    name string
-    val  float64
-    lo   float64
-    hi   float64
-    want float64
+type FirstCase
+    name    string
+    n       int
+    wantLen int
 
-func TestClamp(t reference testing.T)
-    cases := list of ClampCase{
-        ClampCase{name: "within range", val: 5.0,  lo: 0.0, hi: 10.0, want: 5.0},
-        ClampCase{name: "below min",   val: -5.0, lo: 0.0, hi: 10.0, want: 0.0},
-        ClampCase{name: "above max",   val: 15.0, lo: 0.0, hi: 10.0, want: 10.0},
+func TestFirst(t reference testing.T)
+    items := list of string{"a", "b", "c", "d", "e"}
+    cases := list of FirstCase{
+        FirstCase{name: "3 elements", n: 3, wantLen: 3},
+        FirstCase{name: "n > length", n: 10, wantLen: 5},
+        FirstCase{name: "n=0", n: 0, wantLen: 0},
     }
     for tc in cases
         t.Run(tc.name, (t reference testing.T) =>
-            got := math.Clamp(tc.val, tc.lo, tc.hi)
-            test.AssertEqual(t, got, tc.want)
+            result := slice.First(items, tc.n)
+            test.AssertEqual(t, len(result), tc.wantLen)
         )
 ```
 

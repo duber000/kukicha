@@ -4,120 +4,120 @@ package concurrent
 
 import "sync"
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:10
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:10
 func Parallel(tasks ...func()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:11
 	wg := sync.WaitGroup{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:12
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:12
 	wg.Add(len(tasks))
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:13
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:13
 	for _, task := range tasks {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:14
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:14
 		t := task
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:15
 		go func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:16
 			defer wg.Done()
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:17
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:17
 			t()
 		}()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:19
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:19
 	wg.Wait()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:24
 func ParallelWithLimit(limit int, tasks ...func()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:25
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:25
 	wg := sync.WaitGroup{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:26
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:26
 	semaphore := make(chan int, limit)
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:27
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:27
 	wg.Add(len(tasks))
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:28
 	for _, task := range tasks {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:29
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:29
 		semaphore <- 1
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:30
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:30
 		t := task
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:31
 		go func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:32
 			defer wg.Done()
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:33
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:33
 			t()
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:34
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:34
 			<-semaphore
 		}()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:36
 	wg.Wait()
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:42
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:42
 func Map[T any, R any](items []T, fn func(T) R) []R {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:43
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:43
 	results := make([]R, len(items))
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:44
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:44
 	wg := sync.WaitGroup{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:45
 	wg.Add(len(items))
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:46
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:46
 	for i, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:47
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:47
 		idx := i
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:48
 		it := item
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:49
 		go func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:50
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:50
 			defer wg.Done()
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:51
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:51
 			results[idx] = fn(it)
 		}()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:53
 	wg.Wait()
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:54
 	return results
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:58
 func MapWithLimit[T any, R any](items []T, limit int, fn func(T) R) []R {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:59
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:59
 	results := make([]R, len(items))
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:60
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:60
 	wg := sync.WaitGroup{}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:61
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:61
 	semaphore := make(chan int, limit)
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:62
 	wg.Add(len(items))
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:63
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:63
 	for i, item := range items {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:64
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:64
 		idx := i
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:65
 		it := item
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:66
 		semaphore <- 1
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:67
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:67
 		go func() {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:68
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:68
 			defer wg.Done()
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:69
 			results[idx] = fn(it)
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:70
 			<-semaphore
 		}()
 	}
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:72
 	wg.Wait()
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:73
 	return results
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:79
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:79
 func Go(fn func()) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:80
+//line /Users/tluker/repos/go/kukicha/stdlib/concurrent/concurrent.kuki:80
 	go fn()
 }

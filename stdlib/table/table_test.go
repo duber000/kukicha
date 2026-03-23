@@ -9,106 +9,106 @@ import (
 	"testing"
 )
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:11
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:11
 type NewCase struct {
 	name    string
 	headers []string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:15
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:15
 func TestNew(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:16
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:16
 	cases := []NewCase{NewCase{name: "two headers", headers: []string{"Name", "Age"}}, NewCase{name: "empty headers", headers: []string{}}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:20
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:20
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:21
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:21
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:22
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:22
 			tbl := table.New(tc.headers)
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:23
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:23
 			test.AssertEqual(t, len(tbl.Headers), len(tc.headers))
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:24
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:24
 			test.AssertEqual(t, len(tbl.Rows), 0)
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:28
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:28
 type AddRowCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:31
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:31
 func TestAddRow(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:32
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:32
 	cases := []AddRowCase{AddRowCase{name: "add one row"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:35
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:35
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:36
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:36
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:37
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:37
 			tbl := table.New([]string{"Name", "Age"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:38
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:38
 			tbl = table.AddRow(tbl, []string{"Alice", "30"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:39
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:39
 			test.AssertEqual(t, len(tbl.Rows), 1)
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:40
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:40
 			test.AssertEqual(t, tbl.Rows[0][0], "Alice")
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:41
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:41
 			test.AssertEqual(t, tbl.Rows[0][1], "30")
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:45
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:45
 type ToStringCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:48
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:48
 func TestToString(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:49
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:49
 	cases := []ToStringCase{ToStringCase{name: "plain output"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:52
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:52
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:53
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:53
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:54
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:54
 			tbl := table.New([]string{"Name", "Stars"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:55
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:55
 			tbl = table.AddRow(tbl, []string{"go", "115000"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:56
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:56
 			s := table.ToString(tbl)
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:57
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:57
 			test.AssertTrue(t, kukistring.Contains(s, "Name"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:58
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:58
 			test.AssertTrue(t, kukistring.Contains(s, "go"))
 		})
 	}
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:62
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:62
 type MarkdownCase struct {
 	name string
 }
 
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:65
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:65
 func TestMarkdown(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:66
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:66
 	cases := []MarkdownCase{MarkdownCase{name: "markdown style"}}
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:69
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:69
 	for _, tc := range cases {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:70
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:70
 		t.Run(tc.name, func(t *testing.T) {
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:71
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:71
 			tbl := table.New([]string{"A", "B"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:72
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:72
 			tbl = table.AddRow(tbl, []string{"1", "2"})
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:73
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:73
 			s := table.ToStringWithStyle(tbl, "markdown")
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:74
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:74
 			test.AssertTrue(t, kukistring.Contains(s, "|"))
-//line /var/home/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:75
+//line /Users/tluker/repos/go/kukicha/stdlib/table/table_test.kuki:75
 			test.AssertTrue(t, kukistring.Contains(s, "---"))
 		})
 	}

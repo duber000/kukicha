@@ -611,14 +611,6 @@ content := sandbox.Read(box, userPath) onerr return   # can't escape root
 sandbox.Write(box, "out.txt", data) onerr return
 ```
 
-**stdlib/math** — Math operations
-
-```kukicha
-val    := math.Clamp(input, 0.0, 100.0)
-abs    := math.Abs(-5.0)
-bigger := math.Max(a, b)
-```
-
 **stdlib/ctx** (import as `ctxpkg`) — Context helpers
 
 ```kukicha
@@ -768,28 +760,27 @@ An orchestrator written in Kukicha uses `skills.Discover()` to find packed skill
 Test files use the `*_test.kuki` suffix and the table-driven pattern:
 
 ```kukicha
-petiole math_test
+petiole slice_test
 
-import "stdlib/math"
+import "stdlib/slice"
 import "stdlib/test"
 import "testing"
 
-type ClampCase
-    name string
-    val  float64
-    lo   float64
-    hi   float64
-    want float64
+type FirstCase
+    name    string
+    n       int
+    wantLen int
 
-func TestClamp(t reference testing.T)
-    cases := list of ClampCase{
-        ClampCase{name: "within range", val: 5.0, lo: 0.0, hi: 10.0, want: 5.0},
-        ClampCase{name: "below min", val: -5.0, lo: 0.0, hi: 10.0, want: 0.0},
+func TestFirst(t reference testing.T)
+    items := list of string{"a", "b", "c", "d", "e"}
+    cases := list of FirstCase{
+        FirstCase{name: "3 elements", n: 3, wantLen: 3},
+        FirstCase{name: "n > length", n: 10, wantLen: 5},
     }
     for tc in cases
         t.Run(tc.name, (t reference testing.T) =>
-            got := math.Clamp(tc.val, tc.lo, tc.hi)
-            test.AssertEqual(t, got, tc.want)
+            result := slice.First(items, tc.n)
+            test.AssertEqual(t, len(result), tc.wantLen)
         )
 ```
 
