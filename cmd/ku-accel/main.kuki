@@ -39,7 +39,8 @@ func handleDetect()
         "cpu_features": detectCpuFeatures(),
         "gpu": detectGpu(),
         "npu": detectNpu(),
-        "onnxruntime": detectOrt()
+        "onnxruntime": detectOrt(),
+        "fastflowlm": detectFlm()
     }
     printJsonResult(out)
 
@@ -143,6 +144,30 @@ func detectOrt() map of string to any
         "available": true,
         "version": infer.Version()
     }
+
+func detectFlm() map of string to any
+    result := map of string to any{
+        "available": false
+    }
+    # Check if flm binary is in PATH
+    flmPath := shell.Which("flm")
+    if flmPath == ""
+        return result
+    result["available"] = true
+    result["path"] = flmPath
+
+    # Try flm validate to check NPU readiness
+    validate := shell.New("flm", "validate")
+    res := shell.Execute(validate)
+    result["npu_ready"] = shell.Success(res)
+
+    # Try to get version
+    versionCmd := shell.New("flm", "version")
+    vRes := shell.Execute(versionCmd)
+    if shell.Success(vRes)
+        result["version"] = string.TrimSpace(safeSmartString(shell.GetOutput(vRes)))
+
+    return result
 
 func safeSmartString(data list of byte) string
     s, err := cast.SmartString(data)

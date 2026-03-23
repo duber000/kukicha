@@ -22,6 +22,43 @@ func TestNewConfig(t reference testing.T)
             _ = cfg
         )
 
+# --- TestEPConfig ---
+type EPConfigCase
+    name string
+    epName string
+
+func TestEPConfig(t reference testing.T)
+    cases := list of EPConfigCase{
+        EPConfigCase{name: "CUDA provider", epName: "CUDAExecutionProvider"},
+        EPConfigCase{name: "OpenVINO provider", epName: "OpenVINOExecutionProvider"},
+        EPConfigCase{name: "CoreML provider", epName: "CoreMLExecutionProvider"},
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cfg := infer.New() |> infer.EP(tc.epName)
+            _ = cfg
+        )
+
+# --- TestEPWithOptionsConfig ---
+type EPWithOptionsCase
+    name string
+    epName string
+    opts map of string to string
+
+func TestEPWithOptionsConfig(t reference testing.T)
+    cases := list of EPWithOptionsCase{
+        EPWithOptionsCase{
+            name: "OpenVINO with device",
+            epName: "OpenVINOExecutionProvider",
+            opts: map of string to string{"device_type": "NPU"}
+        },
+    }
+    for tc in cases
+        t.Run(tc.name, (t reference testing.T) =>
+            cfg := infer.New() |> infer.EPWithOptions(tc.epName, tc.opts)
+            _ = cfg
+        )
+
 # --- TestShape ---
 type ShapeCase
     name string

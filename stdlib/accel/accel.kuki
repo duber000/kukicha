@@ -161,8 +161,9 @@ func OptLevel(cfg Config, level int) Config
     cfg.optLevel = level
     return cfg
 
-# EP sets the execution provider for web backend ("webnn", "webgpu", "wasm").
-# Ignored on native backend.
+# EP sets the execution provider.
+# For native backend: ONNX Runtime provider name (e.g., "CUDAExecutionProvider").
+# For web backend: browser provider name ("webnn", "webgpu", "wasm").
 func EP(cfg Config, ep string) Config
     cfg.ep = ep
     return cfg
@@ -185,6 +186,8 @@ func loadNative(cfg Config, env Env, path string, inputNames list of string, out
         nCfg = nCfg |> infer.InterOpThreads(cfg.interOpThreads)
     if cfg.optLevel > 0
         nCfg = nCfg |> infer.OptLevel(cfg.optLevel)
+    if cfg.ep != ""
+        nCfg = nCfg |> infer.EP(cfg.ep)
 
     # Unwrap accel tensors to infer tensors
     nInputs := make(list of infer.Tensor, len(inputs))

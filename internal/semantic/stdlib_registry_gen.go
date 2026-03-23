@@ -329,6 +329,8 @@ var generatedStdlibRegistry = map[string]goStdlibEntry{
 	"infer.Close":                     {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "error"}}, ParamNames: []string{"model"}},
 	"infer.Destroy":                   {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "error"}}, ParamNames: []string{"tensor"}},
 	"infer.Dtype":                     {Count: 1, Types: []goStdlibType{{Kind: TypeKindString}}, ParamNames: []string{"tensor"}},
+	"infer.EP":                        {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "Config"}}, ParamNames: []string{"cfg", "name"}},
+	"infer.EPWithOptions":             {Count: 1, Types: []goStdlibType{{Kind: TypeKindNamed, Name: "Config"}}, ParamNames: []string{"cfg", "name", "options"}},
 	"infer.GetFloat32":                {Count: 1, Types: []goStdlibType{{Kind: TypeKindList, ElementType: &goStdlibType{Kind: TypeKindFloat}}}, ParamNames: []string{"tensor"}},
 	"infer.GetInt64":                  {Count: 1, Types: []goStdlibType{{Kind: TypeKindList, ElementType: &goStdlibType{Kind: TypeKindInt}}}, ParamNames: []string{"tensor"}},
 	"infer.GetShape":                  {Count: 1, Types: []goStdlibType{{Kind: TypeKindList, ElementType: &goStdlibType{Kind: TypeKindInt}}}, ParamNames: []string{"tensor"}},

@@ -1,8 +1,7 @@
 # Kukicha Standard Library - Infer (ONNX Runtime Inference)
 # Provides a pipe-friendly wrapper around yalue/onnxruntime_go for cross-platform
-# neural network inference via ONNX Runtime. Phase 1 is CPU-only; the API is
-# designed to extend to accelerator execution providers (Intel NPU, AMD NPU,
-# Apple ANE, Qualcomm QNN) in later phases.
+# neural network inference via ONNX Runtime. Supports CPU and hardware-accelerated
+# execution providers (CUDA, TensorRT, CoreML, OpenVINO, DirectML, QNN, etc.).
 #
 # ONNX Runtime uses dlopen at runtime, so the code compiles without the .so
 # installed and fails gracefully at runtime when the library is missing.
@@ -12,7 +11,7 @@
 #   if infer.IsAvailable()
 #       print("ONNX Runtime version: {infer.Version()}")
 #
-#   # Initialize + load model + run inference
+#   # Initialize + load model + run inference (CPU)
 #   env := infer.Init() onerr panic "ort init: {error}"
 #   defer infer.Cleanup(env)
 #
@@ -31,6 +30,19 @@
 #
 #   infer.Run(model) onerr panic "inference: {error}"
 #   results := infer.GetFloat32(output)
+#
+#   # GPU-accelerated inference (CUDA)
+#   model := infer.New()
+#       |> infer.EP("CUDAExecutionProvider")
+#       |> infer.Load("model.onnx", inputNames, outputNames, inputs, outputs)
+#       onerr panic "load: {error}"
+#
+#   # Execution provider with options (OpenVINO on NPU)
+#   model := infer.New()
+#       |> infer.EPWithOptions("OpenVINOExecutionProvider",
+#           map of string to string{"device_type": "NPU"})
+#       |> infer.Load("model.onnx", inputNames, outputNames, inputs, outputs)
+#       onerr panic "load: {error}"
 
 petiole infer
 
@@ -42,11 +54,13 @@ import "github.com/yalue/onnxruntime_go" as ort
 type Env
     initialized bool
 
-# Config is a builder for session options (thread count, optimization level).
+# Config is a builder for session options (thread count, optimization level, execution provider).
 type Config
     numThreads int
     interOpThreads int
     optimizationLevel int
+    epName string
+    epOptions map of string to string
 
 # Model wraps an AdvancedSession with its input/output names.
 type Model
@@ -136,6 +150,25 @@ func OptLevel(cfg Config, level int) Config
     cfg.optimizationLevel = level
     return cfg
 
+# EP sets the execution provider by name. Common providers:
+#   "CUDAExecutionProvider"      — NVIDIA GPU
+#   "TensorrtExecutionProvider"  — NVIDIA TensorRT
+#   "CoreMLExecutionProvider"    — Apple Neural Engine / GPU
+#   "DirectMLExecutionProvider"  — Windows GPU (AMD, Intel, NVIDIA)
+#   "OpenVINOExecutionProvider"  — Intel CPU/GPU/NPU
+#   "QNNExecutionProvider"       — Qualcomm NPU
+# If the provider is unavailable at runtime, ONNX Runtime falls back to CPU.
+func EP(cfg Config, name string) Config
+    cfg.epName = name
+    return cfg
+
+# EPWithOptions sets an execution provider with provider-specific options.
+# Example: infer.EPWithOptions("OpenVINOExecutionProvider", map of string to string{"device_type": "NPU"})
+func EPWithOptions(cfg Config, name string, options map of string to string) Config
+    cfg.epName = name
+    cfg.epOptions = options
+    return cfg
+
 # --- Model loading ---
 
 # Load creates an AdvancedSession from a model file with pre-allocated tensors.
@@ -171,6 +204,16 @@ func Load(cfg Config, path string, inputNames list of string, outputNames list o
         if err != empty
             opts.Destroy()
             return Model{}, errors.Wrap(err, "set optimization level")
+
+    # Configure execution provider if requested
+    if cfg.epName != ""
+        epOpts := cfg.epOptions
+        if epOpts == empty
+            epOpts = map of string to string{}
+        err = opts.AppendExecutionProvider(cfg.epName, epOpts)
+        if err != empty
+            opts.Destroy()
+            return Model{}, errors.Wrap(err, "set execution provider {cfg.epName}")
 
     # Convert Tensor wrappers to ort.Value slice
     ortInputs := make(list of ort.Value, len(inputs))
