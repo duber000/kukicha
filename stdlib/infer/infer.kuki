@@ -1,0 +1,427 @@
+# Kukicha Standard Library - Infer (ONNX Runtime Inference)
+# Provides a pipe-friendly wrapper around yalue/onnxruntime_go for cross-platform
+# neural network inference via ONNX Runtime. Supports CPU and hardware-accelerated
+# execution providers (CUDA, TensorRT, CoreML, OpenVINO, DirectML, QNN, etc.).
+#
+# ONNX Runtime uses dlopen at runtime, so the code compiles without the .so
+# installed and fails gracefully at runtime when the library is missing.
+#
+# Examples:
+#   # Check availability
+#   if infer.IsAvailable()
+#       print("ONNX Runtime version: {infer.Version()}")
+#
+#   # Initialize + load model + run inference (CPU)
+#   env := infer.Init() onerr panic "ort init: {error}"
+#   defer infer.Cleanup(env)
+#
+#   shape := infer.Shape(1, 10)
+#   input := infer.ZeroFloat32(shape) onerr panic "{error}"
+#   outShape := infer.Shape(1, 5)
+#   output := infer.ZeroFloat32(outShape) onerr panic "{error}"
+#
+#   model := infer.New()
+#       |> infer.Threads(4)
+#       |> infer.Load("model.onnx",
+#           list of string{"input"}, list of string{"output"},
+#           list of Tensor{input}, list of Tensor{output})
+#       onerr panic "load: {error}"
+#   defer infer.Close(model)
+#
+#   infer.Run(model) onerr panic "inference: {error}"
+#   results := infer.GetFloat32(output)
+#
+#   # GPU-accelerated inference (CUDA)
+#   model := infer.New()
+#       |> infer.EP("CUDAExecutionProvider")
+#       |> infer.Load("model.onnx", inputNames, outputNames, inputs, outputs)
+#       onerr panic "load: {error}"
+#
+#   # Execution provider with options (OpenVINO on NPU)
+#   model := infer.New()
+#       |> infer.EPWithOptions("OpenVINOExecutionProvider",
+#           map of string to string{"device_type": "NPU"})
+#       |> infer.Load("model.onnx", inputNames, outputNames, inputs, outputs)
+#       onerr panic "load: {error}"
+
+petiole infer
+
+import "os"
+import "stdlib/errors"
+import "github.com/yalue/onnxruntime_go" as ort
+
+# Env tracks whether the ONNX Runtime environment has been initialized.
+type Env
+    initialized bool
+
+# Config is a builder for session options (thread count, optimization level, execution provider).
+type Config
+    numThreads int
+    interOpThreads int
+    optimizationLevel int
+    epName string
+    epOptions map of string to string
+
+# Model wraps an AdvancedSession with its input/output names.
+type Model
+    session any
+    inputNames list of string
+    outputNames list of string
+
+# Tensor wraps an ort.Value with a dtype tag for type-safe access.
+# The backing data slices (float32Data / int64Data) share memory with the
+# underlying ort.Tensor, so after Run() the output data is already updated.
+type Tensor
+    value any
+    dtype string
+    shape list of int64
+    float32Data list of float32
+    int64Data list of int64
+
+# ModelInfo holds metadata from model inspection.
+type ModelInfo
+    graphName string
+    inputs list of IOInfo
+    outputs list of IOInfo
+
+# IOInfo describes a single model input or output.
+type IOInfo
+    Name string
+    Dims list of int64
+    Dtype string
+
+# --- Environment lifecycle ---
+
+# Init initializes the ONNX Runtime environment. If the ORT_LIB_PATH environment
+# variable is set, it is used as the shared library path (equivalent to InitWithPath).
+# Otherwise the library is located via the system linker (LD_LIBRARY_PATH, etc.).
+func Init() (Env, error)
+    ortLibPath := os.Getenv("ORT_LIB_PATH")
+    if ortLibPath != ""
+        ort.SetSharedLibraryPath(ortLibPath)
+    err := ort.InitializeEnvironment()
+    if err != empty
+        return Env{}, errors.Wrap(err, "ort initialize")
+    return Env{initialized: true}, empty
+
+# InitWithPath initializes ONNX Runtime using an explicit shared library path.
+func InitWithPath(path string) (Env, error)
+    ort.SetSharedLibraryPath(path)
+    err := ort.InitializeEnvironment()
+    if err != empty
+        return Env{}, errors.Wrap(err, "ort initialize with path")
+    return Env{initialized: true}, empty
+
+# Cleanup destroys the ONNX Runtime environment.
+func Cleanup(env Env) error
+    if not env.initialized
+        return empty
+    err := ort.DestroyEnvironment()
+    if err != empty
+        return errors.Wrap(err, "ort cleanup")
+    return empty
+
+# IsAvailable returns true if the ONNX Runtime environment is initialized.
+func IsAvailable() bool
+    return ort.IsInitialized()
+
+# Version returns the ONNX Runtime version string.
+func Version() string
+    return ort.GetVersion()
+
+# --- Builder ---
+
+# New creates a default configuration builder.
+func New() Config
+    return Config{}
+
+# Threads sets the intra-op thread count.
+func Threads(cfg Config, n int) Config
+    cfg.numThreads = n
+    return cfg
+
+# InterOpThreads sets the inter-op thread count.
+func InterOpThreads(cfg Config, n int) Config
+    cfg.interOpThreads = n
+    return cfg
+
+# OptLevel sets the graph optimization level (0=disabled, 1=basic, 2=extended, 99=all).
+func OptLevel(cfg Config, level int) Config
+    cfg.optimizationLevel = level
+    return cfg
+
+# EP sets the execution provider by name. Common providers:
+#   "CUDAExecutionProvider"      — NVIDIA GPU
+#   "TensorrtExecutionProvider"  — NVIDIA TensorRT
+#   "CoreMLExecutionProvider"    — Apple Neural Engine / GPU
+#   "DirectMLExecutionProvider"  — Windows GPU (AMD, Intel, NVIDIA)
+#   "OpenVINOExecutionProvider"  — Intel CPU/GPU/NPU
+#   "QNNExecutionProvider"       — Qualcomm NPU
+# If the provider is unavailable at runtime, ONNX Runtime falls back to CPU.
+func EP(cfg Config, name string) Config
+    cfg.epName = name
+    return cfg
+
+# EPWithOptions sets an execution provider with provider-specific options.
+# Example: infer.EPWithOptions("OpenVINOExecutionProvider", map of string to string{"device_type": "NPU"})
+func EPWithOptions(cfg Config, name string, options map of string to string) Config
+    cfg.epName = name
+    cfg.epOptions = options
+    return cfg
+
+# --- Model loading ---
+
+# Load creates an AdvancedSession from a model file with pre-allocated tensors.
+func Load(cfg Config, path string, inputNames list of string, outputNames list of string, inputs list of Tensor, outputs list of Tensor) (Model, error)
+    opts, err := ort.NewSessionOptions()
+    if err != empty
+        return Model{}, errors.Wrap(err, "session options")
+
+    if cfg.numThreads > 0
+        err = opts.SetIntraOpNumThreads(cfg.numThreads)
+        if err != empty
+            opts.Destroy()
+            return Model{}, errors.Wrap(err, "set intra-op threads")
+
+    if cfg.interOpThreads > 0
+        err = opts.SetInterOpNumThreads(cfg.interOpThreads)
+        if err != empty
+            opts.Destroy()
+            return Model{}, errors.Wrap(err, "set inter-op threads")
+
+    if cfg.optimizationLevel == 1
+        err = opts.SetGraphOptimizationLevel(ort.GraphOptimizationLevelEnableBasic)
+        if err != empty
+            opts.Destroy()
+            return Model{}, errors.Wrap(err, "set optimization level")
+    else if cfg.optimizationLevel == 2
+        err = opts.SetGraphOptimizationLevel(ort.GraphOptimizationLevelEnableExtended)
+        if err != empty
+            opts.Destroy()
+            return Model{}, errors.Wrap(err, "set optimization level")
+    else if cfg.optimizationLevel >= 99
+        err = opts.SetGraphOptimizationLevel(ort.GraphOptimizationLevelEnableAll)
+        if err != empty
+            opts.Destroy()
+            return Model{}, errors.Wrap(err, "set optimization level")
+
+    # Configure execution provider if requested
+    if cfg.epName != ""
+        epOpts := cfg.epOptions
+        if epOpts == empty
+            epOpts = map of string to string{}
+        err = opts.AppendExecutionProvider(cfg.epName, epOpts)
+        if err != empty
+            opts.Destroy()
+            return Model{}, errors.Wrap(err, "set execution provider {cfg.epName}")
+
+    # Convert Tensor wrappers to ort.Value slice
+    ortInputs := make(list of ort.Value, len(inputs))
+    for i from 0 to len(inputs)
+        ortInputs[i] = inputs[i].value.(ort.Value)
+
+    ortOutputs := make(list of ort.Value, len(outputs))
+    for i from 0 to len(outputs)
+        ortOutputs[i] = outputs[i].value.(ort.Value)
+
+    session, sessErr := ort.NewAdvancedSession(path, inputNames, outputNames, ortInputs, ortOutputs, opts)
+    if sessErr != empty
+        opts.Destroy()
+        return Model{}, errors.Wrap(sessErr, "load model")
+
+    return Model{session: session, inputNames: inputNames, outputNames: outputNames}, empty
+
+# Close destroys the model session and frees resources.
+func Close(model Model) error
+    if model.session == empty
+        return empty
+    sess := model.session.(reference ort.AdvancedSession)
+    err := sess.Destroy()
+    if err != empty
+        return errors.Wrap(err, "close model")
+    return empty
+
+# --- Inference ---
+
+# Run executes inference on the model.
+func Run(model Model) error
+    if model.session == empty
+        return errors.New("model not loaded")
+    sess := model.session.(reference ort.AdvancedSession)
+    err := sess.Run()
+    if err != empty
+        return errors.Wrap(err, "inference run")
+    return empty
+
+# --- Tensor creation ---
+
+# Shape builds an int64 shape slice from the given dimensions.
+func Shape(many dims int64) list of int64
+    result := make(list of int64, len(dims))
+    for i from 0 to len(dims)
+        result[i] = dims[i]
+    return result
+
+# NewFloat32 creates a float32 tensor with the given shape and data.
+func NewFloat32(shape list of int64, data list of float32) (Tensor, error)
+    ortShape := ort.NewShape(many shape)
+    t, err := ort.NewTensor(ortShape, data)
+    if err != empty
+        return Tensor{}, errors.Wrap(err, "new float32 tensor")
+    return Tensor{value: t, dtype: "float32", shape: shape, float32Data: data}, empty
+
+# ZeroFloat32 creates a zeroed float32 tensor with the given shape.
+func ZeroFloat32(shape list of int64) (Tensor, error)
+    ortShape := ort.NewShape(many shape)
+    size := ortShape.FlattenedSize()
+    data := make(list of float32, size)
+    t, err := ort.NewTensor(ortShape, data)
+    if err != empty
+        return Tensor{}, errors.Wrap(err, "zero float32 tensor")
+    return Tensor{value: t, dtype: "float32", shape: shape, float32Data: data}, empty
+
+# NewInt64 creates an int64 tensor with the given shape and data.
+func NewInt64(shape list of int64, data list of int64) (Tensor, error)
+    ortShape := ort.NewShape(many shape)
+    t, err := ort.NewTensor(ortShape, data)
+    if err != empty
+        return Tensor{}, errors.Wrap(err, "new int64 tensor")
+    return Tensor{value: t, dtype: "int64", shape: shape, int64Data: data}, empty
+
+# ZeroInt64 creates a zeroed int64 tensor with the given shape.
+func ZeroInt64(shape list of int64) (Tensor, error)
+    ortShape := ort.NewShape(many shape)
+    size := ortShape.FlattenedSize()
+    data := make(list of int64, size)
+    t, err := ort.NewTensor(ortShape, data)
+    if err != empty
+        return Tensor{}, errors.Wrap(err, "zero int64 tensor")
+    return Tensor{value: t, dtype: "int64", shape: shape, int64Data: data}, empty
+
+# Destroy releases the underlying tensor memory.
+func Destroy(tensor Tensor) error
+    if tensor.value == empty
+        return empty
+    v := tensor.value.(ort.Value)
+    err := v.Destroy()
+    if err != empty
+        return errors.Wrap(err, "destroy tensor")
+    return empty
+
+# --- Tensor access ---
+
+# GetFloat32 returns the float32 data from a tensor.
+# The returned slice shares memory with the tensor — after Run() it
+# already contains the inference results.
+func GetFloat32(tensor Tensor) list of float32
+    return tensor.float32Data
+
+# GetInt64 returns the int64 data from a tensor.
+# The returned slice shares memory with the tensor — after Run() it
+# already contains the inference results.
+func GetInt64(tensor Tensor) list of int64
+    return tensor.int64Data
+
+# GetShape returns the shape dimensions of a tensor.
+func GetShape(tensor Tensor) list of int64
+    return tensor.shape
+
+# Dtype returns the data type string of a tensor ("float32", "int64", etc).
+func Dtype(tensor Tensor) string
+    return tensor.dtype
+
+# --- Model inspection ---
+
+# Inspect reads model metadata and input/output info from an ONNX file.
+func Inspect(path string) (ModelInfo, error)
+    data, readErr := os.ReadFile(path)
+    if readErr != empty
+        return ModelInfo{}, errors.Wrap(readErr, "read model file")
+
+    inputInfos, outputInfos, ioErr := ort.GetInputOutputInfoWithONNXData(data)
+    if ioErr != empty
+        return ModelInfo{}, errors.Wrap(ioErr, "get model info")
+
+    meta, metaErr := ort.GetModelMetadataWithONNXData(data)
+    if metaErr != empty
+        return ModelInfo{}, errors.Wrap(metaErr, "get model metadata")
+    defer meta.Destroy()
+
+    gName, nameErr := meta.GetGraphName()
+    if nameErr != empty
+        gName = ""
+
+    inputs := make(list of IOInfo, len(inputInfos))
+    for i from 0 to len(inputInfos)
+        inputs[i] = IOInfo{
+            Name: inputInfos[i].Name,
+            Dims: inputInfos[i].Dimensions,
+            Dtype: dtypeName(inputInfos[i].DataType)
+        }
+
+    outputs := make(list of IOInfo, len(outputInfos))
+    for i from 0 to len(outputInfos)
+        outputs[i] = IOInfo{
+            Name: outputInfos[i].Name,
+            Dims: outputInfos[i].Dimensions,
+            Dtype: dtypeName(outputInfos[i].DataType)
+        }
+
+    return ModelInfo{graphName: gName, inputs: inputs, outputs: outputs}, empty
+
+# InputNames returns the input names from a ModelInfo.
+func InputNames(info ModelInfo) list of string
+    names := make(list of string, len(info.inputs))
+    for i from 0 to len(info.inputs)
+        names[i] = info.inputs[i].Name
+    return names
+
+# OutputNames returns the output names from a ModelInfo.
+func OutputNames(info ModelInfo) list of string
+    names := make(list of string, len(info.outputs))
+    for i from 0 to len(info.outputs)
+        names[i] = info.outputs[i].Name
+    return names
+
+# GraphName returns the graph name from a ModelInfo.
+func GraphName(info ModelInfo) string
+    return info.graphName
+
+# Inputs returns the input IOInfo list from a ModelInfo.
+func Inputs(info ModelInfo) list of IOInfo
+    return info.inputs
+
+# Outputs returns the output IOInfo list from a ModelInfo.
+func Outputs(info ModelInfo) list of IOInfo
+    return info.outputs
+
+# --- internal helpers ---
+
+func dtypeName(dt ort.TensorElementDataType) string
+    switch dt
+        when ort.TensorElementDataTypeFloat
+            return "float32"
+        when ort.TensorElementDataTypeDouble
+            return "float64"
+        when ort.TensorElementDataTypeInt8
+            return "int8"
+        when ort.TensorElementDataTypeInt16
+            return "int16"
+        when ort.TensorElementDataTypeInt32
+            return "int32"
+        when ort.TensorElementDataTypeInt64
+            return "int64"
+        when ort.TensorElementDataTypeUint8
+            return "uint8"
+        when ort.TensorElementDataTypeUint16
+            return "uint16"
+        when ort.TensorElementDataTypeUint32
+            return "uint32"
+        when ort.TensorElementDataTypeUint64
+            return "uint64"
+        when ort.TensorElementDataTypeBool
+            return "bool"
+        when ort.TensorElementDataTypeString
+            return "string"
+        otherwise
+            return "unknown"

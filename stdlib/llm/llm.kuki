@@ -8,7 +8,7 @@
 #   - Chat Completions API (OpenAI, any-llm-gateway, Open WebUI, etc.)
 #   - OpenResponses API (POST /v1/responses)
 #   - Anthropic Messages API (POST /v1/messages)
-#   - Multiple providers (OpenAI, Anthropic, Mistral, Ollama, etc.)
+#   - Multiple providers (OpenAI, Anthropic, Mistral, Ollama, FastFlowLM, etc.)
 #   - Streaming responses via Server-Sent Events
 #   - Tool/function calling
 #   - Configurable temperature, max tokens, top_p, and more
@@ -566,6 +566,8 @@ func resolveBaseURL(c Client) string
         return "https://api.x.ai"
     if c.provider == "ollama"
         return "http://localhost:11434"
+    if c.provider == "fastflowlm" or c.provider == "flm"
+        return "http://localhost:52625"
 
     # Check env var override before defaulting to gateway
     envURL := env.GetOr("LLM_BASE_URL", "")
@@ -1218,6 +1220,8 @@ func rResolveBaseURL(c ResponseClient) string
         return "https://api.x.ai"
     if c.provider == "ollama"
         return "http://localhost:11434"
+    if c.provider == "fastflowlm" or c.provider == "flm"
+        return "http://localhost:52625"
 
     # Check env var override before defaulting to gateway
     envURL := env.GetOr("LLM_BASE_URL", "")
