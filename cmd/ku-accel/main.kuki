@@ -150,11 +150,9 @@ func detectFlm() map of string to any
         "available": false
     }
     # Check if flm binary is in PATH
-    flmPath := shell.Which("flm")
-    if flmPath == ""
+    if not shell.Which("flm")
         return result
     result["available"] = true
-    result["path"] = flmPath
 
     # Try flm validate to check NPU readiness
     validate := shell.New("flm", "validate")
