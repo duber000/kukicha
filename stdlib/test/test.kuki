@@ -28,3 +28,6 @@ func AssertNotNil(t reference testing.T, val any, many msgAndArgs any)
 
 func AssertNotEqual(t reference testing.T, got any, want any, many msgAndArgs any)
     return
+
+func AssertNearFloat32(t reference testing.T, got float32, want float32, tolerance float32, many msgAndArgs any)
+    return
