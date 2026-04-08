@@ -1,0 +1,401 @@
+# Kukicha Standard Library - Accel (Smart Inference Fallback Chain)
+# Orchestrator that wraps stdlib/infer (native ONNX Runtime) and
+# stdlib/webinfer (browser-based onnxruntime-web) with automatic fallback.
+#
+# Init() tries native ORT first, then falls back to browser-based inference.
+# All tensor, model, and config functions dispatch to the correct backend
+# based on the Env's backend tag.
+#
+# Examples:
+#   env := accel.Init() onerr panic "no inference: {error}"
+#   defer accel.Cleanup(env)
+#
+#   print("Backend: {accel.Backend(env)}")
+#
+#   input := accel.NewFloat32(env, accel.Shape(1, 10), data) onerr panic "{error}"
+#   output := accel.ZeroFloat32(env, accel.Shape(1, 5)) onerr panic "{error}"
+#
+#   model := accel.New() |> accel.Threads(4) |> accel.EP("webnn")
+#       |> accel.Load(env, "model.onnx",
+#           list of string{"input"}, list of string{"output"},
+#           list of accel.Tensor{input}, list of accel.Tensor{output})
+#       onerr panic "{error}"
+#   defer accel.Close(model)
+#
+#   accel.Run(model) onerr panic "{error}"
+#   results := accel.GetFloat32(output)
+
+petiole accel
+
+import "stdlib/errors"
+import "stdlib/infer"
+import "stdlib/webinfer"
+
+# Env holds the active backend and its environment handle.
+type Env
+    backend string
+    nativeEnv any
+    webEnv any
+
+# Config collects settings for both backends.
+# Irrelevant settings are silently ignored, enabling backend-agnostic code.
+type Config
+    threads int
+    interOpThreads int
+    optLevel int
+    ep string
+
+# Model wraps a backend-specific model with a backend tag.
+type Model
+    backend string
+    nativeModel any
+    webModel any
+
+# Tensor wraps a backend-specific tensor with dtype/shape/data refs.
+type Tensor
+    backend string
+    nativeTensor any
+    webTensor any
+    dtype string
+    shape list of int64
+    float32Data list of float32
+    int64Data list of int64
+
+# ModelInfo holds metadata from model inspection (native-only).
+type ModelInfo
+    graphName string
+    inputs list of IOInfo
+    outputs list of IOInfo
+
+# IOInfo describes a single model input or output.
+type IOInfo
+    Name string
+    Dims list of int64
+    Dtype string
+
+# --- Environment lifecycle ---
+
+# Init auto-detects the best available backend: tries native ORT first,
+# then browser-based inference, then returns an error.
+func Init() (Env, error)
+    # Try native ONNX Runtime first
+    nEnv, nErr := infer.Init()
+    if nErr == empty
+        return Env{backend: "native", nativeEnv: nEnv}, empty
+
+    # Fall back to browser-based inference
+    wEnv, wErr := webinfer.Init()
+    if wErr == empty
+        return Env{backend: "web", webEnv: wEnv}, empty
+
+    return Env{}, errors.New("no inference backend available (native: {nErr}, web: {wErr})")
+
+# InitWith creates an Env using an explicit backend ("native" or "web").
+func InitWith(backend string) (Env, error)
+    if backend == "native"
+        nEnv, err := infer.Init()
+        if err != empty
+            return Env{}, errors.Wrap(err, "native backend init")
+        return Env{backend: "native", nativeEnv: nEnv}, empty
+    if backend == "web"
+        wEnv, err := webinfer.Init()
+        if err != empty
+            return Env{}, errors.Wrap(err, "web backend init")
+        return Env{backend: "web", webEnv: wEnv}, empty
+    return Env{}, errors.New("unknown backend: {backend} (use \"native\" or \"web\")")
+
+# Cleanup releases the backend environment resources.
+func Cleanup(env Env) error
+    if env.backend == "native"
+        nEnv := env.nativeEnv.(infer.Env)
+        return infer.Cleanup(nEnv)
+    if env.backend == "web"
+        wEnv := env.webEnv.(webinfer.Env)
+        return webinfer.Cleanup(wEnv)
+    return empty
+
+# Backend returns the active backend name ("native" or "web").
+func Backend(env Env) string
+    return env.backend
+
+# Version returns the runtime version string for the active backend.
+func Version(env Env) string
+    if env.backend == "native"
+        return infer.Version()
+    if env.backend == "web"
+        wEnv := env.webEnv.(webinfer.Env)
+        return webinfer.Version(wEnv)
+    return ""
+
+# IsAvailable returns true if any inference backend is available.
+func IsAvailable() bool
+    return infer.IsAvailable() or webinfer.IsAvailable()
+
+# IsNativeAvailable returns true if the native ONNX Runtime is available.
+func IsNativeAvailable() bool
+    return infer.IsAvailable()
+
+# IsWebAvailable returns true if the browser-based backend is available.
+func IsWebAvailable() bool
+    return webinfer.IsAvailable()
+
+# --- Config builder (pipe-friendly) ---
+
+# New creates a default configuration builder.
+func New() Config
+    return Config{}
+
+# Threads sets the intra-op thread count (native only; ignored on web).
+func Threads(cfg Config, n int) Config
+    cfg.threads = n
+    return cfg
+
+# InterOpThreads sets the inter-op thread count (native only; ignored on web).
+func InterOpThreads(cfg Config, n int) Config
+    cfg.interOpThreads = n
+    return cfg
+
+# OptLevel sets the graph optimization level (native only; ignored on web).
+# 0=disabled, 1=basic, 2=extended, 99=all.
+func OptLevel(cfg Config, level int) Config
+    cfg.optLevel = level
+    return cfg
+
+# EP sets the execution provider.
+# For native backend: ONNX Runtime provider name (e.g., "CUDAExecutionProvider").
+# For web backend: browser provider name ("webnn", "webgpu", "wasm").
+func EP(cfg Config, ep string) Config
+    cfg.ep = ep
+    return cfg
+
+# --- Model loading ---
+
+# Load creates an inference session from a model file using the active backend.
+func Load(cfg Config, env Env, path string, inputNames list of string, outputNames list of string, inputs list of Tensor, outputs list of Tensor) (Model, error)
+    if env.backend == "native"
+        return loadNative(cfg, env, path, inputNames, outputNames, inputs, outputs)
+    if env.backend == "web"
+        return loadWeb(cfg, env, path, inputNames, outputNames, inputs, outputs)
+    return Model{}, errors.New("no backend initialized")
+
+func loadNative(cfg Config, env Env, path string, inputNames list of string, outputNames list of string, inputs list of Tensor, outputs list of Tensor) (Model, error)
+    nCfg := infer.New()
+    if cfg.threads > 0
+        nCfg = nCfg |> infer.Threads(cfg.threads)
+    if cfg.interOpThreads > 0
+        nCfg = nCfg |> infer.InterOpThreads(cfg.interOpThreads)
+    if cfg.optLevel > 0
+        nCfg = nCfg |> infer.OptLevel(cfg.optLevel)
+    if cfg.ep != ""
+        nCfg = nCfg |> infer.EP(cfg.ep)
+
+    # Unwrap accel tensors to infer tensors
+    nInputs := make(list of infer.Tensor, len(inputs))
+    for i from 0 to len(inputs)
+        nInputs[i] = inputs[i].nativeTensor.(infer.Tensor)
+    nOutputs := make(list of infer.Tensor, len(outputs))
+    for i from 0 to len(outputs)
+        nOutputs[i] = outputs[i].nativeTensor.(infer.Tensor)
+
+    nModel, err := infer.Load(nCfg, path, inputNames, outputNames, nInputs, nOutputs)
+    if err != empty
+        return Model{}, err
+    return Model{backend: "native", nativeModel: nModel}, empty
+
+func loadWeb(cfg Config, env Env, path string, inputNames list of string, outputNames list of string, inputs list of Tensor, outputs list of Tensor) (Model, error)
+    wCfg := webinfer.New()
+    if cfg.ep != ""
+        wCfg = wCfg |> webinfer.EP(cfg.ep)
+
+    wEnv := env.webEnv.(webinfer.Env)
+
+    # Unwrap accel tensors to webinfer tensors
+    wInputs := make(list of webinfer.Tensor, len(inputs))
+    for i from 0 to len(inputs)
+        wInputs[i] = inputs[i].webTensor.(webinfer.Tensor)
+    wOutputs := make(list of webinfer.Tensor, len(outputs))
+    for i from 0 to len(outputs)
+        wOutputs[i] = outputs[i].webTensor.(webinfer.Tensor)
+
+    wModel, err := webinfer.Load(wCfg, wEnv, path, inputNames, outputNames, wInputs, wOutputs)
+    if err != empty
+        return Model{}, err
+    return Model{backend: "web", webModel: wModel}, empty
+
+# Close destroys the model session for the active backend.
+func Close(model Model) error
+    if model.backend == "native"
+        nModel := model.nativeModel.(infer.Model)
+        return infer.Close(nModel)
+    if model.backend == "web"
+        wModel := model.webModel.(webinfer.Model)
+        return webinfer.Close(wModel)
+    return empty
+
+# --- Inference ---
+
+# Run executes inference on the active backend.
+func Run(model Model) error
+    if model.backend == "native"
+        nModel := model.nativeModel.(infer.Model)
+        return infer.Run(nModel)
+    if model.backend == "web"
+        wModel := model.webModel.(webinfer.Model)
+        return webinfer.Run(wModel)
+    return errors.New("no backend initialized")
+
+# --- Tensor creation ---
+
+# Shape builds an int64 shape slice from the given dimensions.
+func Shape(many dims int64) list of int64
+    result := make(list of int64, len(dims))
+    for i from 0 to len(dims)
+        result[i] = dims[i]
+    return result
+
+# NewFloat32 creates a float32 tensor using the active backend.
+func NewFloat32(env Env, shape list of int64, data list of float32) (Tensor, error)
+    if env.backend == "native"
+        nt, err := infer.NewFloat32(shape, data)
+        if err != empty
+            return Tensor{}, err
+        return Tensor{backend: "native", nativeTensor: nt, dtype: "float32", shape: shape, float32Data: data}, empty
+    if env.backend == "web"
+        wt, err := webinfer.NewFloat32(shape, data)
+        if err != empty
+            return Tensor{}, err
+        return Tensor{backend: "web", webTensor: wt, dtype: "float32", shape: shape, float32Data: data}, empty
+    return Tensor{}, errors.New("no backend initialized")
+
+# ZeroFloat32 creates a zeroed float32 tensor using the active backend.
+func ZeroFloat32(env Env, shape list of int64) (Tensor, error)
+    if env.backend == "native"
+        nt, err := infer.ZeroFloat32(shape)
+        if err != empty
+            return Tensor{}, err
+        return Tensor{backend: "native", nativeTensor: nt, dtype: "float32", shape: shape, float32Data: infer.GetFloat32(nt)}, empty
+    if env.backend == "web"
+        wt, err := webinfer.ZeroFloat32(shape)
+        if err != empty
+            return Tensor{}, err
+        return Tensor{backend: "web", webTensor: wt, dtype: "float32", shape: shape, float32Data: webinfer.GetFloat32(wt)}, empty
+    return Tensor{}, errors.New("no backend initialized")
+
+# NewInt64 creates an int64 tensor using the active backend.
+# Returns an error on the web backend (limited browser support).
+func NewInt64(env Env, shape list of int64, data list of int64) (Tensor, error)
+    if env.backend == "native"
+        nt, err := infer.NewInt64(shape, data)
+        if err != empty
+            return Tensor{}, err
+        return Tensor{backend: "native", nativeTensor: nt, dtype: "int64", shape: shape, int64Data: data}, empty
+    if env.backend == "web"
+        wt, err := webinfer.NewInt64(shape, data)
+        if err != empty
+            return Tensor{}, err
+        return Tensor{backend: "web", webTensor: wt, dtype: "int64", shape: shape, int64Data: data}, empty
+    return Tensor{}, errors.New("no backend initialized")
+
+# ZeroInt64 creates a zeroed int64 tensor using the active backend.
+# Returns an error on the web backend (limited browser support).
+func ZeroInt64(env Env, shape list of int64) (Tensor, error)
+    if env.backend == "native"
+        nt, err := infer.ZeroInt64(shape)
+        if err != empty
+            return Tensor{}, err
+        return Tensor{backend: "native", nativeTensor: nt, dtype: "int64", shape: shape, int64Data: infer.GetInt64(nt)}, empty
+    if env.backend == "web"
+        wt, err := webinfer.ZeroInt64(shape)
+        if err != empty
+            return Tensor{}, err
+        return Tensor{backend: "web", webTensor: wt, dtype: "int64", shape: shape, int64Data: webinfer.GetInt64(wt)}, empty
+    return Tensor{}, errors.New("no backend initialized")
+
+# Destroy releases the underlying tensor memory.
+func Destroy(tensor Tensor) error
+    if tensor.backend == "native"
+        nt := tensor.nativeTensor.(infer.Tensor)
+        return infer.Destroy(nt)
+    if tensor.backend == "web"
+        wt := tensor.webTensor.(webinfer.Tensor)
+        return webinfer.Destroy(wt)
+    return empty
+
+# --- Tensor access ---
+
+# GetFloat32 returns the float32 data from a tensor.
+func GetFloat32(tensor Tensor) list of float32
+    if tensor.backend == "native"
+        nt := tensor.nativeTensor.(infer.Tensor)
+        return infer.GetFloat32(nt)
+    if tensor.backend == "web"
+        wt := tensor.webTensor.(webinfer.Tensor)
+        return webinfer.GetFloat32(wt)
+    return tensor.float32Data
+
+# GetInt64 returns the int64 data from a tensor.
+func GetInt64(tensor Tensor) list of int64
+    if tensor.backend == "native"
+        nt := tensor.nativeTensor.(infer.Tensor)
+        return infer.GetInt64(nt)
+    if tensor.backend == "web"
+        wt := tensor.webTensor.(webinfer.Tensor)
+        return webinfer.GetInt64(wt)
+    return tensor.int64Data
+
+# GetShape returns the shape dimensions of a tensor.
+func GetShape(tensor Tensor) list of int64
+    return tensor.shape
+
+# Dtype returns the data type string of a tensor.
+func Dtype(tensor Tensor) string
+    return tensor.dtype
+
+# --- Model inspection (native-only) ---
+
+# Inspect reads model metadata from an ONNX file. Only supported on native backend.
+func Inspect(env Env, path string) (ModelInfo, error)
+    if env.backend != "native"
+        return ModelInfo{}, errors.New("model inspection requires native backend")
+    nInfo, err := infer.Inspect(path)
+    if err != empty
+        return ModelInfo{}, err
+
+    # Convert infer.IOInfo to accel.IOInfo
+    nInputs := infer.Inputs(nInfo)
+    inputs := make(list of IOInfo, len(nInputs))
+    for i from 0 to len(nInputs)
+        inputs[i] = IOInfo{Name: nInputs[i].Name, Dims: nInputs[i].Dims, Dtype: nInputs[i].Dtype}
+
+    nOutputs := infer.Outputs(nInfo)
+    outputs := make(list of IOInfo, len(nOutputs))
+    for i from 0 to len(nOutputs)
+        outputs[i] = IOInfo{Name: nOutputs[i].Name, Dims: nOutputs[i].Dims, Dtype: nOutputs[i].Dtype}
+
+    return ModelInfo{graphName: infer.GraphName(nInfo), inputs: inputs, outputs: outputs}, empty
+
+# InputNames returns the input names from a ModelInfo.
+func InputNames(info ModelInfo) list of string
+    names := make(list of string, len(info.inputs))
+    for i from 0 to len(info.inputs)
+        names[i] = info.inputs[i].Name
+    return names
+
+# OutputNames returns the output names from a ModelInfo.
+func OutputNames(info ModelInfo) list of string
+    names := make(list of string, len(info.outputs))
+    for i from 0 to len(info.outputs)
+        names[i] = info.outputs[i].Name
+    return names
+
+# GraphName returns the graph name from a ModelInfo.
+func GraphName(info ModelInfo) string
+    return info.graphName
+
+# Inputs returns the input IOInfo list from a ModelInfo.
+func Inputs(info ModelInfo) list of IOInfo
+    return info.inputs
+
+# Outputs returns the output IOInfo list from a ModelInfo.
+func Outputs(info ModelInfo) list of IOInfo
+    return info.outputs

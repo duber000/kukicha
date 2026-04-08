@@ -1,0 +1,340 @@
+# Kukicha Standard Library - WebInfer
+# ONNX inference via headless Chromium + onnxruntime-web.
+# Provides cross-platform NPU/GPU/CPU acceleration through the browser's
+# WebNN and WebGPU execution providers — no native ORT shared library needed.
+#
+# Uses playwright-go for headless browser automation with onnxruntime-web
+# loaded from CDN. Tensors are transferred as JSON through Playwright's
+# page.Evaluate mechanism.
+#
+# Examples:
+#   env := webinfer.Init() onerr panic "browser: {error}"
+#   defer webinfer.Cleanup(env)
+#
+#   input, _ := webinfer.NewFloat32(webinfer.Shape(1, 10), inputData)
+#   output, _ := webinfer.ZeroFloat32(webinfer.Shape(1, 5))
+#
+#   model := webinfer.New()
+#       |> webinfer.EP("webnn")
+#       |> webinfer.Load(env, "model.onnx",
+#           list of string{"input"}, list of string{"output"},
+#           list of Tensor{input}, list of Tensor{output})
+#       onerr panic "load: {error}"
+#   defer webinfer.Close(model)
+#
+#   webinfer.Run(model) onerr panic "inference: {error}"
+#   results := webinfer.GetFloat32(output)
+
+petiole webinfer
+
+import "encoding/base64"
+import "encoding/json"
+import "fmt"
+import "os"
+import "os/exec"
+import "sync/atomic"
+import "stdlib/errors"
+import "github.com/playwright-community/playwright-go" as playwright
+
+var ortWebCDN string = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.js"
+
+var sessionCounter atomic.Int64
+
+# Env holds the headless browser state.
+type Env
+    pw reference playwright.Playwright
+    browser playwright.Browser
+    page playwright.Page
+
+# Config is a builder for session options.
+type Config
+    ep string
+
+# Model wraps a browser-side ORT session.
+type Model
+    env reference Env
+    sessionID string
+    inputNames list of string
+    outputNames list of string
+    inputs list of Tensor
+    outputs list of Tensor
+
+# Tensor holds tensor data.
+type Tensor
+    shape list of int64
+    dtype string
+    float32Data list of float32
+    int64Data list of int64
+
+# ModelInfo holds metadata from model inspection.
+type ModelInfo
+    graphName string
+    inputs list of IOInfo
+    outputs list of IOInfo
+
+# IOInfo describes a single model input or output.
+type IOInfo
+    Name string
+    Dims list of int64
+    Dtype string
+
+# FeedEntry describes a single input feed for JSON marshaling.
+type FeedEntry
+    Dtype string as "dtype"
+    Shape list of int64 as "shape"
+    Data list of float32 as "data"
+
+# ResultEntry describes a single output result from JSON.
+type ResultEntry
+    Dtype string as "dtype"
+    Shape list of int64 as "shape"
+    Data list of float32 as "data"
+
+# --- Environment lifecycle ---
+
+# Init launches a headless Chromium instance via Playwright and loads
+# onnxruntime-web from CDN.
+func Init() (Env, error)
+    pw, runErr := playwright.Run()
+    if runErr != empty
+        return Env{}, fmt.Errorf("start playwright: %w", runErr)
+    webnnArgs := list of string{"--enable-features=WebMachineLearningNeuralNetwork,WebNNOnnxRuntime"}
+    browser, launchErr := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{Headless: playwright.Bool(true), Channel: playwright.String("chromium"), Args: webnnArgs})
+    if launchErr != empty
+        pw.Stop()
+        return Env{}, fmt.Errorf("launch browser: %w", launchErr)
+    page, pageErr := browser.NewPage()
+    if pageErr != empty
+        browser.Close()
+        pw.Stop()
+        return Env{}, fmt.Errorf("open page: %w", pageErr)
+    loadErr := loadOrtWeb(page)
+    if loadErr != empty
+        browser.Close()
+        pw.Stop()
+        return Env{}, fmt.Errorf("load onnxruntime-web: %w", loadErr)
+    return Env{pw: pw, browser: browser, page: page}, empty
+
+# Cleanup closes the browser and stops the Playwright driver.
+func Cleanup(env Env) error
+    if env.browser != empty
+        env.browser.Close()
+    if env.pw != empty
+        return env.pw.Stop()
+    return empty
+
+# IsAvailable returns true if Chromium can be found for Playwright.
+# Checks for common Chromium/Chrome executables on PATH.
+func IsAvailable() bool
+    browsers := list of string{"chromium", "chromium-browser", "google-chrome", "google-chrome-stable"}
+    for name in browsers
+        _, err := exec.LookPath(name)
+        if err == empty
+            return true
+    return false
+
+# Version returns the onnxruntime-web version string from the loaded page.
+func Version(env Env) string
+    if env.page == empty
+        return ""
+    result, err := env.page.Evaluate("() => typeof ort !== 'undefined' ? '1.21.0' : ''")
+    if err != empty
+        return ""
+    s, ok := result.(string)
+    if not ok
+        return ""
+    return s
+
+# --- Builder ---
+
+# New creates a default configuration builder.
+func New() Config
+    return Config{ep: "wasm"}
+
+# EP sets the execution provider: "webnn", "webgpu", or "wasm".
+func EP(cfg Config, ep string) Config
+    cfg.ep = ep
+    return cfg
+
+# --- Model loading ---
+
+# Load reads an ONNX model file and creates an inference session in the browser.
+func Load(cfg Config, env Env, path string, inputNames list of string, outputNames list of string, inputs list of Tensor, outputs list of Tensor) (Model, error)
+    modelBytes, readErr := os.ReadFile(path)
+    if readErr != empty
+        return Model{}, fmt.Errorf("read model: %w", readErr)
+    modelB64 := base64.StdEncoding.EncodeToString(modelBytes)
+    sessionID := fmt.Sprintf("s%d", sessionCounter.Add(1))
+    ep := cfg.ep
+    if ep == ""
+        ep = "wasm"
+
+    js := fmt.Sprintf("async () => { const b64 = %q; const raw = atob(b64); const bytes = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i); const session = await ort.InferenceSession.create(bytes.buffer, { executionProviders: [%q] }); window.__kuki = window.__kuki || {}; window.__kuki[%q] = session; return 'ok'; }", modelB64, ep, sessionID)
+
+    _, evalErr := env.page.Evaluate(js)
+    if evalErr != empty
+        return Model{}, fmt.Errorf("create session: %w", evalErr)
+    return Model{
+        env: reference of env,
+        sessionID: sessionID,
+        inputNames: inputNames,
+        outputNames: outputNames,
+        inputs: inputs,
+        outputs: outputs
+    }, empty
+
+# Close destroys the browser-side inference session.
+func Close(model Model) error
+    if model.env == empty or model.env.page == empty
+        return empty
+    js := fmt.Sprintf("async () => { if (window.__kuki && window.__kuki[%q]) { await window.__kuki[%q].handler?.dispose?.(); delete window.__kuki[%q]; } return 'ok'; }", model.sessionID, model.sessionID, model.sessionID)
+    _, err := model.env.page.Evaluate(js)
+    return err
+
+# --- Inference ---
+
+# Run executes inference. Input data is read from model.inputs and results are
+# written back into model.outputs (same as the native infer package contract).
+func Run(model Model) error
+    if model.env == empty or model.env.page == empty
+        return errors.New("model not loaded")
+
+    # Build feeds descriptor
+    feeds := map of string to FeedEntry{}
+    for i from 0 to len(model.inputNames)
+        name := model.inputNames[i]
+        if i < len(model.inputs)
+            t := model.inputs[i]
+            feeds[name] = FeedEntry{Dtype: "float32", Shape: t.shape, Data: t.float32Data}
+
+    feedsJSON, marshalErr := json.Marshal(feeds)
+    if marshalErr != empty
+        return fmt.Errorf("marshal feeds: %w", marshalErr)
+
+    outNamesJSON, _ := json.Marshal(model.outputNames)
+
+    js := fmt.Sprintf("async () => { const session = window.__kuki[%q]; const feedData = %s; const feeds = {}; for (const [name, info] of Object.entries(feedData)) { feeds[name] = new ort.Tensor(info.dtype, new Float32Array(info.data), info.shape); } const results = await session.run(feeds); const outNames = %s; const outputs = {}; for (const name of outNames) { const t = results[name]; if (t) outputs[name] = { dtype: t.type, shape: Array.from(t.dims), data: Array.from(t.data) }; } return JSON.stringify(outputs); }", model.sessionID, feedsJSON as string, outNamesJSON as string)
+
+    raw, evalErr := model.env.page.Evaluate(js)
+    if evalErr != empty
+        return fmt.Errorf("run inference: %w", evalErr)
+
+    # Parse results and write back into output tensors
+    rawStr, ok := raw.(string)
+    if not ok
+        return errors.New("unexpected result type from browser")
+    resultMap := map of string to ResultEntry{}
+    unmarshalErr := json.Unmarshal(rawStr as list of byte, reference of resultMap)
+    if unmarshalErr != empty
+        return fmt.Errorf("parse results: %w", unmarshalErr)
+    for i from 0 to len(model.outputNames)
+        name := model.outputNames[i]
+        if i < len(model.outputs)
+            r, rok := resultMap[name]
+            if rok
+                model.outputs[i].float32Data = r.Data
+                model.outputs[i].shape = r.Shape
+                model.outputs[i].dtype = r.Dtype
+    return empty
+
+# --- Tensor creation ---
+
+# Shape builds an int64 shape slice from the given dimensions.
+func Shape(many dims int64) list of int64
+    result := make(list of int64, len(dims))
+    for i from 0 to len(dims)
+        result[i] = dims[i]
+    return result
+
+# NewFloat32 creates a float32 tensor with the given shape and data.
+func NewFloat32(shape list of int64, data list of float32) (Tensor, error)
+    return Tensor{shape: shape, dtype: "float32", float32Data: data}, empty
+
+# ZeroFloat32 creates a zeroed float32 tensor with the given shape.
+func ZeroFloat32(shape list of int64) (Tensor, error)
+    size := 1 as int64
+    for d in shape
+        size = size * d
+    return Tensor{shape: shape, dtype: "float32", float32Data: make(list of float32, size)}, empty
+
+# NewInt64 creates an int64 tensor with the given shape and data.
+# Note: int64 tensors have limited browser support and may not work with all models.
+func NewInt64(shape list of int64, data list of int64) (Tensor, error)
+    return Tensor{shape: shape, dtype: "int64", int64Data: data}, empty
+
+# ZeroInt64 creates a zeroed int64 tensor with the given shape.
+func ZeroInt64(shape list of int64) (Tensor, error)
+    size := 1 as int64
+    for d in shape
+        size = size * d
+    return Tensor{shape: shape, dtype: "int64", int64Data: make(list of int64, size)}, empty
+
+# Destroy is a no-op for the web backend (GC handles memory).
+func Destroy(tensor Tensor) error
+    return empty
+
+# --- Tensor access ---
+
+# GetFloat32 returns the float32 data from a tensor after Run().
+func GetFloat32(tensor Tensor) list of float32
+    return tensor.float32Data
+
+# GetInt64 returns the int64 data from a tensor.
+func GetInt64(tensor Tensor) list of int64
+    return tensor.int64Data
+
+# GetShape returns the shape dimensions of a tensor.
+func GetShape(tensor Tensor) list of int64
+    return tensor.shape
+
+# Dtype returns the data type string of a tensor.
+func Dtype(tensor Tensor) string
+    return tensor.dtype
+
+# --- Model inspection ---
+
+# Inspect is not supported by the web backend. Use infer.Inspect instead.
+func Inspect(path string) (ModelInfo, error)
+    return ModelInfo{}, errors.New("webinfer: model inspection not supported (use infer.Inspect)")
+
+# InputNames returns the input names from a ModelInfo.
+func InputNames(info ModelInfo) list of string
+    names := make(list of string, len(info.inputs))
+    for i from 0 to len(info.inputs)
+        names[i] = info.inputs[i].Name
+    return names
+
+# OutputNames returns the output names from a ModelInfo.
+func OutputNames(info ModelInfo) list of string
+    names := make(list of string, len(info.outputs))
+    for i from 0 to len(info.outputs)
+        names[i] = info.outputs[i].Name
+    return names
+
+# GraphName returns the graph name from a ModelInfo.
+func GraphName(info ModelInfo) string
+    return info.graphName
+
+# Inputs returns the input IOInfo list from a ModelInfo.
+func Inputs(info ModelInfo) list of IOInfo
+    return info.inputs
+
+# Outputs returns the output IOInfo list from a ModelInfo.
+func Outputs(info ModelInfo) list of IOInfo
+    return info.outputs
+
+# --- internal helpers ---
+
+func loadOrtWeb(page playwright.Page) error
+    url := ortWebCDN
+    _, tagErr := page.AddScriptTag(playwright.PageAddScriptTagOptions{URL: reference of url})
+    if tagErr != empty
+        return fmt.Errorf("add ort script: %w", tagErr)
+    # Verify ORT loaded
+    result, err := page.Evaluate("() => typeof ort !== 'undefined'")
+    if err != empty
+        return err
+    loaded, ok := result.(bool)
+    if not ok or not loaded
+        return fmt.Errorf("ort not available after load")
+    return empty

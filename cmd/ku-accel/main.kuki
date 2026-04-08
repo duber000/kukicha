@@ -1,0 +1,185 @@
+# ku-accel is a hardware accelerator detection tool.
+# It reports CPU features, GPU/NPU presence, and ONNX Runtime availability
+# as structured JSON for diagnostics and configuration.
+
+import "os"
+import "runtime"
+import "stdlib/cli"
+import "stdlib/json"
+import "stdlib/cast"
+import "stdlib/shell"
+import "stdlib/string"
+import "stdlib/infer"
+
+func main()
+    app := cli.New("ku-accel")
+    app = app |> cli.Arg("command", "Subcommand: detect, version")
+    app = app |> cli.Action(runAction)
+
+    err := cli.RunApp(app)
+    if err != empty
+        print("{{\"error\": \"CLI run failed: {err}\"}}")
+
+func runAction(args cli.Args)
+    command := cli.GetString(args, "command")
+    switch command
+        when "detect"
+            handleDetect()
+        when "version"
+            handleVersion()
+        otherwise
+            print("{{\"error\": \"Unknown command. Use: detect, version\"}}")
+
+func handleDetect()
+    out := map of string to any{
+        "action": "detect",
+        "os": runtime.GOOS,
+        "arch": runtime.GOARCH,
+        "cpus": runtime.NumCPU(),
+        "cpu_features": detectCpuFeatures(),
+        "gpu": detectGpu(),
+        "npu": detectNpu(),
+        "onnxruntime": detectOrt(),
+        "fastflowlm": detectFlm()
+    }
+    printJsonResult(out)
+
+func handleVersion()
+    ortVersion := ""
+    env, err := infer.Init()
+    if err == empty
+        ortVersion = infer.Version()
+        infer.Cleanup(env)
+    out := map of string to any{
+        "action": "version",
+        "onnxruntime": ortVersion,
+        "os": runtime.GOOS,
+        "arch": runtime.GOARCH
+    }
+    printJsonResult(out)
+
+func detectCpuFeatures() map of string to any
+    result := map of string to any{
+        "cores": runtime.NumCPU()
+    }
+    if runtime.GOOS != "linux"
+        return result
+
+    cpuinfo := shell.New("cat", "/proc/cpuinfo")
+    res := shell.Execute(cpuinfo)
+    if not shell.Success(res)
+        return result
+
+    output := safeSmartString(shell.GetOutput(res))
+    flags := ""
+    lines := string.Split(output, "\n")
+    for line in lines
+        if string.Contains(line, "flags")
+            flags = line
+            break
+
+    result["avx2"] = string.Contains(flags, "avx2")
+    result["avx512"] = string.Contains(flags, "avx512")
+    result["vnni"] = string.Contains(flags, "avx_vnni") or string.Contains(flags, "avx512_vnni")
+    result["amx"] = string.Contains(flags, "amx_tile")
+    return result
+
+func detectGpu() map of string to any
+    result := map of string to any{
+        "detected": false
+    }
+    if runtime.GOOS != "linux"
+        return result
+
+    lspci := shell.New("lspci")
+    res := shell.Execute(lspci)
+    if not shell.Success(res)
+        return result
+
+    output := safeSmartString(shell.GetOutput(res))
+    lines := string.Split(output, "\n")
+    devices := list of string{}
+    for line in lines
+        lower := string.ToLower(line)
+        isGpu := string.Contains(lower, "vga") or string.Contains(lower, "3d controller") or string.Contains(lower, "display controller")
+        if isGpu
+            devices = append(devices, string.Trim(line, " \t"))
+
+    if len(devices) > 0
+        result["detected"] = true
+        result["devices"] = devices
+    return result
+
+func detectNpu() map of string to any
+    result := map of string to any{
+        "detected": false
+    }
+    if runtime.GOOS != "linux"
+        return result
+
+    # Check for Intel NPU (/dev/accel*)
+    _, err := os.Stat("/dev/accel")
+    if err == empty
+        result["detected"] = true
+        result["type"] = "intel_npu"
+        return result
+
+    # Check for AMD NPU via dmesg or device nodes
+    dmesg := shell.New("dmesg")
+    res := shell.Execute(dmesg)
+    if shell.Success(res)
+        output := safeSmartString(shell.GetOutput(res))
+        if string.Contains(string.ToLower(output), "amdxdna")
+            result["detected"] = true
+            result["type"] = "amd_npu"
+
+    return result
+
+func detectOrt() map of string to any
+    env, err := infer.Init()
+    if err != empty
+        return map of string to any{"available": false, "error": "{err}"}
+    defer infer.Cleanup(env)
+    return map of string to any{
+        "available": true,
+        "version": infer.Version()
+    }
+
+func detectFlm() map of string to any
+    result := map of string to any{
+        "available": false
+    }
+    # Check if flm binary is in PATH
+    if not shell.Which("flm")
+        return result
+    result["available"] = true
+
+    # Try flm validate to check NPU readiness
+    validate := shell.New("flm", "validate")
+    res := shell.Execute(validate)
+    result["npu_ready"] = shell.Success(res)
+
+    # Try to get version
+    versionCmd := shell.New("flm", "version")
+    vRes := shell.Execute(versionCmd)
+    if shell.Success(vRes)
+        result["version"] = string.TrimSpace(safeSmartString(shell.GetOutput(vRes)))
+
+    return result
+
+func safeSmartString(data list of byte) string
+    s, err := cast.SmartString(data)
+    if err != empty
+        return ""
+    return s
+
+func printJsonResult(result any)
+    out, jsonErr := json.Marshal(result)
+    if jsonErr != empty
+        print("{{\"error\": \"Failed to marshal result\"}}")
+        return
+    s, castErr := cast.SmartString(out)
+    if castErr != empty
+        print("{{\"error\": \"Failed to format output\"}}")
+        return
+    print(s)
